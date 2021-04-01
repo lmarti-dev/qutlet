@@ -349,6 +349,9 @@ class Ising(Initialiser):
         #_j = list(filter(None, (self.j_v[0], self.j_h[0])))
         return np.sqrt(self.h[0][0]**2 + _j**2 - (2*_j)*self.h[0][0]*np.cos(_k) )
 
+#Temporary demo function
+    def demo(self):
+        print("Import from dev-branch-own worked")
 
 #Add analytic energy function
 #Add tests to test it
