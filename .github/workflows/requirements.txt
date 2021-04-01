@@ -1,0 +1,4 @@
+# Runtime requirements for fauvqe to work
+
+cirq~=0.9.1
+qsimcirq~=0.7.1
