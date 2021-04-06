@@ -146,7 +146,7 @@ class Initialiser:
                     self.qsimh_options = {'t': 1, 'f': 2, 'v': 0}
                     self.qsimh_options.update(qsimh_options)
             """
-            self.simulator_options = {'t': 8}
+            self.simulator_options = {'t': 8, 'f':4}
             self.simulator_options.update(simulator_options)
             self.simulator  = qsimcirq.QSimSimulator(self.simulator_options)
         elif simulator_name == 'cirq':
