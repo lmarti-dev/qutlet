@@ -38,6 +38,8 @@ Potential MUCH BETTER alternative option: load from scipy??
 import numpy as np
 import cirq
 import sympy
+import joblib
+import multiprocessing
 
 # internal import
 from fauvqe.optimisers import Optimiser
@@ -147,6 +149,8 @@ class ADAM(Optimiser):
         '''
         self.step += 1
         gradient_values = self._get_gradients(temp_cpv)
+        print(gradient_values)
+        #print(np.shape(gradient_values))
         self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
         self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
         temp_cpv -= self.a * (1 - self.b_2**self.step)**0.5/(1 - self.b_1**self.step) \
@@ -189,3 +193,98 @@ class ADAM(Optimiser):
   def _get_param_resolver(self, temp_cpv):
     joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(np.size(self.circuit_param_values))}};
     return cirq.ParamResolver(joined_dict)
+
+#########################################################################
+#                                                                       #
+#           Add experimental different paralelisation options           #
+#                                                                       #
+#########################################################################
+
+  def optimise_joblib(self, n_jobs = 'default'):
+    if n_jobs == 'default':
+        try:
+            _n_jobs = np.divmod(multiprocessing.cpu_count(), ising_obj.simulator_options['t'])[0]
+        except:
+            _n_jobs = multiprocessing.cpu_count()
+
+    #1.make copies of param_values (to not accidentially overwrite)
+    temp_cpv = self.circuit_param_values;
+
+    #Do step until break condition
+    if self.break_cond == 'iterations':
+      if isinstance(self.n_print, (int, np.int_)) and self.n_print > 0:
+        for i in range(self.break_param):
+          #Print out
+          if not i%self.n_print:
+            #Print every n_print's step
+            wf = self.simulator.simulate(self.circuit,\
+            param_resolver = self._get_param_resolver(temp_cpv)).state_vector()
+            print('Steps: {}, Energy: {}'.format(i, self.obj_func(wf)))
+          #End of print out
+          
+          #Make ADAM step
+          temp_cpv = self._ADAM_step_joblib(temp_cpv, _n_jobs)
+      else:
+        for i in range(self.break_param):
+            #Make ADAM step
+            temp_cpv = self._ADAM_step_joblib(temp_cpv, _n_jobs)
+    else:
+      assert False, "Invalid break condition, received: '{}', allowed is \n \
+        'iterations'".format(self.break_cond )
+
+    #Print final result ... to be done
+    wf = self.simulator.simulate(self.circuit,\
+           param_resolver = self._get_param_resolver(temp_cpv)).state_vector()
+    print('Steps: {}, Energy: {}'.format(i+1, self.obj_func(wf)))
+    print('Parameter names:  {}'.format(self.circuit_param))
+    print('Parameter values: {}'.format(temp_cpv))
+
+    #Return/update circuit_param_values
+    self.circuit_param_values = temp_cpv;
+
+  def _ADAM_step_joblib(self, temp_cpv, _n_jobs):
+        '''
+            t ← t + 1
+            g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
+            m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
+            v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
+            \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
+            \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
+            θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+
+            Alternative for last 3 lines:
+            α_t = α · (1 − β^t_2)^0.5/(1 − β^t_1) 
+            θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
+
+        '''
+        self.step += 1
+        gradient_values = np.array(self._get_gradients_joblib(temp_cpv, _n_jobs))
+        #gradient_values = np.array(gradient_values)
+        print(gradient_values)
+        #print(np.shape(gradient_values))
+        self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
+        self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
+        temp_cpv -= self.a * (1 - self.b_2**self.step)**0.5/(1 - self.b_1**self.step) \
+                    *self._m_t/( self._v_t**0.5 + self.eps_2)
+        return temp_cpv
+
+  def _get_gradients_joblib(self, temp_cpv, _n_jobs):
+    n_param = np.size(self.circuit_param_values);
+    joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}};
+    return joblib.Parallel(n_jobs = _n_jobs, backend='threading')\
+            (joblib.delayed(self._get_single_gradient_joblib)(joined_dict.copy(), j) for j in range(n_param))
+
+  def _get_single_gradient_joblib(self, joined_dict, j):
+    #Simulate wavefunction at p_j + eps 
+      joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps;
+      wf1 = self.simulator.simulate(self.circuit, \
+        param_resolver = cirq.ParamResolver(joined_dict)).state_vector()
+
+      #Simulate wavefunction at p_j - eps 
+      joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2*self.eps;
+      wf2 = self.simulator.simulate(self.circuit, \
+        param_resolver = cirq.ParamResolver(joined_dict)).state_vector()
+
+      #Calculate gradient + return
+      return (self.obj_func(wf1)- self.obj_func(wf2))/(2*self.eps);
+      #No need to reset Reset dictionary
