@@ -244,9 +244,22 @@ class Ising(Initialiser):
                 self.circuit_param, 
                 self.circuit_param_values.view(), #view() is ndarray method
             );
+        elif optimiser_name == 'ADAM':
+            #Import ADAM() class:
+            adam = importlib.import_module('fauvqe.optimisers.adam')
+            #Create optimiser object:
+            self.optimiser=adam.ADAM(
+                obj_func, 
+                self.qubits,
+                self.simulator,
+                self.circuit,
+                self.circuit_param, 
+                self.circuit_param_values.view(), 
+            );
+
         else:
             assert False, "Invalid optimiser, received: '{}', allowed is \n \
-                'GradientDescent'".format(optimiser_name)
+                'ADAM' and 'GradientDescent'".format(optimiser_name)
 
     def get_spin_vm(self, wf):
         assert(np.size(self.n) == 2), "Expect 2D qubit grid"
