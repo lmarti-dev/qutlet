@@ -111,11 +111,11 @@ class ADAM(Optimiser):
           #End of print out
           
           #Make ADAM step
-          temp_cpv = _ADAM_step(self, temp_cpv)
+          temp_cpv = self._ADAM_step(temp_cpv)
       else:
         for i in range(self.break_param):
             #Make ADAM step
-            temp_cpv = _ADAM_step(self, temp_cpv)
+            temp_cpv = self._ADAM_step(temp_cpv)
     else:
       assert False, "Invalid break condition, received: '{}', allowed is \n \
         'iterations'".format(self.break_cond )
@@ -130,7 +130,7 @@ class ADAM(Optimiser):
     #Return/update circuit_param_values
     self.circuit_param_values = temp_cpv;
 
-    def _ADAM_step(self, temp_cpv):
+  def _ADAM_step(self, temp_cpv):
         '''
             t ← t + 1
             g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -149,7 +149,7 @@ class ADAM(Optimiser):
         gradient_values = self._get_gradients(temp_cpv)
         self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
         self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
-        temp_cpv -= -self.a * (1 − self.b_2**self.step)**0.5/(1 − self.b_1**self.step) \
+        temp_cpv -= self.a * (1 - self.b_2**self.step)**0.5/(1 - self.b_1**self.step) \
                     *self._m_t/( self._v_t**0.5 + self.eps_2)
         return temp_cpv
 
