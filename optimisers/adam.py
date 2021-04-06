@@ -65,7 +65,7 @@ class ADAM(Optimiser):
     Try to include/implement MPI4py or multiprocessing here!
   """
   def __init__(self, obj_func, qubits,simulator, circuit, circuit_param, circuit_param_values,
-                eps=10**-3,eps_2=10**-8, a = 10**-3,b_1 = 0.9, b_2 = 0.999, break_cond='iterations', break_param=100, n_print=-1):
+                eps=10**-3,eps_2=10**-8, a = 10**-2,b_1 = 0.9, b_2 = 0.999, break_cond='iterations', break_param=100, n_print=-1):
     super().__init__(obj_func, qubits,simulator, circuit, circuit_param, circuit_param_values)
     self.eps=eps;
     self.eps_2=eps_2;
