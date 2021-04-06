@@ -10,8 +10,8 @@ Implementation following arXiv 1412.6980
 
 Algorithm 1: Adam, our proposed algorithm for stochastic optimization. See section 2 for details,
 and for a slightly more efﬁcient (but less clear) order of computation. g 2
-t indicates the elementwise square g t  g t . Good default settings for the tested machine learning problems are α = 0.001,
-β 1 = 0.9, β 2 = 0.999 and eps = 10− 8 . All operations on vectors are element-wise. With β1 and β2 we denote β 1 and β 2 to the power t.
+t indicates the elementwise square g_t  g_t . Good default settings for the tested machine learning problems are α = 0.001,
+β_1 = 0.9, β_2 = 0.999 and eps = 10− 8 . All operations on vectors are element-wise. With β1 and β2 we denote β_1 and β_2 to the power t.
 
 Require: α: Stepsize
 Require: β1 , β2 ∈ [0, 1): Exponential decay rates for the moment estimates
@@ -22,12 +22,12 @@ Require: θ 0 : Initial parameter vector
     t ← 0   (Initialize timestep)
     while θ t not converged do
         t ← t + 1
-        g_t ← ∇ θ f t (θ t − 1 )                    (Get gradients w.r.t. stochastic objective at timestep t)
-        m_t ← β_1 · m_t − 1 + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
-        v_t ← β_2 · v_t − 1 + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
+        g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
+        m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
+        v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
         \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
         \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
-        θ t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+        θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
     end while
 return θ t (Resulting parameters)
 
@@ -54,7 +54,8 @@ class ADAM(Optimiser):
 
     Additional Args (give default values):
       eps         :eps for gradient
-      eta         :velocity of gd method
+      eps_2       : epsilon for adam
+      b_1, b_2    : beta_1, beta_2 for adam
 
       break_cond  :default 'iterations', but also e.g. change in obj_func etc.
       break_param : e.g amount of steps of iteration
@@ -64,13 +65,19 @@ class ADAM(Optimiser):
     Try to include/implement MPI4py or multiprocessing here!
   """
   def __init__(self, obj_func, qubits,simulator, circuit, circuit_param, circuit_param_values,
-                eps=10**-3,eta=10**-2, break_cond='iterations', break_param=100, n_print=-1):
+                eps=10**-3,eps_2=10**-8, a = 10**-3,b_1 = 0.9, b_2 = 0.999, break_cond='iterations', break_param=100, n_print=-1):
     super().__init__(obj_func, qubits,simulator, circuit, circuit_param, circuit_param_values)
     self.eps=eps;
-    self.eta=eta;
+    self.eps_2=eps_2;
+    self.a = a;
+    self.b_1=b_1;
+    self.b_2=b_2;
     self.break_cond=break_cond;
     self.break_param=break_param;
     self.n_print=n_print;
+    self.step = 0;
+    self._v_t = np.zeros(np.shape(circuit_param_values));
+    self._m_t = np.zeros(np.shape(circuit_param_values));
 
   def optimise(self):
     """
@@ -83,7 +90,7 @@ class ADAM(Optimiser):
 
       NEED FOR IMPROVEMENT:
         - allow to update hyperparameters via attribute pass to optimise function
-        - Possibly by ** args or python dictionary
+        - Possibly by ** args or python dictionary???
     """
     #1.make copies of param_values (to not accidentially overwrite)
     temp_cpv = self.circuit_param_values;
@@ -103,20 +110,12 @@ class ADAM(Optimiser):
             #print('Parameter values: {}'.format(temp_cpv))
           #End of print out
           
-          gradient_values = self._get_gradients(temp_cpv)
-          
-          #Make gradient step
-          #Potentially improve this:
-          for j in range(np.size(temp_cpv)):
-            temp_cpv[j] -= self.eta*gradient_values[j]
+          #Make ADAM step
+          temp_cpv = _ADAM_step(self, temp_cpv)
       else:
         for i in range(self.break_param):
-          gradient_values = self._get_gradients(temp_cpv)
-          
-          #Make gradient step
-          #Potentially improve this:
-          for j in range(np.size(temp_cpv)):
-            temp_cpv[j] -= self.eta*gradient_values[j]
+            #Make ADAM step
+            temp_cpv = _ADAM_step(self, temp_cpv)
     else:
       assert False, "Invalid break condition, received: '{}', allowed is \n \
         'iterations'".format(self.break_cond )
@@ -130,6 +129,30 @@ class ADAM(Optimiser):
 
     #Return/update circuit_param_values
     self.circuit_param_values = temp_cpv;
+
+    def _ADAM_step(self, temp_cpv):
+        '''
+            t ← t + 1
+            g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
+            m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
+            v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
+            \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
+            \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
+            θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+
+            Alternative for last 3 lines:
+            α_t = α · (1 − β^t_2)^0.5/(1 − β^t_1) 
+            θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
+
+        '''
+        self.step += 1
+        gradient_values = self._get_gradients(temp_cpv)
+        self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
+        self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
+        temp_cpv -= -self.a * (1 − self.b_2**self.step)**0.5/(1 − self.b_1**self.step) \
+                    *self._m_t/( self._v_t**0.5 + self.eps_2)
+        return temp_cpv
+
 
   def _get_gradients(self, temp_cpv):
     n_param = np.size(self.circuit_param_values);
