@@ -12,8 +12,8 @@ import numpy as np
 import cirq 
 
 #internal imports
-from fauvqe.isings.ising import Ising
-from fauvqe.tests.ising_tests import IsingTester
+from fauvqe import Ising
+from ..tests.ising_tests import IsingTester
 
 @pytest.mark.parametrize(
     'qubittype, n, j_v, j_h, h, test_gate, E_exp, basis', 

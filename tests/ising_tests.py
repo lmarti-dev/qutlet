@@ -3,7 +3,7 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe.isings.ising import Ising
+from fauvqe import Ising
 
 class IsingTester:
     def __init__(self, atol):

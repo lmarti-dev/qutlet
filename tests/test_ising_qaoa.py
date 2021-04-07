@@ -6,7 +6,7 @@ import sympy
 
 #internal imports
 from fauvqe import Ising
-from fauvqe.tests.ising_tests import IsingTester
+from ..tests.ising_tests import IsingTester
 
 """
 What to test:

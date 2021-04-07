@@ -18,8 +18,8 @@ import numpy as np
 import cirq 
 
 #internal imports
-from fauvqe.isings.ising import Ising
-from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe import Ising
+from fauvqe.optimisers import Optimiser
 
 def test_set_optimiser():
     ising_obj = Ising('GridQubit', [1, 2], np.ones((0,2)), np.ones((1,1)), np.ones((1,2)))

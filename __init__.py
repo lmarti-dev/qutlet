@@ -7,17 +7,15 @@
 #imports within package
 
 # subpackages
-from fauvqe import (
-    isings,
-)
+from . import isings
 
 # Flattened module
-from fauvqe.initialisers import (
+from .initialisers import (
     Initialiser,
 )
 
 # Flattened sub-modules
-from fauvqe.isings import (
+from .isings import (
     Ising,
 )
 
