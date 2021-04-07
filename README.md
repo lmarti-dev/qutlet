@@ -2,6 +2,52 @@
 
 Cirq-based custom VQE python package
 
+## Installation
+
+Both the production and the development require python3.6+, pip and the requirements as defined in `requirements.txt`.
+To install those, run
+
+```bash
+pip install -r requirements.txt
+```
+
+### Production
+
+TODO: Expose setup.py to install this as a pip package.
+
+### Development
+
+In addition to those defined in `requirements.txt`, the development setup requires more dependencies.
+To install those, run
+
+```bash
+pip install --upgrade \
+  black \
+  pre-commit
+```
+
+## Development guide
+
+### Linting
+
+This module uses [https://pypi.org/project/black/](black code style).
+It is automatically run before a commit, but can be manually invoked by running `black` in the project root.
+Its configuration can be found in the `pyproject.toml` file under `[tools.black]`.
+
+### git hooks
+
+There are a few git hooks which are run before committing.
+Those hooks are handled by [https://pre-commit.com/](pre-commit).
+Currently, they include:
+
+- black (code style linting)
+
+To install more pre-commit hooks, modify `.pre-commit-config.yaml` and run `pre-commit install`.
+
+### Continuous integration (CI)
+
+CI is done with GitHub actions.
+
 ## Design ideas
 
 ### General ideas

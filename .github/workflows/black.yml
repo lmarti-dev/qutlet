@@ -1,0 +1,11 @@
+name: Black-Lint
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - uses: psf/black@stable

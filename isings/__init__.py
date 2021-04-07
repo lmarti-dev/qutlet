@@ -1,4 +1,4 @@
-#Import classes of sub-module
+# Import classes of sub-module
 
 from .ising import (
     Ising,
