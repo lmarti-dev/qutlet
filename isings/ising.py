@@ -3,6 +3,7 @@
 import numpy as np
 import cirq
 import importlib
+import timeit
 
 # import all parent modules
 from fauvqe.initialisers import Initialiser
@@ -86,6 +87,8 @@ class Ising(Initialiser):
         one of the qubits times the identites on the other qubits. The
         (i*n_cols + j)th row corresponds to qubit (i,j).
         '''
+        t0 =  timeit.default_timer()
+
         n_sites = self.n[0]*self.n[1]
         assert(2**n_sites == np.size(wf)),\
             "Error 2**n_sites != np.size(wf)"
@@ -151,16 +154,23 @@ class Ising(Initialiser):
         
             # This might be WRONG!!!!
             #print("E(hX) = {}".format(sum(np.abs(wf_x)**2 * self.h.reshape(n_sites).dot(Z)) ))
+            t1 =  timeit.default_timer()
+            #print("ising.energy:\t {} s".format(t1-t0))
             return np.sum(np.abs(wf)**2 * (-ZZ_filter) - np.abs(wf_x)**2 * self.h.reshape(n_sites).dot(Z) ) / n_sites
 
         elif field == 'Z':
             # Expectation value of the energy divided by the number of sites
             #energy_operator = -ZZ_filter + h.reshape(n_sites).dot(Z)
             #test show that sign in front of h needs to be +1, but not so obvious yet
+            t1 =  timeit.default_timer()
+            #print("ising.energy:\t {} s".format(t1-t0))
             return np.sum(np.abs(wf)**2 * (-ZZ_filter + self.h.reshape(n_sites).dot(Z) )) / n_sites
         else:
             assert False, "Error in Ising.energy(): invalid external field basis, \n received: '{}', allowed is \
                 'X'(default) and 'Z'".format(field)
+
+        
+
 
     def set_circuit(self, qalgorithm, param, append = False):
         """
