@@ -108,8 +108,6 @@ class ADAM(Optimiser):
             param_resolver = self._get_param_resolver(temp_cpv)).state_vector()
         
             print('Steps: {}, Energy: {}'.format(i, self.obj_func(wf)))
-            #print('Parameter names:  {}'.format(self.circuit_param))
-            #print('Parameter values: {}'.format(temp_cpv))
           #End of print out
           
           #Make ADAM step
@@ -201,10 +199,10 @@ class ADAM(Optimiser):
   def optimise_joblib(self, n_jobs = 'default'):
     if n_jobs == 'default':
         try:
-            _n_jobs = int(np.divmod(multiprocessing.cpu_count()/2, self.simulator.qsim_options['t'])[0])
+            _n_jobs = max(int(np.divmod(multiprocessing.cpu_count()/2, self.simulator.qsim_options['t'])[0]),1)
             print("try case")
         except:
-            _n_jobs = int(multiprocessing.cpu_count()/2)
+            _n_jobs = max(int(multiprocessing.cpu_count()/2),1)
     print("Number of joblib jobs: {}".format(_n_jobs))
 
     #1.make copies of param_values (to not accidentially overwrite)
