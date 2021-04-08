@@ -35,14 +35,21 @@ def test_set_circuit():
     assert(ising_obj.p == 1)
     assert(ising_obj.circuit_param == [sympy.Symbol("b0"), sympy.Symbol("g0")])
     #Basic test whether circuit gives correct result
-    obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0)
+    temp_cpv = np.array((1, 0))
+    joined_dict = {**{str(ising_obj.circuit_param[i]): temp_cpv[i] for i in range(np.size(ising_obj.circuit_param_values))}};
+    obj_param_resolver = cirq.ParamResolver(joined_dict)
+
     wf_x = ising_obj.simulator.simulate(ising_obj.circuit, \
         param_resolver = obj_param_resolver).state_vector()
     assert( np.allclose(
         wf_x, 
         np.array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]), 
         rtol=0, atol=1e-14))
-    obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0.5)
+    
+    temp_cpv = np.array((1, 0.5))
+    joined_dict = {**{str(ising_obj.circuit_param[i]): temp_cpv[i] for i in range(np.size(ising_obj.circuit_param_values))}};
+    obj_param_resolver = cirq.ParamResolver(joined_dict)
+
     wf_z = ising_obj.simulator.simulate(ising_obj.circuit, \
         param_resolver = obj_param_resolver).state_vector()
     assert( np.allclose(
@@ -121,17 +128,6 @@ def test__UC_layer():
             [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]]  
         ), 
         rtol=0, atol=1e-14))
-
-def test__get_param_resolver():
-    self = Ising('GridQubit', [1, 2], np.ones((0,2)), np.ones((1,1)), np.ones((1,2)))
-    #test for p = 1
-    obj_param_resolver = self.qaoa._get_param_resolver(self, 0.1, 0.2)
-    assert( obj_param_resolver == cirq.ParamResolver({'b0': 0.1, 'g0': 0.2}))
-    #test for p = 2
-    self.p = 2
-    obj_param_resolver = self.qaoa._get_param_resolver(self, [0.1, 0.3], [0.2, 0.4])
-    assert( obj_param_resolver == cirq.ParamResolver({'b0': 0.1, 'g0': 0.2, 'b1': 0.3, 'g1': 0.4}))
-
 #############################################################
 #                     Test errors                           #
 #############################################################
@@ -166,16 +162,6 @@ def test_set_gamma_values_errors():
     self.circuit_param_values = -1
     self.qaoa._set_gamma_values(self, 1)
     assert((self.circuit_param_values == np.array((0,1))).all())
-
-def test__get_param_resolver_errors():
-    self = Ising('GridQubit', [1, 2], np.ones((0,2)), np.ones((1,1)), np.ones((1,2)))
-    #test for p = 1
-    with pytest.raises(AssertionError):
-        obj_param_resolver = self.qaoa._get_param_resolver(self, 0.1, [0.2, 0.3])
-
-    self.p = 2
-    with pytest.raises(AssertionError):
-        obj_param_resolver = self.qaoa._get_param_resolver(self, 0.1, 0.2)
 
 # to check whether circuits are set correctly, simulate them (2 qubits) and compare unitrary
 #wf1 = self.simulator.simulate(self.circuit, \
