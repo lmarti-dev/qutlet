@@ -149,8 +149,6 @@ class ADAM(Optimiser):
         '''
         self.step += 1
         gradient_values = self._get_gradients(temp_cpv)
-        print(gradient_values)
-        #print(np.shape(gradient_values))
         self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
         self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
         temp_cpv -= self.a * (1 - self.b_2**self.step)**0.5/(1 - self.b_1**self.step) \
@@ -203,9 +201,11 @@ class ADAM(Optimiser):
   def optimise_joblib(self, n_jobs = 'default'):
     if n_jobs == 'default':
         try:
-            _n_jobs = np.divmod(multiprocessing.cpu_count(), ising_obj.simulator_options['t'])[0]
+            _n_jobs = np.divmod(multiprocessing.cpu_count(), self.simulator.qsim_options['t'])[0]
+            print("try case")
         except:
             _n_jobs = multiprocessing.cpu_count()
+    print("Number of joblib jobs: {}".format(_n_jobs))
 
     #1.make copies of param_values (to not accidentially overwrite)
     temp_cpv = self.circuit_param_values;
@@ -259,9 +259,6 @@ class ADAM(Optimiser):
         '''
         self.step += 1
         gradient_values = np.array(self._get_gradients_joblib(temp_cpv, _n_jobs))
-        #gradient_values = np.array(gradient_values)
-        print(gradient_values)
-        #print(np.shape(gradient_values))
         self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
         self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
         temp_cpv -= self.a * (1 - self.b_2**self.step)**0.5/(1 - self.b_1**self.step) \
@@ -271,6 +268,9 @@ class ADAM(Optimiser):
   def _get_gradients_joblib(self, temp_cpv, _n_jobs):
     n_param = np.size(self.circuit_param_values);
     joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}};
+    #backend options: -'loky'               seems to be always the slowest
+    #                   'multiprocessing'   crashes where both other options do not
+    #                   'threading'         supposedly best option
     return joblib.Parallel(n_jobs = _n_jobs, backend='threading')\
             (joblib.delayed(self._get_single_gradient_joblib)(joined_dict.copy(), j) for j in range(n_param))
 
@@ -287,4 +287,4 @@ class ADAM(Optimiser):
 
       #Calculate gradient + return
       return (self.obj_func(wf1)- self.obj_func(wf2))/(2*self.eps);
-      #No need to reset Reset dictionary
+      #No need to reset Reset dictionary due to copy
