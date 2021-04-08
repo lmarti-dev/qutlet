@@ -137,25 +137,3 @@ def _UC_layer(self, gamma):
         yield cirq.ZZ(self.qubits[i][j], self.qubits[i][j+1])**(gamma*self.j_h[i,j])
       
       yield cirq.Z(self.qubits[i][j])**(gamma*self.h[i,j])
-
-def _get_param_resolver(self, beta_values, gamma_values):
-  try:
-    self.p == self.p
-  except AttributeError:
-    #set p to length beta_values if it does not exist
-    self.p = np.size(beta_values)
-  assert(self.p == np.size(beta_values)), \
-      "Error: self.p = np.size(beta_values) required "
-  assert(self.p == np.size(gamma_values)), \
-    "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required "
-  # order does not mater for python dictonary
-  if self.p == 1:
-    joined_dict = {**{"b0": beta_values},**{"g0": gamma_values}}
-    # This is the same as:
-    #joined_dict = {**{"b" + str(i): beta_values for i in range(self.p)},\
-    #              **{"g" + str(i): gamma_values for i in range(self.p)}}
-  else:
-    joined_dict = {**{"b" + str(i): beta_values[i] for i in range(self.p)},\
-                  **{"g" + str(i): gamma_values[i] for i in range(self.p)}}
-  #Need return here, as yield does not work.
-  return cirq.ParamResolver(joined_dict)
