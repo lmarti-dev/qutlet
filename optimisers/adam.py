@@ -201,10 +201,10 @@ class ADAM(Optimiser):
   def optimise_joblib(self, n_jobs = 'default'):
     if n_jobs == 'default':
         try:
-            _n_jobs = np.divmod(multiprocessing.cpu_count(), self.simulator.qsim_options['t'])[0]
+            _n_jobs = np.divmod(multiprocessing.cpu_count()/2, self.simulator.qsim_options['t'])[0]
             print("try case")
         except:
-            _n_jobs = multiprocessing.cpu_count()
+            _n_jobs = multiprocessing.cpu_count()/2
     print("Number of joblib jobs: {}".format(_n_jobs))
 
     #1.make copies of param_values (to not accidentially overwrite)
