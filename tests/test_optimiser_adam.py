@@ -77,7 +77,7 @@ def test_optimise_joblib():
     #Result smaller than -0.5 up to eta
 
 @pytest.mark.higheffort
-def test_optimise_print():
+def test_optimise_joblib_print():
     ising_obj = Ising('GridQubit', [2, 2], 0.1*np.ones((1,2)), 0.5*np.ones((2,1)), 0.2*np.ones((2,2)))
     ising_obj.set_circuit('qaoa', 2)
     ising_obj.set_circuit_param_values(0.3*np.ones(np.size(ising_obj.circuit_param)) )
