@@ -209,11 +209,11 @@ class ADAM(Optimiser):
   def optimise_joblib(self, n_jobs = 'default'):
     if n_jobs == 'default':
         try:
-            _n_jobs = max(int(np.divmod(multiprocessing.cpu_count()/2, self.simulator.qsim_options['t'])[0]),1)
+            n_jobs = max(int(np.divmod(multiprocessing.cpu_count()/2, self.simulator.qsim_options['t'])[0]),1)
             print("try case")
         except:
-            _n_jobs = max(int(multiprocessing.cpu_count()/2),1)
-    print("Number of joblib jobs: {}".format(_n_jobs))
+            n_jobs = max(int(multiprocessing.cpu_count()/2),1)
+    print("Number of joblib jobs: {}".format(n_jobs))
 
     #1.make copies of param_values (to not accidentially overwrite)
     temp_cpv = self.circuit_param_values;
@@ -231,11 +231,11 @@ class ADAM(Optimiser):
           #End of print out
           
           #Make ADAM step
-          temp_cpv = self._ADAM_step_joblib(temp_cpv, _n_jobs)
+          temp_cpv = self._ADAM_step_joblib(temp_cpv, n_jobs)
       else:
         for i in range(self.break_param):
             #Make ADAM step
-            temp_cpv = self._ADAM_step_joblib(temp_cpv, _n_jobs)
+            temp_cpv = self._ADAM_step_joblib(temp_cpv, n_jobs)
     else:
       assert False, "Invalid break condition, received: '{}', allowed is \n \
         'iterations'".format(self.break_cond )
