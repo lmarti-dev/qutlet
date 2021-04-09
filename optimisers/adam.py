@@ -268,7 +268,8 @@ class ADAM(Optimiser):
         t0 =  timeit.default_timer()
         self.step += 1
         t0_1 =  timeit.default_timer()
-        gradient_values = np.array(self._get_gradients_joblib(temp_cpv, _n_jobs))
+        #gradient_values = np.array(self._get_gradients_joblib(temp_cpv, _n_jobs))
+        gradient_values = np.array(self._get_gradients_joblib2(temp_cpv, _n_jobs))
         t0_2 =  timeit.default_timer()
         self._m_t = self.b_1 * self._m_t + (1-self.b_1)*gradient_values
         self._v_t = self.b_2 * self._v_t + (1-self.b_2)*gradient_values**2
@@ -308,3 +309,38 @@ class ADAM(Optimiser):
       #Calculate gradient + return
       return (self.obj_func(wf1)- self.obj_func(wf2))/(2*self.eps);
       #No need to reset Reset dictionary due to copy
+
+  def _get_gradients_joblib2(self, temp_cpv, _n_jobs):
+    n_param = np.size(self.circuit_param_values);
+    joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}};
+    #backend options: -'loky'               seems to be always the slowest
+    #                   'multiprocessing'   crashes where both other options do not
+    #                   'threading'         supposedly best option, still so far slower than 
+    #                                       seqquential _get_gradients()
+    #1. Get single energies via joblib.Parallel
+    # Format E_1 +eps, E_1 - eps
+    # Potential issue: Need 2*n_param copies of joined_dict
+    _energies = joblib.Parallel(n_jobs = _n_jobs, backend='loky')\
+            (joblib.delayed(self._get_single_energy_joblib)(joined_dict.copy(), j) for j in range(2*n_param))
+    #2. Return gradiens
+    #Make np array?
+    t0 =  timeit.default_timer()
+    _energies = np.array(_energies).reshape((n_param,2))
+    gradients_values = np.matmul(_energies,np.array((1,-1)))/(2*self.eps)
+    t1 =  timeit.default_timer()
+    print("adam calc gradients from energies:\t {} s".format(t1-t0))
+    return gradients_values
+
+  def _get_single_energy_joblib(self, joined_dict, j):
+    #Simulate wavefunction at p_j +/- eps 
+    #j even: +  j odd: -
+      t0 =  timeit.default_timer()
+
+      #Alternative: _str_cp = str(self.circuit_param[np.divmod(j,2)[0]])
+      joined_dict[str(self.circuit_param[np.divmod(j,2)[0]])] = joined_dict[str(self.circuit_param[np.divmod(j,2)[0]])] + 2*(0.5-np.mod(j,2))*self.eps;
+      wf = self.simulator.simulate(self.circuit, \
+        param_resolver = cirq.ParamResolver(joined_dict)).state_vector()
+
+      t1 =  timeit.default_timer()
+      print("adam._get_single_energy_joblib:\t {} s".format(t1-t0))
+      return self.obj_func(wf)
