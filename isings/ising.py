@@ -251,11 +251,24 @@ class Ising(Initialiser):
                 self.circuit_param,
                 self.circuit_param_values.view(),  # view() is ndarray method
             )
+        elif optimiser_name == "ADAM":
+            # Import ADAM() class:
+            adam = importlib.import_module("fauvqe.optimisers.adam")
+            # Create optimiser object:
+            self.optimiser = adam.ADAM(
+                obj_func,
+                self.qubits,
+                self.simulator,
+                self.circuit,
+                self.circuit_param,
+                self.circuit_param_values.view(),
+            )
+
         else:
             assert (
                 False
             ), "Invalid optimiser, received: '{}', allowed is \n \
-                'GradientDescent'".format(
+                'ADAM' and 'GradientDescent'".format(
                 optimiser_name
             )
 
@@ -368,18 +381,6 @@ class Ising(Initialiser):
         # Does not work for 0
         # _j = list(filter(None, (self.j_v[0], self.j_h[0])))
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
-
-
-# Add analytic energy function
-# Add tests to test it
-# Calculated by Pfeuty
-#
-# assert: 1D chain by either n 1D or product n vector = max n vector
-#        J all same value
-#        h all same value
-#
-#        Calc \Lambda_k
-#        return E/N = - h/2 sum \Lambda_k
 
 
 # --End of Class ising2d
