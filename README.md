@@ -30,14 +30,14 @@ pip install --upgrade \
 
 ### Linting
 
-This module uses [https://pypi.org/project/black/](black code style).
+This module uses [black code style](https://pypi.org/project/black/).
 It is automatically run before a commit, but can be manually invoked by running `black` in the project root.
 Its configuration can be found in the `pyproject.toml` file under `[tools.black]`.
 
 ### git hooks
 
 There are a few git hooks which are run before committing.
-Those hooks are handled by [https://pre-commit.com/](pre-commit).
+Those hooks are handled by [pre-commit](https://pre-commit.com/).
 Currently, they include:
 
 - black (code style linting)
