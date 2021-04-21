@@ -1,5 +1,5 @@
-#Import classes of sub-module
+# Import classes of sub-module
 
-from fauvqe.isings.ising import (
+from .ising import (
     Ising,
 )

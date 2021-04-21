@@ -1,27 +1,25 @@
-#import required liberies:
-#Possibly bad style to import external libaries here...
-#..level for the moment until better solution
-#.. import global to use them also in submodule
-#https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
+# import required liberies:
+# Possibly bad style to import external libaries here...
+# ..level for the moment until better solution
+# .. import global to use them also in submodule
+# https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
 
-#imports within package
+# imports within package
 
 # subpackages
-from fauvqe import (
-    isings,
-)
+from . import isings
 
 # Flattened module
-from fauvqe.initialisers import (
+from .initialisers import (
     Initialiser,
 )
 
 # Flattened sub-modules
-from fauvqe.isings import (
+from .isings import (
     Ising,
 )
 
-'''
+"""
 All within fauvqe imported libaries:
 #Standard libaries
 import random       # obvious
@@ -38,4 +36,4 @@ from pprint import pprint
 import cirq
 import qsimcirq
 from cirqqulacs import QulacsSimulator
-'''
+"""

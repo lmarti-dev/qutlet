@@ -1,8 +1,6 @@
-#Import classes of sub-module
+# Import classes of sub-module
 
-from fauvqe.optimisers.optimiser import (
+from .optimiser import (
     Optimiser,
 )
-from fauvqe.optimisers.gradient_descent import (
-    GradientDescent
-)
+from .gradient_descent import GradientDescent
