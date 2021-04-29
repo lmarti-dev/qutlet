@@ -10,7 +10,7 @@
 from . import isings
 
 # Flattened module
-from .initialisers import (
+from .isings.initialisers import (
     Initialiser,
 )
 
