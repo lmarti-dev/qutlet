@@ -41,6 +41,7 @@ import sympy
 
 # internal import
 from fauvqe.optimisers import Optimiser
+from fauvqe.objectives import Objective
 
 
 class ADAM(Optimiser):
@@ -69,7 +70,7 @@ class ADAM(Optimiser):
 
     def __init__(
         self,
-        obj_func,
+        objective: Objective,
         qubits,
         simulator,
         circuit,
@@ -84,7 +85,7 @@ class ADAM(Optimiser):
         break_param=100,
         n_print=-1,
     ):
-        super().__init__(obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values)
+        super().__init__(objective, qubits, simulator, circuit, circuit_param, circuit_param_values)
         self.eps = eps
         self.eps_2 = eps_2
         self.a = a
@@ -124,7 +125,7 @@ class ADAM(Optimiser):
                             self.circuit, param_resolver=self._get_param_resolver(temp_cpv)
                         ).state_vector()
 
-                        print("Steps: {}, Energy: {}".format(i, self.obj_func(wf)))
+                        print("Steps: {}, Objective: {}".format(i, self.objective.evaluate(wf)))
                         # print('Parameter names:  {}'.format(self.circuit_param))
                         # print('Parameter values: {}'.format(temp_cpv))
                     # End of print out
@@ -145,7 +146,7 @@ class ADAM(Optimiser):
 
         # Print final result ... to be done
         wf = self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
-        print("Steps: {}, Energy: {}".format(i + 1, self.obj_func(wf)))
+        print("Steps: {}, Energy: {}".format(i + 1, self.objective.evaluate(wf)))
         print("Parameter names:  {}".format(self.circuit_param))
         print("Parameter values: {}".format(temp_cpv))
 
@@ -202,7 +203,7 @@ class ADAM(Optimiser):
             wf2 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
 
             # Calculate gradient
-            gradient_values[j] = (self.obj_func(wf1) - self.obj_func(wf2)) / (2 * self.eps)
+            gradient_values[j] = (self.objective.evaluate(wf1) - self.objective.evaluate(wf2)) / (2 * self.eps)
 
             # Reset dictionary
             joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps

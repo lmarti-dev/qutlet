@@ -1,13 +1,11 @@
-# %%
-# external import
 import numpy as np
 import cirq
 import importlib
 
 # import all parent modules
-from fauvqe.initialisers import Initialiser
+from .initialisers import Initialiser
+from fauvqe.objectives import Objective, ExpectationValue
 
-# %%
 class Ising(Initialiser):
     """
     2D Ising class inherits initialiser
@@ -66,7 +64,7 @@ class Ising(Initialiser):
         assert (h.shape == self.n).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
 
-    def energy(self, wf, field="X"):
+    def energy(self, field="X"):
         # maybe fuse with energy_JZZ_hZ partially somehow
         """
         Energy for JZZ_hX Transverse field Ising model (TFIM) or JZZ-HZ Ising model
@@ -86,13 +84,14 @@ class Ising(Initialiser):
         (i*n_cols + j)th row corresponds to qubit (i,j).
         """
         n_sites = self.n[0] * self.n[1]
-        assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
+        # assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
 
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
 
         # Create the operator corresponding to the interaction energy summed over all
         # nearest-neighbor pairs of qubits
-        ZZ_filter = np.zeros_like(wf, dtype=float)
+        # print(self.n, n_sites) # Todo: fix this:
+        ZZ_filter = np.zeros(2**(n_sites), dtype=np.float64) # np.zeros_like(wf, dtype=np.float64) 
 
         # Looping for soo many unnecessary ifs is bad.....
         # NEED FOR IMPROVEMENT - > avoid blank python for loops!!
@@ -143,17 +142,17 @@ class Ising(Initialiser):
                 for qubit in row:
                     temp_circuit.append(cirq.H(qubit))
 
-            wf_x = self.simulator.simulate(temp_circuit, initial_state=wf).state_vector()
-
+            # BROKEN
+            #  wf_x = self.simulator.simulate(temp_circuit, initial_state=wf).state_vector()
             # This might be WRONG!!!!
             # print("E(hX) = {}".format(sum(np.abs(wf_x)**2 * self.h.reshape(n_sites).dot(Z)) ))
-            return np.sum(np.abs(wf) ** 2 * (-ZZ_filter) - np.abs(wf_x) ** 2 * self.h.reshape(n_sites).dot(Z)) / n_sites
+            # return np.sum(np.abs(wf) ** 2 * (-ZZ_filter) - np.abs(wf_x) ** 2 * self.h.reshape(n_sites).dot(Z)) / n_sites
 
         elif field == "Z":
             # Expectation value of the energy divided by the number of sites
             # energy_operator = -ZZ_filter + h.reshape(n_sites).dot(Z)
             # test show that sign in front of h needs to be +1, but not so obvious yet
-            return np.sum(np.abs(wf) ** 2 * (-ZZ_filter + self.h.reshape(n_sites).dot(Z))) / n_sites
+            return (-ZZ_filter + self.h.reshape(n_sites).dot(Z))
         else:
             assert (
                 False
@@ -214,7 +213,7 @@ class Ising(Initialiser):
         )
         self.circuit_param_values = new_values
 
-    def set_optimiser(self, optimiser_name, obj_func="X"):
+    def set_optimiser(self, optimiser_name, objective: Objective = ExpectationValue(), field='Z'):
         """
         This function acts as an interface to the general optimiser structure
         Args:
@@ -225,15 +224,9 @@ class Ising(Initialiser):
                 MISSING: give optimisers energy and change default field to 'Z'
                 https://stackoverflow.com/questions/38503937/parsing-default-arguments-in-functions-without-executing-the-them
         """
-        # Note obj_func = self.energy does not work as default!
-        # NEED FOR IMPROVEMENT:
-        if obj_func == "X":
-            obj_func = self.energy
-            # print("X case")
-        elif obj_func == "Z":
-            # Maybe make this with field 'X' to default
-            obj_func = lambda input_wf: self.energy(input_wf, field="Z")
-            # print("Z case")
+        energies = self.energy(field=field)
+
+        objective.initialise(energies)
 
         if optimiser_name == "GradientDescent":
             # Import GradientDescent() class:
@@ -241,7 +234,7 @@ class Ising(Initialiser):
             # WANT to pass all via view
             # Maybe can do also somehow via cython and pointer??
             self.optimiser = gd.GradientDescent(
-                obj_func,  # note that this is a function + need to make more general \
+                objective,
                 # Changed this from JZZ_hZ to JZZ_hX and no test failed
                 # A) Tha's bad, B) needs to be more general.
                 # also want to give attributes within energy function
@@ -256,7 +249,7 @@ class Ising(Initialiser):
             adam = importlib.import_module("fauvqe.optimisers.adam")
             # Create optimiser object:
             self.optimiser = adam.ADAM(
-                obj_func,
+                objective,
                 self.qubits,
                 self.simulator,
                 self.circuit,
@@ -381,6 +374,3 @@ class Ising(Initialiser):
         # Does not work for 0
         # _j = list(filter(None, (self.j_v[0], self.j_h[0])))
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
-
-
-# --End of Class ising2d

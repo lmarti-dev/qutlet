@@ -18,12 +18,9 @@ What does a optimiser need for that?:
     -simulator to simulate wavefunction
 
 """
-# external import
 import numpy as np
 
-# import cirq
-# import importlib
-
+from fauvqe.objectives import Objective
 
 class Optimiser:
     """
@@ -40,10 +37,10 @@ class Optimiser:
     These e.g. exist in Ising() as ising_obj.qubits etc..., but copy/view seems most reasonable
     """
 
-    def __init__(self, obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values):
+    def __init__(self, objective: Objective, qubits, simulator, circuit, circuit_param, circuit_param_values):
         # Possibly add some asserts here to ensure that handover attributes/functions
         # have the correct format
-        self.obj_func = obj_func
+        self.objective = objective
         self.circuit = circuit
         self.qubits = qubits
         self.simulator = simulator
