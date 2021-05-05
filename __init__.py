@@ -7,7 +7,7 @@
 # imports within package
 
 # subpackages
-from . import isings
+from . import isings, objectives
 
 # Flattened module
 from .isings.initialisers import (

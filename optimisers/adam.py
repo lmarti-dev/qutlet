@@ -41,6 +41,7 @@ import sympy
 
 # internal import
 from fauvqe.optimisers import Optimiser, OptimisationStep, OptimisationResult
+from fauvqe.objectives import Objective
 
 
 class ADAM(Optimiser):
@@ -69,7 +70,7 @@ class ADAM(Optimiser):
 
     def __init__(
         self,
-        obj_func,
+        objective: Objective,
         qubits,
         simulator,
         circuit,
@@ -84,7 +85,9 @@ class ADAM(Optimiser):
         break_param=100,
         n_print=-1,
     ):
-        super().__init__(obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values)
+        super().__init__(
+            objective, qubits, simulator, circuit, circuit_param, circuit_param_values
+        )
         self.eps = eps
         self.eps_2 = eps_2
         self.a = a
@@ -110,10 +113,8 @@ class ADAM(Optimiser):
           - allow to update hyperparameters via attribute pass to optimise function
           - Possibly by ** args or python dictionary???
         """
-        def p(params: np.ndarray) -> np.float64:
-            return self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(params)).state_vector()
 
-        res = OptimisationResult(self.break_cond, self.circuit_param_values, self.obj_func, p)
+        res = OptimisationResult(self)
         # 1.make copies of param_values (to not accidentially overwrite)
         temp_cpv = self.circuit_param_values
 
@@ -172,28 +173,47 @@ class ADAM(Optimiser):
         # self.circuit_param <- need their name list
         #     create name array?
         # Use temp_cpv not self.circuit_param_values here
-        joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}}
+        joined_dict = {
+            **{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}
+        }
 
         # Calculate the gradients
         # Use MPi4Py/Multiporcessing HERE!!
         for j in range(n_param):
             # Simulate wavefunction at p_j + eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
-            wf1 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] + self.eps
+            )
+            wf1 = self.simulator.simulate(
+                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
+            ).state_vector()
 
             # Simulate wavefunction at p_j - eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self.eps
-            wf2 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] - 2 * self.eps
+            )
+            wf2 = self.simulator.simulate(
+                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
+            ).state_vector()
 
             # Calculate gradient
-            gradient_values[j] = (self.obj_func(wf1) - self.obj_func(wf2)) / (2 * self.eps)
+            gradient_values[j] = (
+                self.objective.evaluate(wf1) - self.objective.evaluate(wf2)
+            ) / (2 * self.eps)
 
             # Reset dictionary
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] + self.eps
+            )
 
         # print("GradientDescent._get_gradients() does not work/is not completed")
         return gradient_values
 
     def _get_param_resolver(self, temp_cpv):
-        joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(np.size(self.circuit_param_values))}}
+        joined_dict = {
+            **{
+                str(self.circuit_param[i]): temp_cpv[i]
+                for i in range(np.size(self.circuit_param_values))
+            }
+        }
         return cirq.ParamResolver(joined_dict)

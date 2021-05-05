@@ -18,8 +18,6 @@ import numpy as np
 import cirq
 import qsimcirq
 
-# %%
-# The actual class definition
 class Initialiser:
     """
     The idea is to write a common VQE framework to which all
@@ -49,7 +47,6 @@ class Initialiser:
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
-
         # cannot use switcher as initialisation parameters 'n' are of different type
         if qubittype == "NamedQubit":
             assert all(
@@ -169,16 +166,3 @@ class Initialiser:
             self.simulator = cirq.Simulator()
         else:
             assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(simulator_name)
-
-
-############################
-# Add simulate method ??
-######################
-# --End of Class Initialiser
-
-# useful: __update = update   # private copy of original update() method
-
-# potentially add general optimiser here via self.circuit_param
-# but really want to call it via fauvqe.optimiser.optimiser_name(parameters)
-# e.g. fauvqe.optimiser.gradient_descent(parameters)
-# %%
