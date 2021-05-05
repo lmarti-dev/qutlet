@@ -1,5 +1,9 @@
-from .objective import Objective
 import numpy as np
+from typing import Literal
+
+from .objective import Objective
+from ..isings.initialisers import Initialiser
+
 
 class cVaR(Objective):
     def __init__(self, alpha: float):
@@ -11,16 +15,30 @@ class cVaR(Objective):
 
         self.__alpha = alpha
         self.__mask = None
+        self.__energies: np.ndarray = None
 
-    def initialise(self, energies: np.ndarray) -> None:
+    def initialise(self, initialiser: Initialiser, field: Literal["Z", "X"]) -> None:
+        self.__initialiser = initialiser
+
+        assert field in [
+            "Z",
+            "X",
+        ], "Bad input 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
+            field
+        )
+        self.__field = field
+
+        energies = self.__initialiser.energy()
+        energies = -energies[0] + energies[1]
         self.__mask = np.argsort(energies)
 
         self.__energies = energies[self.__mask]
 
     def evaluate(self, wavefunction: np.ndarray) -> np.float64:
+
         # Wavefunction is expected to be normalized
         # Reorder wavefunction with stored mask
-        probabilities = np.abs(wavefunction)**2
+        probabilities = np.abs(wavefunction) ** 2
         probabilities = probabilities[self.__mask]
 
         # Only use until total probability adds up to alpha
@@ -37,5 +55,9 @@ class cVaR(Objective):
         # sum of probability times value over sum of probabilities
         cvar = np.sum(energies_ * probabilities_) / np.sum(probabilities_)
 
-        return cvar
+        print(self.__initialiser.qubits, len(self.__initialiser.qubits))
 
+        return cvar / len(self.__initialiser.qubits)
+
+    def __repr__(self) -> str:
+        return "<cVaR field={} alpha={}>".format(self.__field, self.__alpha)

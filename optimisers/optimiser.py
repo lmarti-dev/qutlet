@@ -19,10 +19,12 @@ What does a optimiser need for that?:
 
 """
 import numpy as np
+from abc import ABC, abstractmethod
 
 from fauvqe.objectives import Objective
 
-class Optimiser:
+
+class Optimiser(ABC):
     """
     Args:
         obj_func()          :   objectiv function f(x)/energy
@@ -37,7 +39,15 @@ class Optimiser:
     These e.g. exist in Ising() as ising_obj.qubits etc..., but copy/view seems most reasonable
     """
 
-    def __init__(self, objective: Objective, qubits, simulator, circuit, circuit_param, circuit_param_values):
+    def __init__(
+        self,
+        objective: Objective,
+        qubits,
+        simulator,
+        circuit,
+        circuit_param,
+        circuit_param_values,
+    ):
         # Possibly add some asserts here to ensure that handover attributes/functions
         # have the correct format
         self.objective = objective
@@ -52,6 +62,7 @@ class Optimiser:
         self.circuit_param = circuit_param
         self.circuit_param_values = circuit_param_values
 
+    @abstractmethod
     def optimise(self):
         """
         Idea:
@@ -62,4 +73,6 @@ class Optimiser:
 
         Run optimiser until break condition is fullfilled
         """
-        assert False, "Parent class Optimiser()-method 'optimise()', not overwritten"
+        raise NotImplementedError(
+            "Parent class Optimiser()-method 'optimise()', not overwritten"
+        )

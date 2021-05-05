@@ -23,7 +23,9 @@ from fauvqe.optimisers.optimiser import Optimiser
 
 
 def test_set_optimiser():
-    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising_obj = Ising(
+        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
+    )
     ising_obj.set_circuit("qaoa", 1)
     ising_obj.set_optimiser("ADAM")
 
@@ -31,7 +33,13 @@ def test_set_optimiser():
 # This is potentially a higher effort test:
 @pytest.mark.higheffort
 def test_optimise():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
+    ising_obj = Ising(
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
+    )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
     ising_obj.set_optimiser("ADAM", obj_func="Z")
@@ -39,7 +47,10 @@ def test_optimise():
     ising_obj.optimiser.a = 4 * 10 ** -2
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
+        ising_obj.circuit,
+        param_resolver=ising_obj.optimiser._get_param_resolver(
+            ising_obj.circuit_param_values
+        ),
     ).state_vector()
     # Result smaller than -0.5 up to eta
     assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
@@ -48,7 +59,13 @@ def test_optimise():
 
 @pytest.mark.higheffort
 def test_optimise_print():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
+    ising_obj = Ising(
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
+    )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
     ising_obj.set_optimiser("ADAM", obj_func="Z")
@@ -57,7 +74,10 @@ def test_optimise_print():
     ising_obj.optimiser.n_print = 5
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
+        ising_obj.circuit,
+        param_resolver=ising_obj.optimiser._get_param_resolver(
+            ising_obj.circuit_param_values
+        ),
     ).state_vector()
     # Result smaller than -0.5 up to eta
     assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
@@ -67,14 +87,22 @@ def test_optimise_print():
 # Want to make this work but how?
 # via ndarray.view() => available for the other objects???
 def test_param_view():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
+    ising_obj = Ising(
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
+    )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_optimiser("ADAM")
     # set self.circuit_parm_values to different value and see if pointer works
     # ising_obj.set_circuit_param_values(0.3*np.ones(np.size(ising_obj.circuit_param)) )
 
     ising_obj.circuit_param_values[0] = 0
-    assert (ising_obj.optimiser.circuit_param_values == ising_obj.circuit_param_values).all()
+    assert (
+        ising_obj.optimiser.circuit_param_values == ising_obj.circuit_param_values
+    ).all()
 
 
 # Need to add some results/run time test
@@ -83,9 +111,13 @@ def test_param_view():
 #                     Test errors                           #
 #############################################################
 def test_GradientDescent_break_cond_assert():
-    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising_obj = Ising(
+        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
+    )
     ising_obj.set_circuit("qaoa", 1)
-    ising_obj.set_circuit_param_values(0.314 * np.ones(np.size(ising_obj.circuit_param)))
+    ising_obj.set_circuit_param_values(
+        0.314 * np.ones(np.size(ising_obj.circuit_param))
+    )
     ising_obj.set_optimiser("ADAM")
     ising_obj.optimiser.break_cond = "atol"
 
