@@ -40,7 +40,7 @@ import cirq
 import sympy
 
 # internal import
-from fauvqe.optimisers import Optimiser
+from fauvqe.optimisers import Optimiser, OptimisationStep, OptimisationResult
 
 
 class ADAM(Optimiser):
@@ -97,7 +97,7 @@ class ADAM(Optimiser):
         self._v_t = np.zeros(np.shape(circuit_param_values))
         self._m_t = np.zeros(np.shape(circuit_param_values))
 
-    def optimise(self):
+    def optimise(self) -> OptimisationResult:
         """
         Run optimiser until break condition is fullfilled
 
@@ -110,31 +110,19 @@ class ADAM(Optimiser):
           - allow to update hyperparameters via attribute pass to optimise function
           - Possibly by ** args or python dictionary???
         """
+        def p(params: np.ndarray) -> np.float64:
+            return self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(params)).state_vector()
+
+        res = OptimisationResult(self.break_cond, self.circuit_param_values, self.obj_func, p)
         # 1.make copies of param_values (to not accidentially overwrite)
         temp_cpv = self.circuit_param_values
 
         # Do step until break condition
         if self.break_cond == "iterations":
-            if isinstance(self.n_print, (int, np.int_)) and self.n_print > 0:
-                for i in range(self.break_param):
-                    # Print out
-                    if not i % self.n_print:
-                        # Print every n_print's step
-                        wf = self.simulator.simulate(
-                            self.circuit, param_resolver=self._get_param_resolver(temp_cpv)
-                        ).state_vector()
-
-                        print("Steps: {}, Energy: {}".format(i, self.obj_func(wf)))
-                        # print('Parameter names:  {}'.format(self.circuit_param))
-                        # print('Parameter values: {}'.format(temp_cpv))
-                    # End of print out
-
-                    # Make ADAM step
-                    temp_cpv = self._ADAM_step(temp_cpv)
-            else:
-                for i in range(self.break_param):
-                    # Make ADAM step
-                    temp_cpv = self._ADAM_step(temp_cpv)
+            for i in range(self.break_param):
+                # Make ADAM step
+                temp_cpv = self._ADAM_step(temp_cpv)
+                res.add_step(OptimisationStep(index=i, params=temp_cpv))
         else:
             assert (
                 False
@@ -143,14 +131,10 @@ class ADAM(Optimiser):
                 self.break_cond
             )
 
-        # Print final result ... to be done
-        wf = self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
-        print("Steps: {}, Energy: {}".format(i + 1, self.obj_func(wf)))
-        print("Parameter names:  {}".format(self.circuit_param))
-        print("Parameter values: {}".format(temp_cpv))
-
         # Return/update circuit_param_values
         self.circuit_param_values = temp_cpv
+
+        return res
 
     def _ADAM_step(self, temp_cpv):
         """

@@ -5,7 +5,7 @@ import cirq
 import importlib
 
 # import all parent modules
-from fauvqe.initialisers import Initialiser
+from .initialisers import Initialiser
 
 # %%
 class Ising(Initialiser):
