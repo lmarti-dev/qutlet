@@ -9,9 +9,7 @@ class cVaR(Objective):
     def __init__(self, alpha: float):
         super().__init__()
 
-        assert (
-            alpha <= 1.0 and alpha >= 0
-        ), "cVaR alpha must be in (0, 1). Recieved: {:f}".format(alpha)
+        assert alpha <= 1.0 and alpha >= 0, "cVaR alpha must be in (0, 1). Recieved: {:f}".format(alpha)
 
         self.__alpha = alpha
         self.__mask = None
@@ -23,9 +21,7 @@ class cVaR(Objective):
         assert field in [
             "Z",
             "X",
-        ], "Bad input 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
-            field
-        )
+        ], "Bad input 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(field)
         self.__field = field
 
         energies = self.__initialiser.energy()

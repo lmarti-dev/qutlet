@@ -647,9 +647,7 @@ def test_get_spin_vm(qubittype, n, j_v, j_h, h, test_gate, vm_exp, apply_to):
     # set numerical tolerance
     atol = 1e-14
     tester = IsingTester(atol)
-    tester.simple_spin_value_map_test(
-        qubittype, n, j_v, j_h, h, test_gate, vm_exp, apply_to
-    )
+    tester.simple_spin_value_map_test(qubittype, n, j_v, j_h, h, test_gate, vm_exp, apply_to)
 
 
 # Missing: test print_spin properly
@@ -821,9 +819,7 @@ def test_energy_analytic_1d(qubittype, n, j_v, j_h, h, E_exp):
     # for some less trivial cases
     tester = IsingTester(10 * np.sqrt(atol))
     if abs(np.sum(h)) > atol:
-        tester.simple_energy_JZZ_hX_test(
-            qubittype, n, j_v, j_h, h, cirq.Z ** 2, E_exp, "X"
-        )
+        tester.simple_energy_JZZ_hX_test(qubittype, n, j_v, j_h, h, cirq.Z ** 2, E_exp, "X")
     else:
         pass
         # THIS NOT DOES PASS YET??

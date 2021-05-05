@@ -36,9 +36,7 @@ class OptimisationResult:
         return self.__steps[-1]
 
     def plot(self, objective: Objective) -> np.ndarray:
-        objective_values = np.array(
-            [objective.evaluate(wf) for wf in self.__wavefunctions]
-        )
+        objective_values = np.array([objective.evaluate(wf) for wf in self.__wavefunctions])
 
         return objective_values
 
@@ -63,9 +61,7 @@ class OptimisationResult:
         return self.__optimiser.objective
 
     def get_objective_values(self):
-        return [
-            self.__optimiser.objective.evaluate(wf) for wf in self.get_wavefunctions()
-        ]
+        return [self.__optimiser.objective.evaluate(wf) for wf in self.get_wavefunctions()]
 
     def get_latest_objective_value(self):
         final_step = self.get_latest_step()
@@ -80,11 +76,9 @@ class OptimisationResult:
         ).state_vector()
 
     def __repr__(self) -> str:
-        return (
-            "<OptimisationResult steps={} last_step={} result={} objective={}>".format(
-                len(self.__steps),
-                self.get_latest_step(),
-                self.get_latest_objective_value(),
-                self.__optimiser.objective,
-            )
+        return "<OptimisationResult steps={} last_step={} result={} objective={}>".format(
+            len(self.__steps),
+            self.get_latest_step(),
+            self.get_latest_objective_value(),
+            self.__optimiser.objective,
         )

@@ -73,6 +73,4 @@ class Optimiser(ABC):
 
         Run optimiser until break condition is fullfilled
         """
-        raise NotImplementedError(
-            "Parent class Optimiser()-method 'optimise()', not overwritten"
-        )
+        raise NotImplementedError("Parent class Optimiser()-method 'optimise()', not overwritten")

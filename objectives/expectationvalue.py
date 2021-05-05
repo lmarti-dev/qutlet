@@ -13,13 +13,8 @@ class ExpectationValue(Objective):
 
     def initialise(self, initialiser: Initialiser, field: Literal["Z", "X"]) -> None:
         # Type checking
-        assert isinstance(
-            initialiser, Initialiser
-        ), "Bad argument 'initiliser'. Must be an instance of Initiliser"
-        assert field in [
-            "Z",
-            "X",
-        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
+        assert isinstance(initialiser, Initialiser), "Bad argument 'initiliser'. Must be an instance of Initiliser"
+        assert field in ["Z", "X",], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
             field,
         )
 
@@ -31,14 +26,13 @@ class ExpectationValue(Objective):
         if self.__field == "X":
             wf_x = self._rotate_x(wavefunction)
 
-            return np.sum(
-                np.abs(wavefunction) ** 2 * (-self.__energies[0])
-                + np.abs(wf_x) ** 2 * (-self.__energies[1])
-            ) / len(self.__initialiser.qubits)
+            return np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0]) + np.abs(wf_x) ** 2 * (-self.__energies[1])) / len(
+                self.__initialiser.qubits
+            )
         elif self.__field == "Z":
-            return np.sum(
-                np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1])
-            ) / len(self.__initialiser.qubits)
+            return np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1])) / len(
+                self.__initialiser.qubits
+            )
 
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)

@@ -24,9 +24,7 @@ class Objective(ABC):
             for qubit in row:
                 rotation_circuit.append(cirq.H(qubit))
 
-        return self.__initialiser.simulator.simulate(
-            rotation_circuit, initial_state=wavefunction
-        ).state_vector()
+        return self.__initialiser.simulator.simulate(rotation_circuit, initial_state=wavefunction).state_vector()
 
     @abstractmethod
     def __repr__(self) -> str:

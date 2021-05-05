@@ -31,18 +31,14 @@ What to test:
 
 
 def test_set_circuit():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
     print(ising_obj.circuit)
     assert ising_obj.p == 1
     assert ising_obj.circuit_param == [sympy.Symbol("b0"), sympy.Symbol("g0")]
     # Basic test whether circuit gives correct result
     obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0)
-    wf_x = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=obj_param_resolver
-    ).state_vector()
+    wf_x = ising_obj.simulator.simulate(ising_obj.circuit, param_resolver=obj_param_resolver).state_vector()
     assert np.allclose(
         wf_x,
         np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j]),
@@ -50,9 +46,7 @@ def test_set_circuit():
         atol=1e-14,
     )
     obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0.5)
-    wf_z = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=obj_param_resolver
-    ).state_vector()
+    wf_z = ising_obj.simulator.simulate(ising_obj.circuit, param_resolver=obj_param_resolver).state_vector()
     assert np.allclose(
         wf_z,
         np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j]),
@@ -63,9 +57,7 @@ def test_set_circuit():
 
 # still needs to be improved
 def test_set_p():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
     assert ising_obj.p == 1
     ising_obj.qaoa.set_p(ising_obj, 2)
@@ -75,9 +67,7 @@ def test_set_p():
 # test more examples
 # test assertion error
 def test_set_beta_values():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.qaoa._set_beta_values(ising_obj, [0.2, 0.3])
     # Assert whether self.circuit_param_values has been set correctly
@@ -87,9 +77,7 @@ def test_set_beta_values():
 # test more examples
 # test assertion error
 def test_set_gamma_values():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.qaoa._set_gamma_values(ising_obj, [0.4, 0.5])
     # Assert whether self.circuit_param_values has been set correctly
@@ -101,9 +89,7 @@ def test__UB_layer():
     self.circuit_param_values = np.array([1, 0.0])
     # Watchout replaced here circuit_param with circuit_param_value
     # This distroys the circuit parametrisation, just do for testing
-    self.circuit.append(
-        cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param_values[0]))
-    )
+    self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param_values[0])))
     assert np.allclose(
         self.circuit.unitary(),
         np.array(
@@ -165,18 +151,14 @@ def test__get_param_resolver():
     # test for p = 2
     self.p = 2
     obj_param_resolver = self.qaoa._get_param_resolver(self, [0.1, 0.3], [0.2, 0.4])
-    assert obj_param_resolver == cirq.ParamResolver(
-        {"b0": 0.1, "g0": 0.2, "b1": 0.3, "g1": 0.4}
-    )
+    assert obj_param_resolver == cirq.ParamResolver({"b0": 0.1, "g0": 0.2, "b1": 0.3, "g1": 0.4})
 
 
 #############################################################
 #                     Test errors                           #
 #############################################################
 def test_set_circuit_erros():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     with pytest.raises(AssertionError):
         ising_obj.set_circuit("test", 1)
 
@@ -185,9 +167,7 @@ def test_set_circuit_erros():
 
 
 def test_set_p_errors():
-    ising_obj = Ising(
-        "GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2))
-    )
+    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.qaoa.set_p(ising_obj, 2)
     assert ising_obj.p == 2
 

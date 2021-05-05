@@ -36,9 +36,7 @@ def set_symbols(self, p):
     # self.gammas = [sympy.Symbol("g" + str(i)) for i in range(p)]
     #
     # WANT: circuit-param to be a list like [b0, g0, b1, g1 ] etc
-    assert isinstance(
-        p, (int, np.int_)
-    ), "Error: p needs to be int, received {}".format(type(p))
+    assert isinstance(p, (int, np.int_)), "Error: p needs to be int, received {}".format(type(p))
     temp = []
     for i in range(p):
         temp.append(sympy.Symbol("b" + str(i)))
@@ -49,18 +47,10 @@ def set_symbols(self, p):
 
 def _set_beta_values(self, beta_values):
     try:
-        assert (
-            np.size(beta_values) == self.p
-        ), "Error: size(beta_values !=  p; {} != {}".format(
-            np.size(beta_values), self.p
-        )
+        assert np.size(beta_values) == self.p, "Error: size(beta_values !=  p; {} != {}".format(np.size(beta_values), self.p)
     except AttributeError:
         # set p to length beta_values if it does not exist
-        print(
-            "Set self.p to np.size(beta_values) = {}, as not defined".format(
-                np.size(beta_values)
-            )
-        )
+        print("Set self.p to np.size(beta_values) = {}, as not defined".format(np.size(beta_values)))
         self.p = np.size(beta_values)
 
     # catch if self. circuit_param_values does not exist yet
@@ -80,18 +70,12 @@ def _set_beta_values(self, beta_values):
 
 def _set_gamma_values(self, gamma_values):
     try:
-        assert (
-            np.size(gamma_values) == self.p
-        ), "Error: size(gamma values) !=  p; {} != {}".format(
+        assert np.size(gamma_values) == self.p, "Error: size(gamma values) !=  p; {} != {}".format(
             np.size(gamma_values), self.p
         )
     except AttributeError:
         # set p to length beta_values if it does not exist
-        print(
-            "Set self.p to np.size(gamma_values) = {}, as not defined".format(
-                np.size(gamma_values)
-            )
-        )
+        print("Set self.p to np.size(gamma_values) = {}, as not defined".format(np.size(gamma_values)))
         self.p = np.size(gamma_values)
 
     # catch if self. circuit_param_values does not exist yet
@@ -127,9 +111,7 @@ def set_circuit(self, append):
         # Whatch out self.circuit_param[2*i] is the former self.betas()!!!
         # Whatch out self.circuit_param[2*i+1] is the former self.gamma()!!!
         # need to use cirq.ParamResolver and simulate(), compare final_state_vector
-        self.circuit.append(
-            cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[2 * i]))
-        )
+        self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[2 * i])))
         self.circuit.append(self.qaoa._UC_layer(self, self.circuit_param[2 * i + 1]))
 
 
@@ -153,14 +135,10 @@ def _UC_layer(self, gamma):
     for i in range(self.n[0]):
         for j in range(self.n[1]):
             if i < self.n[0] - 1:
-                yield cirq.ZZ(self.qubits[i][j], self.qubits[i + 1][j]) ** (
-                    gamma * self.j_v[i, j]
-                )
+                yield cirq.ZZ(self.qubits[i][j], self.qubits[i + 1][j]) ** (gamma * self.j_v[i, j])
 
             if j < self.n[1] - 1:
-                yield cirq.ZZ(self.qubits[i][j], self.qubits[i][j + 1]) ** (
-                    gamma * self.j_h[i, j]
-                )
+                yield cirq.ZZ(self.qubits[i][j], self.qubits[i][j + 1]) ** (gamma * self.j_h[i, j])
 
             yield cirq.Z(self.qubits[i][j]) ** (gamma * self.h[i, j])
 
@@ -171,12 +149,8 @@ def _get_param_resolver(self, beta_values, gamma_values):
     except AttributeError:
         # set p to length beta_values if it does not exist
         self.p = np.size(beta_values)
-    assert self.p == np.size(
-        beta_values
-    ), "Error: self.p = np.size(beta_values) required "
-    assert self.p == np.size(
-        gamma_values
-    ), "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required "
+    assert self.p == np.size(beta_values), "Error: self.p = np.size(beta_values) required "
+    assert self.p == np.size(gamma_values), "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required "
     # order does not mater for python dictonary
     if self.p == 1:
         joined_dict = {**{"b0": beta_values}, **{"g0": gamma_values}}

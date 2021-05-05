@@ -10,9 +10,7 @@ class IsingTester:
     def __init__(self, atol):
         self.atol = atol
 
-    def simple_energy_JZZ_hX_test(
-        self, qubittype, n, j_v, j_h, h, test_gate, E_exp, basis
-    ):
+    def simple_energy_JZZ_hX_test(self, qubittype, n, j_v, j_h, h, test_gate, E_exp, basis):
         # Create Ising object
         ising_obj = Ising(qubittype, n, j_v, j_h, h)
 
@@ -34,9 +32,7 @@ class IsingTester:
         wf_energy = ising_obj.energy(wf)
         assert (
             abs(E_exp - wf_energy) < self.atol
-        ), "Simple JZZ hX energy test failed; expected: {}, received {}, tolerance {}".format(
-            E_exp, wf_energy, self.atol
-        )
+        ), "Simple JZZ hX energy test failed; expected: {}, received {}, tolerance {}".format(E_exp, wf_energy, self.atol)
 
     def simple_energy_JZZ_hZ_test(self, qubittype, n, j_v, j_h, h, test_gate, E_exp):
         # Create Ising object
@@ -57,18 +53,12 @@ class IsingTester:
         wf_energy = ising_obj.energy(wf, field="Z")
         assert (
             abs(E_exp - wf_energy) < self.atol
-        ), "Simple JZZ hZ energy test failed; expected: {}, received {}, tolerance {}".format(
-            E_exp, wf_energy, self.atol
-        )
+        ), "Simple JZZ hZ energy test failed; expected: {}, received {}, tolerance {}".format(E_exp, wf_energy, self.atol)
 
     # add the option to apply not to all qubits
-    def simple_spin_value_map_test(
-        self, qubittype, n, j_v, j_h, h, test_gate, vm_exp, app_to=[]
-    ):
+    def simple_spin_value_map_test(self, qubittype, n, j_v, j_h, h, test_gate, vm_exp, app_to=[]):
         # Check wether wm_exp is a dictionary
-        assert dict == type(
-            vm_exp
-        ), "Ising, value map test failed: vm_exp expected to be dictionary, received: {}".format(
+        assert dict == type(vm_exp), "Ising, value map test failed: vm_exp expected to be dictionary, received: {}".format(
             type(vm_exp)
         )
 
@@ -98,9 +88,7 @@ class IsingTester:
         # Test where calculated spin value map fits to expectation spin
         # value map dictionary vm_exp
         value_map = ising_obj.get_spin_vm(wf)
-        assert len(value_map) == len(
-            vm_exp
-        ), "Ising, value map test failed: length expected: {}, received: {}".format(
+        assert len(value_map) == len(vm_exp), "Ising, value map test failed: length expected: {}, received: {}".format(
             len(vm_exp), len(value_map)
         )
         # If elements in value_map and vm_exp do not match receive KeyError and test fails
