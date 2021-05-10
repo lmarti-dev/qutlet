@@ -10,41 +10,41 @@ or functions are handed over to classical optimiser
 import numpy as np
 import cirq
 import sympy
+from numbers import Real, Integral
+from typing import Literal
 
 # internal import
 from .optimiser import Optimiser
 
 
 class GradientDescent(Optimiser):
-    """
-    Args from parrent class:
-        obj_func()          :   objectiv function f(x)/energy
-        qubits              :   qubit array/ordering for parametrised circuit
-        simulator           :   Classical quantum simulator to simulate circuit
-        circuit             :   parametrised circuit
-        circuit_param       :   sympy.Symbols for parametrised circuit
-        circuit_param_values:   current/initial values of circuit parameters
-                                    ->To be updates
+    """GradientDescent implementation as an Optimiser.
 
-    Additional Args (give default values):
-      eps         :eps for gradient
-      eta         :velocity of gd method
+    Arguments
+    -----------
+    eps : Real default 0.001
+      Epsilon for gradient
 
-      break_cond  :default 'iterations', but also e.g. change in obj_func etc.
-      break_param : e.g amount of steps of iteration
+    eta : Real default 0.01
+      Velocity of gradient method
 
-      n_print : print out after n steps, default -1
+    break_cond : {"iterations"} default "iterations"
+      Break condition for optimisation
 
-    Try to include/implement MPI4py or multiprocessing here!
+    break_param : int default 100
+      Amount of steps of iteration
+
+    n_print : int default -1
+      debug print out after n steps, disable with -1
     """
 
     def __init__(
         self,
-        eps=10 ** -3,
-        eta=10 ** -2,
-        break_cond="iterations",
-        break_param=100,
-        n_print=-1,
+        eps: Real = 10 ** -3,
+        eta: Real = 10 ** -2,
+        break_cond: Literal["iterations"] = "iterations",
+        break_param: int = 100,
+        n_print: int = -1,
     ):
         super().__init__()
         self._eps = eps
@@ -54,17 +54,11 @@ class GradientDescent(Optimiser):
         self._n_print = n_print
 
     def optimise(self):
-        """
-        Run optimiser until break condition is fullfilled
+        """Run optimiser until break condition is fullfilled
 
-        1.make copies of param_values (to not accidentially overwrite)
-        2.Do steps until break condition
-          Tricky need to generalise _get_param_resolver method which also affects _get_gradients
-        3.Update self.circuit_param_values = temp_cpv
-
-        NEED FOR IMPROVEMENT:
-          - allow to update hyperparameters via attribute pass to optimise function
-          - Possibly by ** args or python dictionary
+        1. make copies of param_values (to not accidentially overwrite)
+        2. Do steps until break condition. Tricky need to generalise _get_param_resolver method which also affects _get_gradients
+        3. Update self.circuit_param_values = temp_cpv
         """
         # 1.make copies of param_values (to not accidentially overwrite)
         temp_cpv = self.circuit_param_values
