@@ -47,11 +47,11 @@ class GradientDescent(Optimiser):
         n_print=-1,
     ):
         super().__init__()
-        self.eps = eps
-        self.eta = eta
-        self.break_cond = break_cond
-        self.break_param = break_param
-        self.n_print = n_print
+        self._eps = eps
+        self._eta = eta
+        self._break_cond = break_cond
+        self._break_param = break_param
+        self._n_print = n_print
 
     def optimise(self):
         """
@@ -70,18 +70,18 @@ class GradientDescent(Optimiser):
         temp_cpv = self.circuit_param_values
 
         # Do step until break condition
-        if self.break_cond == "iterations":
-            if isinstance(self.n_print, (int, np.int_)) and self.n_print > 0:
-                for i in range(self.break_param):
+        if self._break_cond == "iterations":
+            if isinstance(self._n_print, (int, np.int_)) and self._n_print > 0:
+                for i in range(self._break_param):
                     # Print out
-                    if not i % self.n_print:
+                    if not i % self._n_print:
                         # Print every n_print's step
-                        wf = self.simulator.simulate(
-                            self.circuit,
+                        wf = self._simulator.simulate(
+                            self._circuit,
                             param_resolver=self._get_param_resolver(temp_cpv),
                         ).state_vector()
 
-                        print("Steps: {}, Energy: {}".format(i, self.obj_func(wf)))
+                        print("Steps: {}, Energy: {}".format(i, self._obj_func(wf)))
                         # print('Parameter names:  {}'.format(self.circuit_param))
                         # print('Parameter values: {}'.format(temp_cpv))
                     # End of print out
@@ -91,26 +91,26 @@ class GradientDescent(Optimiser):
                     # Make gradient step
                     # Potentially improve this:
                     for j in range(np.size(temp_cpv)):
-                        temp_cpv[j] -= self.eta * gradient_values[j]
+                        temp_cpv[j] -= self._eta * gradient_values[j]
             else:
-                for i in range(self.break_param):
+                for i in range(self._break_param):
                     gradient_values = self._get_gradients(temp_cpv)
 
                     # Make gradient step
                     # Potentially improve this:
                     for j in range(np.size(temp_cpv)):
-                        temp_cpv[j] -= self.eta * gradient_values[j]
+                        temp_cpv[j] -= self._eta * gradient_values[j]
         else:
             assert (
                 False
             ), "Invalid break condition, received: '{}', allowed is \n \
         'iterations'".format(
-                self.break_cond
+                self._break_cond
             )
 
         # Print final result ... to be done
-        wf = self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
-        print("Steps: {}, Energy: {}".format(i + 1, self.obj_func(wf)))
+        wf = self._simulator.simulate(self._circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
+        print("Steps: {}, Energy: {}".format(i + 1, self._obj_func(wf)))
         print("Parameter names:  {}".format(self.circuit_param))
         print("Parameter values: {}".format(temp_cpv))
 
@@ -131,18 +131,18 @@ class GradientDescent(Optimiser):
         # Use MPi4Py/Multiporcessing HERE!!
         for j in range(n_param):
             # Simulate wavefunction at p_j + eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
-            wf1 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self._eps
+            wf1 = self._simulator.simulate(self._circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
 
             # Simulate wavefunction at p_j - eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self.eps
-            wf2 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self._eps
+            wf2 = self._simulator.simulate(self._circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
 
             # Calculate gradient
-            gradient_values[j] = (self.obj_func(wf1) - self.obj_func(wf2)) / (2 * self.eps)
+            gradient_values[j] = (self._obj_func(wf1) - self._obj_func(wf2)) / (2 * self._eps)
 
             # Reset dictionary
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self._eps
 
         # print("GradientDescent._get_gradients() does not work/is not completed")
         return gradient_values

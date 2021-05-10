@@ -40,16 +40,21 @@ def test_optimise():
     )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser(GradientDescent(), obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.eta = 2e-2
+    eta = 2e-2
+    ising_obj.set_optimiser(
+        GradientDescent(
+            break_param=25,
+            eta=eta,
+        ),
+        obj_func="Z",
+    )
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
         ising_obj.circuit,
         param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values),
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eta
+    assert -0.5 > ising_obj.energy(wf, field="Z") - eta
     # Result smaller than -0.5 up to eta
 
 
@@ -64,17 +69,22 @@ def test_optimise_print():
     )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser(GradientDescent(), obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.eta = 2e-2
-    ising_obj.optimiser.n_print = 5
+    eta = 2e-2
+    ising_obj.set_optimiser(
+        GradientDescent(
+            break_param=25,
+            eta=eta,
+            n_print=5,
+        ),
+        obj_func="Z",
+    )
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
         ising_obj.circuit,
         param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values),
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eta
+    assert -0.5 > ising_obj.energy(wf, field="Z") - eta
     # Result smaller than -0.5 up to eta
 
 
@@ -106,8 +116,7 @@ def test_GradientDescent_break_cond_assert():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
     ising_obj.set_circuit_param_values(0.314 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser(GradientDescent())
-    ising_obj.optimiser.break_cond = "atol"
+    ising_obj.set_optimiser(GradientDescent(break_cond="atol"))
 
     with pytest.raises(AssertionError):
         ising_obj.optimiser.optimise()

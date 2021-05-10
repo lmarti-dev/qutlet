@@ -79,15 +79,15 @@ class ADAM(Optimiser):
         n_print=-1,
     ):
         super().__init__()
-        self.eps = eps
-        self.eps_2 = eps_2
-        self.a = a
-        self.b_1 = b_1
-        self.b_2 = b_2
-        self.break_cond = break_cond
-        self.break_param = break_param
-        self.n_print = n_print
-        self.step = 0
+        self._eps = eps
+        self._eps_2 = eps_2
+        self._a = a
+        self._b_1 = b_1
+        self._b_2 = b_2
+        self._break_cond = break_cond
+        self._break_param = break_param
+        self._n_print = n_print
+        self._step = 0
         self._v_t = np.zeros(np.shape(self.circuit_param_values))
         self._m_t = np.zeros(np.shape(self.circuit_param_values))
 
@@ -108,17 +108,17 @@ class ADAM(Optimiser):
         temp_cpv = self.circuit_param_values
 
         # Do step until break condition
-        if self.break_cond == "iterations":
-            if isinstance(self.n_print, (int, np.int_)) and self.n_print > 0:
-                for i in range(self.break_param):
+        if self._break_cond == "iterations":
+            if isinstance(self._n_print, (int, np.int_)) and self._n_print > 0:
+                for i in range(self._break_param):
                     # Print out
-                    if not i % self.n_print:
+                    if not i % self._n_print:
                         # Print every n_print's step
-                        wf = self.simulator.simulate(
-                            self.circuit, param_resolver=self._get_param_resolver(temp_cpv)
+                        wf = self._simulator.simulate(
+                            self._circuit, param_resolver=self._get_param_resolver(temp_cpv)
                         ).state_vector()
 
-                        print("Steps: {}, Energy: {}".format(i, self.obj_func(wf)))
+                        print("Steps: {}, Energy: {}".format(i, self._obj_func(wf)))
                         # print('Parameter names:  {}'.format(self.circuit_param))
                         # print('Parameter values: {}'.format(temp_cpv))
                     # End of print out
@@ -126,7 +126,7 @@ class ADAM(Optimiser):
                     # Make ADAM step
                     temp_cpv = self._ADAM_step(temp_cpv)
             else:
-                for i in range(self.break_param):
+                for i in range(self._break_param):
                     # Make ADAM step
                     temp_cpv = self._ADAM_step(temp_cpv)
         else:
@@ -134,12 +134,12 @@ class ADAM(Optimiser):
                 False
             ), "Invalid break condition, received: '{}', allowed is \n \
         'iterations'".format(
-                self.break_cond
+                self._break_cond
             )
 
         # Print final result ... to be done
-        wf = self.simulator.simulate(self.circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
-        print("Steps: {}, Energy: {}".format(i + 1, self.obj_func(wf)))
+        wf = self._simulator.simulate(self._circuit, param_resolver=self._get_param_resolver(temp_cpv)).state_vector()
+        print("Steps: {}, Energy: {}".format(i + 1, self._obj_func(wf)))
         print("Parameter names:  {}".format(self.circuit_param))
         print("Parameter values: {}".format(temp_cpv))
 
@@ -161,16 +161,16 @@ class ADAM(Optimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        self.step += 1
+        self._step += 1
         gradient_values = self._get_gradients(temp_cpv)
-        self._m_t = self.b_1 * self._m_t + (1 - self.b_1) * gradient_values
-        self._v_t = self.b_2 * self._v_t + (1 - self.b_2) * gradient_values ** 2
+        self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
+        self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
-            self.a
-            * (1 - self.b_2 ** self.step) ** 0.5
-            / (1 - self.b_1 ** self.step)
+            self._a
+            * (1 - self._b_2 ** self._step) ** 0.5
+            / (1 - self._b_1 ** self._step)
             * self._m_t
-            / (self._v_t ** 0.5 + self.eps_2)
+            / (self._v_t ** 0.5 + self._eps_2)
         )
         return temp_cpv
 
@@ -188,18 +188,18 @@ class ADAM(Optimiser):
         # Use MPi4Py/Multiporcessing HERE!!
         for j in range(n_param):
             # Simulate wavefunction at p_j + eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
-            wf1 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self._eps
+            wf1 = self._simulator.simulate(self._circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
 
             # Simulate wavefunction at p_j - eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self.eps
-            wf2 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self._eps
+            wf2 = self._simulator.simulate(self._circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
 
             # Calculate gradient
-            gradient_values[j] = (self.obj_func(wf1) - self.obj_func(wf2)) / (2 * self.eps)
+            gradient_values[j] = (self._obj_func(wf1) - self._obj_func(wf2)) / (2 * self._eps)
 
             # Reset dictionary
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self._eps
 
         # print("GradientDescent._get_gradients() does not work/is not completed")
         return gradient_values

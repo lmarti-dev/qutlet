@@ -34,8 +34,10 @@ def test_optimise():
     ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
+    eps = 10 ** -3
     ising_obj.set_optimiser(
         ADAM(
+            eps=eps,
             break_param=25,
             a=4 * 10 ** -2,
         ),
@@ -46,7 +48,7 @@ def test_optimise():
         ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
+    assert -0.5 > ising_obj.energy(wf, field="Z") - eps
     # Result smaller than -0.5 up to eta
 
 
@@ -55,8 +57,10 @@ def test_optimise_print():
     ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
+    eps = 10 ** -3
     ising_obj.set_optimiser(
         ADAM(
+            eps=eps,
             break_param=25,
             a=4 * 10 ** -2,
             n_print=5,
@@ -68,7 +72,7 @@ def test_optimise_print():
         ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
+    assert -0.5 > ising_obj.energy(wf, field="Z") - eps
     # Result smaller than -0.5 up to eta
 
 

@@ -42,20 +42,20 @@ class Optimiser(ABC):
     """
 
     def __init__(self):
-        self.obj_func = None
-        self.circuit = None
-        self.qubits = None
-        self.simulator = None
+        self._obj_func = None
+        self._circuit = None
+        self._qubits = None
+        self._simulator = None
         self.circuit_param = None
         self.circuit_param_values = None
 
     def initialise(self, obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values):
         # Possibly add some asserts here to ensure that handover attributes/functions
         # have the correct format
-        self.obj_func = obj_func
-        self.circuit = circuit
-        self.qubits = qubits
-        self.simulator = simulator
+        self._obj_func = obj_func
+        self._circuit = circuit
+        self._qubits = qubits
+        self._simulator = simulator
         assert np.size(circuit_param) == np.size(
             circuit_param_values
         ), "Optimiser error: size of circuit_param != size of circuit_param_values; {} != {}".format(
