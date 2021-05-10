@@ -13,6 +13,7 @@
 """
 # external import
 import numpy as np
+from abc import ABC
 
 # Cirq libaries
 import cirq
@@ -20,7 +21,7 @@ import qsimcirq
 
 # %%
 # The actual class definition
-class Initialiser:
+class Initialiser(ABC):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one
