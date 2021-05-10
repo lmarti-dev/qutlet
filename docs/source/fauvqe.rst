@@ -7,21 +7,9 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   fauvqe.isings
+   fauvqe.initialisers
    fauvqe.optimisers
    fauvqe.tests
-
-Submodules
-----------
-
-fauvqe.initialisers module
---------------------------
-
-.. automodule:: fauvqe.initialisers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :private-members:
 
 Module contents
 ---------------
