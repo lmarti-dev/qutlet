@@ -18,8 +18,7 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising
-from fauvqe.optimisers import Optimiser, GradientDescent
+from fauvqe import Ising, Optimiser, GradientDescent
 
 
 def test_set_optimiser():

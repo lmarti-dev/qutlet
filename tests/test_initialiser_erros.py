@@ -36,10 +36,10 @@ from fauvqe import Initialiser
 )
 def test_Initialiser(qubittype, n):
     with pytest.raises(AssertionError):
-        initialiser_obj = Initialiser(qubittype, n)
+        Initialiser(qubittype, n)
 
 
 # TypeError
 def test_Initialiser00():
     with pytest.raises(TypeError):
-        initialiser_obj = (Initialiser("NamedQubit", 1),)
+        Initialiser("NamedQubit", 1)

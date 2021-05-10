@@ -5,8 +5,8 @@ import cirq
 import importlib
 
 # import all parent modules
-from fauvqe.initialisers import Initialiser
-from fauvqe.optimisers import Optimiser
+from .initialiser import Initialiser
+from ..optimisers import Optimiser
 
 # %%
 class Ising(Initialiser):
@@ -21,7 +21,7 @@ class Ising(Initialiser):
     # altnative importlib.import_module('module')
     # qaoa = __import__('fauvqe.isings.circuits.qaoa')
     # it seems that this works:
-    qaoa = importlib.import_module("fauvqe.isings.circuits.qaoa")
+    qaoa = importlib.import_module("fauvqe.initialisers.circuits.qaoa")
     # os = __import__('os')
     def __init__(self, qubittype, n, j_v, j_h, h):
         """
@@ -33,6 +33,7 @@ class Ising(Initialiser):
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
+        self.circuit_param = None
         self._set_jh(j_v, j_h, h)
         super().set_simulator()
 

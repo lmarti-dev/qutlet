@@ -13,7 +13,7 @@ import cirq
 
 # internal imports
 from fauvqe import Ising
-from ..tests.ising_tests import IsingTester
+from .test_isings import IsingTester
 
 
 @pytest.mark.parametrize(
@@ -902,7 +902,7 @@ def test_energy_analytic_1d(qubittype, n, j_v, j_h, h, E_exp):
 )
 def test_assert_set_jh(qubittype, n, j_v, j_h, h):
     with pytest.raises(AssertionError):
-        ising_obj = Ising(qubittype, n, j_v, j_h, h)
+        Ising(qubittype, n, j_v, j_h, h)
 
 
 def test_assert_energy():

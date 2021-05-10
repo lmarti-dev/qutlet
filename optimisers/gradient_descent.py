@@ -12,7 +12,7 @@ import cirq
 import sympy
 
 # internal import
-from fauvqe.optimisers import Optimiser
+from .optimiser import Optimiser
 
 
 class GradientDescent(Optimiser):

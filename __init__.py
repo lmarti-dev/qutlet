@@ -6,17 +6,17 @@
 
 # imports within package
 
-# subpackages
-from . import isings
+from . import initialisers, optimisers
 
-# Flattened module
 from .initialisers import (
     Initialiser,
+    Ising,
 )
 
-# Flattened sub-modules
-from .isings import (
-    Ising,
+from .optimisers import (
+    ADAM,
+    GradientDescent,
+    Optimiser,
 )
 
 """
