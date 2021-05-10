@@ -69,12 +69,6 @@ class ADAM(Optimiser):
 
     def __init__(
         self,
-        obj_func,
-        qubits,
-        simulator,
-        circuit,
-        circuit_param,
-        circuit_param_values,
         eps=10 ** -3,
         eps_2=10 ** -8,
         a=10 ** -2,
@@ -84,7 +78,7 @@ class ADAM(Optimiser):
         break_param=100,
         n_print=-1,
     ):
-        super().__init__(obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values)
+        super().__init__()
         self.eps = eps
         self.eps_2 = eps_2
         self.a = a
@@ -94,8 +88,8 @@ class ADAM(Optimiser):
         self.break_param = break_param
         self.n_print = n_print
         self.step = 0
-        self._v_t = np.zeros(np.shape(circuit_param_values))
-        self._m_t = np.zeros(np.shape(circuit_param_values))
+        self._v_t = np.zeros(np.shape(self.circuit_param_values))
+        self._m_t = np.zeros(np.shape(self.circuit_param_values))
 
     def optimise(self):
         """

@@ -6,6 +6,7 @@ import importlib
 
 # import all parent modules
 from fauvqe.initialisers import Initialiser
+from fauvqe.optimisers import Optimiser
 
 # %%
 class Ising(Initialiser):
@@ -214,7 +215,7 @@ class Ising(Initialiser):
         )
         self.circuit_param_values = new_values
 
-    def set_optimiser(self, optimiser_name, obj_func="X"):
+    def set_optimiser(self, optimiser: Optimiser, obj_func="X"):
         """
         This function acts as an interface to the general optimiser structure
         Args:
@@ -225,6 +226,10 @@ class Ising(Initialiser):
                 MISSING: give optimisers energy and change default field to 'Z'
                 https://stackoverflow.com/questions/38503937/parsing-default-arguments-in-functions-without-executing-the-them
         """
+        assert isinstance(optimiser, Optimiser), "optimiser must be an instance of Optimiser, given {}".format(
+            type(optimiser).__name__
+        )
+
         # Note obj_func = self.energy does not work as default!
         # NEED FOR IMPROVEMENT:
         if obj_func == "X":
@@ -235,42 +240,19 @@ class Ising(Initialiser):
             obj_func = lambda input_wf: self.energy(input_wf, field="Z")
             # print("Z case")
 
-        if optimiser_name == "GradientDescent":
-            # Import GradientDescent() class:
-            gd = importlib.import_module("fauvqe.optimisers.gradient_descent")
-            # WANT to pass all via view
-            # Maybe can do also somehow via cython and pointer??
-            self.optimiser = gd.GradientDescent(
-                obj_func,  # note that this is a function + need to make more general \
-                # Changed this from JZZ_hZ to JZZ_hX and no test failed
-                # A) Tha's bad, B) needs to be more general.
-                # also want to give attributes within energy function
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),  # view() is ndarray method
-            )
-        elif optimiser_name == "ADAM":
-            # Import ADAM() class:
-            adam = importlib.import_module("fauvqe.optimisers.adam")
-            # Create optimiser object:
-            self.optimiser = adam.ADAM(
-                obj_func,
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),
-            )
+        optimiser.initialise(
+            obj_func,  # note that this is a function + need to make more general \
+            # Changed this from JZZ_hZ to JZZ_hX and no test failed
+            # A) Tha's bad, B) needs to be more general.
+            # also want to give attributes within energy function
+            self.qubits,
+            self.simulator,
+            self.circuit,
+            self.circuit_param,
+            self.circuit_param_values.view(),  # view() is ndarray method
+        )
 
-        else:
-            assert (
-                False
-            ), "Invalid optimiser, received: '{}', allowed is \n \
-                'ADAM' and 'GradientDescent'".format(
-                optimiser_name
-            )
+        self.optimiser = optimiser
 
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"

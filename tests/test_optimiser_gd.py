@@ -19,13 +19,13 @@ import cirq
 
 # internal imports
 from fauvqe import Ising
-from fauvqe.optimisers import Optimiser
+from fauvqe.optimisers import Optimiser, GradientDescent
 
 
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
-    ising_obj.set_optimiser("GradientDescent")
+    ising_obj.set_optimiser(GradientDescent())
 
 
 # This is potentially a higher effort test:
@@ -40,7 +40,7 @@ def test_optimise():
     )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("GradientDescent", obj_func="Z")
+    ising_obj.set_optimiser(GradientDescent(), obj_func="Z")
     ising_obj.optimiser.break_param = 25
     ising_obj.optimiser.eta = 2e-2
     ising_obj.optimiser.optimise()
@@ -64,7 +64,7 @@ def test_optimise_print():
     )
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("GradientDescent", obj_func="Z")
+    ising_obj.set_optimiser(GradientDescent(), obj_func="Z")
     ising_obj.optimiser.break_param = 25
     ising_obj.optimiser.eta = 2e-2
     ising_obj.optimiser.n_print = 5
@@ -89,7 +89,7 @@ def test_param_view():
         0.2 * np.ones((2, 2)),
     )
     ising_obj.set_circuit("qaoa", 2)
-    ising_obj.set_optimiser("GradientDescent")
+    ising_obj.set_optimiser(GradientDescent())
     # set self.circuit_parm_values to different value and see if pointer works
     # ising_obj.set_circuit_param_values(0.3*np.ones(np.size(ising_obj.circuit_param)) )
 
@@ -106,7 +106,7 @@ def test_GradientDescent_break_cond_assert():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
     ising_obj.set_circuit_param_values(0.314 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("GradientDescent")
+    ising_obj.set_optimiser(GradientDescent())
     ising_obj.optimiser.break_cond = "atol"
 
     with pytest.raises(AssertionError):
@@ -122,8 +122,6 @@ def test_optimiser_constructor_assert():
 
 
 def test_optimiser_optimise_assert():
-    # Hand-over inadequate input to optimiser
-    # This currently does not raise any error but probably should
-    abst_optimiser_obj = Optimiser(0, 0, 0, 0, 0, 0)
-    with pytest.raises(AssertionError):
-        abst_optimiser_obj.optimise()
+    # Test if abstract base class can be initiated
+    with pytest.raises(TypeError):
+        Optimiser()

@@ -40,19 +40,13 @@ class GradientDescent(Optimiser):
 
     def __init__(
         self,
-        obj_func,
-        qubits,
-        simulator,
-        circuit,
-        circuit_param,
-        circuit_param_values,
         eps=10 ** -3,
         eta=10 ** -2,
         break_cond="iterations",
         break_param=100,
         n_print=-1,
     ):
-        super().__init__(obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values)
+        super().__init__()
         self.eps = eps
         self.eta = eta
         self.break_cond = break_cond

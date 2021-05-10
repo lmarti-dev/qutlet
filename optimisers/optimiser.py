@@ -20,7 +20,7 @@ What does a optimiser need for that?:
 """
 # external import
 import numpy as np
-from abc import ABC
+from abc import ABC, abstractmethod
 
 # import cirq
 # import importlib
@@ -41,7 +41,15 @@ class Optimiser(ABC):
     These e.g. exist in Ising() as ising_obj.qubits etc..., but copy/view seems most reasonable
     """
 
-    def __init__(self, obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values):
+    def __init__(self):
+        self.obj_func = None
+        self.circuit = None
+        self.qubits = None
+        self.simulator = None
+        self.circuit_param = None
+        self.circuit_param_values = None
+
+    def initialise(self, obj_func, qubits, simulator, circuit, circuit_param, circuit_param_values):
         # Possibly add some asserts here to ensure that handover attributes/functions
         # have the correct format
         self.obj_func = obj_func
@@ -56,6 +64,7 @@ class Optimiser(ABC):
         self.circuit_param = circuit_param
         self.circuit_param_values = circuit_param_values
 
+    @abstractmethod
     def optimise(self):
         """
         Idea:

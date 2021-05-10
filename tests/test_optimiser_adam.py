@@ -19,13 +19,13 @@ import cirq
 
 # internal imports
 from fauvqe.isings.ising import Ising
-from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe.optimisers import Optimiser, ADAM
 
 
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
-    ising_obj.set_optimiser("ADAM")
+    ising_obj.set_optimiser(ADAM())
 
 
 # This is potentially a higher effort test:
@@ -34,9 +34,13 @@ def test_optimise():
     ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM", obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.a = 4 * 10 ** -2
+    ising_obj.set_optimiser(
+        ADAM(
+            break_param=25,
+            a=4 * 10 ** -2,
+        ),
+        obj_func="Z",
+    )
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
         ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
@@ -51,10 +55,14 @@ def test_optimise_print():
     ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
     ising_obj.set_circuit("qaoa", 2)
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM", obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.a = 4 * 10 ** -2
-    ising_obj.optimiser.n_print = 5
+    ising_obj.set_optimiser(
+        ADAM(
+            break_param=25,
+            a=4 * 10 ** -2,
+            n_print=5,
+        ),
+        obj_func="Z",
+    )
     ising_obj.optimiser.optimise()
     wf = ising_obj.simulator.simulate(
         ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
@@ -69,7 +77,7 @@ def test_optimise_print():
 def test_param_view():
     ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
     ising_obj.set_circuit("qaoa", 2)
-    ising_obj.set_optimiser("ADAM")
+    ising_obj.set_optimiser(ADAM())
     # set self.circuit_parm_values to different value and see if pointer works
     # ising_obj.set_circuit_param_values(0.3*np.ones(np.size(ising_obj.circuit_param)) )
 
@@ -86,8 +94,7 @@ def test_GradientDescent_break_cond_assert():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", 1)
     ising_obj.set_circuit_param_values(0.314 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM")
-    ising_obj.optimiser.break_cond = "atol"
+    ising_obj.set_optimiser(ADAM(break_cond="atol"))
 
     with pytest.raises(AssertionError):
         ising_obj.optimiser.optimise()
