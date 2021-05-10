@@ -68,6 +68,12 @@ $BROWSER ./build/html/index.html
 
 Refer to the documentation of sphinx for more information, for example on how to add custom documentation to the `.rst` files.
 
+### Docstring format
+
+This module is documented with numpy-style docstrings.
+The sphinx documentation provides an [elaborate example on how to use it](https://www.sphinx-doc.org/en/master/usage/extensions/example_numpy.html).
+For a more technical approach, refer to [the numpydoc style guide](https://numpydoc.readthedocs.io/en/latest/format.html).
+
 ### UML diagrams
 
 `pylint` comes with a UML diagram generator called `pyreverse`.
