@@ -94,7 +94,9 @@ class Initialiser(ABC):
                 and n[0] > 0
                 and isinstance(n[1], (int, np.int_))
                 and n[1] > 0
-            ), "Error in qubit initialisation: n needs to be 2d-int for GridQubit, received: n = {}, {}".format(n, type(n))
+            ), "Error in qubit initialisation: n needs to be 2d-int for GridQubit, received: n = {}, {}".format(
+                n, type(n)
+            )
             # need this awkward return scheme to get right format
             # try:
             temp = [[cirq.GridQubit(i, j) for j in range(n[1])] for i in range(n[0])]
@@ -167,7 +169,9 @@ class Initialiser(ABC):
             self.simulator_options = {}
             self.simulator = cirq.Simulator()
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(simulator_name)
+            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
+                simulator_name
+            )
 
     @abstractmethod
     def energy(self) -> np.ndarray:

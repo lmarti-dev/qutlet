@@ -4,6 +4,15 @@ fauvqe.isings package
 Submodules
 ----------
 
+fauvqe.isings.initialisers module
+---------------------------------
+
+.. automodule:: fauvqe.isings.initialisers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 fauvqe.isings.ising module
 --------------------------
 

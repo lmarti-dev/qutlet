@@ -1,24 +1,3 @@
-# import required liberies:
-# Possibly bad style to import external libaries here...
-# ..level for the moment until better solution
-# .. import global to use them also in submodule
-# https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
-
-# imports within package
-
-# subpackages
-from . import isings, objectives
-
-# Flattened module
-from .isings.initialisers import (
-    Initialiser,
-)
-
-# Flattened sub-modules
-from .isings import (
-    Ising,
-)
-
 """
 All within fauvqe imported libaries:
 #Standard libaries
@@ -37,3 +16,19 @@ import cirq
 import qsimcirq
 from cirqqulacs import QulacsSimulator
 """
+
+# import required liberies:
+# Possibly bad style to import external libaries here...
+# ..level for the moment until better solution
+# .. import global to use them also in submodule
+# https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
+
+# imports within package
+
+# subpackages
+from . import isings, objectives, optimisers
+
+# Flattened sub-modules
+from .isings import Ising
+from .objectives import CVaR, ExpectationValue
+from .optimisers import ADAM, GradientDescent

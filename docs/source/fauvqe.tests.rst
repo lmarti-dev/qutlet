@@ -4,15 +4,6 @@ fauvqe.tests package
 Submodules
 ----------
 
-fauvqe.tests.ising\_tests module
---------------------------------
-
-.. automodule:: fauvqe.tests.ising_tests
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :private-members:
-
 fauvqe.tests.test\_initialiser module
 -------------------------------------
 
@@ -44,6 +35,15 @@ fauvqe.tests.test\_ising\_qaoa module
 -------------------------------------
 
 .. automodule:: fauvqe.tests.test_ising_qaoa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+fauvqe.tests.test\_isings module
+--------------------------------
+
+.. automodule:: fauvqe.tests.test_isings
    :members:
    :undoc-members:
    :show-inheritance:

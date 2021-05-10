@@ -1,7 +1,15 @@
+"""
+module docstring
+"""
+
 import numpy as np
 
 
 class OptimisationStep:
+    """
+    class docstring
+    """
+
     def __init__(self, index: int, params: np.ndarray):
         self.index = index
         self.params = params

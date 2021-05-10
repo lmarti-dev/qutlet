@@ -38,7 +38,9 @@ def test_set_circuit():
     assert ising_obj.circuit_param == [sympy.Symbol("b0"), sympy.Symbol("g0")]
     # Basic test whether circuit gives correct result
     obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0)
-    wf_x = ising_obj.simulator.simulate(ising_obj.circuit, param_resolver=obj_param_resolver).state_vector()
+    wf_x = ising_obj.simulator.simulate(
+        ising_obj.circuit, param_resolver=obj_param_resolver
+    ).state_vector()
     assert np.allclose(
         wf_x,
         np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j]),
@@ -46,7 +48,9 @@ def test_set_circuit():
         atol=1e-14,
     )
     obj_param_resolver = ising_obj.qaoa._get_param_resolver(ising_obj, 1, 0.5)
-    wf_z = ising_obj.simulator.simulate(ising_obj.circuit, param_resolver=obj_param_resolver).state_vector()
+    wf_z = ising_obj.simulator.simulate(
+        ising_obj.circuit, param_resolver=obj_param_resolver
+    ).state_vector()
     assert np.allclose(
         wf_z,
         np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j]),

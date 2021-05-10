@@ -3,3 +3,5 @@
 from .ising import (
     Ising,
 )
+
+from .initialisers import Initialiser

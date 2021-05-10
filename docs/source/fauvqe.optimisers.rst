@@ -22,6 +22,24 @@ fauvqe.optimisers.gradient\_descent module
    :show-inheritance:
    :private-members:
 
+fauvqe.optimisers.optimisation\_result module
+---------------------------------------------
+
+.. automodule:: fauvqe.optimisers.optimisation_result
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+fauvqe.optimisers.optimisation\_step module
+-------------------------------------------
+
+.. automodule:: fauvqe.optimisers.optimisation_step
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 fauvqe.optimisers.optimiser module
 ----------------------------------
 

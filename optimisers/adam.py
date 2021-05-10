@@ -40,7 +40,9 @@ import cirq
 import sympy
 
 # internal import
-from fauvqe.optimisers import Optimiser, OptimisationStep, OptimisationResult
+from .optimiser import Optimiser
+from .optimisation_step import OptimisationStep
+from .optimisation_result import OptimisationResult
 from fauvqe.objectives import Objective
 
 
@@ -63,8 +65,6 @@ class ADAM(Optimiser):
       break_cond  :default 'iterations', but also e.g. change in obj_func etc.
       break_param : e.g amount of steps of iteration
 
-      n_print : print out after n steps, default -1
-
     Try to include/implement MPI4py or multiprocessing here!
     """
 
@@ -83,7 +83,6 @@ class ADAM(Optimiser):
         b_2=0.999,
         break_cond="iterations",
         break_param=100,
-        n_print=-1,
     ):
         super().__init__(objective, qubits, simulator, circuit, circuit_param, circuit_param_values)
         self.eps = eps
@@ -93,7 +92,6 @@ class ADAM(Optimiser):
         self.b_2 = b_2
         self.break_cond = break_cond
         self.break_param = break_param
-        self.n_print = n_print
         self.step = 0
         self._v_t = np.zeros(np.shape(circuit_param_values))
         self._m_t = np.zeros(np.shape(circuit_param_values))
@@ -121,7 +119,7 @@ class ADAM(Optimiser):
             for i in range(self.break_param):
                 # Make ADAM step
                 temp_cpv = self._ADAM_step(temp_cpv)
-                res.add_step(OptimisationStep(index=i, params=temp_cpv))
+                res.add_step(OptimisationStep(index=i, params=temp_cpv.copy()))
         else:
             assert (
                 False
@@ -177,22 +175,39 @@ class ADAM(Optimiser):
         # Use MPi4Py/Multiporcessing HERE!!
         for j in range(n_param):
             # Simulate wavefunction at p_j + eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
-            wf1 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] + self.eps
+            )
+            wf1 = self.simulator.simulate(
+                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
+            ).state_vector()
 
             # Simulate wavefunction at p_j - eps
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] - 2 * self.eps
-            wf2 = self.simulator.simulate(self.circuit, param_resolver=cirq.ParamResolver(joined_dict)).state_vector()
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] - 2 * self.eps
+            )
+            wf2 = self.simulator.simulate(
+                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
+            ).state_vector()
 
             # Calculate gradient
-            gradient_values[j] = (self.objective.evaluate(wf1) - self.objective.evaluate(wf2)) / (2 * self.eps)
+            gradient_values[j] = (self.objective.evaluate(wf1) - self.objective.evaluate(wf2)) / (
+                2 * self.eps
+            )
 
             # Reset dictionary
-            joined_dict[str(self.circuit_param[j])] = joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self.circuit_param[j])] = (
+                joined_dict[str(self.circuit_param[j])] + self.eps
+            )
 
         # print("GradientDescent._get_gradients() does not work/is not completed")
         return gradient_values
 
     def _get_param_resolver(self, temp_cpv):
-        joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(np.size(self.circuit_param_values))}}
+        joined_dict = {
+            **{
+                str(self.circuit_param[i]): temp_cpv[i]
+                for i in range(np.size(self.circuit_param_values))
+            }
+        }
         return cirq.ParamResolver(joined_dict)

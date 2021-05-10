@@ -64,7 +64,9 @@ class Ising(Initialiser):
 
         # convert input to numpy array to be sure
         h = np.array(h)
-        assert (h.shape == self.n).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
+        assert (
+            h.shape == self.n
+        ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
 
     def energy(self) -> Tuple[np.ndarray]:
@@ -94,7 +96,9 @@ class Ising(Initialiser):
         # Create the operator corresponding to the interaction energy summed over all
         # nearest-neighbor pairs of qubits
         # print(self.n, n_sites) # Todo: fix this:
-        ZZ_filter = np.zeros(2 ** (n_sites), dtype=np.float64)  # np.zeros_like(wf, dtype=np.float64)
+        ZZ_filter = np.zeros(
+            2 ** (n_sites), dtype=np.float64
+        )  # np.zeros_like(wf, dtype=np.float64)
 
         # Looping for soo many unnecessary ifs is bad.....
         # NEED FOR IMPROVEMENT - > avoid blank python for loops!!
@@ -190,7 +194,9 @@ class Ising(Initialiser):
         )
         self.circuit_param_values = new_values
 
-    def set_optimiser(self, optimiser_name, objective: Objective = ExpectationValue(), field="Z"):
+    def set_optimiser(
+        self, optimiser_name, optimiser_kwargs=dict(), objective: Objective = ExpectationValue()
+    ):
         """
         This function acts as an interface to the general optimiser structure
         Args:
@@ -201,7 +207,7 @@ class Ising(Initialiser):
                 MISSING: give optimisers energy and change default field to 'Z'
                 https://stackoverflow.com/questions/38503937/parsing-default-arguments-in-functions-without-executing-the-them
         """
-        objective.initialise(self, field=field)
+        objective.initialise(obj_value=self.energy())
 
         if optimiser_name == "GradientDescent":
             # Import GradientDescent() class:
@@ -264,7 +270,11 @@ class Ising(Initialiser):
         # This is for qubits:
         # {(i1, i2): com_prob[i2 + i1*q4.n[1]] for i1 in np.arange(q4.n[0]) for i2 in np.arange(q4.n[1])}
         # But we want for spins:
-        return {(i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1 for i0 in np.arange(self.n[0]) for i1 in np.arange(self.n[1])}
+        return {
+            (i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1
+            for i0 in np.arange(self.n[0])
+            for i1 in np.arange(self.n[1])
+        }
 
     def print_spin(self, wf):
         """
@@ -306,14 +316,17 @@ class Ising(Initialiser):
                 For numeric reasons include h in \Lambda_k
             - Return E/N = - h* sum \Lambda_k/N
         """
-        assert self.n[0] * self.n[1] == np.max(self.n), "Ising class error, given system dimensions n = {} are not 1D".format(
+        assert self.n[0] * self.n[1] == np.max(
             self.n
-        )
+        ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
         assert np.min(self.h) == np.max(
             self.h
         ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
         # Use initial parameter to catch empty array
-        assert (np.min(self.j_h, initial=np.finfo(np.float_).max) == np.max(self.j_h, initial=np.finfo(np.float_).min)) or (
+        assert (
+            np.min(self.j_h, initial=np.finfo(np.float_).max)
+            == np.max(self.j_h, initial=np.finfo(np.float_).min)
+        ) or (
             np.size(self.j_h) == 0
         ), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_h,
@@ -321,7 +334,10 @@ class Ising(Initialiser):
             np.max(self.j_h, initial=np.finfo(np.float_).min),
         )
         # Use initial parameter to catch empty array
-        assert (np.min(self.j_v, initial=np.finfo(np.float_).max) == np.max(self.j_v, initial=np.finfo(np.float_).min)) or (
+        assert (
+            np.min(self.j_v, initial=np.finfo(np.float_).max)
+            == np.max(self.j_v, initial=np.finfo(np.float_).min)
+        ) or (
             np.size(self.j_v) == 0
         ), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_v,
@@ -329,7 +345,7 @@ class Ising(Initialiser):
             np.max(self.j_v, initial=np.finfo(np.float_).min),
         )
         lambda_k = self._get_lambda_k()
-        print("#np.size(lambda_k) = {} \t self.n[0]*self.n[1] = {}".format(np.size(lambda_k), self.n[0] * self.n[1]))
+        # print("#np.size(lambda_k) = {} \t self.n[0]*self.n[1] = {}".format(np.size(lambda_k), self.n[0] * self.n[1]))
         return -np.sum(lambda_k) / np.size(lambda_k)  # self.n[0]*self.n[1]
 
     def _get_lambda_k(self):
@@ -339,7 +355,9 @@ class Ising(Initialiser):
         """
         _n = self.n[0] * self.n[1]
         # print("_n: {}".format(_n))
-        _k = 2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 + 1e-10, step=1) / _n
+        _k = (
+            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 + 1e-10, step=1) / _n
+        )
         # print("_k: {}".format(_k))
         if self.j_h.size > 0:
             _j = self.j_h[0][0]

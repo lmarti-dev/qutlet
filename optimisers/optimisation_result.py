@@ -1,6 +1,10 @@
-from typing import List, Any
+"""
+module docstring Optimisation result
+"""
+from typing import List
+from numbers import Real
+
 import numpy as np
-import matplotlib.pyplot as plt
 
 from ..objectives import Objective
 from .optimisation_step import OptimisationStep
@@ -8,68 +12,88 @@ from .optimiser import Optimiser
 
 
 class OptimisationResult:
+    """
+    class docstring Optimisation result
+    """
+
     def __init__(self, optimiser: Optimiser):
         # Store start params? optimiser.circuit_param_values
         self.__steps: List[OptimisationStep] = []
         self.__wavefunctions: np.ndarray = None
-        self.__optimiser = optimiser
-
-    def savetxt(self, path: str) -> None:
-        # Add option to also store wavefunctions/expval/objectives/...
-        # Add headers?
-        arr = np.array([step.params for step in self.get_steps()])
-        np.savetxt(path, arr)
-
-    def readtxt(self, path: str) -> None:
-        # Additional classmethod to also recover Ising() ...
-        arr = np.loadtxt(path)
-        for index in range(len(arr)):
-            self.__steps.insert(index, arr[index])
+        self.__optimiser: Optimiser = optimiser
 
     def add_step(self, step: OptimisationStep) -> None:
+        """
+        Add a step
+        """
         self.__steps.append(step)
 
     def get_steps(self) -> List[OptimisationStep]:
+        """
+        Get all steps
+        """
         return self.__steps
 
     def get_latest_step(self) -> OptimisationStep:
+        """
+        Get latest/last step
+        """
         return self.__steps[-1]
 
-    def plot(self, objective: Objective) -> np.ndarray:
-        objective_values = np.array([objective.evaluate(wf) for wf in self.__wavefunctions])
-
-        return objective_values
-
-    def finalize(self):
+    def finalize(self) -> None:
+        """
+        Finalize (calc wavefunction, joblib here!)
+        """
         self.__wavefunctions = self.get_wavefunctions()
 
-        return self
-
     def get_wavefunctions(self) -> List[np.ndarray]:
+        """
+        Get wavefunctions
+        """
         if self.__wavefunctions is not None:
             return self.__wavefunctions
 
         return [self.__get_wavefunction(step.params) for step in self.__steps]
 
-    def get_latest_wavefunction(self):
+    def get_latest_wavefunction(self) -> np.ndarray:
+        """
+        Get latest/last wavefunction
+        """
+
         if self.__wavefunctions is not None:
             return self.__wavefunctions[-1]
 
         return self.__get_wavefunction(self.get_latest_step().params)
 
-    def get_objective(self):
+    def get_objective(self) -> Objective:
+        """
+        Get objective used for optimisation
+        """
+
         return self.__optimiser.objective
 
-    def get_objective_values(self):
+    def get_objective_values(self) -> List[Real]:
+        """
+        Get value of the objective.
+        """
+
         return [self.__optimiser.objective.evaluate(wf) for wf in self.get_wavefunctions()]
 
     def get_latest_objective_value(self):
-        final_step = self.get_latest_step()
-        wf = self.__get_wavefunction(final_step.params)
+        """
+        Get final value of the objective.
+        """
 
-        return self.__optimiser.objective.evaluate(wf)
+        final_step = self.get_latest_step()
+        wavefunction = self.__get_wavefunction(final_step.params)
+
+        return self.__optimiser.objective.evaluate(wavefunction)
 
     def __get_wavefunction(self, params: np.ndarray) -> np.ndarray:
+        """
+        Helper method to simulate the wavefunction.
+        """
+
         return self.__optimiser.simulator.simulate(
             self.__optimiser.circuit,
             param_resolver=self.__optimiser._get_param_resolver(params),
