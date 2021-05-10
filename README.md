@@ -22,6 +22,7 @@ To install those, run
 
 ```bash
 pip install --upgrade \
+  pylint \
   black \
   pre-commit
 ```
@@ -47,6 +48,23 @@ To install more pre-commit hooks, modify `.pre-commit-config.yaml` and run `pre-
 ### Continuous integration (CI)
 
 CI is done with GitHub actions.
+
+### UML diagrams
+
+`pylint` comes with a UML diagram generator called `pyreverse`.
+With `pylint` installed, you should also be able to access `pyreverse` via CLI.
+
+In the repository, run
+
+```bash
+pyreverse . -o png
+```
+
+for a simple UML diagram.
+The generated files will be called `classes.png` and `packages.png`.
+To also visualise private and protected members, add the flag `-f ALL`.
+
+For more documentation, refer to `pyreverse --help`.
 
 ## Design ideas
 
