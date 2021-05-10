@@ -20,12 +20,13 @@ What does a optimiser need for that?:
 """
 # external import
 import numpy as np
+from abc import ABC
 
 # import cirq
 # import importlib
 
 
-class Optimiser:
+class Optimiser(ABC):
     """
     Args:
         obj_func()          :   objectiv function f(x)/energy
@@ -65,4 +66,4 @@ class Optimiser:
 
         Run optimiser until break condition is fullfilled
         """
-        assert False, "Parent class Optimiser()-method 'optimise()', not overwritten"
+        raise NotImplementedError("Parent class Optimiser()-method 'optimise()', not overwritten")
