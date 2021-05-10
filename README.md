@@ -24,6 +24,7 @@ To install those, run
 pip install --upgrade \
   pylint \
   black \
+  sphinx \
   pre-commit
 ```
 
@@ -48,6 +49,24 @@ To install more pre-commit hooks, modify `.pre-commit-config.yaml` and run `pre-
 ### Continuous integration (CI)
 
 CI is done with GitHub actions.
+
+## Documentation
+
+### Sphinx
+
+[sphinx](https://www.sphinx-doc.org/en/master/) is used to generate a html/pdf documentation from docstrings.
+Additional documentation can easily be added by editing the files in [docs](./tree/main/docs/source).
+
+To generate the documentation including the `autodoc` files for automatic docstring documentation run
+
+```bash
+cd ./docs/
+make generate
+make html # alternatively: latex
+$BROWSER ./build/html/index.html
+```
+
+Refer to the documentation of sphinx for more information, for example on how to add custom documentation to the `.rst` files.
 
 ### UML diagrams
 
