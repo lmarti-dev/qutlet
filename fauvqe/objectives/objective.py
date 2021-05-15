@@ -69,7 +69,7 @@ class Objective(abc.ABC):
             The value of the objective function for the given wavefunction.
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def _rotate_x(self, wavefunction: np.ndarray) -> np.ndarray:
         """Helper method to rotate a wavefunction around the x axis.
@@ -101,4 +101,4 @@ class Objective(abc.ABC):
 
     @abc.abstractmethod
     def __repr__(self) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover

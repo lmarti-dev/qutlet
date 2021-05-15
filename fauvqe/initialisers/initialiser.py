@@ -183,4 +183,4 @@ class Initialiser(abc.ABC):
 
     @abc.abstractmethod
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
