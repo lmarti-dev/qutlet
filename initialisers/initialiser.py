@@ -1,26 +1,26 @@
-""" 
+"""
 #  TP2 internal VQE class
 #   purpose is to write common code in a compatible manner
-# 
+#
 #  try to use type definitions and numpy arrays as good as possible
-# 
+#
 # use this:
 # https://quantumai.google/cirq/tutorials/educators/qaoa_ising
 # as a starting point.
 # Write in class strucutre. Add automated testing. Put to package.
-# Then add own ideas and alternative optimisers, ising circuits etc. 
+# Then add own ideas and alternative optimisers, ising circuits etc.
 
 """
-# external import
-import numpy as np
-from abc import ABC, abstractmethod
+import abc
+from typing import Tuple, List
 
-# Cirq libaries
+import numpy as np
+import sympy
 import cirq
 import qsimcirq
 
 
-class Initialiser(ABC):
+class Initialiser(abc.ABC):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one
@@ -31,7 +31,6 @@ class Initialiser(ABC):
     # Watch out, these are shared by all class objects, what one usually
     # wants to avoid
 
-    # Class constructor
     def __init__(self, qubittype, n):
         """
         Write in a flag style to be insensitive for input order
@@ -43,12 +42,14 @@ class Initialiser(ABC):
             ######
             later intial state?
         """
+        self.circuit_param: List[sympy.Symbol] = []
         self.init_qubits(qubittype, n)
         self.circuit = cirq.Circuit()
         self.set_simulator()
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
+
         # cannot use switcher as initialisation parameters 'n' are of different type
         if qubittype == "NamedQubit":
             assert all(
@@ -173,6 +174,26 @@ class Initialiser(ABC):
                 simulator_name
             )
 
-    @abstractmethod
-    def energy(self) -> np.ndarray:
+    def get_param_resolver(self, temp_cpv):
+        joined_dict = {
+            **{str(self.circuit_param[i]): temp_cpv[i] for i in range(len(self.circuit_param))}
+        }
+
+        return cirq.ParamResolver(joined_dict)
+
+    @abc.abstractmethod
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError()
+
+
+############################
+# Add simulate method ??
+######################
+# --End of Class Initialiser
+
+# useful: __update = update   # private copy of original update() method
+
+# potentially add general optimiser here via self.circuit_param
+# but really want to call it via fauvqe.optimiser.optimiser_name(parameters)
+# e.g. fauvqe.optimiser.gradient_descent(parameters)
+# %%

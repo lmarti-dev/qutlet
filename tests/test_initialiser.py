@@ -14,6 +14,12 @@ import numpy as np
 # internal import
 from fauvqe import Initialiser
 
+
+class MockInitialiser(Initialiser):
+    def energy(self):
+        return np.array([])
+
+
 # test_Initialiser_set_qubits
 @pytest.mark.parametrize(
     "qubittype, n, exp_quibits",
@@ -31,7 +37,7 @@ from fauvqe import Initialiser
     ],
 )
 def test_Initialiser(qubittype, n, exp_quibits):
-    initialiser_obj = Initialiser(qubittype, n)
+    initialiser_obj = MockInitialiser(qubittype, n)
     assert initialiser_obj.qubits == exp_quibits
     assert initialiser_obj.qubittype == qubittype
     if isinstance(n, np.ndarray):
@@ -42,14 +48,14 @@ def test_Initialiser(qubittype, n, exp_quibits):
 
 # test whether circuit and simulator was created
 def test_Initialiser_exist():
-    initialiser_obj = Initialiser("LineQubit", 1)
+    initialiser_obj = MockInitialiser("LineQubit", 1)
     assert hasattr(initialiser_obj, "simulator")
     assert hasattr(initialiser_obj, "qubits")
 
 
 # test whether circuit and simulator was created
 def test_set_simulator():
-    initialiser_obj = Initialiser("LineQubit", 1)
+    initialiser_obj = MockInitialiser("LineQubit", 1)
     # Check if default parameter is given
     assert type(initialiser_obj.simulator) == qsimcirq.qsim_simulator.QSimSimulator
     assert initialiser_obj.simulator_options == {"t": 8}

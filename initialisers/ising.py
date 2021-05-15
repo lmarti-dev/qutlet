@@ -1,11 +1,12 @@
+# %%
+# external import
 import numpy as np
 import cirq
 import importlib
 from typing import Tuple
 
 # import all parent modules
-from .initialisers import Initialiser
-from fauvqe.objectives import Objective, ExpectationValue
+from fauvqe.initialisers.initialiser import Initialiser
 
 
 class Ising(Initialiser):
@@ -14,14 +15,8 @@ class Ising(Initialiser):
     is mother of different quantum circuit methods
     """
 
-    # Import different quantum circuit algorithm into Ising class
-    # increase readability as better structured
-    # Issue with importing subpackage this way
-    # altnative importlib.import_module('module')
-    # qaoa = __import__('fauvqe.isings.circuits.qaoa')
-    # it seems that this works:
-    qaoa = importlib.import_module("fauvqe.isings.circuits.qaoa")
-    # os = __import__('os')
+    qaoa = importlib.import_module("fauvqe.initialisers.circuits.qaoa")
+
     def __init__(self, qubittype, n, j_v, j_h, h):
         """
         qubittype as defined in initialiser
@@ -32,8 +27,8 @@ class Ising(Initialiser):
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
-        self._set_jh(j_v, j_h, h)
         self.circuit_param = None
+        self._set_jh(j_v, j_h, h)
         super().set_simulator()
 
     def _set_jh(self, j_v, j_h, h):
@@ -194,64 +189,12 @@ class Ising(Initialiser):
         )
         self.circuit_param_values = new_values
 
-    def set_optimiser(
-        self, optimiser_name, optimiser_kwargs=dict(), objective: Objective = ExpectationValue()
-    ):
-        """
-        This function acts as an interface to the general optimiser structure
-        Args:
-            -optimiser_name : class name of an implemented optimiser
-            -optional:
-                give the optimiser an alternative objective function other than
-                jZZ_hX energy
-                MISSING: give optimisers energy and change default field to 'Z'
-                https://stackoverflow.com/questions/38503937/parsing-default-arguments-in-functions-without-executing-the-them
-        """
-        objective.initialise(obj_value=self.energy())
-
-        if optimiser_name == "GradientDescent":
-            # Import GradientDescent() class:
-            gd = importlib.import_module("fauvqe.optimisers.gradient_descent")
-            # WANT to pass all via view
-            # Maybe can do also somehow via cython and pointer??
-            self.optimiser = gd.GradientDescent(
-                objective,
-                # Changed this from JZZ_hZ to JZZ_hX and no test failed
-                # A) Tha's bad, B) needs to be more general.
-                # also want to give attributes within energy function
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),  # view() is ndarray method
-            )
-        elif optimiser_name == "ADAM":
-            # Import ADAM() class:
-            adam = importlib.import_module("fauvqe.optimisers.adam")
-            # Create optimiser object:
-            self.optimiser = adam.ADAM(
-                objective,
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),
-            )
-
-        else:
-            assert (
-                False
-            ), "Invalid optimiser, received: '{}', allowed is \n \
-                'ADAM' and 'GradientDescent'".format(
-                optimiser_name
-            )
-
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"
         # probability from wf
         prob = abs(wf * np.conj(wf))
 
-        # commulative probability
+        # cumulative probability
         n_temp = round(np.log2(wf.shape[0]))
         com_prob = np.zeros(n_temp)
         # now sum it

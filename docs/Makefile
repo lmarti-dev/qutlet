@@ -16,6 +16,7 @@ help:
 .PHONY: help Makefile
 
 generate:
+	rm source/*.rst
 	@$(SPHINXGENERATE) -f --private -o ./source ../
 
 # Catch-all target: route all unknown targets to Sphinx using the new

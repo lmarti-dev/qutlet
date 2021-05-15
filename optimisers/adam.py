@@ -34,16 +34,15 @@ return θ t (Resulting parameters)
 Potential MUCH BETTER alternative option: load from scipy??
 
 """
-# external import
 import numpy as np
 import cirq
-import sympy
+from numbers import Real, Integral
+from typing import Union, Literal
 
-# internal import
-from .optimiser import Optimiser
-from .optimisation_step import OptimisationStep
-from .optimisation_result import OptimisationResult
-from fauvqe.objectives import Objective
+from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe.optimisers.optimisation_step import OptimisationStep
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.objectives.objective import Objective
 
 
 class ADAM(Optimiser):
@@ -70,70 +69,91 @@ class ADAM(Optimiser):
 
     def __init__(
         self,
-        objective: Objective,
-        qubits,
-        simulator,
-        circuit,
-        circuit_param,
-        circuit_param_values,
-        eps=10 ** -3,
-        eps_2=10 ** -8,
-        a=10 ** -2,
-        b_1=0.9,
-        b_2=0.999,
-        break_cond="iterations",
-        break_param=100,
+        eps: Real = 10 ** -3,
+        eps_2: Real = 10 ** -8,
+        a: Real = 10 ** -2,
+        b_1: Real = 0.9,
+        b_2: Real = 0.999,
+        break_cond: Literal["iterations"] = "iterations",
+        break_param: Integral = 100,
     ):
-        super().__init__(objective, qubits, simulator, circuit, circuit_param, circuit_param_values)
-        self.eps = eps
-        self.eps_2 = eps_2
-        self.a = a
-        self.b_1 = b_1
-        self.b_2 = b_2
-        self.break_cond = break_cond
-        self.break_param = break_param
-        self.step = 0
-        self._v_t = np.zeros(np.shape(circuit_param_values))
-        self._m_t = np.zeros(np.shape(circuit_param_values))
+        super().__init__()
+        assert all(
+            isinstance(n, Real) and n > 0.0 for n in [eps, eps_2, a, b_1, b_2]
+        ), "Parameters must be positive, real numbers"
+        assert (
+            isinstance(break_param, Integral) and break_param > 0
+        ), "Break parameter must be a positive integer"
+        valid_break_cond = ["iterations"]
+        assert (
+            break_cond in valid_break_cond
+        ), "Invalid break condition, received: '{}', allowed are {}".format(
+            break_cond, valid_break_cond
+        )
 
-    def optimise(self) -> OptimisationResult:
+        # The following attributes remain constant for the lifetime of this optimiser
+        self._eps: Real = eps
+        self._eps_2: Real = eps_2
+        self._a: Real = a
+        self._b_1: Real = b_1
+        self._b_2: Real = b_2
+        self._break_cond: Literal["iterations"] = break_cond
+        self._break_param: Integral = break_param
+
+        # The following attributes change for each objective
+        self._objective: Union[Objective, None] = None
+        self._v_t: np.ndarray = np.array([])
+        self._m_t: np.ndarray = np.array([])
+        self._circuit_param: np.ndarray = np.array([])
+        self._n_param: Integral = 0
+
+    def optimise(self, objective: Objective) -> OptimisationResult:
+        """Run optimiser until break condition is fulfilled
+
+        1. Make copies of param_values (to not accidentally overwrite)
+        2. Do steps until break condition. Tricky need to generalise _get_param_resolver method which also affects _get_gradients
+        3. Update self.circuit_param_values = temp_cpv
+
+        Parameters
+        ----------
+        objective: Objective
+            The objective to optimise
+
+        Returns
+        -------
+        OptimisationResult
+
+        Raises
+        -------
+        AssertionError
+        NotImplementedError
         """
-        Run optimiser until break condition is fullfilled
+        assert isinstance(
+            objective, Objective
+        ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
+            type(objective).__name__
+        )
+        self._objective = objective
+        res = OptimisationResult(objective)
 
-        1.make copies of param_values (to not accidentially overwrite)
-        2.Do steps until break condition
-          Tricky need to generalise _get_param_resolver method which also affects _get_gradients
-        3.Update self.circuit_param_values = temp_cpv
+        self._circuit_param = objective.initialiser.circuit_param
 
-        NEED FOR IMPROVEMENT:
-          - allow to update hyperparameters via attribute pass to optimise function
-          - Possibly by ** args or python dictionary???
-        """
-
-        res = OptimisationResult(self)
-        # 1.make copies of param_values (to not accidentially overwrite)
-        temp_cpv = self.circuit_param_values
+        # 1.make copies of param_values (to not accidentally overwrite)
+        temp_cpv = objective.initialiser.circuit_param_values.view()
+        self._n_param = np.size(temp_cpv)
+        self._v_t = np.zeros(np.shape(temp_cpv))
+        self._m_t = np.zeros(np.shape(temp_cpv))
 
         # Do step until break condition
-        if self.break_cond == "iterations":
-            for i in range(self.break_param):
+        if self._break_cond == "iterations":
+            for i in range(self._break_param):
                 # Make ADAM step
-                temp_cpv = self._ADAM_step(temp_cpv)
-                res.add_step(OptimisationStep(index=i, params=temp_cpv.copy()))
-        else:
-            assert (
-                False
-            ), "Invalid break condition, received: '{}', allowed is \n \
-        'iterations'".format(
-                self.break_cond
-            )
-
-        # Return/update circuit_param_values
-        self.circuit_param_values = temp_cpv
+                temp_cpv = self._ADAM_step(temp_cpv, step=i + 1)
+                res.add_step(temp_cpv.copy())
 
         return res
 
-    def _ADAM_step(self, temp_cpv):
+    def _ADAM_step(self, temp_cpv, step: int):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -148,66 +168,50 @@ class ADAM(Optimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        self.step += 1
         gradient_values = self._get_gradients(temp_cpv)
-        self._m_t = self.b_1 * self._m_t + (1 - self.b_1) * gradient_values
-        self._v_t = self.b_2 * self._v_t + (1 - self.b_2) * gradient_values ** 2
+        self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
+        self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
-            self.a
-            * (1 - self.b_2 ** self.step) ** 0.5
-            / (1 - self.b_1 ** self.step)
+            self._a
+            * (1 - self._b_2 ** step) ** 0.5
+            / (1 - self._b_1 ** step)
             * self._m_t
-            / (self._v_t ** 0.5 + self.eps_2)
+            / (self._v_t ** 0.5 + self._eps_2)
         )
         return temp_cpv
 
     def _get_gradients(self, temp_cpv):
-        n_param = np.size(self.circuit_param_values)
-        gradient_values = np.zeros(n_param)
+        gradient_values = np.zeros(self._n_param)
 
         # Create joined dictionary from
         # self.circuit_param <- need their name list
         #     create name array?
         # Use temp_cpv not self.circuit_param_values here
-        joined_dict = {**{str(self.circuit_param[i]): temp_cpv[i] for i in range(n_param)}}
+        joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
 
         # Calculate the gradients
-        # Use MPi4Py/Multiporcessing HERE!!
-        for j in range(n_param):
+        # Use MPi4Py/Multiprocessing HERE!!
+        for j in range(self._n_param):
             # Simulate wavefunction at p_j + eps
-            joined_dict[str(self.circuit_param[j])] = (
-                joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self._circuit_param[j])] = (
+                joined_dict[str(self._circuit_param[j])] + self._eps
             )
-            wf1 = self.simulator.simulate(
-                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
-            ).state_vector()
+            wf1 = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
 
             # Simulate wavefunction at p_j - eps
-            joined_dict[str(self.circuit_param[j])] = (
-                joined_dict[str(self.circuit_param[j])] - 2 * self.eps
+            joined_dict[str(self._circuit_param[j])] = (
+                joined_dict[str(self._circuit_param[j])] - 2 * self._eps
             )
-            wf2 = self.simulator.simulate(
-                self.circuit, param_resolver=cirq.ParamResolver(joined_dict)
-            ).state_vector()
+            wf2 = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
 
             # Calculate gradient
-            gradient_values[j] = (self.objective.evaluate(wf1) - self.objective.evaluate(wf2)) / (
-                2 * self.eps
+            gradient_values[j] = (self._objective.evaluate(wf1) - self._objective.evaluate(wf2)) / (
+                2 * self._eps
             )
 
             # Reset dictionary
-            joined_dict[str(self.circuit_param[j])] = (
-                joined_dict[str(self.circuit_param[j])] + self.eps
+            joined_dict[str(self._circuit_param[j])] = (
+                joined_dict[str(self._circuit_param[j])] + self._eps
             )
 
-        # print("GradientDescent._get_gradients() does not work/is not completed")
         return gradient_values
-
-    def _get_param_resolver(self, temp_cpv):
-        joined_dict = {
-            **{
-                str(self.circuit_param[i]): temp_cpv[i]
-                for i in range(np.size(self.circuit_param_values))
-            }
-        }
-        return cirq.ParamResolver(joined_dict)

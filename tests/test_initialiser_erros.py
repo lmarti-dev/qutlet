@@ -6,12 +6,17 @@ Test parent class Initialiser;
     -try to check test coverage?
 """
 # external import
-import cirq
 import pytest
 import numpy as np
 
 # internal import
 from fauvqe import Initialiser
+
+
+class MockInitialiser(Initialiser):
+    def energy(self):
+        return np.array([])
+
 
 # test_Initialiser_expected_errors
 # AssertionError
@@ -36,10 +41,10 @@ from fauvqe import Initialiser
 )
 def test_Initialiser(qubittype, n):
     with pytest.raises(AssertionError):
-        initialiser_obj = Initialiser(qubittype, n)
+        MockInitialiser(qubittype, n)
 
 
 # TypeError
 def test_Initialiser00():
     with pytest.raises(TypeError):
-        initialiser_obj = (Initialiser("NamedQubit", 1),)
+        MockInitialiser("NamedQubit", 1)

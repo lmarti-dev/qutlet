@@ -3,7 +3,7 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising
+from fauvqe import Ising, ExpectationValue
 
 
 class IsingTester:
@@ -29,7 +29,8 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        wf_energy = ising_obj.energy(wf)
+        exp_val = ExpectationValue(ising_obj, field=basis)
+        wf_energy = exp_val.evaluate(wf)
         assert (
             abs(E_exp - wf_energy) < self.atol
         ), "Simple JZZ hX energy test failed; expected: {}, received {}, tolerance {}".format(
@@ -52,7 +53,9 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        wf_energy = ising_obj.energy(wf, field="Z")
+        exp_val = ExpectationValue(ising_obj, field="Z")
+        wf_energy = exp_val.evaluate(wf)
+
         assert (
             abs(E_exp - wf_energy) < self.atol
         ), "Simple JZZ hZ energy test failed; expected: {}, received {}, tolerance {}".format(

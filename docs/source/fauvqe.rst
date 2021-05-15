@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   fauvqe.isings
+   fauvqe.initialisers
    fauvqe.objectives
    fauvqe.optimisers
    fauvqe.tests

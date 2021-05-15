@@ -18,10 +18,10 @@ What does a optimiser need for that?:
     -simulator to simulate wavefunction
 
 """
-import numpy as np
+# external import
 from abc import ABC, abstractmethod
 
-from fauvqe.objectives import Objective
+from fauvqe.objectives.objective import Objective
 
 
 class Optimiser(ABC):
@@ -39,31 +39,11 @@ class Optimiser(ABC):
     These e.g. exist in Ising() as ising_obj.qubits etc..., but copy/view seems most reasonable
     """
 
-    def __init__(
-        self,
-        objective: Objective,
-        qubits,
-        simulator,
-        circuit,
-        circuit_param,
-        circuit_param_values,
-    ):
-        # Possibly add some asserts here to ensure that handover attributes/functions
-        # have the correct format
-        self.objective = objective
-        self.circuit = circuit
-        self.qubits = qubits
-        self.simulator = simulator
-        assert np.size(circuit_param) == np.size(
-            circuit_param_values
-        ), "Optimiser error: size of circuit_param != size of circuit_param_values; {} != {}".format(
-            np.size(circuit_param), np.size(circuit_param_values)
-        )
-        self.circuit_param = circuit_param
-        self.circuit_param_values = circuit_param_values
+    def __init__(self):
+        pass
 
     @abstractmethod
-    def optimise(self):
+    def optimise(self, objective: Objective):
         """
         Idea:
             -Each optimiser should have function "optimise"

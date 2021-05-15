@@ -1,16 +1,15 @@
 """Abstract base class for Objectives required to optimise circuit.
 """
-from abc import abstractmethod, ABC
+import abc
 from numbers import Real
-from typing import Tuple
 
 import numpy as np
 import cirq
 
-from ..isings.initialisers import Initialiser
+from fauvqe.initialisers.initialiser import Initialiser
 
 
-class Objective(ABC):
+class Objective(abc.ABC):
     """Abstract base class for Objectives required to optimise circuit.
 
     This class is unusable and intended to be extended.
@@ -30,23 +29,32 @@ class Objective(ABC):
 
     """
 
-    @abstractmethod
-    def initialise(self, obj_value: Tuple[np.ndarray]) -> None:
-        """Compute one-time tasks from the given objective value.
+    def __init__(self, initialiser: Initialiser):
+        assert isinstance(
+            initialiser, Initialiser
+        ), "Bad argument 'initialiser'. Must be an instance of Initialiser. '{}' was given".format(
+            type(initialiser).__name__
+        )
 
-        This method enables the computation of one-time tasks (i.e. calculating
-        energies of the initialiser).
-        It should be considered to store the intermediate results in RAM but keep
-        in mind how much bandwidth and/or capacity will be used as a result.
+        self._initialiser: Initialiser = initialiser
 
-        Parameters
-        ----------
-        obj_value:
-            The objective values.
-        """
-        raise NotImplementedError()
+    @property
+    def initialiser(self) -> Initialiser:
+        return self._initialiser
 
-    @abstractmethod
+    def simulate(self, param_resolver, initial_state=None):
+        simulator_result = self._initialiser.simulator.simulate(
+            self._initialiser.circuit,
+            param_resolver=param_resolver,
+            initial_state=initial_state,
+        )
+
+        return simulator_result.state_vector()
+
+    def simulate_and_evaluate(self, param_resolver, initial_state=None):
+        return self.evaluate(self.simulate(param_resolver, initial_state=initial_state))
+
+    @abc.abstractmethod
     def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the objective for a given wavefunction.
 
@@ -83,17 +91,17 @@ class Objective(ABC):
         """
         # Construct rotation circuit for each qubit
         rotation_circuit = cirq.Circuit()
-        for row in self.__initialiser.qubits:
+        for row in self._initialiser.qubits:
             for qubit in row:
                 # Hadamard gate corresponds to x rotation
                 rotation_circuit.append(cirq.H(qubit))
 
-        return self.__initialiser.simulator.simulate(
+        return self._initialiser.simulator.simulate(
             rotation_circuit,
             # Start off at the given wavefunction
             initial_state=wavefunction,
         ).state_vector()
 
-    @abstractmethod
+    @abc.abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()

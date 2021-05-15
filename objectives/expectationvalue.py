@@ -4,9 +4,10 @@ Expval module docstring
 
 from typing import Literal, Tuple
 import numpy as np
+from numbers import Integral
 
-from ..isings.initialisers import Initialiser
-from .objective import Objective
+from fauvqe.objectives.objective import Objective
+from fauvqe.initialisers.initialiser import Initialiser
 
 
 class ExpectationValue(Objective):
@@ -33,8 +34,8 @@ class ExpectationValue(Objective):
             <ExpectationValue field=self.field>
     """
 
-    def __init__(self, field: Literal["Z", "X"] = "Z"):
-        super().__init__()
+    def __init__(self, initialiser: Initialiser, field: Literal["Z", "X"] = "Z"):
+        super().__init__(initialiser)
         assert field in [
             "Z",
             "X",
@@ -43,16 +44,8 @@ class ExpectationValue(Objective):
         )
 
         self.__field: Literal["Z", "X"] = field
-        self.__energies: np.ndarray = None
-        self.__n_qubits: int = 0
-
-    def initialise(self, obj_value: Tuple[np.ndarray]) -> None:
-        # Type checking
-        assert isinstance(
-            obj_value, np.ndarray
-        ), "Bad argument 'obj_value'. Must be an instance of numpy.ndarray"
-        self.__energies = obj_value
-        self.__n_qubits = np.log2(obj_value.size())
+        self.__energies: Tuple[np.ndarray, np.ndarray] = initialiser.energy()
+        self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
 
     def evaluate(self, wavefunction: np.ndarray) -> np.float64:
         if self.__field == "X":

@@ -3,11 +3,12 @@ cVaR objective module docstring
 """
 
 from typing import Literal, Tuple
-import numpy as np
-from numbers import Real
+from numbers import Real, Integral
 
-from .objective import Objective
-from ..isings.initialisers import Initialiser
+import numpy as np
+
+from fauvqe.objectives.objective import Objective
+from fauvqe.initialisers.initialiser import Initialiser
 
 
 class CVaR(Objective):
@@ -32,45 +33,30 @@ class CVaR(Objective):
             <cVaR field=self.field alpha=self.alpha>
     """
 
-    def __init__(self, alpha: float, field: Literal["Z", "X"] = "Z"):
-        super().__init__()
+    def __init__(self, initialiser: Initialiser, alpha: Real, field: Literal["Z", "X"] = "Z"):
+        super().__init__(initialiser)
 
-        assert 0 <= alpha <= 1.0, "cVaR alpha must be in (0, 1). Recieved: {:f}".format(alpha)
+        assert 0.0 <= alpha <= 1.0, "cVaR alpha must be in (0, 1). Received: {:f}".format(alpha)
         assert field in [
             "Z",
             "X",
-        ], "Bad input 'field'. Allowed values are ['Z' (default), 'X'], revieced {}".format(field)
+        ], "Bad input 'field'. Allowed values are ['Z' (default), 'X'], received {}".format(field)
 
-        self.__alpha = alpha
-        self.__mask_j = None
-        self.__mask_h = None
-        self.__energies_j: np.ndarray = None
-        self.__energies_h: np.ndarray = None
-
+        self.__alpha: Real = alpha
         self.__field: Literal["Z", "X"] = field
-        self.__n_qubits: int = 0
 
-    def initialise(self, obj_value: Tuple[np.ndarray]) -> None:
-        """Link this cVaR instance to a given initialiser and compute the sorting mask and energies.
+        # Calculate energies of initialiser
+        energies_j, energies_h = initialiser.energy()
 
-        - Calculate energies  (do not respect field yet)
-        - sort energies (for easy reuse)
-        - store both in __energies and __mask
+        # Generate sorting masks
+        self.__mask_j: np.ndarray = np.argsort(energies_j)
+        self.__mask_h: np.ndarray = np.argsort(energies_h)
 
-        Parameters
-        ----------
-        obj_value:
-            The objective values.
-        """
-        energies_j, energies_h = obj_value
+        # Sort and store energies
+        self.__energies_j: np.ndarray = energies_j[self.__mask_j]
+        self.__energies_h: np.ndarray = energies_h[self.__mask_h]
 
-        self.__mask_j = np.argsort(energies_j)
-        self.__mask_h = np.argsort(energies_h)
-
-        self.__energies_j = energies_j[self.__mask_j]
-        self.__energies_h = energies_h[self.__mask_h]
-
-        self.__n_qubits = np.log2(energies_h.size())
+        self.__n_qubits: Integral = np.log2(energies_h.size())
 
     def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk for a given wavefunction.
@@ -117,9 +103,7 @@ class CVaR(Objective):
         mask = np.cumsum(probabilities) <= alpha
 
         if not np.any(mask):
-            mask = energies == np.min(energies)
-            # Todo: This may not be unique! Use all values at minimum
-            # return energies[0]
+            return energies[0]
 
         energies_ = energies[mask]
         probabilities_ = probabilities[mask]

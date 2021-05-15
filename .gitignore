@@ -2,6 +2,8 @@
 .coverage
 # Visual Studio Code settings
 .vscode/
+# Pycharm settings
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
