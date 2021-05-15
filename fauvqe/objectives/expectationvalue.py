@@ -64,7 +64,5 @@ class ExpectationValue(Objective):
                 / self.__n_qubits
             )
 
-        raise NotImplementedError("Unknown field {}".format(self.__field))
-
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)

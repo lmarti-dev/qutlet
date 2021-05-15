@@ -51,9 +51,6 @@ class Objective(abc.ABC):
 
         return simulator_result.state_vector()
 
-    def simulate_and_evaluate(self, param_resolver, initial_state=None):
-        return self.evaluate(self.simulate(param_resolver, initial_state=initial_state))
-
     @abc.abstractmethod
     def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the objective for a given wavefunction.

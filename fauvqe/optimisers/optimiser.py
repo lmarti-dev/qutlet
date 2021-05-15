@@ -19,12 +19,12 @@ What does a optimiser need for that?:
 
 """
 # external import
-from abc import ABC, abstractmethod
+import abc
 
 from fauvqe.objectives.objective import Objective
 
 
-class Optimiser(ABC):
+class Optimiser(abc.ABC):
     """
     Args:
         obj_func()          :   objectiv function f(x)/energy
@@ -42,7 +42,7 @@ class Optimiser(ABC):
     def __init__(self):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def optimise(self, objective: Objective):
         """
         Idea:

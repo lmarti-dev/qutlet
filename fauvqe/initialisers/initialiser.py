@@ -184,16 +184,3 @@ class Initialiser(abc.ABC):
     @abc.abstractmethod
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError()
-
-
-############################
-# Add simulate method ??
-######################
-# --End of Class Initialiser
-
-# useful: __update = update   # private copy of original update() method
-
-# potentially add general optimiser here via self.circuit_param
-# but really want to call it via fauvqe.optimiser.optimiser_name(parameters)
-# e.g. fauvqe.optimiser.gradient_descent(parameters)
-# %%
