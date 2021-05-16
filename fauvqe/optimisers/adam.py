@@ -2,70 +2,53 @@
 This is the ADAM-submodule for Optimiser()
 
 This file is not exectuded, rather called within Ising() class when:
--set_circuit('qaoa') is called 
+-set_circuit('qaoa') is called
 
 or functions are handed over to classical optimiser
 
 Implementation following arXiv 1412.6980
 
 Algorithm 1: Adam, our proposed algorithm for stochastic optimization. See section 2 for details,
-and for a slightly more efﬁcient (but less clear) order of computation. g 2
-t indicates the elementwise square g_t  g_t . Good default settings for the tested machine learning problems are α = 0.001,
-β_1 = 0.9, β_2 = 0.999 and eps = 10− 8 . All operations on vectors are element-wise. With β1 and β2 we denote β_1 and β_2 to the power t.
+and for a slightly more efficient (but less clear) order of computation. g 2
+t indicates the element wise square g_t  g_t .
+Good default settings for the tested machine learning problems are α = 0.001,
+β_1 = 0.9, β_2 = 0.999 and eps = 10− 8 . All operations on vectors are element-wise.
+With β1 and β2 we denote β_1 and β_2 to the power t.
 
-Require: α: Stepsize
+Require: α: Step size
 Require: β1 , β2 ∈ [0, 1): Exponential decay rates for the moment estimates
 Require: f(θ): Stochastic objective function with parameters θ
 Require: θ 0 : Initial parameter vector
     m_0 ← 0 (Initialize 1 st moment vector)
     v_0 ← 0 (Initialize 2 nd moment vector)
-    t ← 0   (Initialize timestep)
+    t ← 0   (Initialize time step)
     while θ t not converged do
         t ← t + 1
-        g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
-        m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
+        g_t ← ∇_θ f_t (θ_{t−1} )  (Get gradients w.r.t. stochastic objective at time step t)
+        m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased first moment estimate)
         v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
-        \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
-        \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
-        θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+        \\hat m_t ← m_t /(1 − β^t_1 ) (Compute bias-corrected first moment estimate)
+        \\hat v_t ← v_t /(1 − β^t_2 ) (Compute bias-corrected second raw moment estimate)
+        θ_t ← θ_{t−1} − α · \\hat m_t /( (\\hat v_t)^0.5 + eps) (Update parameters)
     end while
 return θ t (Resulting parameters)
 
 Potential MUCH BETTER alternative option: load from scipy??
 
 """
-import numpy as np
-import cirq
 from numbers import Real, Integral
 from typing import Union, Literal
 
+import numpy as np
+import cirq
+
 from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_step import OptimisationStep
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.objective import Objective
 
 
 class ADAM(Optimiser):
-    """
-    Args from parrent class:
-        obj_func()          :   objectiv function f(x)/energy
-        qubits              :   qubit array/ordering for parametrised circuit
-        simulator           :   Classical quantum simulator to simulate circuit
-        circuit             :   parametrised circuit
-        circuit_param       :   sympy.Symbols for parametrised circuit
-        circuit_param_values:   current/initial values of circuit parameters
-                                    ->To be updates
-
-    Additional Args (give default values):
-      eps         :eps for gradient
-      eps_2       : epsilon for adam
-      b_1, b_2    : beta_1, beta_2 for adam
-
-      break_cond  :default 'iterations', but also e.g. change in obj_func etc.
-      break_param : e.g amount of steps of iteration
-
-    Try to include/implement MPI4py or multiprocessing here!
-    """
+    """ADAM class docstring"""
 
     def __init__(
         self,
@@ -77,6 +60,26 @@ class ADAM(Optimiser):
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
     ):
+        """ADAM optimiser
+
+        Parameters
+        ----------
+        eps: Real
+            :math:`\\epsilon` for gradient
+        eps_2: Real
+            :math:`\\epsilon` for adam
+        a: Real
+            Step size :math:`\\alpha` for adam
+        b_1: Real
+            :math:`\\beta_1` for adam
+        b_2: Real
+            :math:`\\beta_2` for adam
+        break_cond: {"iterations"} default "iterations"
+            Break condition for the optimisation
+        break_param: Integral
+            Break parameter for the optimisation
+        """
+
         super().__init__()
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps, eps_2, a, b_1, b_2]
@@ -111,7 +114,7 @@ class ADAM(Optimiser):
         """Run optimiser until break condition is fulfilled
 
         1. Make copies of param_values (to not accidentally overwrite)
-        2. Do steps until break condition. Tricky need to generalise _get_param_resolver method which also affects _get_gradients
+        2. Do steps until break condition. Tricky need to generalise get_param_resolver method
         3. Update self.circuit_param_values = temp_cpv
 
         Parameters
@@ -134,6 +137,7 @@ class ADAM(Optimiser):
             type(objective).__name__
         )
         self._objective = objective
+
         res = OptimisationResult(objective)
 
         self._circuit_param = objective.initialiser.circuit_param
@@ -153,15 +157,15 @@ class ADAM(Optimiser):
 
         return res
 
-    def _ADAM_step(self, temp_cpv, step: int):
+    def _ADAM_step(self, temp_cpv, step: Integral):
         """
         t ← t + 1
-        g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
-        m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
-        v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
-        \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
-        \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
-        θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+        g_t ← ∇_θ f_t (θ_{t−1} )  (Get gradients w.r.t. stochastic objective at timestep t)
+        m_t ← β_1 · m_t + (1 − β_1 ) · g_t  (Update biased ﬁrst moment estimate)
+        v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t (Update biased second raw moment estimate)
+        \\hat m_t ← m_t /(1 − β^t_1 ) (Compute bias-corrected ﬁrst moment estimate)
+        \\hat v_t ← v_t /(1 − β^t_2 ) (Compute bias-corrected second raw moment estimate)
+        θ_t ← θ_{t−1} − α · \\hat m_t /( (\\hat v_t)^0.5 + eps) (Update parameters)
 
         Alternative for last 3 lines:
         α_t = α · (1 − β^t_2)^0.5/(1 − β^t_1)

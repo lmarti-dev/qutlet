@@ -1,7 +1,7 @@
 """
 module docstring
 """
-from numbers import Real
+from numbers import Real, Integral
 from typing import Union
 
 import numpy as np
@@ -9,10 +9,15 @@ import numpy as np
 
 class OptimisationStep:
     """
-    class docstring
+
+    Parameters
+    ----------
+    parent: OptimisationResult
+    index: Integral
+    params: numpy.ndarray
     """
 
-    def __init__(self, parent, index: int, params: np.ndarray):
+    def __init__(self, parent, index: Integral, params: np.ndarray):
         self._parent = parent
         self.index = index
         self.params = params
@@ -21,6 +26,12 @@ class OptimisationStep:
 
     @property
     def wavefunction(self) -> np.ndarray:
+        """
+
+        Returns
+        -------
+
+        """
         if self.__wavefunction is None:
             self.__wavefunction = self._parent.objective.simulate(
                 param_resolver=self._parent.objective.initialiser.get_param_resolver(self.params),
@@ -30,6 +41,12 @@ class OptimisationStep:
 
     @property
     def objective(self) -> Real:
+        """
+
+        Returns
+        -------
+
+        """
         if self.__objective is None:
             self.__objective = self._parent.objective.evaluate(self.wavefunction)
 

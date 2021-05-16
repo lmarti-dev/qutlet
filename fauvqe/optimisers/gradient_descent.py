@@ -2,18 +2,17 @@
 This is a submodule for Optimiser()
 
 This file is not exectuded, rather called within Ising() class when:
--set_circuit('qaoa') is called 
+-set_circuit('qaoa') is called
 
 or functions are handed over to classical optimiser
 """
-# external import
-import numpy as np
-import cirq
 from numbers import Real, Integral
 from typing import Literal, Union
 
+import numpy as np
+import cirq
+
 from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_step import OptimisationStep
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.objective import Objective
 
@@ -76,10 +75,9 @@ class GradientDescent(Optimiser):
         Run optimiser until break condition is fullfilled
 
         1. make copies of param_values (to not accidentially overwrite)
-        2. Do steps until break condition. Tricky need to generalise _get_param_resolver method which also affects _get_gradients
+        2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
-
         assert isinstance(
             objective, Objective
         ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
@@ -97,7 +95,7 @@ class GradientDescent(Optimiser):
 
         # Do step until break condition
         if self._break_cond == "iterations":
-            for index in range(self._break_param):
+            for _ in range(self._break_param):
                 gradient_values = self._get_gradients(temp_cpv)
 
                 # Make gradient step

@@ -13,9 +13,8 @@ class Objective(abc.ABC):
     """Abstract base class for Objectives required to optimise circuit.
 
     This class is unusable and intended to be extended.
-    An implementation of this type **must** extend the methods `evaluate`
-    and `initialise`
-    Furthermore, it **should** implement the python magic method `__repr__`
+    An implementation of this type **must** extend the methods `evaluate`.
+    Furthermore, it **must** implement the python magic method `__repr__`
     in a specific format given below.
     Due to the hierarchy of this class, it is necessary to keep objective
     specific arguments, i.e. a potential field choice, in the constructor of subclasses.
@@ -40,9 +39,29 @@ class Objective(abc.ABC):
 
     @property
     def initialiser(self) -> Initialiser:
+        """The Initialiser instance linked to this objective
+
+        Returns
+        -------
+        Initialiser
+        """
         return self._initialiser
 
-    def simulate(self, param_resolver, initial_state=None):
+    def simulate(self, param_resolver, initial_state=None) -> np.ndarray:
+        """Simulate the circuit of the initialiser with a given parameter resolver.
+
+        Parameters
+        ----------
+        param_resolver
+            The circuit parameters (consider generating with initialiser.get_param_resolver())
+
+        initial_state: numpy.ndarray, optional
+            The initial wavefunction to start the simulation with
+
+        Returns
+        -------
+        numpy.ndarray: The simulated wavefunction.
+        """
         simulator_result = self._initialiser.simulator.simulate(
             self._initialiser.circuit,
             param_resolver=param_resolver,
@@ -55,30 +74,26 @@ class Objective(abc.ABC):
     def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the objective for a given wavefunction.
 
-        **Must** be called after `initialise()` as it may use results of computations
-        in said method or it may depend on information from the initialiser.
-
         Parameters
         ----------
-        wavefunction:
+        wavefunction: numpy.ndarray
             The wavefunction to calculate the corresponding objective.
 
         Returns
         ----------
         Real:
             The value of the objective function for the given wavefunction.
-
         """
         raise NotImplementedError()  # pragma: no cover
 
     def _rotate_x(self, wavefunction: np.ndarray) -> np.ndarray:
-        """Helper method to rotate a wavefunction around the x axis.
+        """Helper method to rotate a wavefunction along the x axis.
 
         Uses a rotation cirq circuit constructed from Hadamard gates to perform the transformation.
 
         Parameters
         ---------
-        wavefunction
+        wavefunction: numpy.ndarray
             Wavefunction to rotate around the x axis
 
         Returns

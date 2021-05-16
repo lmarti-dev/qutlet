@@ -1,10 +1,10 @@
-"""
-Expval module docstring
+"""Implementation of the expectation value as objective function for an initialiser.
 """
 
 from typing import Literal, Tuple
-import numpy as np
 from numbers import Integral
+
+import numpy as np
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.initialisers.initialiser import Initialiser
@@ -16,12 +16,10 @@ class ExpectationValue(Objective):
     This class implements as objective the expectation value of the energies
     of the linked initialiser.
 
-    Mathmatical description
-
-    :math:`\\frac{1}{N} \\sum_N |\\Psi_\\text{N}|^2 \\cdot E_\\text{field}`
-
     Parameters
     ----------
+    initialiser: Initialiser
+        The linked initialiser
     field: {"X", "Z"} default "Z"
         The field to be evaluated
 
@@ -58,11 +56,12 @@ class ExpectationValue(Objective):
                 )
                 / self.__n_qubits
             )
-        if self.__field == "Z":
-            return (
-                np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1]))
-                / self.__n_qubits
-            )
+
+        # field must be "Z"
+        return (
+            np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1]))
+            / self.__n_qubits
+        )
 
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)

@@ -64,17 +64,13 @@ class Ising(Initialiser):
         ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
 
-    def energy(self) -> Tuple[np.ndarray]:
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         # maybe fuse with energy_JZZ_hZ partially somehow
         """
         Energy for JZZ_hX Transverse field Ising model (TFIM) or JZZ-HZ Ising model
 
         Computes the energy-per-site of the Ising Model directly from the
         a given wavefunction.
-        Args:
-            wf:     Array of size 2**(n[0]*n[1]) specifying the wavefunction.
-                e.g.: wf2 = self.simulator.simulate(self.circuit).state_vector()
-
         Returns:
             energy: Float equal to the expectation value of the energy per site
 

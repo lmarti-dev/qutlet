@@ -1,8 +1,7 @@
-"""
-cVaR objective module docstring
+"""Implementation of the conditional value at risk as objective function for an initialiser
 """
 
-from typing import Literal, Tuple
+from typing import Literal
 from numbers import Real, Integral
 
 import numpy as np
@@ -14,11 +13,9 @@ from fauvqe.initialisers.initialiser import Initialiser
 class CVaR(Objective):
     """Class implementing the conditional value at risk (cVaR) as an objective.
 
-    Explantion of parameters and cVaR.
-
     Parameters
     ----------
-    alpha: float
+    alpha: Real
         The :math:`\\alpha` value
     field: {"Z"} default "Z"
         The field to be evaluated
@@ -61,9 +58,6 @@ class CVaR(Objective):
     def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk for a given wavefunction.
 
-        Explain method (cumsum etc.)
-        Return minimum if below
-
         Parameters
         ----------
         wavefunction:
@@ -71,7 +65,7 @@ class CVaR(Objective):
 
         Returns
         ----------
-        numpy.float64:
+        Real:
             The conditional value at risk (cVaR)
         """
 
@@ -94,11 +88,11 @@ class CVaR(Objective):
         if self.__field == "X":
             return (-cvar_h - cvar_j) / self.__n_qubits
 
-        if self.__field == "Z":
-            return (-cvar_j + cvar_h) / self.__n_qubits
+        # field must be "Z"
+        return (-cvar_j + cvar_h) / self.__n_qubits
 
     @staticmethod
-    def _calc_cvar(probabilities: np.ndarray, energies: np.ndarray, alpha: float) -> Real:
+    def _calc_cvar(probabilities: np.ndarray, energies: np.ndarray, alpha: Real) -> Real:
         # Expect energies and probabilities to be ordered
         mask = np.cumsum(probabilities) <= alpha
 
