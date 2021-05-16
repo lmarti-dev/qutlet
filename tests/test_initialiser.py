@@ -58,10 +58,10 @@ def test_set_simulator():
     initialiser_obj = MockInitialiser("LineQubit", 1)
     # Check if default parameter is given
     assert type(initialiser_obj.simulator) == qsimcirq.qsim_simulator.QSimSimulator
-    assert initialiser_obj.simulator_options == {"t": 8}
-    # Check whether adding parameters works for qsim
-    initialiser_obj.set_simulator(simulator_options={"f": 4})
     assert initialiser_obj.simulator_options == {"t": 8, "f": 4}
+    # Check whether adding parameters works for qsim
+    initialiser_obj.set_simulator(simulator_options={"f": 2})
+    assert initialiser_obj.simulator_options == {"t": 8, "f": 2}
 
     # Check whether cirq simulator can be set
     # and whether simulator_options are correct default

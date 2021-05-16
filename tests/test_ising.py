@@ -817,7 +817,7 @@ def test_energy_analytic_1d(qubittype, n, j_v, j_h, h, E_exp):
     )
     # compare numeric to analytic 1D result
     # for some less trivial cases
-    tester = IsingTester(10 * np.sqrt(atol))
+    tester = IsingTester(30 * np.sqrt(atol))
     if abs(np.sum(h)) > atol:
         tester.simple_energy_JZZ_hX_test(qubittype, n, j_v, j_h, h, cirq.Z ** 2, E_exp, "X")
     else:

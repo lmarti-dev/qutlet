@@ -38,9 +38,11 @@ Potential MUCH BETTER alternative option: load from scipy??
 """
 from numbers import Real, Integral
 from typing import Union, Literal
+import multiprocessing
 
 import numpy as np
 import cirq
+import joblib
 
 from fauvqe.optimisers.optimiser import Optimiser
 from fauvqe.optimisers.optimisation_result import OptimisationResult
@@ -157,6 +159,53 @@ class ADAM(Optimiser):
 
         return res
 
+    def optimise_joblib(
+        self, objective: Objective, n_jobs: Union[Integral, Literal["default"]] = "default"
+    ) -> OptimisationResult:
+        if n_jobs == "default":
+            try:
+                n_jobs = max(
+                    int(
+                        np.divmod(
+                            multiprocessing.cpu_count() / 2,
+                            self._objective.initialiser.simulator.qsim_options["t"],
+                        )[0]
+                    ),
+                    1,
+                )
+            except:
+                n_jobs = max(int(multiprocessing.cpu_count() / 2), 1)
+
+        assert isinstance(
+            n_jobs, Integral
+        ), "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
+
+        assert isinstance(
+            objective, Objective
+        ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
+            type(objective).__name__
+        )
+        self._objective = objective
+
+        res = OptimisationResult(objective)
+
+        self._circuit_param = objective.initialiser.circuit_param
+
+        # 1.make copies of param_values (to not accidentally overwrite)
+        temp_cpv = objective.initialiser.circuit_param_values.view()
+        self._n_param = np.size(temp_cpv)
+        self._v_t = np.zeros(np.shape(temp_cpv))
+        self._m_t = np.zeros(np.shape(temp_cpv))
+
+        # Do step until break condition
+        if self._break_cond == "iterations":
+            for step in range(self._break_param):
+                # Make ADAM step
+                temp_cpv = self._ADAM_step_joblib(temp_cpv, n_jobs, step=step + 1)
+                res.add_step(temp_cpv.copy())
+
+        return res
+
     def _ADAM_step(self, temp_cpv, step: Integral):
         """
         t ← t + 1
@@ -182,6 +231,34 @@ class ADAM(Optimiser):
             * self._m_t
             / (self._v_t ** 0.5 + self._eps_2)
         )
+        return temp_cpv
+
+    def _ADAM_step_joblib(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+        """
+        t ← t + 1
+        g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
+        m_t ← β_1 · m_t + (1 − β_1 ) · g_t      (Update biased ﬁrst moment estimate)
+        v_t ← β_2 · v_t + (1 − β_2 ) · g^2_t    (Update biased second raw moment estimate)
+        \hat m_t ← m_t /(1 − β^t_1 )                (Compute bias-corrected ﬁrst moment estimate)
+        \hat v_t ← v_t /(1 − β^t_2 )                (Compute bias-corrected second raw moment estimate)
+        θ_t ← θ_{t−1} − α · \hat m_t /( (\hat v_t)^0.5 + eps) (Update parameters)
+
+        Alternative for last 3 lines:
+        α_t = α · (1 − β^t_2)^0.5/(1 − β^t_1)
+        θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
+
+        """
+        gradient_values = np.array(self._get_gradients_joblib2(temp_cpv, _n_jobs))
+        self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
+        self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
+        temp_cpv -= (
+            self._a
+            * (1 - self._b_2 ** step) ** 0.5
+            / (1 - self._b_1 ** step)
+            * self._m_t
+            / (self._v_t ** 0.5 + self._eps_2)
+        )
+
         return temp_cpv
 
     def _get_gradients(self, temp_cpv):
@@ -219,3 +296,64 @@ class ADAM(Optimiser):
             )
 
         return gradient_values
+
+    def _get_gradients_joblib(self, temp_cpv, _n_jobs):
+        joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
+        # backend options: -'loky'               seems to be always the slowest
+        #                   'multiprocessing'   crashes where both other options do not
+        #                   'threading'         supposedly best option, still so far slower than
+        #                                       seqquential _get_gradients()
+        temp = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
+            joblib.delayed(self._get_single_gradient_joblib)(joined_dict.copy(), j)
+            for j in range(self._n_param)
+        )
+        return temp
+
+    def _get_single_gradient_joblib(self, joined_dict, j):
+        # Simulate wavefunction at p_j + eps
+        joined_dict[str(self._circuit_param[j])] = (
+            joined_dict[str(self._circuit_param[j])] + self._eps
+        )
+        wf1 = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+
+        # Simulate wavefunction at p_j - eps
+        joined_dict[str(self._circuit_param[j])] = (
+            joined_dict[str(self._circuit_param[j])] - 2 * self._eps
+        )
+        wf2 = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+
+        # Calculate gradient + return
+        return (self._objective.evaluate(wf1) - self._objective.evaluate(wf2)) / (2 * self._eps)
+        # No need to reset Reset dictionary due to copy
+
+    def _get_gradients_joblib2(self, temp_cpv, _n_jobs):
+        joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
+        # backend options: -'loky'               seems to be always the slowest
+        #                   'multiprocessing'   crashes where both other options do not
+        #                   'threading'         supposedly best option, still so far slower than
+        #                                       seqquential _get_gradients()
+        # 1. Get single energies via joblib.Parallel
+        # Format E_1 +eps, E_1 - eps
+        # Potential issue: Need 2*n_param copies of joined_dict
+        _energies = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
+            joblib.delayed(self._get_single_energy_joblib)(joined_dict.copy(), j)
+            for j in range(2 * self._n_param)
+        )
+        # 2. Return gradiens
+        # Make np array?
+        _energies = np.array(_energies).reshape((self._n_param, 2))
+        gradients_values = np.matmul(_energies, np.array((1, -1))) / (2 * self._eps)
+        return gradients_values
+
+    def _get_single_energy_joblib(self, joined_dict, j):
+        # Simulate wavefunction at p_j +/- eps
+        # j even: +  j odd: -
+
+        # Alternative: _str_cp = str(self.circuit_param[np.divmod(j,2)[0]])
+        joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])] = (
+            joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])]
+            + 2 * (0.5 - np.mod(j, 2)) * self._eps
+        )
+        wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+
+        return self._objective.evaluate(wf)

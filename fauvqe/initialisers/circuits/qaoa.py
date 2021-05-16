@@ -155,10 +155,10 @@ def _get_param_resolver(self, beta_values, gamma_values):
     except AttributeError:
         # set p to length beta_values if it does not exist
         self.p = np.size(beta_values)
-    assert self.p == np.size(beta_values), "Error: self.p = np.size(beta_values) required "
+    assert self.p == np.size(beta_values), "Error: self.p = np.size(beta_values) required"
     assert self.p == np.size(
         gamma_values
-    ), "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required "
+    ), "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required"
     # order does not mater for python dictonary
     if self.p == 1:
         joined_dict = {**{"b0": beta_values}, **{"g0": gamma_values}}
