@@ -10,7 +10,6 @@ Subpackages
    fauvqe.initialisers
    fauvqe.objectives
    fauvqe.optimisers
-   fauvqe.tests
 
 Module contents
 ---------------
