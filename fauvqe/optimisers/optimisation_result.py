@@ -50,7 +50,7 @@ class OptimisationResult:
 
         Returns
         -------
-
+        List[OptimisationStep]
         """
         return self.__steps
 
@@ -59,7 +59,7 @@ class OptimisationResult:
 
         Returns
         -------
-
+        OptimisationSteps
         """
         return self.__steps[-1]
 

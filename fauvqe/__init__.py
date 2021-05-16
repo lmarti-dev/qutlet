@@ -23,6 +23,8 @@ from .optimisers import (
     Optimiser,
     ADAM,
     GradientDescent,
+    OptimisationResult,
+    OptimisationStep,
 )
 
 """
