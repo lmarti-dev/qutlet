@@ -217,8 +217,12 @@ class Ising(AbstractModel):
 
     def print_spin(self, wf):
         """
+        Currently does not work due to Cirq update...
+
         For cirq. heatmap see example:
         https://github.com/quantumlib/Cirq/blob/master/examples/bristlecone_heatmap_example.py
+        https://github.com/quantumlib/Cirq/blob/master/examples/heatmaps.py
+        https://github.com/quantumlib/Cirq/blob/master/cirq-core/cirq/vis/heatmap_test.py
         value_map = {
             (qubit.row, qubit.col): np.random.random() for qubit in cirq.google.Bristlecone.qubits
         }
@@ -233,8 +237,6 @@ class Ising(AbstractModel):
         value_map = self.get_spin_vm(wf)
         # Create heatmap object
         heatmap = cirq.Heatmap(value_map)
-        # Set colorscale to [-1, 1]
-        heatmap.set_colormap(vmin=-1, vmax=+1)
         # Plot heatmap
         heatmap.plot()
 
