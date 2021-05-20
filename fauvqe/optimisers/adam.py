@@ -156,39 +156,26 @@ class ADAM(Optimiser):
                 # Make ADAM step
                 temp_cpv = self._ADAM_step(temp_cpv, step=i + 1)
                 res.add_step(temp_cpv.copy())
-
         return res
 
-    def optimise_joblib(
-        self, objective: Objective, n_jobs: Union[Integral, Literal["default"]] = "default"
-    ) -> OptimisationResult:
-        if n_jobs == "default":
+    def optimise_joblib( self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
+        if n_jobs < 1:
             try:
-                n_jobs = max(
-                    int(
-                        np.divmod(
-                            multiprocessing.cpu_count() / 2,
-                            self._objective.model.simulator.qsim_options["t"],
-                        )[0]
-                    ),
-                    1,
-                )
+                n_jobs = max(int(np.divmod( multiprocessing.cpu_count() / 2,
+                            self._objective.model.simulator.qsim_options["t"],)[0]),1,)
             except:
                 n_jobs = max(int(multiprocessing.cpu_count() / 2), 1)
 
-        assert isinstance(
-            n_jobs, Integral
-        ), "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
+        assert isinstance( n_jobs, Integral), \
+        "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
 
-        assert isinstance(
-            objective, Objective
-        ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
-            type(objective).__name__
-        )
+        print("n_jobs: \t {}".format{n_jobs})
+
+        assert isinstance(objective, Objective), \
+        "objective is not an instance of a subclass of Objective, given type '{}'".format(type(objective).__name__)
+        
         self._objective = objective
-
         res = OptimisationResult(objective)
-
         self._circuit_param = objective.model.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
