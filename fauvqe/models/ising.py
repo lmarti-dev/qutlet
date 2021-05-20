@@ -6,20 +6,20 @@ import importlib
 from typing import Tuple
 
 # import all parent modules
-from fauvqe.initialisers.initialiser import Initialiser
+from fauvqe.models.abstractmodel import AbstractModel
 
 
-class Ising(Initialiser):
+class Ising(AbstractModel):
     """
-    2D Ising class inherits initialiser
+    2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
 
-    qaoa = importlib.import_module("fauvqe.initialisers.circuits.qaoa")
+    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
     def __init__(self, qubittype, n, j_v, j_h, h):
         """
-        qubittype as defined in initialiser
+        qubittype as defined in bstractModel
         n number of qubits
         j_v vertical j's
         j_h horizontal j's

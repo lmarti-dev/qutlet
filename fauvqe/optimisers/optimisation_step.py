@@ -34,7 +34,7 @@ class OptimisationStep:
         """
         if self.__wavefunction is None:
             self.__wavefunction = self._parent.objective.simulate(
-                param_resolver=self._parent.objective.initialiser.get_param_resolver(self.params),
+                param_resolver=self._parent.objective.model.get_param_resolver(self.params),
             )
 
         return self.__wavefunction

@@ -142,10 +142,10 @@ class ADAM(Optimiser):
 
         res = OptimisationResult(objective)
 
-        self._circuit_param = objective.initialiser.circuit_param
+        self._circuit_param = objective.model.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
-        temp_cpv = objective.initialiser.circuit_param_values.view()
+        temp_cpv = objective.model.circuit_param_values.view()
         self._n_param = np.size(temp_cpv)
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
@@ -168,7 +168,7 @@ class ADAM(Optimiser):
                     int(
                         np.divmod(
                             multiprocessing.cpu_count() / 2,
-                            self._objective.initialiser.simulator.qsim_options["t"],
+                            self._objective.model.simulator.qsim_options["t"],
                         )[0]
                     ),
                     1,
@@ -189,10 +189,10 @@ class ADAM(Optimiser):
 
         res = OptimisationResult(objective)
 
-        self._circuit_param = objective.initialiser.circuit_param
+        self._circuit_param = objective.model.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
-        temp_cpv = objective.initialiser.circuit_param_values.view()
+        temp_cpv = objective.model.circuit_param_values.view()
         self._n_param = np.size(temp_cpv)
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
