@@ -169,7 +169,7 @@ class ADAM(Optimiser):
         assert isinstance( n_jobs, Integral), \
         "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
 
-        print("n_jobs: \t {}".format{n_jobs})
+        print("n_jobs: \t {}".format(n_jobs))
 
         assert isinstance(objective, Objective), \
         "objective is not an instance of a subclass of Objective, given type '{}'".format(type(objective).__name__)
