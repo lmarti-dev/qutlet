@@ -158,13 +158,42 @@ class ADAM(Optimiser):
                 res.add_step(temp_cpv.copy())
         return res
 
-    def optimise_joblib( self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
+    def optimise( self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
+        """Run optimiser until break condition is fulfilled. Use n_jobs = 1 to essentially previous non-parallel version of optimise()
+        Watch out: Due to initialisation cost of n_jobs = 2 might be more expensive than n_jobs = 1
+
+
+        1. Make copies of param_values (to not accidentally overwrite)
+        2. Do steps until break condition. Tricky need to generalise get_param_resolver method
+        3. Update self.circuit_param_values = temp_cpv
+
+        Parameters
+        ----------
+        objective: Objective
+            The objective to optimise
+
+        Returns
+        -------
+        OptimisationResult
+
+        Raises
+        -------
+        AssertionError
+        NotImpl
+        """
+        self._objective = objective
+        self._circuit_param = objective.model.circuit_param
+
+        # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
         if n_jobs < 1:
-            try:
-                n_jobs = max(int(np.divmod( multiprocessing.cpu_count() / 2,
-                            self._objective.model.simulator.qsim_options["t"],)[0]),1,)
+            # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
+            n_jobs = int(min(max(multiprocessing.cpu_count() / 2,1), 2*np.size(self._circuit_param)))
+            # Try to reset qsim threads, which overrights the simulator if it was not qsim
+            try: 
+                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0],1))
+                self._objective.model.set_simulator(simulator_options={'t' : t_new})
             except:
-                n_jobs = max(int(multiprocessing.cpu_count() / 2), 1)
+                pass
 
         assert isinstance( n_jobs, Integral), \
         "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
@@ -173,10 +202,6 @@ class ADAM(Optimiser):
 
         assert isinstance(objective, Objective), \
         "objective is not an instance of a subclass of Objective, given type '{}'".format(type(objective).__name__)
-        
-        self._objective = objective
-        res = OptimisationResult(objective)
-        self._circuit_param = objective.model.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
         temp_cpv = objective.model.circuit_param_values.view()
@@ -184,6 +209,7 @@ class ADAM(Optimiser):
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
 
+        res = OptimisationResult(objective)
         # Do step until break condition
         if self._break_cond == "iterations":
             for step in range(self._break_param):
