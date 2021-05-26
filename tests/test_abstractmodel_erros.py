@@ -1,5 +1,5 @@
 """
-Test parent class Initialiser;
+Test parent class AbstractModel;
     -test whether correct error messages occur
     -test whether initialisation set obj.qubits correctly 
         based on some examples
@@ -10,15 +10,15 @@ import pytest
 import numpy as np
 
 # internal import
-from fauvqe import Initialiser
+from fauvqe import AbstractModel
 
 
-class MockInitialiser(Initialiser):
+class MockAbstractModel(AbstractModel):
     def energy(self):
         return np.array([])
 
 
-# test_Initialiser_expected_errors
+# test_AbstractModel_expected_errors
 # AssertionError
 @pytest.mark.parametrize(
     "qubittype, n",
@@ -39,12 +39,12 @@ class MockInitialiser(Initialiser):
         ("GridQubit", [1, 2, 3]),
     ],
 )
-def test_Initialiser(qubittype, n):
+def test_AbstractModel(qubittype, n):
     with pytest.raises(AssertionError):
-        MockInitialiser(qubittype, n)
+        MockAbstractModel(qubittype, n)
 
 
 # TypeError
-def test_Initialiser00():
+def test_AbstractModel00():
     with pytest.raises(TypeError):
-        MockInitialiser("NamedQubit", 1)
+        MockAbstractModel("NamedQubit", 1)

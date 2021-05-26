@@ -2,6 +2,6 @@
 Objectives used in the `fauvqe` optimisation.
 """
 
-from .objective import Objective
-from .expectationvalue import ExpectationValue
-from .cvar import CVaR
+from fauvqe.objectives.objective import Objective
+from fauvqe.objectives.expectationvalue import ExpectationValue
+from fauvqe.objectives.cvar import CVaR

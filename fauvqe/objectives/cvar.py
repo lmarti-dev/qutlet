@@ -1,4 +1,4 @@
-"""Implementation of the conditional value at risk as objective function for an initialiser
+"""Implementation of the conditional value at risk as objective function for a model, e.g. Ising of AbstractModel type
 """
 
 from typing import Literal
@@ -7,7 +7,7 @@ from numbers import Real, Integral
 import numpy as np
 
 from fauvqe.objectives.objective import Objective
-from fauvqe.initialisers.initialiser import Initialiser
+from fauvqe.models.abstractmodel import AbstractModel
 
 
 class CVaR(Objective):
@@ -30,8 +30,8 @@ class CVaR(Objective):
             <cVaR field=self.field alpha=self.alpha>
     """
 
-    def __init__(self, initialiser: Initialiser, alpha: Real, field: Literal["X", "Z"] = "Z"):
-        super().__init__(initialiser)
+    def __init__(self, model: AbstractModel, alpha: Real, field: Literal["X", "Z"] = "Z"):
+        super().__init__(model)
 
         assert 0.0 <= alpha <= 1.0, "cVaR alpha must be in (0, 1). Received: {:f}".format(alpha)
         assert field in [
@@ -39,8 +39,8 @@ class CVaR(Objective):
             "X",
         ], "Bad input 'field'. Allowed values are ['X', 'Z' (default)], received {}".format(field)
 
-        # Calculate energies of initialiser
-        energies_j, energies_h = initialiser.energy()
+        # Calculate energies of model
+        energies_j, energies_h = model.energy()
 
         self.__alpha: Real = alpha
         self.__field: Literal["X", "Z"] = field

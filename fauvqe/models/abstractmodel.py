@@ -20,7 +20,7 @@ import cirq
 import qsimcirq
 
 
-class Initialiser(abc.ABC):
+class AbstractModel(abc.ABC):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one

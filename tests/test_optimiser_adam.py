@@ -64,7 +64,7 @@ def test_optimise():
     # Result smaller than -0.5 up to eta
 
 
-def test_adam_multiple_initialisers():
+def test_adam_multiple_models():
     ising1 = Ising(
         "GridQubit",
         [2, 2],
