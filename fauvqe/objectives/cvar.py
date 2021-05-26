@@ -59,6 +59,9 @@ class CVaR(Objective):
             self.__mask: np.ndarray = np.argsort(energies)
             self.__energies = energies[self.__mask]
 
+    def evaluate(self, wavefunction: np.ndarray) -> Real:
+        return self._evaluate_z(wavefunction)  # pragma: no cover
+
     def _evaluate_x(self, wavefunction_z: np.ndarray) -> Real:
         wavefunction_x = self._rotate_x(wavefunction_z)
         energies = np.abs(wavefunction_z) ** 2 * (-self.__energies_j) + np.abs(

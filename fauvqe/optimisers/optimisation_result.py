@@ -3,13 +3,33 @@ module docstring Optimisation result
 """
 import datetime
 import json
-from numbers import Real, Integral
+from numbers import Real, Integral, Complex
 from typing import List, Optional
 
 import numpy as np
 from fauvqe.restorable import Restorable
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_step import OptimisationStep
+
+FLAG = "__dtype__"
+
+
+def decode_custom(dct):
+    if FLAG in dct:
+        dtype = dct[FLAG]
+
+        if dtype == "complex":
+            return complex(dct["real"], dct["imag"])
+
+    return dct
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Complex):
+            return {FLAG: "complex", "real": obj.real, "imag": obj.imag}
+
+        return json.JSONEncoder.default(self, obj)
 
 
 class OptimisationResult:
@@ -34,18 +54,18 @@ class OptimisationResult:
                 "steps": [step.to_dict() for step in self.__steps],
             },
             "meta": {
-                "time": datetime.datetime.now(),
+                "time": str(datetime.datetime.now()),
             },
         }
 
         with open(path, "w") as outfile:
-            json.dump(dct, outfile, indent=indent)
+            json.dump(dct, outfile, indent=indent, cls=JSONEncoder)
             outfile.close()
 
     @classmethod
     def restore(cls, path):
         with open(path, "r") as infile:
-            dct = json.load(infile)
+            dct = json.load(infile, object_hook=decode_custom)
             infile.close()
 
             obj = Restorable.restore(dct["result"]["objective"])
