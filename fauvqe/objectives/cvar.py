@@ -71,7 +71,7 @@ class CVaR(Objective):
         _energies = energies[mask]
         _probabilities = (np.abs(wavefunction_x) ** 2)[mask]
 
-        return CVaR._calc_cvar(_probabilities, _energies, self.__alpha)
+        return CVaR._calc_cvar(_probabilities, _energies, self.__alpha) / self.__n_qubits
 
     def _evaluate_z(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk for a given wavefunction.
