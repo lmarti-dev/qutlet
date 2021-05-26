@@ -68,7 +68,7 @@ class ExpectationValue(Objective):
             "type": type(self).__name__,
             "constructor_params": {
                 "field": self.__field,
-                "model": self._initialiser.to_json_dict(),
+                "model": self._model.to_json_dict(),
             },
         }
 
