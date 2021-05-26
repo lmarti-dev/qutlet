@@ -36,17 +36,16 @@ return θ t (Resulting parameters)
 Potential MUCH BETTER alternative option: load from scipy??
 
 """
+import multiprocessing
 from numbers import Real, Integral
 from typing import Union, Literal
-import multiprocessing
 
-import numpy as np
 import cirq
 import joblib
-
-from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_result import OptimisationResult
+import numpy as np
 from fauvqe.objectives.objective import Objective
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.optimisers.optimiser import Optimiser
 
 
 class ADAM(Optimiser):
@@ -112,7 +111,9 @@ class ADAM(Optimiser):
         self._circuit_param: np.ndarray = np.array([])
         self._n_param: Integral = 0
 
-    def optimise(self, objective: Objective) -> OptimisationResult:
+    def optimise(
+        self, objective: Objective, continue_at: Union[OptimisationResult, None] = None
+    ) -> OptimisationResult:
         """Run optimiser until break condition is fulfilled
 
         1. Make copies of param_values (to not accidentally overwrite)
@@ -123,6 +124,8 @@ class ADAM(Optimiser):
         ----------
         objective: Objective
             The objective to optimise
+        continue_at: OptimisationResult optional
+            Continue a optimisation
 
         Returns
         -------
@@ -140,19 +143,29 @@ class ADAM(Optimiser):
         )
         self._objective = objective
 
-        res = OptimisationResult(objective)
+        if continue_at is not None:
+            assert isinstance(
+                continue_at, OptimisationResult
+            ), "continue_at must be a OptimisationResult"
+            res = continue_at
+            params = continue_at.get_latest_step().params
+            temp_cpv = params.view()
+            skip_steps = len(continue_at.get_steps())
+        else:
+            res = OptimisationResult(objective)
+            temp_cpv = objective.initialiser.circuit_param_values.view()
+            skip_steps = 0
 
         self._circuit_param = objective.initialiser.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
-        temp_cpv = objective.initialiser.circuit_param_values.view()
         self._n_param = np.size(temp_cpv)
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
 
         # Do step until break condition
         if self._break_cond == "iterations":
-            for i in range(self._break_param):
+            for i in range(self._break_param - skip_steps):
                 # Make ADAM step
                 temp_cpv = self._ADAM_step(temp_cpv, step=i + 1)
                 res.add_step(temp_cpv.copy())
@@ -160,7 +173,9 @@ class ADAM(Optimiser):
         return res
 
     def optimise_joblib(
-        self, objective: Objective, n_jobs: Union[Integral, Literal["default"]] = "default"
+        self,
+        objective: Objective,
+        n_jobs: Union[Integral, Literal["default"]] = "default",
     ) -> OptimisationResult:
         if n_jobs == "default":
             try:

@@ -17,12 +17,19 @@ class OptimisationStep:
     params: numpy.ndarray
     """
 
-    def __init__(self, parent, index: Integral, params: np.ndarray):
+    def __init__(
+        self,
+        parent,
+        index: Integral,
+        params: np.ndarray,
+        wavefunction: Union[np.ndarray, None] = None,
+        objective: Union[Real, None] = None,
+    ):
         self._parent = parent
         self.index = index
         self.params = params
-        self.__wavefunction: Union[np.ndarray, None] = None
-        self.__objective: Union[Real, None] = None
+        self.__wavefunction: Union[np.ndarray, None] = wavefunction
+        self.__objective: Union[Real, None] = objective
 
     @property
     def wavefunction(self) -> np.ndarray:
@@ -54,3 +61,11 @@ class OptimisationStep:
 
     def __repr__(self) -> str:
         return "<OptimisationStep index={} params={}>".format(self.index, self.params)
+
+    def to_dict(self):
+        return {
+            "index": self.index,
+            "params": self.params.tolist(),
+            "wavefunction": None if self.__wavefunction is None else self.__wavefunction.tolist(),
+            "objective": self.__objective,
+        }

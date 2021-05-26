@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 # internal imports
-from fauvqe import Ising, Optimiser, ADAM, ExpectationValue
+from fauvqe import Ising, ADAM, ExpectationValue
 
 
 def test_set_optimiser():
@@ -103,7 +103,11 @@ def test_adam_multiple_initialisers():
 @pytest.mark.higheffort
 def test_optimise_joblib():
     ising = Ising(
-        "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
     )
     ising.set_circuit("qaoa", 2)
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))

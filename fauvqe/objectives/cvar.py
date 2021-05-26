@@ -1,7 +1,7 @@
 """Implementation of the conditional value at risk as objective function for an initialiser
 """
 
-from typing import Literal
+from typing import Literal, Dict
 from numbers import Real, Integral
 
 import numpy as np
@@ -55,9 +55,9 @@ class CVaR(Objective):
         if field == "Z":
             self.evaluate = self._evaluate_z
 
-        energies = -energies_j + energies_h
-        self.__mask: np.ndarray = np.argsort(energies)
-        self.__energies = energies[self.__mask]
+            energies = -energies_j + energies_h
+            self.__mask: np.ndarray = np.argsort(energies)
+            self.__energies = energies[self.__mask]
 
     def _evaluate_x(self, wavefunction_z: np.ndarray) -> Real:
         wavefunction_x = self._rotate_x(wavefunction_z)
@@ -100,6 +100,22 @@ class CVaR(Objective):
         probabilities_ = probabilities[mask]
 
         return np.sum(energies_ * probabilities_) / np.sum(probabilities_)
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "type": type(self).__name__,
+            "constructor_params": {
+                "field": self.__field,
+                "alpha": self.__alpha,
+                "initialiser": self._initialiser.to_json_dict(),
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        assert dct["type"] == cls.__name__
+
+        return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
         return "<cVaR field={} alpha={}>".format(self.__field, self.__alpha)

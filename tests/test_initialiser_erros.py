@@ -14,6 +14,12 @@ from fauvqe import Initialiser
 
 
 class MockInitialiser(Initialiser):
+    def to_json_dict(self):
+        return {}
+
+    def from_json_dict(self, dct):
+        return MockInitialiser()
+
     def energy(self):
         return np.array([])
 

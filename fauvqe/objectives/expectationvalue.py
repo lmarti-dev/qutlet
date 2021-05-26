@@ -1,7 +1,7 @@
 """Implementation of the expectation value as objective function for an initialiser.
 """
 
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Dict
 from numbers import Integral
 
 import numpy as np
@@ -37,7 +37,7 @@ class ExpectationValue(Objective):
         assert field in [
             "Z",
             "X",
-        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
+        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], received {}".format(
             field
         )
 
@@ -62,6 +62,21 @@ class ExpectationValue(Objective):
             np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1]))
             / self.__n_qubits
         )
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "type": type(self).__name__,
+            "constructor_params": {
+                "field": self.__field,
+                "model": self._initialiser.to_json_dict(),
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        assert dct["type"] == cls.__name__
+
+        return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)

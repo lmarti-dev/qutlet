@@ -3,9 +3,9 @@
 import numpy as np
 import cirq
 import importlib
-from typing import Tuple
+from typing import Tuple, Dict
 
-# import all parent modules
+import sympy
 from fauvqe.initialisers.initialiser import Initialiser
 
 
@@ -306,3 +306,32 @@ class Ising(Initialiser):
         # Does not work for 0
         # _j = list(filter(None, (self.j_v[0], self.j_h[0])))
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "type": type(self).__name__,
+            "constructor_params": {
+                "qubittype": self.qubittype,
+                "n": self.n.tolist(),
+                "j_v": self.j_v.tolist(),
+                "j_h": self.j_h.tolist(),
+                "h": self.h.tolist(),
+            },
+            "params": {
+                "circuit": cirq.to_json(self.circuit, indent=None),  # cirq.Circuit
+                "circuit_param": [str(p) for p in self.circuit_param],  # List[sp.symbol]
+                "circuit_param_values": self.circuit_param_values.tolist(),  # np.ndarray
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        assert dct["type"] == cls.__name__
+
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = cirq.read_json(json_text=dct["params"]["circuit"])
+        inst.circuit_param = [sympy.Symbol(p) for p in dct["params"]["circuit_param"]]
+        inst.circuit_param_values = np.array(dct["params"]["circuit_param_values"])
+
+        return inst

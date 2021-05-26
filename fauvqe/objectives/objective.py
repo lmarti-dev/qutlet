@@ -2,14 +2,14 @@
 """
 import abc
 from numbers import Real
-
 import numpy as np
 import cirq
 
 from fauvqe.initialisers.initialiser import Initialiser
+from fauvqe.restorable import Restorable
 
 
-class Objective(abc.ABC):
+class Objective(Restorable):
     """Abstract base class for Objectives required to optimise circuit.
 
     This class is unusable and intended to be extended.

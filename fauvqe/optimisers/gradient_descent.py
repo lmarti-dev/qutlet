@@ -9,12 +9,11 @@ or functions are handed over to classical optimiser
 from numbers import Real, Integral
 from typing import Literal, Union
 
-import numpy as np
 import cirq
-
-from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_result import OptimisationResult
+import numpy as np
 from fauvqe.objectives.objective import Objective
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.optimisers.optimiser import Optimiser
 
 
 class GradientDescent(Optimiser):
@@ -33,9 +32,6 @@ class GradientDescent(Optimiser):
 
     break_param : int default 100
       Amount of steps of iteration
-
-    n_print : int default -1
-      debug print out after n steps, disable with -1
     """
 
     def __init__(

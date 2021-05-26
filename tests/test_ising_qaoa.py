@@ -50,7 +50,10 @@ def test_set_circuit():
         ising_obj.circuit, param_resolver=obj_param_resolver
     ).state_vector()
     assert np.allclose(
-        wf_x, np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j]), rtol=0, atol=1e-14
+        wf_x,
+        np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j]),
+        rtol=0,
+        atol=1e-14,
     )
 
     temp_cpv = np.array((1, 0.5))
@@ -66,7 +69,10 @@ def test_set_circuit():
         ising_obj.circuit, param_resolver=obj_param_resolver
     ).state_vector()
     assert np.allclose(
-        wf_z, np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j]), rtol=0, atol=1e-14
+        wf_z,
+        np.array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j]),
+        rtol=0,
+        atol=1e-14,
     )
 
 

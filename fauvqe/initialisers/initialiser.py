@@ -18,9 +18,10 @@ import numpy as np
 import sympy
 import cirq
 import qsimcirq
+from fauvqe.restorable import Restorable
 
 
-class Initialiser(abc.ABC):
+class Initialiser(Restorable):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one
