@@ -112,7 +112,7 @@ class ADAM(Optimiser):
         self._circuit_param: np.ndarray = np.array([])
         self._n_param: Integral = 0
 
-    def optimise( self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
+    def optimise(self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
         """Run optimiser until break condition is fulfilled. Use n_jobs = 1 to essentially previous non-parallel version of optimise()
         Watch out: Due to initialisation cost of n_jobs = 2 might be more expensive than n_jobs = 1
 
@@ -141,21 +141,27 @@ class ADAM(Optimiser):
         # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
         if n_jobs < 1:
             # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
-            n_jobs = int(min(max(multiprocessing.cpu_count() / 2,1), 2*np.size(self._circuit_param)))
+            n_jobs = int(
+                min(max(multiprocessing.cpu_count() / 2, 1), 2 * np.size(self._circuit_param))
+            )
             # Try to reset qsim threads, which overrights the simulator if it was not qsim
-            try: 
-                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0],1))
-                self._objective.model.set_simulator(simulator_options={'t' : t_new})
+            try:
+                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
+                self._objective.model.set_simulator(simulator_options={"t": t_new})
             except:
                 pass
 
-        assert isinstance( n_jobs, Integral), \
-        "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
+        assert isinstance(
+            n_jobs, Integral
+        ), "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
 
         print("n_jobs: \t {}".format(n_jobs))
 
-        assert isinstance(objective, Objective), \
-        "objective is not an instance of a subclass of Objective, given type '{}'".format(type(objective).__name__)
+        assert isinstance(
+            objective, Objective
+        ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
+            type(objective).__name__
+        )
 
         # 1.make copies of param_values (to not accidentally overwrite)
         temp_cpv = objective.model.circuit_param_values.view()

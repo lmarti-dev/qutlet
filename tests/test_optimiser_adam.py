@@ -113,7 +113,7 @@ def test_optimise_joblib():
     )
     expval_z = ExpectationValue(ising, field="Z")
 
-    res = adam.optimise_joblib(expval_z)
+    res = adam.optimise(expval_z, n_jobs=-1)
     wavefunction = expval_z.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params)
     )
