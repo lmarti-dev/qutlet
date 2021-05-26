@@ -17,7 +17,7 @@ class CVaR(Objective):
     ----------
     alpha: Real
         The :math:`\\alpha` value
-    field: {"Z"} default "Z"
+    field: {"X", "Z"} default "Z"
         The field to be evaluated
 
 
@@ -30,34 +30,47 @@ class CVaR(Objective):
             <cVaR field=self.field alpha=self.alpha>
     """
 
-    def __init__(self, initialiser: Initialiser, alpha: Real, field: Literal["Z"] = "Z"):
+    def __init__(self, initialiser: Initialiser, alpha: Real, field: Literal["X", "Z"] = "Z"):
         super().__init__(initialiser)
 
         assert 0.0 <= alpha <= 1.0, "cVaR alpha must be in (0, 1). Received: {:f}".format(alpha)
         assert field in [
             "Z",
-        ], "Bad input 'field'. Allowed values are ['Z' (default)], received {}".format(field)
-
-        self.__alpha: Real = alpha
-        self.__field: Literal["Z"] = field
+            "X",
+        ], "Bad input 'field'. Allowed values are ['X', 'Z' (default)], received {}".format(field)
 
         # Calculate energies of initialiser
         energies_j, energies_h = initialiser.energy()
 
-        # Generate sorting masks
-        energies = -energies_j + energies_h
-        self.__mask: np.ndarray = np.argsort(energies)
-        self.__mask_j: np.ndarray = np.argsort(energies_j)
-        self.__mask_h: np.ndarray = np.argsort(energies_h)
-
-        # Sort and store energies
-        self.__energies = energies[self.__mask]
-        self.__energies_j: np.ndarray = energies_j[self.__mask_j]
-        self.__energies_h: np.ndarray = energies_h[self.__mask_h]
-
+        self.__alpha: Real = alpha
+        self.__field: Literal["X", "Z"] = field
         self.__n_qubits: Integral = np.log2(np.size(energies_h))
 
-    def evaluate(self, wavefunction: np.ndarray) -> Real:
+        if field == "X":
+            self.evaluate = self._evaluate_x
+
+            self.__energies_j = energies_j
+            self.__energies_h = energies_h
+
+        if field == "Z":
+            self.evaluate = self._evaluate_z
+
+        energies = -energies_j + energies_h
+        self.__mask: np.ndarray = np.argsort(energies)
+        self.__energies = energies[self.__mask]
+
+    def _evaluate_x(self, wavefunction_z: np.ndarray) -> Real:
+        wavefunction_x = self._rotate_x(wavefunction_z)
+        energies = np.abs(wavefunction_z) ** 2 * (-self.__energies_j) + np.abs(
+            wavefunction_x
+        ) ** 2 * (-self.__energies_h)
+        mask = np.argsort(energies)
+        _energies = energies[mask]
+        _probabilities = (np.abs(wavefunction_x) ** 2)[mask]
+
+        return CVaR._calc_cvar(_probabilities, _energies, self.__alpha)
+
+    def _evaluate_z(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk for a given wavefunction.
 
         Parameters
@@ -70,31 +83,10 @@ class CVaR(Objective):
         Real:
             The conditional value at risk (cVaR)
         """
-        return CVaR._calc_cvar(
-            (np.abs(wavefunction) ** 2)[self.__mask], self.__energies, self.__alpha
+        return (
+            CVaR._calc_cvar((np.abs(wavefunction) ** 2)[self.__mask], self.__energies, self.__alpha)
+            / self.__n_qubits
         )
-
-        # Wavefunction is expected to be normalized
-        # Reorder wavefunction with stored mask
-        # probabilities = np.abs(wavefunction) ** 2
-        # probabilities_j = probabilities[self.__mask_j]
-        #
-        # probabilities_h = probabilities[self.__mask_h]
-        #
-        # if self.__field == "X":
-        #     wavefunction_x = self._rotate_x(wavefunction)
-        #     probabilities_h = np.abs(wavefunction_x) ** 2
-        #     probabilities_h = probabilities_h[self.__mask_h]
-        #
-        # Calculate cVaR independently for interaction and field
-        # cvar_j = CVaR._calc_cvar(probabilities_j, self.__energies_j, self.__alpha)
-        # cvar_h = CVaR._calc_cvar(probabilities_h, self.__energies_h, self.__alpha)
-        #
-        # if self.__field == "X":
-        #     return (-cvar_j - cvar_h) / self.__n_qubits
-
-        # field must be "Z"
-        # return (-cvar_j + cvar_h) / self.__n_qubits
 
     @staticmethod
     def _calc_cvar(probabilities: np.ndarray, energies: np.ndarray, alpha: Real) -> Real:
