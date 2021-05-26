@@ -13,7 +13,7 @@ import cirq
 
 # internal imports
 from fauvqe import Ising
-from .test_isings import IsingTester
+from tests.test_isings import IsingTester
 
 
 @pytest.mark.parametrize(

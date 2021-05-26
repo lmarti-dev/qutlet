@@ -1,5 +1,5 @@
 """
-Test parent class Initialiser;
+Test parent class AbstractModel;
     -test whether correct error messages occur
     -test whether initialisation set obj.qubits correctly 
         based on some examples
@@ -12,10 +12,10 @@ import pytest
 import numpy as np
 
 # internal import
-from fauvqe import Initialiser
+from fauvqe import AbstractModel
 
 
-class MockInitialiser(Initialiser):
+class MockAbstractModel(AbstractModel):
     def to_json_dict(self):
         return {}
 
@@ -26,7 +26,7 @@ class MockInitialiser(Initialiser):
         return np.array([])
 
 
-# test_Initialiser_set_qubits
+# test_AbstractModel_set_qubits
 @pytest.mark.parametrize(
     "qubittype, n, exp_quibits",
     [
@@ -42,39 +42,39 @@ class MockInitialiser(Initialiser):
         ("GridQubit", [1, 2], [[cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)]]),
     ],
 )
-def test_Initialiser(qubittype, n, exp_quibits):
-    initialiser_obj = MockInitialiser(qubittype, n)
-    assert initialiser_obj.qubits == exp_quibits
-    assert initialiser_obj.qubittype == qubittype
+def test_AbstractModel(qubittype, n, exp_quibits):
+    AbstractModel_obj = MockAbstractModel(qubittype, n)
+    assert AbstractModel_obj.qubits == exp_quibits
+    assert AbstractModel_obj.qubittype == qubittype
     if isinstance(n, np.ndarray):
-        assert (initialiser_obj.n == n).all()
+        assert (AbstractModel_obj.n == n).all()
     else:
-        assert initialiser_obj.n == n
+        assert AbstractModel_obj.n == n
 
 
 # test whether circuit and simulator was created
-def test_Initialiser_exist():
-    initialiser_obj = MockInitialiser("LineQubit", 1)
-    assert hasattr(initialiser_obj, "simulator")
-    assert hasattr(initialiser_obj, "qubits")
+def test_AbstractModel_exist():
+    AbstractModel_obj = MockAbstractModel("LineQubit", 1)
+    assert hasattr(AbstractModel_obj, "simulator")
+    assert hasattr(AbstractModel_obj, "qubits")
 
 
 # test whether circuit and simulator was created
 def test_set_simulator():
-    initialiser_obj = MockInitialiser("LineQubit", 1)
+    AbstractModel_obj = MockAbstractModel("LineQubit", 1)
     # Check if default parameter is given
-    assert type(initialiser_obj.simulator) == qsimcirq.qsim_simulator.QSimSimulator
-    assert initialiser_obj.simulator_options == {"t": 8, "f": 4}
+    assert type(AbstractModel_obj.simulator) == qsimcirq.qsim_simulator.QSimSimulator
+    assert AbstractModel_obj.simulator_options == {"t": 8, "f": 4}
     # Check whether adding parameters works for qsim
-    initialiser_obj.set_simulator(simulator_options={"f": 2})
-    assert initialiser_obj.simulator_options == {"t": 8, "f": 2}
+    AbstractModel_obj.set_simulator(simulator_options={"f": 2})
+    assert AbstractModel_obj.simulator_options == {"t": 8, "f": 2}
 
     # Check whether cirq simulator can be set
     # and whether simulator_options are correct default
-    initialiser_obj.set_simulator(simulator_name="cirq")
-    assert type(initialiser_obj.simulator) == cirq.sim.sparse_simulator.Simulator
-    assert initialiser_obj.simulator_options == {}
+    AbstractModel_obj.set_simulator(simulator_name="cirq")
+    assert type(AbstractModel_obj.simulator) == cirq.sim.sparse_simulator.Simulator
+    assert AbstractModel_obj.simulator_options == {}
 
     # Test whether an Assertion error is raised otherwise
     with pytest.raises(AssertionError):
-        initialiser_obj.set_simulator(simulator_name="simulator")
+        AbstractModel_obj.set_simulator(simulator_name="simulator")

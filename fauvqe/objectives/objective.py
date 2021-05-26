@@ -5,7 +5,7 @@ from numbers import Real
 import numpy as np
 import cirq
 
-from fauvqe.initialisers.initialiser import Initialiser
+from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.restorable import Restorable
 
 
@@ -28,32 +28,32 @@ class Objective(Restorable):
 
     """
 
-    def __init__(self, initialiser: Initialiser):
+    def __init__(self, model: AbstractModel):
         assert isinstance(
-            initialiser, Initialiser
-        ), "Bad argument 'initialiser'. Must be an instance of Initialiser. '{}' was given".format(
-            type(initialiser).__name__
+            model, AbstractModel
+        ), "Bad argument 'model'. Must be an instance of AbstractModel. '{}' was given".format(
+            type(model).__name__
         )
 
-        self._initialiser: Initialiser = initialiser
+        self._model: AbstractModel = model
 
     @property
-    def initialiser(self) -> Initialiser:
-        """The Initialiser instance linked to this objective
+    def model(self) -> AbstractModel:
+        """The AbstractModel instance linked to this objective
 
         Returns
         -------
-        Initialiser
+        AbstractModel
         """
-        return self._initialiser
+        return self._model
 
     def simulate(self, param_resolver, initial_state=None) -> np.ndarray:
-        """Simulate the circuit of the initialiser with a given parameter resolver.
+        """Simulate the circuit of the model with a given parameter resolver.
 
         Parameters
         ----------
         param_resolver
-            The circuit parameters (consider generating with initialiser.get_param_resolver())
+            The circuit parameters (consider generating with model.get_param_resolver())
 
         initial_state: numpy.ndarray, optional
             The initial wavefunction to start the simulation with
@@ -62,8 +62,8 @@ class Objective(Restorable):
         -------
         numpy.ndarray: The simulated wavefunction.
         """
-        simulator_result = self._initialiser.simulator.simulate(
-            self._initialiser.circuit,
+        simulator_result = self._model.simulator.simulate(
+            self._model.circuit,
             param_resolver=param_resolver,
             initial_state=initial_state,
         )
@@ -103,12 +103,12 @@ class Objective(Restorable):
         """
         # Construct rotation circuit for each qubit
         rotation_circuit = cirq.Circuit()
-        for row in self._initialiser.qubits:
+        for row in self._model.qubits:
             for qubit in row:
                 # Hadamard gate corresponds to x rotation
                 rotation_circuit.append(cirq.H(qubit))
 
-        return self._initialiser.simulator.simulate(
+        return self._model.simulator.simulate(
             rotation_circuit,
             # Start off at the given wavefunction
             initial_state=wavefunction,

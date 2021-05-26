@@ -21,7 +21,7 @@ import qsimcirq
 from fauvqe.restorable import Restorable
 
 
-class Initialiser(Restorable):
+class AbstractModel(Restorable):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one

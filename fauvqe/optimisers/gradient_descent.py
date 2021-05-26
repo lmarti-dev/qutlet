@@ -83,10 +83,10 @@ class GradientDescent(Optimiser):
 
         res = OptimisationResult(objective)
 
-        self._circuit_param = objective.initialiser.circuit_param
+        self._circuit_param = objective.model.circuit_param
 
         # 1.make copies of param_values (to not accidentally overwrite)
-        temp_cpv = objective.initialiser.circuit_param_values.view()
+        temp_cpv = objective.model.circuit_param_values.view()
         self._n_param = np.size(temp_cpv)
 
         # Do step until break condition

@@ -26,7 +26,7 @@ def test_set_optimiser():
     ising.set_circuit("qaoa", 1)
     adam = ADAM()
     objective = ExpectationValue(ising)
-    adam.optimise(objective)
+    adam.optimise(objective, n_jobs=1)
 
 
 # This is potentially a higher effort test:
@@ -53,7 +53,7 @@ def test_optimise():
         break_param=25,
         a=4 * 10 ** -2,
     )
-    adam.optimise(exp_val_z)
+    adam.optimise(exp_val_z, n_jobs=1)
 
     wf = ising.simulator.simulate(
         ising.circuit,
@@ -64,7 +64,7 @@ def test_optimise():
     # Result smaller than -0.5 up to eta
 
 
-def test_adam_multiple_initialisers():
+def test_adam_multiple_models_and_auto_joblib():
     ising1 = Ising(
         "GridQubit",
         [2, 2],
@@ -87,10 +87,10 @@ def test_adam_multiple_initialisers():
 
     objective1 = ExpectationValue(ising1, field="Z")
 
-    res1 = adam.optimise(objective1)
+    res1 = adam.optimise(objective1, n_jobs=-1)
 
     objective2 = ExpectationValue(ising2, field="Z")
-    res2 = adam.optimise(objective2)
+    res2 = adam.optimise(objective2, n_jobs=-1)
 
     print(res1, res2)
 
@@ -117,7 +117,7 @@ def test_optimise_joblib():
     )
     expval_z = ExpectationValue(ising, field="Z")
 
-    res = adam.optimise_joblib(expval_z)
+    res = adam.optimise(expval_z, n_jobs=-1)
     wavefunction = expval_z.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params)
     )

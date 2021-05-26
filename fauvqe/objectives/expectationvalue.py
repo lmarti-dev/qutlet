@@ -1,4 +1,4 @@
-"""Implementation of the expectation value as objective function for an initialiser.
+"""Implementation of the expectation value as objective function for an AbstractModel object.
 """
 
 from typing import Literal, Tuple, Dict
@@ -7,19 +7,19 @@ from numbers import Integral
 import numpy as np
 
 from fauvqe.objectives.objective import Objective
-from fauvqe.initialisers.initialiser import Initialiser
+from fauvqe.models.abstractmodel import AbstractModel
 
 
 class ExpectationValue(Objective):
     """Expectation value objective
 
     This class implements as objective the expectation value of the energies
-    of the linked initialiser.
+    of the linked model.
 
     Parameters
     ----------
-    initialiser: Initialiser
-        The linked initialiser
+    model: AbstractModel
+        The linked model
     field: {"X", "Z"} default "Z"
         The field to be evaluated
 
@@ -32,8 +32,8 @@ class ExpectationValue(Objective):
             <ExpectationValue field=self.field>
     """
 
-    def __init__(self, initialiser: Initialiser, field: Literal["Z", "X"] = "Z"):
-        super().__init__(initialiser)
+    def __init__(self, model: AbstractModel, field: Literal["Z", "X"] = "Z"):
+        super().__init__(model)
         assert field in [
             "Z",
             "X",
@@ -42,7 +42,7 @@ class ExpectationValue(Objective):
         )
 
         self.__field: Literal["Z", "X"] = field
-        self.__energies: Tuple[np.ndarray, np.ndarray] = initialiser.energy()
+        self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
 
     def evaluate(self, wavefunction: np.ndarray) -> np.float64:
