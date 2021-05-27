@@ -1,5 +1,9 @@
+# Visual Studio Code settings
+.vscode/
+
 # Coverage reports
 .coverage
+/*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -7,7 +7,7 @@ Cirq-based custom VQE python package
 Both the production and the development require python3.6+, pip and the requirements as defined in `requirements.txt`.
 To install those, run
 
-```bash
+```shell
 pip install -r requirements.txt
 ```
 
@@ -20,10 +20,13 @@ TODO: Expose setup.py to install this as a pip package.
 In addition to those defined in `requirements.txt`, the development setup requires more dependencies.
 To install those, run
 
-```bash
+```shell
 pip install --upgrade \
+  pylint \
   black \
   sphinx \
+  pytest \
+  pytest-cov \
   pre-commit
 ```
 
@@ -49,14 +52,36 @@ To install more pre-commit hooks, modify `.pre-commit-config.yaml` and run `pre-
 
 CI is done with GitHub actions.
 
+### Tests
+
+Test are implemented using `pytest` and can be found in the [tests](./tests) subdirectory.
+The tests can be run by running `pytest` in the project root.
+
+For coverage reports, use the `pytest-cov` plugin:
+
+```shell
+pytest --cov=fauvqe --cov-report=html
+```
+
+This will generate html output in a new htmlcov subdirectory.
+For more options, refer to the [pytest-cov documentation](https://pytest-cov.readthedocs.io/en/latest/config.html).
+
+### Docstring format
+
+This module is documented with numpy-style docstrings.
+The sphinx documentation provides an [elaborate example on how to use it](https://www.sphinx-doc.org/en/master/usage/extensions/example_numpy.html).
+For a more technical approach, refer to [the numpydoc style guide](https://numpydoc.readthedocs.io/en/latest/format.html).
+
 ## Documentation
 
+### Sphinx
+
 [sphinx](https://www.sphinx-doc.org/en/master/) is used to generate a html/pdf documentation from docstrings.
-Additional documentation can easily be added by editing the files in [docs](./tree/main/docs/source).
+Additional documentation can easily be added by editing the files in [docs](./docs/source).
 
 To generate the documentation including the `autodoc` files for automatic docstring documentation run
 
-```bash
+```shell
 cd ./docs/
 make generate
 make html # alternatively: latex
@@ -65,44 +90,19 @@ $BROWSER ./build/html/index.html
 
 Refer to the documentation of sphinx for more information, for example on how to add custom documentation to the `.rst` files.
 
-## Design ideas
+### UML diagrams
 
-### General ideas
+`pylint` comes with a UML diagram generator called `pyreverse`.
+With `pylint` installed, you should also be able to access `pyreverse` via CLI.
 
-- Avoid unnecessary dependencies, if locally needed load in class via importlib
-- Reasoning: Update of dependencies can crash with existing code hence keep dependencies to minimum
-- Abolish legancy code, use pytest for testing and pytest-cov to test test coverage
-- Reasoning:
-  - After a given time, usually only a few month, we don't know anymore that exactly parts of the code are doing; testing ensures that it still does what we expected, when we understood/wrote the code
-  - If you not have written part of the code you are using, but it was written by another group member you would like to know whether it does what was expected by the person writting it. This way you don't need to understand every line of the entire code.
-- Avoid > 1000 line files; rather put some functions in submodules e.g. one can put different circuit parts/ideas in submodules and call/load/include them in a 1 line load, which is much easier to understand.
-- Use inheritance and Abstract/superclasses to ensure compatibility e.g. there a some properties every optimiser needs to have. With inheritance the same objects will always be name the same and have the same abstract structure
+In the repository, run
 
-### Further ideas
+```shell
+pyreverse . -o png
+```
 
-- use abstract class (via python abstract base class: from abc import ABC, abstractmethod) Abstract classes can be a better way of interfacing, maybe simply by leeting intialiser() and Optimiser() be subclasses of abc.ABCMETA?
-- use cython and explicit type declaration for higher performance
-- Add multiprocessing/MPI4py expecially when differnt f(x) have to be evaluated/the objective function has to be evaluated at different points.
+for a simple UML diagram.
+The generated files will be called `classes.png` and `packages.png`.
+To also visualise private and protected members, add the flag `-f ALL`.
 
-## Single parts
-
-- Initialiser() defines/ensures abstract compatibility (e.g. but not limited to):
-  - qubits (how are these stored, relevant e.g. for optimiser structure)
-  - circuit (every subclass should have a cirq.Circuit() object)
-  - circuit_param (list of sympy symbols to parametries cirq.circuit)
-  - cicuit_param_values ()
-  - simulator (to sample/simulate wf of circuit)
-- Individual projects in sub-modules:
-  - e.g. isings
-    - Ising() class has
-      - model related functions such as energy()
-      - function to persue/sets different circuits
-      - should use the general Optimiser()-class and its sub-classes/modules such as GradientDescent() to optimise parametrised circuit
-
-## Next steps
-
-1. 100 % test coverage
-2. Include periodic boundary conditions
-3. Check again analytic result, maybe include analytic 1D TFIM wavefunction?
-4. Add an alternative optimiser/adaptive step size/gradient shift rule
-5. Add/Use MPI4py|Multiprocessing|Threatening|joblib within optimiser to achieve speed-up
+For more documentation, refer to `pyreverse --help`.
