@@ -7,16 +7,24 @@
 # imports within package
 
 # subpackages
-from . import isings
-
-# Flattened module
-from .initialisers import (
-    Initialiser,
-)
+from fauvqe import models, objectives, optimisers
 
 # Flattened sub-modules
-from .isings import (
+from fauvqe.models import (
+    AbstractModel,
     Ising,
+)
+from fauvqe.objectives import (
+    Objective,
+    CVaR,
+    ExpectationValue,
+)
+from fauvqe.optimisers import (
+    Optimiser,
+    ADAM,
+    GradientDescent,
+    OptimisationResult,
+    OptimisationStep,
 )
 
 """

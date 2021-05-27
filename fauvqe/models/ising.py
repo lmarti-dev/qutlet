@@ -3,28 +3,23 @@
 import numpy as np
 import cirq
 import importlib
+from typing import Tuple
 
 # import all parent modules
-from fauvqe.initialisers import Initialiser
+from fauvqe.models.abstractmodel import AbstractModel
 
-# %%
-class Ising(Initialiser):
+
+class Ising(AbstractModel):
     """
-    2D Ising class inherits initialiser
+    2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
 
-    # Import different quantum circuit algorithm into Ising class
-    # increase readability as better structured
-    # Issue with importing subpackage this way
-    # altnative importlib.import_module('module')
-    # qaoa = __import__('fauvqe.isings.circuits.qaoa')
-    # it seems that this works:
-    qaoa = importlib.import_module("fauvqe.isings.circuits.qaoa")
-    # os = __import__('os')
+    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
+
     def __init__(self, qubittype, n, j_v, j_h, h):
         """
-        qubittype as defined in initialiser
+        qubittype as defined in bstractModel
         n number of qubits
         j_v vertical j's
         j_h horizontal j's
@@ -32,6 +27,7 @@ class Ising(Initialiser):
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
+        self.circuit_param = None
         self._set_jh(j_v, j_h, h)
         super().set_simulator()
 
@@ -63,20 +59,18 @@ class Ising(Initialiser):
 
         # convert input to numpy array to be sure
         h = np.array(h)
-        assert (h.shape == self.n).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
+        assert (
+            h.shape == self.n
+        ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
 
-    def energy(self, wf, field="X"):
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         # maybe fuse with energy_JZZ_hZ partially somehow
         """
         Energy for JZZ_hX Transverse field Ising model (TFIM) or JZZ-HZ Ising model
 
         Computes the energy-per-site of the Ising Model directly from the
         a given wavefunction.
-        Args:
-            wf:     Array of size 2**(n[0]*n[1]) specifying the wavefunction.
-                e.g.: wf2 = self.simulator.simulate(self.circuit).state_vector()
-
         Returns:
             energy: Float equal to the expectation value of the energy per site
 
@@ -86,13 +80,16 @@ class Ising(Initialiser):
         (i*n_cols + j)th row corresponds to qubit (i,j).
         """
         n_sites = self.n[0] * self.n[1]
-        assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
+        # assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
 
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
 
         # Create the operator corresponding to the interaction energy summed over all
         # nearest-neighbor pairs of qubits
-        ZZ_filter = np.zeros_like(wf, dtype=float)
+        # print(self.n, n_sites) # Todo: fix this:
+        ZZ_filter = np.zeros(
+            2 ** (n_sites), dtype=np.float64
+        )  # np.zeros_like(wf, dtype=np.float64)
 
         # Looping for soo many unnecessary ifs is bad.....
         # NEED FOR IMPROVEMENT - > avoid blank python for loops!!
@@ -134,33 +131,7 @@ class Ising(Initialiser):
                 i = self.n[0] - 1
                 ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
 
-        # X and Z case for external field
-        if field == "X":
-            # Expectation value of the energy divided by the number of sites
-            # for hX need basis transform of wf
-            temp_circuit = cirq.Circuit()
-            for row in self.qubits:
-                for qubit in row:
-                    temp_circuit.append(cirq.H(qubit))
-
-            wf_x = self.simulator.simulate(temp_circuit, initial_state=wf).state_vector()
-
-            # This might be WRONG!!!!
-            # print("E(hX) = {}".format(sum(np.abs(wf_x)**2 * self.h.reshape(n_sites).dot(Z)) ))
-            return np.sum(np.abs(wf) ** 2 * (-ZZ_filter) - np.abs(wf_x) ** 2 * self.h.reshape(n_sites).dot(Z)) / n_sites
-
-        elif field == "Z":
-            # Expectation value of the energy divided by the number of sites
-            # energy_operator = -ZZ_filter + h.reshape(n_sites).dot(Z)
-            # test show that sign in front of h needs to be +1, but not so obvious yet
-            return np.sum(np.abs(wf) ** 2 * (-ZZ_filter + self.h.reshape(n_sites).dot(Z))) / n_sites
-        else:
-            assert (
-                False
-            ), "Error in Ising.energy(): invalid external field basis, \n received: '{}', allowed is \
-                'X'(default) and 'Z'".format(
-                field
-            )
+        return ZZ_filter, self.h.reshape(n_sites).dot(Z)
 
     def set_circuit(self, qalgorithm, param, append=False):
         """
@@ -214,70 +185,12 @@ class Ising(Initialiser):
         )
         self.circuit_param_values = new_values
 
-    def set_optimiser(self, optimiser_name, obj_func="X"):
-        """
-        This function acts as an interface to the general optimiser structure
-        Args:
-            -optimiser_name : class name of an implemented optimiser
-            -optional:
-                give the optimiser an alternative objective function other than
-                jZZ_hX energy
-                MISSING: give optimisers energy and change default field to 'Z'
-                https://stackoverflow.com/questions/38503937/parsing-default-arguments-in-functions-without-executing-the-them
-        """
-        # Note obj_func = self.energy does not work as default!
-        # NEED FOR IMPROVEMENT:
-        if obj_func == "X":
-            obj_func = self.energy
-            # print("X case")
-        elif obj_func == "Z":
-            # Maybe make this with field 'X' to default
-            obj_func = lambda input_wf: self.energy(input_wf, field="Z")
-            # print("Z case")
-
-        if optimiser_name == "GradientDescent":
-            # Import GradientDescent() class:
-            gd = importlib.import_module("fauvqe.optimisers.gradient_descent")
-            # WANT to pass all via view
-            # Maybe can do also somehow via cython and pointer??
-            self.optimiser = gd.GradientDescent(
-                obj_func,  # note that this is a function + need to make more general \
-                # Changed this from JZZ_hZ to JZZ_hX and no test failed
-                # A) Tha's bad, B) needs to be more general.
-                # also want to give attributes within energy function
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),  # view() is ndarray method
-            )
-        elif optimiser_name == "ADAM":
-            # Import ADAM() class:
-            adam = importlib.import_module("fauvqe.optimisers.adam")
-            # Create optimiser object:
-            self.optimiser = adam.ADAM(
-                obj_func,
-                self.qubits,
-                self.simulator,
-                self.circuit,
-                self.circuit_param,
-                self.circuit_param_values.view(),
-            )
-
-        else:
-            assert (
-                False
-            ), "Invalid optimiser, received: '{}', allowed is \n \
-                'ADAM' and 'GradientDescent'".format(
-                optimiser_name
-            )
-
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"
         # probability from wf
         prob = abs(wf * np.conj(wf))
 
-        # commulative probability
+        # cumulative probability
         n_temp = round(np.log2(wf.shape[0]))
         com_prob = np.zeros(n_temp)
         # now sum it
@@ -296,12 +209,20 @@ class Ising(Initialiser):
         # This is for qubits:
         # {(i1, i2): com_prob[i2 + i1*q4.n[1]] for i1 in np.arange(q4.n[0]) for i2 in np.arange(q4.n[1])}
         # But we want for spins:
-        return {(i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1 for i0 in np.arange(self.n[0]) for i1 in np.arange(self.n[1])}
+        return {
+            (i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1
+            for i0 in np.arange(self.n[0])
+            for i1 in np.arange(self.n[1])
+        }
 
     def print_spin(self, wf):
         """
+        Currently does not work due to Cirq update...
+
         For cirq. heatmap see example:
         https://github.com/quantumlib/Cirq/blob/master/examples/bristlecone_heatmap_example.py
+        https://github.com/quantumlib/Cirq/blob/master/examples/heatmaps.py
+        https://github.com/quantumlib/Cirq/blob/master/cirq-core/cirq/vis/heatmap_test.py
         value_map = {
             (qubit.row, qubit.col): np.random.random() for qubit in cirq.google.Bristlecone.qubits
         }
@@ -316,8 +237,6 @@ class Ising(Initialiser):
         value_map = self.get_spin_vm(wf)
         # Create heatmap object
         heatmap = cirq.Heatmap(value_map)
-        # Set colorscale to [-1, 1]
-        heatmap.set_colormap(vmin=-1, vmax=+1)
         # Plot heatmap
         heatmap.plot()
 
@@ -338,14 +257,17 @@ class Ising(Initialiser):
                 For numeric reasons include h in \Lambda_k
             - Return E/N = - h* sum \Lambda_k/N
         """
-        assert self.n[0] * self.n[1] == np.max(self.n), "Ising class error, given system dimensions n = {} are not 1D".format(
+        assert self.n[0] * self.n[1] == np.max(
             self.n
-        )
+        ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
         assert np.min(self.h) == np.max(
             self.h
         ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
         # Use initial parameter to catch empty array
-        assert (np.min(self.j_h, initial=np.finfo(np.float_).max) == np.max(self.j_h, initial=np.finfo(np.float_).min)) or (
+        assert (
+            np.min(self.j_h, initial=np.finfo(np.float_).max)
+            == np.max(self.j_h, initial=np.finfo(np.float_).min)
+        ) or (
             np.size(self.j_h) == 0
         ), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_h,
@@ -353,7 +275,10 @@ class Ising(Initialiser):
             np.max(self.j_h, initial=np.finfo(np.float_).min),
         )
         # Use initial parameter to catch empty array
-        assert (np.min(self.j_v, initial=np.finfo(np.float_).max) == np.max(self.j_v, initial=np.finfo(np.float_).min)) or (
+        assert (
+            np.min(self.j_v, initial=np.finfo(np.float_).max)
+            == np.max(self.j_v, initial=np.finfo(np.float_).min)
+        ) or (
             np.size(self.j_v) == 0
         ), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_v,
@@ -361,7 +286,7 @@ class Ising(Initialiser):
             np.max(self.j_v, initial=np.finfo(np.float_).min),
         )
         lambda_k = self._get_lambda_k()
-        print("#np.size(lambda_k) = {} \t self.n[0]*self.n[1] = {}".format(np.size(lambda_k), self.n[0] * self.n[1]))
+        # print("#np.size(lambda_k) = {} \t self.n[0]*self.n[1] = {}".format(np.size(lambda_k), self.n[0] * self.n[1]))
         return -np.sum(lambda_k) / np.size(lambda_k)  # self.n[0]*self.n[1]
 
     def _get_lambda_k(self):
@@ -371,7 +296,9 @@ class Ising(Initialiser):
         """
         _n = self.n[0] * self.n[1]
         # print("_n: {}".format(_n))
-        _k = 2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 + 1e-10, step=1) / _n
+        _k = (
+            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 + 1e-10, step=1) / _n
+        )
         # print("_k: {}".format(_k))
         if self.j_h.size > 0:
             _j = self.j_h[0][0]
@@ -381,6 +308,3 @@ class Ising(Initialiser):
         # Does not work for 0
         # _j = list(filter(None, (self.j_v[0], self.j_h[0])))
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
-
-
-# --End of Class ising2d

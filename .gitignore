@@ -3,6 +3,9 @@
 
 # Coverage reports
 .coverage
+# Pycharm settings
+.idea/
+# UML diagrams
 /*.png
 
 # Byte-compiled / optimized / DLL files

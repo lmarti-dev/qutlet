@@ -1,26 +1,26 @@
-""" 
+"""
 #  TP2 internal VQE class
 #   purpose is to write common code in a compatible manner
-# 
+#
 #  try to use type definitions and numpy arrays as good as possible
-# 
+#
 # use this:
 # https://quantumai.google/cirq/tutorials/educators/qaoa_ising
 # as a starting point.
 # Write in class strucutre. Add automated testing. Put to package.
-# Then add own ideas and alternative optimisers, ising circuits etc. 
+# Then add own ideas and alternative optimisers, ising circuits etc.
 
 """
-# external import
-import numpy as np
+import abc
+from typing import Tuple, List
 
-# Cirq libaries
+import numpy as np
+import sympy
 import cirq
 import qsimcirq
 
-# %%
-# The actual class definition
-class Initialiser:
+
+class AbstractModel(abc.ABC):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one
@@ -31,7 +31,6 @@ class Initialiser:
     # Watch out, these are shared by all class objects, what one usually
     # wants to avoid
 
-    # Class constructor
     def __init__(self, qubittype, n):
         """
         Write in a flag style to be insensitive for input order
@@ -43,6 +42,7 @@ class Initialiser:
             ######
             later intial state?
         """
+        self.circuit_param: List[sympy.Symbol] = []
         self.init_qubits(qubittype, n)
         self.circuit = cirq.Circuit()
         self.set_simulator()
@@ -95,7 +95,9 @@ class Initialiser:
                 and n[0] > 0
                 and isinstance(n[1], (int, np.int_))
                 and n[1] > 0
-            ), "Error in qubit initialisation: n needs to be 2d-int for GridQubit, received: n = {}, {}".format(n, type(n))
+            ), "Error in qubit initialisation: n needs to be 2d-int for GridQubit, received: n = {}, {}".format(
+                n, type(n)
+            )
             # need this awkward return scheme to get right format
             # try:
             temp = [[cirq.GridQubit(i, j) for j in range(n[1])] for i in range(n[0])]
@@ -161,24 +163,24 @@ class Initialiser:
                 self.qsimh_options = {'t': 1, 'f': 2, 'v': 0}
                 self.qsimh_options.update(qsimh_options)
             """
-            self.simulator_options = {"t": 8}
+            self.simulator_options = {"t": 8, "f": 4}
             self.simulator_options.update(simulator_options)
             self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
         elif simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator()
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(simulator_name)
+            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
+                simulator_name
+            )
 
+    def get_param_resolver(self, temp_cpv):
+        joined_dict = {
+            **{str(self.circuit_param[i]): temp_cpv[i] for i in range(len(self.circuit_param))}
+        }
 
-############################
-# Add simulate method ??
-######################
-# --End of Class Initialiser
+        return cirq.ParamResolver(joined_dict)
 
-# useful: __update = update   # private copy of original update() method
-
-# potentially add general optimiser here via self.circuit_param
-# but really want to call it via fauvqe.optimiser.optimiser_name(parameters)
-# e.g. fauvqe.optimiser.gradient_descent(parameters)
-# %%
+    @abc.abstractmethod
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError()  # pragma: no cover

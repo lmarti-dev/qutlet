@@ -1,7 +1,6 @@
-# Runtime requirements for fauvqe to work
-
 cirq~=0.9.1
 qsimcirq~=0.7.1
 pytest~=6.2.4
 numpy~=1.20.2
 sympy~=1.8
+joblib~=1.0.1

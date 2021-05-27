@@ -2,7 +2,7 @@
     Use QAOA Ising to test if ADAM optimiser works
     1.create Ising object + simple 4 qubit QAOA?
     2. set_optimiser
-    3.ising_obj.optimise()
+    3.ising.optimise()
 
     Later: possibly put into test class 
 
@@ -11,83 +11,123 @@
         but one needs to give in this case the optimiser energy(.., field='Z')
         Needs to be fixed by generalisation of Ising.set_simulator()
 
+    08.04.21: Need to add some results/run time test
 """
 # external imports
 import pytest
 import numpy as np
-import cirq
 
 # internal imports
-from fauvqe.isings.ising import Ising
-from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe import Ising, Optimiser, ADAM, ExpectationValue
 
 
 def test_set_optimiser():
-    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising_obj.set_circuit("qaoa", 1)
-    ising_obj.set_optimiser("ADAM")
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising.set_circuit("qaoa", 1)
+    adam = ADAM()
+    objective = ExpectationValue(ising)
+    adam.optimise(objective)
 
 
 # This is potentially a higher effort test:
+#############################################################
+#                                                           #
+#                  Sequential version                       #
+#                                                           #
+#############################################################
 @pytest.mark.higheffort
 def test_optimise():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
-    ising_obj.set_circuit("qaoa", 2)
-    ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM", obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.a = 4 * 10 ** -2
-    ising_obj.optimiser.optimise()
-    wf = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
+    ising = Ising(
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
+    )
+    ising.set_circuit("qaoa", 2)
+    ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
+    eps = 10 ** -3
+    exp_val_z = ExpectationValue(ising, field="Z")
+    adam = ADAM(
+        eps=eps,
+        break_param=25,
+        a=4 * 10 ** -2,
+    )
+    adam.optimise(exp_val_z)
+
+    wf = ising.simulator.simulate(
+        ising.circuit,
+        param_resolver=ising.get_param_resolver(ising.circuit_param_values),
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
+    assert -0.5 > exp_val_z.evaluate(wf) - eps
     # Result smaller than -0.5 up to eta
 
 
+def test_adam_multiple_models():
+    ising1 = Ising(
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
+    )
+    ising1.set_circuit("qaoa", 2)
+    ising1.set_circuit_param_values(0.3 * np.ones(np.size(ising1.circuit_param)))
+    ising2 = Ising(
+        "GridQubit",
+        [1, 2],
+        np.ones((0, 2)),
+        np.ones((1, 1)),
+        np.ones((1, 2)),
+    )
+    ising2.set_circuit("qaoa", 1)
+
+    adam = ADAM()
+
+    objective1 = ExpectationValue(ising1, field="Z")
+
+    res1 = adam.optimise(objective1)
+
+    objective2 = ExpectationValue(ising2, field="Z")
+    res2 = adam.optimise(objective2)
+
+    print(res1, res2)
+
+
+#############################################################
+#                                                           #
+#                    Joblib version                         #
+#                                                           #
+#############################################################
 @pytest.mark.higheffort
-def test_optimise_print():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
-    ising_obj.set_circuit("qaoa", 2)
-    ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM", obj_func="Z")
-    ising_obj.optimiser.break_param = 25
-    ising_obj.optimiser.a = 4 * 10 ** -2
-    ising_obj.optimiser.n_print = 5
-    ising_obj.optimiser.optimise()
-    wf = ising_obj.simulator.simulate(
-        ising_obj.circuit, param_resolver=ising_obj.optimiser._get_param_resolver(ising_obj.circuit_param_values)
-    ).state_vector()
+def test_optimise_joblib():
+    ising = Ising(
+        "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
+    )
+    ising.set_circuit("qaoa", 2)
+    ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
+    adam = ADAM(
+        break_param=25,
+        a=4e-2,
+    )
+    expval_z = ExpectationValue(ising, field="Z")
+
+    res = adam.optimise(expval_z, n_jobs=-1)
+    wavefunction = expval_z.simulate(
+        param_resolver=ising.get_param_resolver(res.get_latest_step().params)
+    )
+
     # Result smaller than -0.5 up to eta
-    assert -0.5 > ising_obj.energy(wf, field="Z") - ising_obj.optimiser.eps
+    assert -0.5 > expval_z.evaluate(wavefunction) - adam._eps
     # Result smaller than -0.5 up to eta
 
-
-# Want to make this work but how?
-# via ndarray.view() => available for the other objects???
-def test_param_view():
-    ising_obj = Ising("GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2)))
-    ising_obj.set_circuit("qaoa", 2)
-    ising_obj.set_optimiser("ADAM")
-    # set self.circuit_parm_values to different value and see if pointer works
-    # ising_obj.set_circuit_param_values(0.3*np.ones(np.size(ising_obj.circuit_param)) )
-
-    ising_obj.circuit_param_values[0] = 0
-    assert (ising_obj.optimiser.circuit_param_values == ising_obj.circuit_param_values).all()
-
-
-# Need to add some results/run time test
 
 #############################################################
+#                                                           #
 #                     Test errors                           #
+#                                                           #
 #############################################################
-def test_GradientDescent_break_cond_assert():
-    ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising_obj.set_circuit("qaoa", 1)
-    ising_obj.set_circuit_param_values(0.314 * np.ones(np.size(ising_obj.circuit_param)))
-    ising_obj.set_optimiser("ADAM")
-    ising_obj.optimiser.break_cond = "atol"
-
+def test_adam_break_cond_assert():
     with pytest.raises(AssertionError):
-        ising_obj.optimiser.optimise()
+        ADAM(break_cond="atol")
