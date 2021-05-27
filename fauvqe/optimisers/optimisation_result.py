@@ -2,34 +2,15 @@
 module docstring Optimisation result
 """
 import datetime
-import json
-from numbers import Real, Integral, Complex
-from typing import List, Optional
+from numbers import Real, Integral
+from typing import List, Optional, Literal, Union
+import pathlib
 
 import numpy as np
+import fauvqe.json as json
 from fauvqe.restorable import Restorable
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_step import OptimisationStep
-
-FLAG = "__dtype__"
-
-
-def decode_custom(dct):
-    if FLAG in dct:
-        dtype = dct[FLAG]
-
-        if dtype == "complex":
-            return complex(dct["real"], dct["imag"])
-
-    return dct
-
-
-class JSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Complex):
-            return {FLAG: "complex", "real": obj.real, "imag": obj.imag}
-
-        return json.JSONEncoder.default(self, obj)
 
 
 class OptimisationResult:
@@ -47,32 +28,88 @@ class OptimisationResult:
         self.__objective: Objective = objective
         self.__index = 0
 
-    def store(self, path: str, indent: Optional[Integral] = None) -> None:
+    def store(
+        self,
+        path: Union[pathlib.Path, str],  # Todo: Support File-like objects
+        #  (see: https://docs.python.org/3/library/io.html#io.TextIOBase)
+        indent: Optional[Integral] = None,
+        store_wavefunctions: Literal["none", "available", "all"] = "none",
+        store_objectives: Literal["none", "available", "all"] = "none",
+    ) -> None:
+        allowed_store = ["none", "available", "all"]
+        assert (
+            store_objectives in allowed_store
+        ), "store_objectives must be one of {}, default: 'none'. {} was given".format(
+            allowed_store, store_objectives
+        )
+        assert (
+            store_wavefunctions in allowed_store
+        ), "store_wavefunctions must be one of {}, default: 'none'. {} was given".format(
+            allowed_store, store_wavefunctions
+        )
+        assert not (store_objectives == "all" and store_wavefunctions == "available"), (
+            "Unwanted side effects: with store_objectives='all'"
+            + ", store_wavefunctions='available' is equivalent to store_wavefunctions='all'"
+        )
+
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        assert not path.exists(), "Not overwriting existing path {}".format(path)
+
+        # Calculate all wavefunction/objectives if not available
+        if store_wavefunctions == "all":
+            self.get_wavefunctions()
+        if store_objectives == "all":
+            self.get_objectives()
+
+        # Collect columns to store
+        columns = ["index", "params"]
+        if store_wavefunctions != "none":
+            columns.append("wavefunction")
+        if store_objectives != "none":
+            columns.append("objective")
+
         dct = {
             "result": {
                 "objective": self.objective.to_json_dict(),
-                "steps": [step.to_dict() for step in self.__steps],
+                "steps": {
+                    "cols": columns,
+                    "rows": [step.to_list(columns) for step in self.__steps],
+                },
             },
             "meta": {
                 "time": str(datetime.datetime.now()),
             },
         }
 
-        with open(path, "w") as outfile:
-            json.dump(dct, outfile, indent=indent, cls=JSONEncoder)
+        with path.open("w") as outfile:
+            json.dump(dct, outfile, indent=indent)
             outfile.close()
 
     @classmethod
-    def restore(cls, path):
-        with open(path, "r") as infile:
-            dct = json.load(infile, object_hook=decode_custom)
+    def restore(cls, path: Union[pathlib.Path, str]):
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        assert path.exists(), "Cannot load nonexistent path {}".format(path)
+
+        with path.open("r") as infile:
+            dct = json.load(infile)
             infile.close()
 
             obj = Restorable.restore(dct["result"]["objective"])
             res = OptimisationResult(obj)
 
-            for step in sorted(dct["result"]["steps"], key=lambda s: s["index"]):
-                del step["index"]
+            # Convert steps to dict (keep this verbose)
+            steps = []
+            step_cols = dct["result"]["steps"]["cols"]
+            for step_row in dct["result"]["steps"]["rows"]:
+                steps.append({step_cols[i]: step_row[i] for i in range(len(step_cols))})
+
+            # Add steps sorted by their index
+            for step in sorted(steps, key=lambda s: s["index"]):
+                del step["index"]  # Remove index from dict
                 res.add_step(**step)
 
             return res
@@ -138,6 +175,16 @@ class OptimisationResult:
 
         """
         return self.get_latest_step().objective
+
+    def get_wavefunctions(self) -> List[np.ndarray]:
+        # For docs: This has huge side effects (floods RAM)
+        # Todo: optimise with joblib?
+        return [step.wavefunction for step in self.__steps]
+
+    def get_objectives(self) -> List[Real]:
+        # For docs: This has huge side effects (floods RAM)
+        # Note: this method is incompatible with making optimisation parameters dependant on step
+        return [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
 
     def __repr__(self) -> str:
         return "<OptimisationResult steps={} latest_step={} objective={}>".format(
