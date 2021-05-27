@@ -110,7 +110,7 @@ class CVaR(Objective):
             "constructor_params": {
                 "field": self.__field,
                 "alpha": self.__alpha,
-                "initialiser": self._model.to_json_dict(),
+                "model": self._model.to_json_dict(),
             },
         }
 
