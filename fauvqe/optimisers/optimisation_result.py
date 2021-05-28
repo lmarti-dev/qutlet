@@ -37,11 +37,14 @@ class OptimisationResult:
         overwrite: bool, default False
             Overwrite existing files
         store_wavefunctions: {"none", "available", "all"}, default "none"
-            Include wavefunctions with in the file.
+            Include wavefunctions in the file.
+
             - "none": no wavefunction will be stored
             - "available": already calculated wavefunctions will be stored
             - "all": all wavefunctions will be calculated and then stored
         store_objectives: {"none", "available", "all"}, default "none"
+            Include wavefunctions in the file.
+
             - "none": no objective will be stored
             - "available": already calculated objectives will be stored
             - "all": all objectives will be calculated and then stored
