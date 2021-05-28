@@ -5,4 +5,3 @@ fauvqe
    :maxdepth: 4
 
    fauvqe
-   tests
