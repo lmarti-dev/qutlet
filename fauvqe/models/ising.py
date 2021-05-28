@@ -3,7 +3,7 @@
 import numpy as np
 import cirq
 import importlib
-from typing import Tuple
+from typing import Tuple, Literal
 
 # import all parent modules
 from fauvqe.models.abstractmodel import AbstractModel
@@ -17,18 +17,21 @@ class Ising(AbstractModel):
 
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
-    def __init__(self, qubittype, n, j_v, j_h, h):
+    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X"):
         """
-        qubittype as defined in bstractModel
+        qubittype as defined in AbstractModel
         n number of qubits
         j_v vertical j's
         j_h horizontal j's
-        h  external field
+        h  strength external field
+        field: basis of external field X or Z
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
         self._set_jh(j_v, j_h, h)
+        self.field = field
+        self.__set_hamiltonian()
         super().set_simulator()
 
     def _set_jh(self, j_v, j_h, h):
@@ -63,6 +66,56 @@ class Ising(AbstractModel):
             h.shape == self.n
         ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
+
+    def __set_hamiltonian(self, reset: bool = True):
+        """
+            Append or Reset Hamiltonian
+
+            Create a cirq.PauliSum object fitting to j_v, j_h, h  
+        """
+        if reset:
+            self.hamiltonian = cirq.PauliSum()
+
+        #Conversion currently necessary as numpy type * cirq.PauliSum fails
+        j_v = self.j_v.tolist()
+        j_h = self.j_h.tolist()
+        h = self.h.tolist()
+        
+        # 1. Sum over inner bounds
+        for i in range(self.n[0] - 1):
+            for j in range(self.n[1] - 1):
+                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
+                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
+
+        for i in range(self.n[0] - 1):
+            j = self.n[1] - 1
+            self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
+
+        for j in range(self.n[1] - 1):
+            i = self.n[0] - 1
+            self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
+ 
+        
+        #2. Sum periodic boundaries
+        if self.boundaries[1] == 0:
+            for i in range(self.n[0]):
+                j = self.n[1] - 1
+                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][0])
+
+        if self.boundaries[0] == 0:
+            for j in range(self.n[1]):
+                i = self.n[0] - 1
+                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[0][j])
+        
+        # 3. Add external field
+        if field == "X":
+            field_gate = cirq.X
+        elif field == "Z":
+            field_gate = cirq.Z
+
+        for i in range(n[0]):
+            for j in range(n[1]):
+                self.hamiltonian -= h[i][j]*field_gate(self.qubits[i][j])
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         # maybe fuse with energy_JZZ_hZ partially somehow
