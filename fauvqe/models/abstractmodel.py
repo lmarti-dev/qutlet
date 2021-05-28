@@ -46,6 +46,7 @@ class AbstractModel(abc.ABC):
         self.init_qubits(qubittype, n)
         self.circuit = cirq.Circuit()
         self.set_simulator()
+        self.hamiltonian = cirq.PauliSum()
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
