@@ -98,7 +98,7 @@ With `pylint` installed, you should also be able to access `pyreverse` via CLI.
 In the repository, run
 
 ```shell
-pyreverse . -o png
+pyreverse ./fauvqe -o png
 ```
 
 for a simple UML diagram.
