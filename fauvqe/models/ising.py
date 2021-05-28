@@ -108,13 +108,13 @@ class Ising(AbstractModel):
                 self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[0][j])
         
         # 3. Add external field
-        if field == "X":
+        if self.field == "X":
             field_gate = cirq.X
-        elif field == "Z":
+        elif self.field == "Z":
             field_gate = cirq.Z
 
-        for i in range(n[0]):
-            for j in range(n[1]):
+        for i in range(self.n[0]):
+            for j in range(self.n[1]):
                 self.hamiltonian -= h[i][j]*field_gate(self.qubits[i][j])
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
