@@ -20,7 +20,7 @@ class ExpectationValue(Objective):
     ----------
     model: AbstractModel
         The linked model
-    field: {"X", "Z"} default "Z"
+    field: {"X", "Z"}, default "Z"
         The field to be evaluated
 
     Methods

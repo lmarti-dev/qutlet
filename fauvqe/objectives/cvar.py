@@ -15,9 +15,11 @@ class CVaR(Objective):
 
     Parameters
     ----------
+    model: AbstractModel
+        The linked model
     alpha: Real
         The :math:`\\alpha` value
-    field: {"X", "Z"} default "Z"
+    field: {"X", "Z"}, default "Z"
         The field to be evaluated
 
 
@@ -60,9 +62,37 @@ class CVaR(Objective):
             self.__energies = energies[self.__mask]
 
     def evaluate(self, wavefunction: np.ndarray) -> Real:
+        """Calculate the conditional value at risk (cVaR) for a given wavefunction
+
+        Evaluates the wavefunction with the given :math:`\\alpha` and field.
+
+        The respective field choices are implemented as `CVaR._evaluate_x` and `CVaR._evaluate_z`.
+
+        Parameters
+        ----------
+        wavefunction: numpy.ndarray
+            The input wavefunction in z basis
+
+        Returns
+        -------
+        Real: The conditional value at risk (cVaR).
+        """
         return self._evaluate_z(wavefunction)  # pragma: no cover
 
     def _evaluate_x(self, wavefunction_z: np.ndarray) -> Real:
+        """Calculate the conditional value at risk (cVaR) for a given wavefunction in x basis
+
+        Equivalent to `CVaR.evaluate` when field="X".
+
+        Parameters
+        ----------
+        wavefunction_z: numpy.ndarray
+            THe input wavefunction in z basis
+
+        Returns
+        -------
+        Real: The conditional value at risk (cVaR) in x basis.
+        """
         wavefunction_x = self._rotate_x(wavefunction_z)
         energies = np.abs(wavefunction_z) ** 2 * (-self.__energies_j) + np.abs(
             wavefunction_x
@@ -74,17 +104,18 @@ class CVaR(Objective):
         return CVaR._calc_cvar(_probabilities, _energies, self.__alpha) / self.__n_qubits
 
     def _evaluate_z(self, wavefunction: np.ndarray) -> Real:
-        """Calculate the conditional value at risk for a given wavefunction.
+        """Calculate the conditional value at risk (cVaR) for a given wavefunction in z basis
+
+        Equivalent to `CVaR.evaluate` when field="Z".
 
         Parameters
         ----------
-        wavefunction:
-            The wavefunction to calculate the conditional value at risk.
+        wavefunction: numpy.ndarray
+            THe input wavefunction in z basis
 
         Returns
-        ----------
-        Real:
-            The conditional value at risk (cVaR)
+        -------
+        Real: The conditional value at risk (cVaR) in z basis.
         """
         return (
             CVaR._calc_cvar((np.abs(wavefunction) ** 2)[self.__mask], self.__energies, self.__alpha)
@@ -93,6 +124,19 @@ class CVaR(Objective):
 
     @staticmethod
     def _calc_cvar(probabilities: np.ndarray, energies: np.ndarray, alpha: Real) -> Real:
+        """Calculate the conditional value at risk (cVaR) for a given distribution.
+
+        Parameters
+        ----------
+        probabilities: numpy.ndarray
+        energies: numpy.ndarray
+        alpha: Real
+
+        Returns
+        -------
+        Real
+            The conditional value at risk (cVaR) for the given distribution
+        """
         # Expect energies and probabilities to be ordered
         mask = np.cumsum(probabilities) <= alpha
 

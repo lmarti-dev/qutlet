@@ -1,6 +1,3 @@
-"""
-module docstring Optimisation result
-"""
 import datetime
 from numbers import Real, Integral
 from typing import List, Optional, Literal, Union
@@ -14,15 +11,7 @@ from fauvqe.optimisers.optimisation_step import OptimisationStep
 
 
 class OptimisationResult:
-    """OptimisationResult class docstring"""
-
     def __init__(self, objective: Objective):
-        """
-
-        Parameters
-        ----------
-        objective
-        """
         # Store start params? optimiser.circuit_param_values
         self.__steps: List[OptimisationStep] = []
         self.__objective: Objective = objective
@@ -33,9 +22,35 @@ class OptimisationResult:
         path: Union[pathlib.Path, str],  # Todo: Support File-like objects
         #  (see: https://docs.python.org/3/library/io.html#io.TextIOBase)
         indent: Optional[Integral] = None,
+        overwrite: bool = False,
         store_wavefunctions: Literal["none", "available", "all"] = "none",
         store_objectives: Literal["none", "available", "all"] = "none",
     ) -> None:
+        """Store this `OptimisationResult` as a json file.
+
+        Parameters
+        ----------
+        path: pathlib.Path or str
+            The path to store the file to
+        indent: Integral, optional
+            Indent the json file for better human readability (default: No indent)
+        overwrite: bool, default False
+            Overwrite existing files
+        store_wavefunctions: {"none", "available", "all"}, default "none"
+            Include wavefunctions with in the file.
+            - "none": no wavefunction will be stored
+            - "available": already calculated wavefunctions will be stored
+            - "all": all wavefunctions will be calculated and then stored
+        store_objectives: {"none", "available", "all"}, default "none"
+            - "none": no objective will be stored
+            - "available": already calculated objectives will be stored
+            - "all": all objectives will be calculated and then stored
+
+        Raises
+        ---------
+        FileExistsError
+            If the desired path exists and `overwrite` is not set to True.
+        """
         allowed_store = ["none", "available", "all"]
         assert (
             store_objectives in allowed_store
@@ -55,7 +70,9 @@ class OptimisationResult:
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
-        assert not path.exists(), "Not overwriting existing path {}".format(path)
+        # Never overwrite existing paths
+        if not overwrite and path.exists():
+            raise FileExistsError("Not overwriting existing path {}".format(path))
 
         # Calculate all wavefunction/objectives if not available
         if store_wavefunctions == "all":
@@ -88,11 +105,29 @@ class OptimisationResult:
             outfile.close()
 
     @classmethod
-    def restore(cls, path: Union[pathlib.Path, str]):
+    def restore(cls, path: Union[pathlib.Path, str]) -> "OptimisationResult":
+        """Restore a previously stored `OptimisationResult`.
+
+        Parameters
+        ----------
+        path: pathlib.Path or str
+            The path where to find the stored `OptimisationResult`.
+
+        Returns
+        -------
+        OptimisationResult
+            The restored result.
+
+        Raises
+        -------
+        FileNotFoundError
+            If the path is not a file
+        """
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
-        assert path.exists(), "Cannot load nonexistent path {}".format(path)
+        if not path.exists() or not path.is_file():
+            raise FileNotFoundError("Cannot load nonexistent path {}".format(path))
 
         with path.open("r") as infile:
             dct = json.load(infile)
@@ -116,11 +151,12 @@ class OptimisationResult:
 
     @property
     def objective(self) -> Objective:
-        """
+        """The optimised `Objective`
 
         Returns
         -------
-
+        Objective
+            The optimised `Objective`
         """
         return self.__objective
 
@@ -130,13 +166,13 @@ class OptimisationResult:
         wavefunction: Optional[np.ndarray] = None,
         objective: Optional[Real] = None,
     ) -> None:
-        """
+        """Add a step to the optimisation result.
 
         Parameters
         ----------
         params: numpy.ndarray
-        wavefunction: numpy.ndarray optional
-        objective: Real optional
+        wavefunction: numpy.ndarray, optional
+        objective: Real, optional
         """
         self.__steps.append(
             OptimisationStep(
@@ -150,16 +186,16 @@ class OptimisationResult:
         self.__index += 1
 
     def get_steps(self) -> List[OptimisationStep]:
-        """
+        """Get all steps added to the result.
 
         Returns
         -------
-        List[OptimisationStep]
+        list of OptimisationStep
         """
         return self.__steps
 
     def get_latest_step(self) -> OptimisationStep:
-        """
+        """Get the latest step.
 
         Returns
         -------
@@ -168,20 +204,37 @@ class OptimisationResult:
         return self.__steps[-1]
 
     def get_latest_objective_value(self) -> Real:
-        """
+        """Get the latest objective value.
 
         Returns
         -------
-
+        Real
         """
         return self.get_latest_step().objective
 
     def get_wavefunctions(self) -> List[np.ndarray]:
+        """Get all wavefunctions.
+
+        Returns
+        -------
+        list of numpy.ndarray
+        """
         # For docs: This has huge side effects (floods RAM)
         # Todo: optimise with joblib?
         return [step.wavefunction for step in self.__steps]
 
     def get_objectives(self) -> List[Real]:
+        """Get all objective values.
+
+        Notes
+        -------
+        Watch out that this may flood RAM as also it needs to calculate the wavefunctions and does not explicitly delete
+        them.
+
+        Returns
+        -------
+        list of Real
+        """
         # For docs: This has huge side effects (floods RAM)
         # Note: this method is incompatible with making optimisation parameters dependant on step
         return [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
