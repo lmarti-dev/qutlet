@@ -5,7 +5,7 @@ import pathlib
 
 import numpy as np
 
-import fauvqe.json as json
+import fauvqe.json
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_step import OptimisationStep
 
@@ -101,7 +101,7 @@ class OptimisationResult:
         }
 
         with path.open("w") as outfile:
-            json.dump(dct, outfile, indent=indent)
+            fauvqe.json.dump(dct, outfile, indent=indent)
             outfile.close()
 
     @classmethod
@@ -130,7 +130,7 @@ class OptimisationResult:
             raise FileNotFoundError("Cannot load nonexistent path {}".format(path))
 
         with path.open("r") as infile:
-            dct = json.load(infile)
+            dct = fauvqe.json.load(infile)
             infile.close()
 
             obj = dct["result"]["objective"]
