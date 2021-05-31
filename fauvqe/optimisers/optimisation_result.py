@@ -4,8 +4,8 @@ from typing import List, Optional, Literal, Union
 import pathlib
 
 import numpy as np
+
 import fauvqe.json as json
-from fauvqe.restorable import Restorable
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_step import OptimisationStep
 
@@ -89,7 +89,7 @@ class OptimisationResult:
 
         dct = {
             "result": {
-                "objective": self.objective.to_json_dict(),
+                "objective": self.objective,
                 "steps": {
                     "cols": columns,
                     "rows": [step.to_list(columns) for step in self.__steps],
@@ -133,7 +133,7 @@ class OptimisationResult:
             dct = json.load(infile)
             infile.close()
 
-            obj = Restorable.restore(dct["result"]["objective"])
+            obj = dct["result"]["objective"]
             res = OptimisationResult(obj)
 
             # Convert steps to dict (keep this verbose)
@@ -219,7 +219,6 @@ class OptimisationResult:
         -------
         list of numpy.ndarray
         """
-        # For docs: This has huge side effects (floods RAM)
         # Todo: optimise with joblib?
         return [step.wavefunction for step in self.__steps]
 
@@ -235,7 +234,6 @@ class OptimisationResult:
         -------
         list of Real
         """
-        # For docs: This has huge side effects (floods RAM)
         # Note: this method is incompatible with making optimisation parameters dependant on step
         return [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
 

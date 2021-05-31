@@ -311,29 +311,26 @@ class Ising(AbstractModel):
 
     def to_json_dict(self) -> Dict:
         return {
-            "type": type(self).__name__,
             "constructor_params": {
                 "qubittype": self.qubittype,
-                "n": self.n.tolist(),
-                "j_v": self.j_v.tolist(),
-                "j_h": self.j_h.tolist(),
-                "h": self.h.tolist(),
+                "n": self.n,
+                "j_v": self.j_v,
+                "j_h": self.j_h,
+                "h": self.h,
             },
             "params": {
-                "circuit": cirq.to_json(self.circuit, indent=None),  # cirq.Circuit
-                "circuit_param": [str(p) for p in self.circuit_param],  # List[sp.symbol]
-                "circuit_param_values": self.circuit_param_values.tolist(),  # np.ndarray
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        assert dct["type"] == cls.__name__
-
         inst = cls(**dct["constructor_params"])
 
-        inst.circuit = cirq.read_json(json_text=dct["params"]["circuit"])
-        inst.circuit_param = [sympy.Symbol(p) for p in dct["params"]["circuit_param"]]
-        inst.circuit_param_values = np.array(dct["params"]["circuit_param_values"])
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst

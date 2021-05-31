@@ -65,17 +65,14 @@ class ExpectationValue(Objective):
 
     def to_json_dict(self) -> Dict:
         return {
-            "type": type(self).__name__,
             "constructor_params": {
                 "field": self.__field,
-                "model": self._model.to_json_dict(),
+                "model": self._model,
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        assert dct["type"] == cls.__name__
-
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
