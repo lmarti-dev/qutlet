@@ -22,7 +22,7 @@ class EVPSolver(Objective):
     ----------
     model: AbstractModel
         The linked model
-    val:    eigen values
+    val:    eigen values, normalised by qubit number to keep compareability
     vec:    eigen vector
 
     different solvers, possibly use import lib
@@ -46,22 +46,36 @@ class EVPSolver(Objective):
     def __init__(self, model: AbstractModel):
         super().__init__(model)
         self.hamiltonian = model.hamiltonian
+        self.__n = np.size(model.qubits)
 
     def evaluate(self, solver = "scipy.sparse", solver_options: dict = {}):
         if solver == "numpy":
-            raise NotImplementedError() 
+            self.val, self.vec =  np.linalg.eigh(self.hamiltonian.matrix())
+            # Normalise eigenvalues
+            self.val /= self.__n           
         elif solver == "scipy":
-            raise NotImplementedError() 
+            self.solver_options = { "check_finite": False, 
+                                    "subset_by_index": [0, 1]}
+            self.solver_options.update(solver_options)           
+            self.val, self.vec = scipy.linalg.eigh(
+                self.hamiltonian.matrix(), 
+                **self.solver_options,
+                )
+            # Normalise eigenvalues
+            self.val /= self.__n
         elif solver == "scipy.sparse":
-            self.solver_options = {"k": 2, "which": 'SA'}
+            self.solver_options = { "k": 2,
+                                    "which": 'SA'}
             self.solver_options.update(solver_options)
             self.val, self.vec = scipy.sparse.linalg.eigsh(
                 self.hamiltonian.matrix(), 
-                k = 2 , which = 'SA',
+                **self.solver_options,
                 )
+            # Normalise eigenvalues
+            self.val /= self.__n
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
-                simulator_name
+            assert False, "Invalid simulator option, received {}, allowed is 'numpy', 'scipy', 'scipy.sparse'".format(
+                solver
             )
 
     def __repr__(self) -> str:
