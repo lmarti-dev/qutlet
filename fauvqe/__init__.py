@@ -18,6 +18,7 @@ from fauvqe.objectives import (
     Objective,
     CVaR,
     ExpectationValue,
+    EVPSolver,
 )
 from fauvqe.optimisers import (
     Optimiser,
