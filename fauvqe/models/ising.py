@@ -1,11 +1,9 @@
-# %%
-# external import
-import numpy as np
-import cirq
 import importlib
 from typing import Tuple, Dict
 
-import sympy
+import numpy as np
+import cirq
+
 from fauvqe.models.abstractmodel import AbstractModel
 
 

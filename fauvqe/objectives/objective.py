@@ -2,6 +2,8 @@
 """
 import abc
 from numbers import Real
+from typing import Optional
+
 import numpy as np
 import cirq
 
@@ -47,7 +49,7 @@ class Objective(Restorable):
         """
         return self._model
 
-    def simulate(self, param_resolver, initial_state=None) -> np.ndarray:
+    def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
         """Simulate the circuit of the model with a given parameter resolver.
 
         Parameters

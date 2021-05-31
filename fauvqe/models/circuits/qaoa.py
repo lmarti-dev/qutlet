@@ -6,7 +6,6 @@ This file is not exectuded, rather called within Ising() class when:
 
 or functions are handed over to classical optimiser
 """
-# external import
 import numpy as np
 import cirq
 import sympy

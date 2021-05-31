@@ -38,11 +38,12 @@ Potential MUCH BETTER alternative option: load from scipy??
 """
 import multiprocessing
 from numbers import Real, Integral
-from typing import Union, Literal
+from typing import Literal, Optional
 
 import cirq
 import joblib
 import numpy as np
+
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.optimiser import Optimiser
@@ -105,7 +106,7 @@ class ADAM(Optimiser):
         self._break_param: Integral = break_param
 
         # The following attributes change for each objective
-        self._objective: Union[Objective, None] = None
+        self._objective: Optional[Objective] = None
         self._v_t: np.ndarray = np.array([])
         self._m_t: np.ndarray = np.array([])
         self._circuit_param: np.ndarray = np.array([])
@@ -114,7 +115,7 @@ class ADAM(Optimiser):
     def optimise(
         self,
         objective: Objective,
-        continue_at: Union[OptimisationResult, None] = None,
+        continue_at: Optional[OptimisationResult] = None,
         n_jobs: Integral = -1,
     ) -> OptimisationResult:
         """Run optimiser until break condition is fulfilled

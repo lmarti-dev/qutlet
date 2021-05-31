@@ -12,7 +12,6 @@ Abstractly (for QC):
     -Return/Update circuit parameters
 
 """
-
 import abc
 
 from fauvqe.objectives.objective import Objective

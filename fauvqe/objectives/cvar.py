@@ -1,6 +1,5 @@
 """Implementation of the conditional value at risk as objective function for a model, e.g. Ising of AbstractModel type
 """
-
 from typing import Literal, Dict
 from numbers import Real, Integral
 

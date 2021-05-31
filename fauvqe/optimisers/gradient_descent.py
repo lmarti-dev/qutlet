@@ -11,6 +11,7 @@ from typing import Literal, Union
 
 import cirq
 import numpy as np
+
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.optimiser import Optimiser
