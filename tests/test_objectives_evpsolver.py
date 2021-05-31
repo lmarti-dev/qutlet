@@ -15,7 +15,7 @@ from cirq.testing import lin_alg_utils
 from fauvqe import EVPSolver, Ising
 
 @pytest.mark.parametrize(
-    "qubittype, n, j_v, j_h, h, val_exp, vec_exp",
+    "qubittype, n, j_v, j_h, h, field, val_exp, vec_exp",
     [
         (
             "GridQubit",
@@ -23,6 +23,7 @@ from fauvqe import EVPSolver, Ising
             np.zeros((1, 1)),
             np.zeros((2, 0)),
             np.array([0.5, 1]).reshape((2,1)), 
+            "X",
             [-0.75, -0.25],
             np.transpose([
                 [-0.5, -0.5, -0.5, -0.5],
@@ -35,18 +36,32 @@ from fauvqe import EVPSolver, Ising
             np.ones((1, 2)),
             np.ones((2, 1)),
             np.zeros((2, 2)),
+            "X",
             [-1, -1],
             np.transpose([
                 [1.+0.j , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0       ],
                 [0      , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.+0.j  ],
             ]),
         ),
+        (
+           "GridQubit",
+            [2, 2],
+            np.array([0.25, 0.75]).reshape((1,2)),
+            np.array([0.5, 1]).reshape((2,1)),
+            np.ones((2, 2)),
+            "Z",
+            [-1.625, -0.75],
+            np.transpose([
+                [1.+0.j , 0, 0, 0, 0, 0, 0, 0, 0     , 0, 0, 0, 0, 0, 0, 0],
+                [0      , 0, 0, 0, 0, 0, 0, 0, 1.+0.j, 0, 0, 0, 0, 0, 0, 0],
+            ]),
+        ),
     ]
 )
 
-def test_evaluate(qubittype, n, j_v, j_h, h, val_exp, vec_exp):
+def test_evaluate(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
     # Create Ising object
-    ising_obj = Ising(qubittype, n, j_v, j_h, h)
+    ising_obj = Ising(qubittype, n, j_v, j_h, h, field)
 
     #Calculate analytic results by different methods
     np_sol = EVPSolver(ising_obj)
@@ -69,6 +84,7 @@ def test_evaluate(qubittype, n, j_v, j_h, h, val_exp, vec_exp):
     # Further issue: abitrary for degenerate
     for i in range(2):
         if np.abs(sparse_scipy_sol.val[0] - sparse_scipy_sol.val[1]) > 1e-14:
+            #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
             lin_alg_utils.assert_allclose_up_to_global_phase(scipy_sol.vec[:,i] , sparse_scipy_sol.vec[:,i], rtol=1e-15, atol=1e-15)
         
         lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.vec[:,i]    , scipy_sol.vec[:,i], rtol=1e-15, atol=1e-15)
