@@ -293,7 +293,7 @@ class Ising(AbstractModel):
         # Plot heatmap
         heatmap.plot()
 
-    def energy_analytic_1d(self):
+    def energy_pfeuty_sol(self):
         """
         Function that returns analytic solution for ground state energy
         of 1D TFIM as described inj Pfeuty, ANNALS OF PHYSICS: 57, 79-90 (1970)
@@ -316,6 +316,7 @@ class Ising(AbstractModel):
         assert np.min(self.h) == np.max(
             self.h
         ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
+        
         # Use initial parameter to catch empty array
         assert (
             np.min(self.j_h, initial=np.finfo(np.float_).max)
@@ -327,6 +328,7 @@ class Ising(AbstractModel):
             np.min(self.j_h, initial=np.finfo(np.float_).max),
             np.max(self.j_h, initial=np.finfo(np.float_).min),
         )
+
         # Use initial parameter to catch empty array
         assert (
             np.min(self.j_v, initial=np.finfo(np.float_).max)
@@ -338,26 +340,23 @@ class Ising(AbstractModel):
             np.min(self.j_v, initial=np.finfo(np.float_).max),
             np.max(self.j_v, initial=np.finfo(np.float_).min),
         )
+
         lambda_k = self._get_lambda_k()
-        # print("#np.size(lambda_k) = {} \t self.n[0]*self.n[1] = {}".format(np.size(lambda_k), self.n[0] * self.n[1]))
-        return -np.sum(lambda_k) / np.size(lambda_k)  # self.n[0]*self.n[1]
+        return -np.sum(lambda_k) /(self.n[0]*self.n[1])
 
     def _get_lambda_k(self):
         """
-        Helper function for energy_analytic_1d()
+        Helper function for energy_pfeuty_sol()
         Not intended for external call
         """
         _n = self.n[0] * self.n[1]
-        # print("_n: {}".format(_n))
         _k = (
-            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 + 1e-10, step=1) / _n
+            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 , step=1) / _n
         )
-        # print("_k: {}".format(_k))
+
         if self.j_h.size > 0:
             _j = self.j_h[0][0]
         else:
             _j = self.j_v[0][0]
-        # print("_j: {}".format(_j))
-        # Does not work for 0
-        # _j = list(filter(None, (self.j_v[0], self.j_h[0])))
+
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))

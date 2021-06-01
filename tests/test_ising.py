@@ -12,7 +12,7 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising
+from fauvqe import Ising, EVPSolver
 from tests.test_isings import IsingTester
 
 
@@ -807,13 +807,13 @@ def test_print_spin_dummy():
         ),
     ],
 )
-def test_energy_analytic_1d(qubittype, n, j_v, j_h, h, E_exp):
+def test_energy_pfeuty_sol(qubittype, n, j_v, j_h, h, E_exp):
     atol = 1e-14
     ising_obj = Ising(qubittype, n, j_v, j_h, h)
     assert (
-        abs(ising_obj.energy_analytic_1d() - E_exp) < atol
+        abs(ising_obj.energy_pfeuty_sol() - E_exp) < atol
     ), "Analytic 1D JZZ hX energy test failed; expected: {}, received {}, tolerance {}".format(
-        E_exp, ising_obj.energy_analytic_1d(), atol
+        E_exp, ising_obj.energy_pfeuty_sol(), atol
     )
     # compare numeric to analytic 1D result
     # for some less trivial cases
@@ -825,6 +825,31 @@ def test_energy_analytic_1d(qubittype, n, j_v, j_h, h, E_exp):
         # THIS NOT DOES PASS YET??
         # might be that analytic solution is not quite correct yet?
         # tester.simple_energy_JZZ_hX_test(qubittype, n, j_v, j_h, h, cirq.X**2, E_exp, 'Z')
+
+@pytest.mark.parametrize("n",range(2, 11))
+def test_consistency_pfeuty_sol(n):
+    """
+        This consistency check with random J and h fails sometimes
+
+        May indicate numerical precision problem somewhere!!
+    """
+    atol = 1e-7
+    # Get solution via scipy sparse matrix solver
+    J_zz = 2*np.random.random(1) - 1
+    h_x  = 2*np.random.random(1) - 1
+    ising_obj = Ising("GridQubit",
+        [1, n],
+        np.zeros((0, n)),
+        J_zz  * np.ones((1, n)),
+        h_x * np.ones((1, n)),
+        "X")
+
+    sparse_scipy_sol = EVPSolver(ising_obj)
+    sparse_scipy_sol.evaluate()
+    assert (min(abs(ising_obj.energy_pfeuty_sol() - sparse_scipy_sol.val)) < atol),\
+            "Pfeuty solution inconsistent with scipy sparse eig solver; Pfeuty: {}, scipy.sparse {}, tolerance {}".\
+            format(ising_obj.energy_pfeuty_sol(), sparse_scipy_sol.val, atol)
+
 
 
 #############################################################
@@ -939,7 +964,7 @@ def test_assert_set_jh(qubittype, n, j_v, j_h, h):
         ),
     ],
 )
-def test_assert_energy_analytic_1d(qubittype, n, j_v, j_h, h):
+def test_assert_energy_pfeuty_sol(qubittype, n, j_v, j_h, h):
     ising_obj = Ising(qubittype, n, j_v, j_h, h)
     with pytest.raises(AssertionError):
-        ising_obj.energy_analytic_1d()
+        ising_obj.energy_pfeuty_sol()
