@@ -144,10 +144,12 @@ class ADAM(Optimiser):
             n_jobs = int(
                 min(max(multiprocessing.cpu_count() / 2, 1), 2 * np.size(self._circuit_param))
             )
-            # Try to reset qsim threads, which overrights the simulator if it was not qsim
+            # Try to reset qsim threads if simulator was qsim
             try:
+                if str(self._objective.model.simulator.__class__).find('qsim') > 0:
+                    sim_name = "qsim"
                 t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
-                self._objective.model.set_simulator(simulator_options={"t": t_new})
+                self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
             except:
                 pass
 
