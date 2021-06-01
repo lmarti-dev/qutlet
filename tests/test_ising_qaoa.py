@@ -156,6 +156,20 @@ def test__UC_layer():
         rtol=0,
         atol=1e-14,
     )
+@pytest.mark.parametrize('p', [(1), (2), (3)])
+def test_get_param_resolver(p):
+    self = Ising("GridQubit", [2, 1], np.ones((1, 1)), np.ones((2, 0)), np.ones((2, 1)))
+    
+    b_values = np.random.rand(p)
+    g_values = np.random.rand(p)
+    param_resolver = self.qaoa._get_param_resolver(self, b_values, g_values)
+    if p == 1:
+        assert(param_resolver == cirq.ParamResolver(
+            {**{"b0": b_values}, **{"g0": g_values}} ))
+    else:
+        assert(param_resolver == cirq.ParamResolver(
+            {**{"b" + str(i): b_values[i] for i in range(p)},
+            **{"g" + str(i): g_values[i] for i in range(p)},}))
 
 
 def test_set_circuit_erros():

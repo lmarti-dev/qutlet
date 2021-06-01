@@ -52,7 +52,8 @@ class EVPSolver(Objective):
         if solver == "numpy":
             self.val, self.vec =  np.linalg.eigh(self.hamiltonian.matrix())
             # Normalise eigenvalues
-            self.val /= self.__n           
+            self.val /= self.__n   
+            # Normalise eigenvectors        
         elif solver == "scipy":
             self.solver_options = { "check_finite": False, 
                                     "subset_by_index": [0, 1]}
@@ -63,6 +64,7 @@ class EVPSolver(Objective):
                 )
             # Normalise eigenvalues
             self.val /= self.__n
+            # Normalise eigenvectors
         elif solver == "scipy.sparse":
             self.solver_options = { "k": 2,
                                     "which": 'SA'}
@@ -73,6 +75,7 @@ class EVPSolver(Objective):
                 )
             # Normalise eigenvalues
             self.val /= self.__n
+            # Normalise eigenvectors
         else:
             assert False, "Invalid simulator option, received {}, allowed is 'numpy', 'scipy', 'scipy.sparse'".format(
                 solver
