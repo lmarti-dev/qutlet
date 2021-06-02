@@ -12,7 +12,7 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising, EVPSolver
+from fauvqe import Ising
 from tests.test_isings import IsingTester
 
 
@@ -844,13 +844,84 @@ def test_consistency_pfeuty_sol(n):
         h_x * np.ones((1, n)),
         "X")
 
-    sparse_scipy_sol = EVPSolver(ising_obj)
-    sparse_scipy_sol.evaluate()
-    assert (min(abs(ising_obj.energy_pfeuty_sol() - sparse_scipy_sol.val)) < atol),\
+    ising_obj.diagonalise()
+    assert (min(abs(ising_obj.energy_pfeuty_sol() - ising_obj.eig_val)) < atol),\
             "Pfeuty solution inconsistent with scipy sparse eig solver; Pfeuty: {}, scipy.sparse {}, tolerance {}".\
-            format(ising_obj.energy_pfeuty_sol(), sparse_scipy_sol.val, atol)
+            format(ising_obj.energy_pfeuty_sol(), ising_obj.eig_val, atol)
 
 
+@pytest.mark.parametrize(
+    "qubittype, n, j_v, j_h, h, field, val_exp, vec_exp",
+    [
+        (
+            "GridQubit",
+            [2, 1],
+            np.zeros((1, 1)),
+            np.zeros((2, 0)),
+            np.array([0.5, 1]).reshape((2,1)), 
+            "X",
+            [-0.75, -0.25],
+            np.transpose([
+                [-0.5, -0.5, -0.5, -0.5],
+                [ 0.5,  0.5, -0.5, -0.5],
+            ]),
+        ),
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((1, 2)),
+            np.ones((2, 1)),
+            np.zeros((2, 2)),
+            "X",
+            [-1, -1],
+            np.transpose([
+                [1.+0.j , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0       ],
+                [0      , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.+0.j  ],
+            ]),
+        ),
+        (
+           "GridQubit",
+            [2, 2],
+            np.array([0.25, 0.75]).reshape((1,2)),
+            np.array([0.5, 1]).reshape((2,1)),
+            np.ones((2, 2)),
+            "Z",
+            [-1.625, -0.75],
+            np.transpose([
+                [1.+0.j , 0, 0, 0, 0, 0, 0, 0, 0     , 0, 0, 0, 0, 0, 0, 0],
+                [0      , 0, 0, 0, 0, 0, 0, 0, 1.+0.j, 0, 0, 0, 0, 0, 0, 0],
+            ]),
+        ),
+    ]
+)
+
+def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
+    # Create Ising object
+    np_sol           =  Ising(qubittype, n, j_v, j_h, h, field)
+    scipy_sol        =  Ising(qubittype, n, j_v, j_h, h, field)
+    sparse_scipy_sol =  Ising(qubittype, n, j_v, j_h, h, field)
+
+    #Calculate analytic results by different methods
+    np_sol.diagonalise(solver = 'numpy')
+    scipy_sol.diagonalise(solver = 'scipy')
+    sparse_scipy_sol.diagonalise()
+
+    # Test whether found eigenvalues are all close up to tolerance
+    np.testing.assert_allclose(scipy_sol.eig_val    , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
+    np.testing.assert_allclose(np_sol.eig_val [0:2]  , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
+    np.testing.assert_allclose(val_exp          , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
+
+    # Test whether found eigenvectors are all close up to tolerance and global phase
+    # Note that different eigen vectors can have a different global phase; hence we assert them one by one
+    # Here we only check ground state and first excited state
+    # Further issue: abitrary for degenerate
+    for i in range(2):
+        if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val [1]) > 1e-14:
+            #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
+            cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(scipy_sol.eig_vec[:,i] , sparse_scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
+        
+        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
+        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
 
 #############################################################
 #                                                           #

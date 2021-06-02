@@ -19,6 +19,8 @@ import sympy
 import cirq
 import qsimcirq
 
+from scipy.linalg import eigh as scipy_solver
+from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 
 class AbstractModel(abc.ABC):
     """
@@ -185,3 +187,67 @@ class AbstractModel(abc.ABC):
     @abc.abstractmethod
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError()  # pragma: no cover
+
+    @abc.abstractmethod
+    def _set_hamiltonian(self, reset: bool = True):
+        raise NotImplementedError()  # pragma: no cover
+
+    def diagonalise(self, solver = "scipy.sparse", solver_options: dict = {}):
+        """
+            Implementation of an exact solver for an AbstractModel object.
+
+            This works locally for up to 14 qubits and 
+            on the AMD 7502 EPYC nodes for up to 16 qubits (approx 45 min.)
+
+            Eigen-Value-Problem (EVP) solver
+
+            This method implements as objective the expectation value of the energies
+            of the linked model.
+
+            Parameters
+            ----------
+            self.eig_val:    eigen values, normalised by qubit number to keep compareability
+            self.eig_vec:    eigen vector
+
+            different solvers, possibly use import lib
+                "numpy"         np.linalg.eigh
+                "scipy"         scipy.linalg.eigh
+                "scipy.sparse"  scipy.sparse.linalg.eigsh
+                + Add more hardwareefficent solver
+                + Set usful defaults. 
+            parameters to pass on to the solver
+                implement as dict
+                e.g. k = 2
+        """
+        __n = np.size(self.qubits)
+        if solver == "numpy":
+            self.eig_val, self.eig_vec =  np.linalg.eigh(self.hamiltonian.matrix())
+            # Normalise eigenvalues
+            self.eig_val /= __n   
+            # Normalise eigenvectors ?      
+        elif solver == "scipy":
+            self.solver_options = { "check_finite": False, 
+                                    "subset_by_index": [0, 1]}
+            self.solver_options.update(solver_options)           
+            self.eig_val, self.eig_vec = scipy_solver(
+                self.hamiltonian.matrix(), 
+                **self.solver_options,
+                )
+            # Normalise eigenvalues
+            self.eig_val /= __n
+            # Normalise eigenvectors ?
+        elif solver == "scipy.sparse":
+            self.solver_options = { "k": 2,
+                                    "which": 'SA'}
+            self.solver_options.update(solver_options)
+            self.eig_val, self.eig_vec = scipy_sparse_solver(
+                self.hamiltonian.matrix(), 
+                **self.solver_options,
+                )
+            # Normalise eigenvalues
+            self.eig_val /= __n
+            # Normalise eigenvectors ?
+        else:
+            assert False, "Invalid simulator option, received {}, allowed is 'numpy', 'scipy', 'scipy.sparse'".format(
+                solver
+            )

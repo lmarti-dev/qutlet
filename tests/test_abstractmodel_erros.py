@@ -17,6 +17,8 @@ class MockAbstractModel(AbstractModel):
     def energy(self):
         return np.array([])
 
+    def _set_hamiltonian(self, reset: bool = True):
+        self.hamiltonian = cirq.PauliSum()
 
 # test_AbstractModel_expected_errors
 # AssertionError
@@ -48,3 +50,7 @@ def test_AbstractModel(qubittype, n):
 def test_AbstractModel00():
     with pytest.raises(TypeError):
         MockAbstractModel("NamedQubit", 1)
+
+def test_diagonalise_erros():
+    with pytest.raises(AssertionError):
+        MockAbstractModel("GridQubit", [1, 1]).diagonalise(solver="numpy.sparse")

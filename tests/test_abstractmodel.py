@@ -19,6 +19,9 @@ class MockAbstractModel(AbstractModel):
     def energy(self):
         return np.array([])
 
+    def _set_hamiltonian(self, reset: bool = True):
+        self.hamiltonian = cirq.PauliSum()
+
 
 # test_AbstractModel_set_qubits
 @pytest.mark.parametrize(
@@ -72,3 +75,134 @@ def test_set_simulator():
     # Test whether an Assertion error is raised otherwise
     with pytest.raises(AssertionError):
         AbstractModel_obj.set_simulator(simulator_name="simulator")
+
+
+@pytest.mark.parametrize(
+    "qubittype, n, coefficients, gates, qubits, val_exp, vec_exp",
+    [
+        (
+            "GridQubit",
+            [2, 1],
+            [-0.5, -1],
+            [cirq.X,  cirq.X],
+            [[0, 0], [1, 0]],
+            [-0.75, -0.25],
+            np.transpose([
+                [-0.5, -0.5, -0.5, -0.5],
+                [ 0.5,  0.5, -0.5, -0.5],
+            ]),
+        ),
+        (
+            "GridQubit",
+            [2, 1],
+            [0.5, -1],
+            [cirq.X,  cirq.Z],
+            [[0, 0], [1, 0]],
+            [-0.75, -0.25],
+            np.transpose([
+                [ np.sqrt(2)/2,  0, -np.sqrt(2)/2, 0],
+                [ np.sqrt(2)/2,  0, np.sqrt(2)/2, 0],
+            ]),
+        ),
+#        (
+#            "GridQubit",
+#            [1, 3],
+#            [2, -0.5, 1],
+#            [cirq.X,  cirq.Y ,cirq.Z],
+#            [[0, 0], [0, 1], [0, 2]],
+#            [-7/6, -5/6],
+#            np.transpose([
+                #[0, 0.5, 0, 0.5j, 0, -0.5, 0, -0.5j],
+#                [0, -0.5j, 0, -0.5, 0, 0.5j, 0, 0.5],
+#                [0, 0.5, 0, 0.5, 0, 0.5, 0, 1],
+#            ]),
+#        ),
+        (
+            "LineQubit",
+            2,
+            [-0.5, -1],
+            [cirq.X,  cirq.X],
+            [0, 1],
+            [-0.75, -0.25],
+            np.transpose([
+                [-0.5, -0.5, -0.5, -0.5],
+                [ 0.5,  0.5, -0.5, -0.5],
+            ]),
+        ),
+        (
+            "LineQubit",
+            2,
+            [0.5, -1],
+            [cirq.X,  cirq.Z],
+            [0, 1],
+            [-0.75, -0.25],
+            np.transpose([
+                [ np.sqrt(2)/2,  0, -np.sqrt(2)/2, 0],
+                [ np.sqrt(2)/2,  0, np.sqrt(2)/2, 0],
+            ]),
+        ),
+        (
+            "NamedQubit",
+            ["a","b"],
+            [-0.5, -1],
+            [cirq.X,  cirq.X],
+            [0, 1],
+            [-0.75, -0.25],
+            np.transpose([
+                [-0.5, -0.5, -0.5, -0.5],
+                [ 0.5,  0.5, -0.5, -0.5],
+            ]),
+        ),
+        (
+            "NamedQubit",
+            ["a","b"],
+            [0.5, -1],
+            [cirq.X,  cirq.Z],
+            [0, 1],
+            [-0.75, -0.25],
+            np.transpose([
+                [ np.sqrt(2)/2,  0, -np.sqrt(2)/2, 0],
+                [ np.sqrt(2)/2,  0, np.sqrt(2)/2, 0],
+            ]),
+        ),
+    ]
+)
+def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp):
+    # Create AbstractModel object
+    np_sol = MockAbstractModel(qubittype, n)
+    scipy_sol = MockAbstractModel(qubittype, n)
+    sparse_scipy_sol = MockAbstractModel(qubittype, n)
+
+    #Create the hamiltonians
+    for i in range(np.size(gates)):
+        gate = gates[i]
+        if qubittype == "GridQubit":
+            np_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            sparse_scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+        else:
+            np_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+            scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+            sparse_scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+
+    #Calculate analytic results by different methods
+    np_sol.diagonalise(solver = 'numpy')
+    scipy_sol.diagonalise(solver = 'scipy')
+    sparse_scipy_sol.diagonalise()
+
+    # Test whether found eigenvalues are all close up to tolerance
+    np.testing.assert_allclose(scipy_sol.eig_val    , sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15)
+    np.testing.assert_allclose(np_sol.eig_val[0:2]  , sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15)
+    np.testing.assert_allclose(val_exp          , sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15)
+
+    # Test whether found eigenvectors are all close up to tolerance and global phase
+    # Note that different eigen vectors can have a different global phase; hence we assert them one by one
+    # Here we only check ground state and first excited state
+    # Further issue: abitrary for degenerate
+    for i in range(2):
+        if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val[1]) > 1e-14:
+            #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
+            cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(scipy_sol.eig_vec[:,i] , sparse_scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
+        
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)

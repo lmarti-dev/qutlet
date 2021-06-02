@@ -31,7 +31,7 @@ class Ising(AbstractModel):
         self.circuit_param = None
         self._set_jh(j_v, j_h, h)
         self.field = field
-        self.__set_hamiltonian()
+        self._set_hamiltonian()
         super().set_simulator()
 
     def _set_jh(self, j_v, j_h, h):
@@ -67,7 +67,7 @@ class Ising(AbstractModel):
         ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
         self.h = h
 
-    def __set_hamiltonian(self, reset: bool = True):
+    def _set_hamiltonian(self, reset: bool = True):
         """
             Append or Reset Hamiltonian
 
