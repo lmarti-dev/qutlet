@@ -32,32 +32,57 @@ import numpy as np
 import cirq
 import sympy
 
-def _PhXZ_layer(self, a, x, z):
+def _PhXZ_layer(self, i):
     """
         Generator for PhasedXZGate Layer
+
+        a, x, z are possibly defined in 
+        if not set 0 
     """
-    for row in self.qubits:
-        for qubit in row:
-            yield cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a)(qubit)
+    if self.hea.options["parametrisation"] == "joint":
+        variables = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                variables[j] = sympy.Symbol(variable + str(i))
+            j +=1
+        for row in self.qubits:
+            for qubit in row:
+                yield cirq.PhasedXZGate(x_exponent=variables[1], 
+                                        z_exponent=variables[2], 
+                                        axis_phase_exponent=variables[0]).on(qubit)
 
 
-def _2Qubit_layer(self, gate: cirq.ops.TwoQubitGate = cirq.ops.FSimGate, params: dict = {}):
+def _2Qubit_layer(self, i):
     """
     Generator for hardware efficent 2 qubit layer
 
     Args:
-      gamma: Float variational parameter for the circuit
-      self.h: Array of floats of external magnetic field values
-      self.J_v, self.J_h, vertikal/horizontal Interaction Hamiltonian ZZ -h Z:
-      U(\gamma, C) = \prod_{\langle i,j\rangle}e^{-i\pi\gamma Z_iZ_j/2} \prod_i e^{-i\pi \gamma h_i Z_i/2
+      i layer number
+      self.hea.options["2quibtgate"]
     """
-    for i in range(self.n[0]):
-        for j in range(self.n[1]):
-            if i < self.n[0] - 1:
-                yield gate(**params).on(self.qubits[i][j], self.qubits[i + 1][j])
+    if self.hea.options["parametrisation"] == "joint":
+        # Offer different defaults????
+        variables = [0, 0]
+        j = 0
+        print(*variables)
 
-            if j < self.n[1] - 1:
-                yield gate(**params).on(self.qubits[i][j], self.qubits[i][j + 1])
+        #Note anti alphabethic order in definition of cirq.ops.FSimGate
+        for variable in ["theta", "phi"]:
+            if variable in self.hea.options["variables"]:
+                variables[j] = sympy.Symbol(variable + str(i))
+            j +=1
+
+        gate = self.hea.options["2QubitGate"]
+        #Bulk terms
+        #Need to be smarter ordered!!!
+        for i in range(self.n[0]):
+            for j in range(self.n[1]):
+                if i < self.n[0] - 1:
+                    yield gate(*variables).on(self.qubits[i][j], self.qubits[i + 1][j])
+                if j < self.n[1] - 1:
+                    yield gate(*variables).on(self.qubits[i][j], self.qubits[i][j + 1])
+        #Boundary terms
 
 def set_symbols(self):
     """
@@ -97,6 +122,29 @@ def set_symbols(self):
     self.circuit_param = temp
     self.p = self.hea.options["p"]
 
+def set_circuit(self):
+    # Reset circuit
+    if not self.hea.options['append']:
+        self.circuit = cirq.Circuit()
+
+    try:
+        if np.size(self.circuit_param_values) != np.size(self.circuit_param):
+            self.circuit_param_values = np.zeros(np.size(self.circuit_param))
+    except AttributeError:  # self.circuit_param_values has not been initialised earlier
+        self.circuit_param_values = np.zeros(np.size(self.circuit_param))
+
+    for i in range(self.p):
+        self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
+        self.circuit.append(self.hea._2Qubit_layer(self, i))
+
+def set_circuit_param_values(self):
+    """
+        Receives one or more parameter keys
+            "a", "x", "z", "phi", "theta"
+
+        Sets/resets all self.circuit_param_values that fit to respective parameter key
+    """
+    pass
 """
 def set_p(self, p, append=False):
     try:
@@ -114,21 +162,6 @@ def set_p(self, p, append=False):
         self.qaoa.set_symbols(self, p)
         self.qaoa.set_circuit(self, append)
         del self.circuit_param_values
-
-
-def set_symbols(self, p):
-    # Creat beta/gamma symbols for parametrised circuit
-    # self.betas = [sympy.Symbol("b" + str(i)) for i in range(p)]
-    # self.gammas = [sympy.Symbol("g" + str(i)) for i in range(p)]
-    #
-    # WANT: circuit-param to be a list like [b0, g0, b1, g1 ] etc
-    assert isinstance(p, (int, np.int_)), "Error: p needs to be int, received {}".format(type(p))
-    temp = []
-    for i in range(p):
-        temp.append(sympy.Symbol("b" + str(i)))
-        temp.append(sympy.Symbol("g" + str(i)))
-    self.circuit_param = temp
-    self.p = p
 
 
 def _set_beta_values(self, beta_values):

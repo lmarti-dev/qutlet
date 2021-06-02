@@ -219,14 +219,14 @@ class Ising(AbstractModel):
         CHALLENGE: how to load class functions from sub-module?
         """
         if qalgorithm == "hea":
-            self.hea.options = {"p": 1,
+            self.hea.options = {"append": False,
+                                "p": 1,
                                 "parametrisation" : 'joint',
                                 "variables": {'a', 'x', 'z', 'phi', 'theta'},
                                 "2QubitGate" : cirq.FSimGate}
             self.hea.options.update(options)
-            
             self.hea.set_symbols(self)
-            #self.hea.set_circuit(self)     
+            self.hea.set_circuit(self)     
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             self.qaoa.set_symbols(self, param)
