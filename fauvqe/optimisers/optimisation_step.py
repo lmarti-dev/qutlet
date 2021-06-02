@@ -96,17 +96,21 @@ class OptimisationStep:
         Returns
         -------
         any
+
+        Raises
+        -------
+        NotImplementedError: If `column` is not supported.
         """
         if column == "index":
             return self.index
 
         if column == "params":
-            return self.params.tolist()
+            return self.params
 
         if column == "wavefunction":
-            return self.wavefunction.tolist()
+            return self.wavefunction
 
         if column == "objective":
             return self.objective
 
-        raise NotImplementedError("Unknown column {}".format(column))
+        raise NotImplementedError("Unknown column {}".format(column))  # pragma: no cover

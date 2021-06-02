@@ -126,21 +126,16 @@ class ADAM(Optimiser):
 
         Parameters
         ----------
-        n_jobs: Integral default -1
+        n_jobs: Integral, default -1
             The number ob simultaneous jobs (-1 for auto detection)
         objective: Objective
             The objective to optimise
-        continue_at: OptimisationResult optional
+        continue_at: OptimisationResult, optional
             Continue a optimisation
 
         Returns
         -------
         OptimisationResult
-
-        Raises
-        -------
-        AssertionError
-        NotImplementedError
         """
         assert isinstance(
             objective, Objective

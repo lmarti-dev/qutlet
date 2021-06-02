@@ -69,7 +69,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(obj, cirq.Circuit):
             return JSONEncoder.encode_cirq(obj)
 
-        return json.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.default(self, obj)  # pragma: no cover (python internal)
 
     @staticmethod
     def encode_sympy(obj: sympy.Symbol) -> Dict:

@@ -53,14 +53,14 @@ def test_optimise():
         break_param=25,
         a=4 * 10 ** -2,
     )
-    adam.optimise(exp_val_z, n_jobs=1)
+    res = adam.optimise(exp_val_z, n_jobs=1)
 
     wf = ising.simulator.simulate(
         ising.circuit,
         param_resolver=ising.get_param_resolver(ising.circuit_param_values),
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > exp_val_z.evaluate(wf) - eps
+    assert -0.5 > res.get_latest_objective_value() - eps
     # Result smaller than -0.5 up to eta
 
 
