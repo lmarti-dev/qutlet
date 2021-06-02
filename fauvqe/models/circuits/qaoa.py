@@ -12,12 +12,12 @@ import cirq
 import sympy
 
 
-def set_p(self, p, append=False):
+def set_p(self, p, options: dict = {"append": False}):
     try:
         if self.p != p:
             # Need to reset circuit
             self.qaoa.set_symbols(self, p)
-            self.qaoa.set_circuit(self, append)
+            self.qaoa.set_circuit(self, options)
             # Erase beta_values, gamma_values as these are no fiting anymore
             # rename to general circuit_param_values
             # self.circuit_param_values is created in  self.qaoa.set_symbols(self, p)
@@ -26,7 +26,7 @@ def set_p(self, p, append=False):
     except AttributeError:
         # if self.p not even exists
         self.qaoa.set_symbols(self, p)
-        self.qaoa.set_circuit(self, append)
+        self.qaoa.set_circuit(self, options)
         del self.circuit_param_values
 
 
@@ -99,9 +99,9 @@ def _set_gamma_values(self, gamma_values):
         self.circuit_param_values[1] = gamma_values
 
 
-def set_circuit(self, append):
+def set_circuit(self, options):
     # Reset circuit
-    if not append:
+    if not options['append']:
         self.circuit = cirq.Circuit()
 
     # catch if self. circuit_param_values does not exist yet

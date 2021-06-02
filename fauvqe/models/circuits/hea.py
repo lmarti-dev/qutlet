@@ -19,8 +19,9 @@ Idea:
         "Contains all two qubit interactions that preserve excitations, up to single-qubit rotations and global phase."
 - option: either in one layer either common or individual parameters 
     make dict?
-    self.hea.options = {'parametrisation' : 'common'
-                        'append': False}
+    self.hea.options = {'parametrisation' : 'joint' vs 'individual'
+                        'append': Falsevs true
+                        '2QubitGate' : 'fsim' vs 'iSWAP' vs. 'SYC'}
 
 https://quantumai.google/cirq/google/devices
 https://quantumai.google/reference/python/cirq/ops/FSimGate
@@ -31,8 +32,72 @@ import numpy as np
 import cirq
 import sympy
 
+def _PhXZ_layer(self, a, x, z):
+    """
+        Generator for PhasedXZGate Layer
+    """
+    for row in self.qubits:
+        for qubit in row:
+            yield cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a)(qubit)
 
 
+def _2Qubit_layer(self, gate: cirq.ops.TwoQubitGate = cirq.ops.FSimGate, params: dict = {}):
+    """
+    Generator for hardware efficent 2 qubit layer
+
+    Args:
+      gamma: Float variational parameter for the circuit
+      self.h: Array of floats of external magnetic field values
+      self.J_v, self.J_h, vertikal/horizontal Interaction Hamiltonian ZZ -h Z:
+      U(\gamma, C) = \prod_{\langle i,j\rangle}e^{-i\pi\gamma Z_iZ_j/2} \prod_i e^{-i\pi \gamma h_i Z_i/2
+    """
+    for i in range(self.n[0]):
+        for j in range(self.n[1]):
+            if i < self.n[0] - 1:
+                yield gate(**params).on(self.qubits[i][j], self.qubits[i + 1][j])
+
+            if j < self.n[1] - 1:
+                yield gate(**params).on(self.qubits[i][j], self.qubits[i][j + 1])
+
+def set_symbols(self):
+    """
+        Creates a list of sympy Symbols to parametrise the to be create circuit
+
+        Needs to know:
+            - Individual or common parametrisation
+                provide fal in options dict
+            - 1qubit and 2qubit gate parametrisation
+                - idea give dict with names
+                - maximally 'a', 'x', 'z', 'theta', 'phi'
+
+    """
+    assert isinstance(self.hea.options["p"], (int, np.int_)), "Error: p needs to be int, received {}".format(type(self.hea.options["p"]))
+    temp = []
+    
+    for i in range(self.hea.options["p"]):
+        if self.hea.options['parametrisation'] == 'joint':
+            #enforce alphabetic order
+            for variable in sorted(self.hea.options["variables"]):
+                temp.append(sympy.Symbol(variable + str(i)))
+        elif self.hea.options['parametrisation'] == 'individual':
+            #enforce alphabetic order
+            for variable in sorted(self.hea.options["variables"]):
+                #1qubit cases
+                if variable in {"a", "x", "z"}:
+                    for j in range(np.size(self.qubits)):
+                        temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
+                #1qubit cases
+                elif variable in {"phi", "theta"}:
+                    #Here: only count number of parameters. 
+                    for j in range(np.size(self.j_v) + np.size(self.j_h)):
+                        temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
+        else:
+            assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
+                'joint' and 'individual'".format(self.hea.options['parametrisation'] )
+    self.circuit_param = temp
+    self.p = self.hea.options["p"]
+
+"""
 def set_p(self, p, append=False):
     try:
         if self.p != p:
@@ -143,14 +208,16 @@ def set_circuit(self, append):
 
 
 def _UB_layer(self, beta):
-    """Generator for U(beta, B) layer (mixing layer) of QAOA"""
+    ""
+        Generator for U(beta, B) layer (mixing layer) of QAOA
+    ""
     for row in self.qubits:
         for qubit in row:
             yield cirq.X(qubit) ** beta
 
 
 def _UC_layer(self, gamma):
-    """
+    ""
     Generator for U(gamma, C) layer of QAOA
 
     Args:
@@ -158,7 +225,7 @@ def _UC_layer(self, gamma):
       self.h: Array of floats of external magnetic field values
       self.J_v, self.J_h, vertikal/horizontal Interaction Hamiltonian ZZ -h Z:
       U(\gamma, C) = \prod_{\langle i,j\rangle}e^{-i\pi\gamma Z_iZ_j/2} \prod_i e^{-i\pi \gamma h_i Z_i/2
-    """
+    ""
     for i in range(self.n[0]):
         for j in range(self.n[1]):
             if i < self.n[0] - 1:
@@ -193,3 +260,4 @@ def _get_param_resolver(self, beta_values, gamma_values):
         }
     # Need return here, as yield does not work.
     return cirq.ParamResolver(joined_dict)
+"""

@@ -14,7 +14,7 @@ class Ising(AbstractModel):
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
-
+    hea  = importlib.import_module("fauvqe.models.circuits.hea")
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
     def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X"):
@@ -186,7 +186,7 @@ class Ising(AbstractModel):
 
         return ZZ_filter, self.h.reshape(n_sites).dot(Z)
 
-    def set_circuit(self, qalgorithm, param, append=False):
+    def set_circuit(self, qalgorithm, param, options: dict = {"append": False}):
         """
         Adds custom circuit to self.circuit (default)
 
@@ -218,15 +218,24 @@ class Ising(AbstractModel):
 
         CHALLENGE: how to load class functions from sub-module?
         """
-        if qalgorithm == "qaoa":
+        if qalgorithm == "hea":
+            self.hea.options = {"p": 1,
+                                "parametrisation" : 'joint',
+                                "variables": {'a', 'x', 'z', 'phi', 'theta'},
+                                "2QubitGate" : cirq.FSimGate}
+            self.hea.options.update(options)
+            
+            self.hea.set_symbols(self)
+            #self.hea.set_circuit(self)     
+        elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             self.qaoa.set_symbols(self, param)
-            self.qaoa.set_circuit(self, append)  # this is the former circuit_QAOA()
+            self.qaoa.set_circuit(self, options)  # this is the former circuit_QAOA()
         else:
             assert (
                 False
             ), "Invalid quantum algorithm, received: '{}', allowed is \n \
-                'qaoa'".format(
+                'hea', 'qaoa'".format(
                 qalgorithm
             )
 
