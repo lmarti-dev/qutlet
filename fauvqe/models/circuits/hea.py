@@ -19,9 +19,10 @@ Idea:
         "Contains all two qubit interactions that preserve excitations, up to single-qubit rotations and global phase."
 - option: either in one layer either common or individual parameters 
     make dict?
-    self.hea.options = {'parametrisation' : 'joint' vs 'individual'
+    self.hea.options = {'parametrisation' : 'joint' vs 'individual' vs 'layerwise'
                         'append': Falsevs true
                         '2QubitGate' : 'fsim' vs 'iSWAP' vs. 'SYC'}
+    layerwise gives 8 2qubit angles instead of 2
 
 https://quantumai.google/cirq/google/devices
 https://quantumai.google/reference/python/cirq/ops/FSimGate
@@ -53,6 +54,41 @@ def _PhXZ_layer(self, i):
                                         axis_phase_exponent=variables[0]).on(qubit)
 
 
+def _partial_2Qubit_layer(self, i_p, v_v, v_h):
+    """
+    Generator for hardware efficent 2 qubit layer
+
+    Args:
+      i layer number
+      i_p partial layer number
+      self.hea.options["2quibtgate"]
+      
+      variables array of sympy symbols that parametrieses circuit
+    """
+    gate = self.hea.options["2QubitGate"]
+    
+    # if i_p 0 or 2
+    if i_p%2 == 0:
+        #Need to be smarter ordered!!!
+        for i in range(self.n[0]):
+            #Bulk terms
+            for j in range(int(i_p/2), self.n[1]-1, 2):
+                yield gate(*v_v[:][i][j]).on(self.qubits[i][j], self.qubits[i][j + 1])
+            #Boundary terms
+            if self.boundaries[1] == 0 and self.n[1]%2 == int(1-i_p/2):
+                yield gate(*v_v[:][i][self.n[1]-1]).on(self.qubits[i][self.n[1]-1], self.qubits[i][0])     
+
+    # if i_p 1 or 3
+    if i_p%2 == 0:
+        #Need to be smarter ordered!!!
+        for j in range(self.n[1]):
+            #Bulk terms
+            for i in range(0, self.n[0]-1, 2):
+                yield gate(*v_h[:][i][j]).on(self.qubits[i][j], self.qubits[i + 1][j])
+            #Boundary terms
+            if self.boundaries[0] == 0 and self.n[0]%2 == 1:
+                yield gate(*v_v[:][self.n[0]-1][j]).on(self.qubits[self.n[0]-1][j], self.qubits[0][j])
+            
 def _2Qubit_layer(self, i):
     """
     Generator for hardware efficent 2 qubit layer
@@ -60,29 +96,29 @@ def _2Qubit_layer(self, i):
     Args:
       i layer number
       self.hea.options["2quibtgate"]
+      self.hea.options["parametrisation"]
+
+    Do:
+        1. Generate array variables dependent on boundary conditions
+        2. Call _partial_2Qubit_layer(), hand over variables array
     """
     if self.hea.options["parametrisation"] == "joint":
         # Offer different defaults????
-        variables = [0, 0]
+        gate_variables = [0, 0]
         j = 0
-        print(*variables)
-
-        #Note anti alphabethic order in definition of cirq.ops.FSimGate
         for variable in ["theta", "phi"]:
             if variable in self.hea.options["variables"]:
-                variables[j] = sympy.Symbol(variable + str(i))
+                gate_variables[j] = sympy.Symbol(variable + str(i))
             j +=1
 
-        gate = self.hea.options["2QubitGate"]
-        #Bulk terms
-        #Need to be smarter ordered!!!
-        for i in range(self.n[0]):
-            for j in range(self.n[1]):
-                if i < self.n[0] - 1:
-                    yield gate(*variables).on(self.qubits[i][j], self.qubits[i + 1][j])
-                if j < self.n[1] - 1:
-                    yield gate(*variables).on(self.qubits[i][j], self.qubits[i][j + 1])
-        #Boundary terms
+        temp = [gate_variables for i in range(self.n[1])]
+        v_v = [temp for i in range(self.n[0]-self.boundaries[0])]
+        
+        temp = [gate_variables for i in range(self.n[1]-self.boundaries[1])]
+        v_h = [temp for i in range(self.n[0])]
+
+        for i_p in range(4):
+            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
 
 def set_symbols(self):
     """
@@ -136,6 +172,7 @@ def set_circuit(self):
     for i in range(self.p):
         self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
         self.circuit.append(self.hea._2Qubit_layer(self, i))
+        #self.circuit.append(self.hea._2Qubit_layer(self, i))
 
 def set_circuit_param_values(self):
     """
@@ -145,23 +182,8 @@ def set_circuit_param_values(self):
         Sets/resets all self.circuit_param_values that fit to respective parameter key
     """
     pass
+
 """
-def set_p(self, p, append=False):
-    try:
-        if self.p != p:
-            # Need to reset circuit
-            self.qaoa.set_symbols(self, p)
-            self.qaoa.set_circuit(self, append)
-            # Erase beta_values, gamma_values as these are no fiting anymore
-            # rename to general circuit_param_values
-            # self.circuit_param_values is created in  self.qaoa.set_symbols(self, p)
-            # if it does not exist
-            del self.circuit_param_values
-    except AttributeError:
-        # if self.p not even exists
-        self.qaoa.set_symbols(self, p)
-        self.qaoa.set_circuit(self, append)
-        del self.circuit_param_values
 
 
 def _set_beta_values(self, beta_values):
@@ -240,57 +262,7 @@ def set_circuit(self, append):
         self.circuit.append(self.qaoa._UC_layer(self, self.circuit_param[2 * i + 1]))
 
 
-def _UB_layer(self, beta):
-    ""
-        Generator for U(beta, B) layer (mixing layer) of QAOA
-    ""
-    for row in self.qubits:
-        for qubit in row:
-            yield cirq.X(qubit) ** beta
 
 
-def _UC_layer(self, gamma):
-    ""
-    Generator for U(gamma, C) layer of QAOA
 
-    Args:
-      gamma: Float variational parameter for the circuit
-      self.h: Array of floats of external magnetic field values
-      self.J_v, self.J_h, vertikal/horizontal Interaction Hamiltonian ZZ -h Z:
-      U(\gamma, C) = \prod_{\langle i,j\rangle}e^{-i\pi\gamma Z_iZ_j/2} \prod_i e^{-i\pi \gamma h_i Z_i/2
-    ""
-    for i in range(self.n[0]):
-        for j in range(self.n[1]):
-            if i < self.n[0] - 1:
-                yield cirq.ZZ(self.qubits[i][j], self.qubits[i + 1][j]) ** (gamma * self.j_v[i, j])
-
-            if j < self.n[1] - 1:
-                yield cirq.ZZ(self.qubits[i][j], self.qubits[i][j + 1]) ** (gamma * self.j_h[i, j])
-
-            yield cirq.Z(self.qubits[i][j]) ** (gamma * self.h[i, j])
-
-
-def _get_param_resolver(self, beta_values, gamma_values):
-    try:
-        self.p == self.p
-    except AttributeError:
-        # set p to length beta_values if it does not exist
-        self.p = np.size(beta_values)
-    assert self.p == np.size(beta_values), "Error: self.p = np.size(beta_values) required"
-    assert self.p == np.size(
-        gamma_values
-    ), "Error: p = np.size((self.circuit_param[1]) == len(gamma_values) required"
-    # order does not mater for python dictonary
-    if self.p == 1:
-        joined_dict = {**{"b0": beta_values}, **{"g0": gamma_values}}
-        # This is the same as:
-        # joined_dict = {**{"b" + str(i): beta_values for i in range(self.p)},\
-        #              **{"g" + str(i): gamma_values for i in range(self.p)}}
-    else:
-        joined_dict = {
-            **{"b" + str(i): beta_values[i] for i in range(self.p)},
-            **{"g" + str(i): gamma_values[i] for i in range(self.p)},
-        }
-    # Need return here, as yield does not work.
-    return cirq.ParamResolver(joined_dict)
 """
