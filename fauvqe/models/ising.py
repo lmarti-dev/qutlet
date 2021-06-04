@@ -14,6 +14,7 @@ class Ising(AbstractModel):
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
+    basics  = importlib.import_module("fauvqe.models.circuits.basics")
     hea  = importlib.import_module("fauvqe.models.circuits.hea")
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
@@ -218,7 +219,12 @@ class Ising(AbstractModel):
 
         CHALLENGE: how to load class functions from sub-module?
         """
-        if qalgorithm == "hea":
+        if qalgorithm == "basics":
+            self.basics.options = { "append": True,
+                                    "start": "neel"}
+            self.basics.options.update(options)
+            self.basics.set_circuit(self)
+        elif qalgorithm == "hea":
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
@@ -226,9 +232,12 @@ class Ising(AbstractModel):
                                 "2QubitGate" : cirq.FSimGate}
             self.hea.options.update(options)
             self.hea.set_symbols(self)
-            self.hea.set_circuit(self)     
+            self.hea.set_circuit(self)
+            self.basics.rm_unused_cpv(self)  
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
+            self.qaoa.options = {"append": False,
+                                "p": 1}
             self.qaoa.set_symbols(self, param)
             self.qaoa.set_circuit(self, options)  # this is the former circuit_QAOA()
         else:

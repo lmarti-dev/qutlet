@@ -41,7 +41,11 @@ def set_symbols(self, p):
     for i in range(p):
         temp.append(sympy.Symbol("b" + str(i)))
         temp.append(sympy.Symbol("g" + str(i)))
-    self.circuit_param = temp
+    
+    if not self.qaoa.options['append']:
+        self.circuit_param = temp
+    else:
+        self.circuit_param.extend(temp)
     self.p = p
 
 

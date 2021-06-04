@@ -146,7 +146,7 @@ def _2Qubit_layer(self, i):
     elif self.hea.options["parametrisation"] == "individual":
         raise NotImplementedError()
 
-    else
+    else:
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 def set_symbols(self):
@@ -198,7 +198,10 @@ def set_symbols(self):
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
-    self.circuit_param = temp
+    if not self.hea.options['append']:
+        self.circuit_param = temp
+    else:
+        self.circuit_param.extend(temp)
     self.p = self.hea.options["p"]
 
 def set_circuit(self):
