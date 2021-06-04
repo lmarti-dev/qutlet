@@ -70,7 +70,11 @@ def test_store_all():
 
     temp_path = pathlib.Path(tempfile.gettempdir()) / "fauvqe-pytest.json"
     res.store(
-        temp_path, indent=1, overwrite=True, store_wavefunctions="all", store_objectives="all"
+        temp_path,
+        indent=1,
+        overwrite=True,
+        store_wavefunctions="all",
+        store_objectives="all",
     )
 
     res_restored = OptimisationResult.restore(temp_path)

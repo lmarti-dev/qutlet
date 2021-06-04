@@ -7,7 +7,7 @@ This file is not exectuded, rather called within Ising() class when:
 or functions are handed over to classical optimiser
 """
 from numbers import Real, Integral
-from typing import Literal, Union
+from typing import Literal, Union, Dict
 
 import cirq
 import numpy as np
@@ -139,3 +139,17 @@ class GradientDescent(Optimiser):
             )
 
         return gradient_values
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "eps": self._eps,
+                "eta": self._eta,
+                "break_cond": self._break_cond,
+                "break_param": self._break_param,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        return cls(**dct["constructor_params"])

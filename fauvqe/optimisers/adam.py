@@ -38,7 +38,7 @@ Potential MUCH BETTER alternative option: load from scipy??
 """
 import multiprocessing
 from numbers import Real, Integral
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 
 import cirq
 import joblib
@@ -172,7 +172,10 @@ class ADAM(Optimiser):
         if n_jobs < 1:
             # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
             n_jobs = int(
-                min(max(multiprocessing.cpu_count() / 2, 1), 2 * np.size(self._circuit_param))
+                min(
+                    max(multiprocessing.cpu_count() / 2, 1),
+                    2 * np.size(self._circuit_param),
+                )
             )
             assert n_jobs != 0, "{} {}".format(
                 multiprocessing.cpu_count(), np.size(self._circuit_param)
@@ -252,3 +255,20 @@ class ADAM(Optimiser):
         wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
 
         return self._objective.evaluate(wf)
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "eps": self._eps,
+                "eps_2": self.eps_2,
+                "a": self._a,
+                "b_1": self._b_1,
+                "b_2": self._b_2,
+                "break_cond": self._break_cond,
+                "break_param": self._break_param,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        return cls(**dct["constructor_params"])
