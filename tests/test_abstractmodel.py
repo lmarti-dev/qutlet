@@ -16,6 +16,12 @@ from fauvqe import AbstractModel
 
 
 class MockAbstractModel(AbstractModel):
+    def to_json_dict(self):
+        return {}
+
+    def from_json_dict(self, dct):
+        return MockInitialiser()
+
     def energy(self):
         return np.array([])
 

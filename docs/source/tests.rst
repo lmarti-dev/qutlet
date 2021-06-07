@@ -4,19 +4,19 @@ tests package
 Submodules
 ----------
 
-tests.test\_initialiser module
-------------------------------
+tests.test\_abstractmodel module
+--------------------------------
 
-.. automodule:: tests.test_initialiser
+.. automodule:: tests.test_abstractmodel
    :members:
    :undoc-members:
    :show-inheritance:
    :private-members:
 
-tests.test\_initialiser\_erros module
--------------------------------------
+tests.test\_abstractmodel\_erros module
+---------------------------------------
 
-.. automodule:: tests.test_initialiser_erros
+.. automodule:: tests.test_abstractmodel_erros
    :members:
    :undoc-members:
    :show-inheritance:
@@ -49,6 +49,33 @@ tests.test\_isings module
    :show-inheritance:
    :private-members:
 
+tests.test\_objective module
+----------------------------
+
+.. automodule:: tests.test_objective
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+tests.test\_objective\_cvar module
+----------------------------------
+
+.. automodule:: tests.test_objective_cvar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+tests.test\_objective\_expectationvalue module
+----------------------------------------------
+
+.. automodule:: tests.test_objective_expectationvalue
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
 tests.test\_optimiser\_adam module
 ----------------------------------
 
@@ -62,6 +89,15 @@ tests.test\_optimiser\_gd module
 --------------------------------
 
 .. automodule:: tests.test_optimiser_gd
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :private-members:
+
+tests.test\_store\_and\_restore module
+--------------------------------------
+
+.. automodule:: tests.test_store_and_restore
    :members:
    :undoc-members:
    :show-inheritance:

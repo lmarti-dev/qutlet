@@ -16,8 +16,8 @@ help:
 .PHONY: help Makefile
 
 generate:
-	# rm source/*.rst
-	@$(SPHINXGENERATE) --force --private --output-dir ./source ../
+	rm source/fauvqe*.rst
+	@$(SPHINXGENERATE) --force --private --output-dir ./source ../fauvqe
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

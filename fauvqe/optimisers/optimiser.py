@@ -12,13 +12,13 @@ Abstractly (for QC):
     -Return/Update circuit parameters
 
 """
-
 import abc
 
 from fauvqe.objectives.objective import Objective
+from fauvqe.restorable import Restorable
 
 
-class Optimiser(abc.ABC):
+class Optimiser(Restorable):
     """Optimiser"""
 
     def __init__(self):

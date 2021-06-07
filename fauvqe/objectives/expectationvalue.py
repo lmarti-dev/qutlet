@@ -1,7 +1,6 @@
 """Implementation of the expectation value as objective function for an AbstractModel object.
 """
-
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Dict
 from numbers import Integral
 
 import numpy as np
@@ -20,7 +19,7 @@ class ExpectationValue(Objective):
     ----------
     model: AbstractModel
         The linked model
-    field: {"X", "Z"} default "Z"
+    field: {"X", "Z"}, default "Z"
         The field to be evaluated
 
     Methods
@@ -37,7 +36,7 @@ class ExpectationValue(Objective):
         assert field in [
             "Z",
             "X",
-        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], revieced {}".format(
+        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], received {}".format(
             field
         )
 
@@ -62,6 +61,18 @@ class ExpectationValue(Objective):
             np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1]))
             / self.__n_qubits
         )
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "field": self.__field,
+                "model": self._model,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)

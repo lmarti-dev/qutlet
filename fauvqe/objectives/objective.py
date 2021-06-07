@@ -2,14 +2,16 @@
 """
 import abc
 from numbers import Real
+from typing import Optional
 
 import numpy as np
 import cirq
 
 from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.restorable import Restorable
 
 
-class Objective(abc.ABC):
+class Objective(Restorable):
     """Abstract base class for Objectives required to optimise circuit.
 
     This class is unusable and intended to be extended.
@@ -47,7 +49,7 @@ class Objective(abc.ABC):
         """
         return self._model
 
-    def simulate(self, param_resolver, initial_state=None) -> np.ndarray:
+    def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
         """Simulate the circuit of the model with a given parameter resolver.
 
         Parameters

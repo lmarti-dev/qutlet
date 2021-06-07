@@ -1,11 +1,9 @@
-# %%
-# external import
+import importlib
+from typing import Tuple, Dict, Literal
+
 import numpy as np
 import cirq
-import importlib
-from typing import Tuple, Literal
 
-# import all parent modules
 from fauvqe.models.abstractmodel import AbstractModel
 
 
@@ -378,3 +376,29 @@ class Ising(AbstractModel):
             _j = self.j_v[0][0]
 
         return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "qubittype": self.qubittype,
+                "n": self.n,
+                "j_v": self.j_v,
+                "j_h": self.j_h,
+                "h": self.h,
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst

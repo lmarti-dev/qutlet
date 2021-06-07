@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 # internal imports
-from fauvqe import Ising, Optimiser, ADAM, ExpectationValue
+from fauvqe import Ising, ADAM, ExpectationValue
 
 
 def test_set_optimiser():
@@ -26,7 +26,7 @@ def test_set_optimiser():
     ising.set_circuit("qaoa", 1)
     adam = ADAM()
     objective = ExpectationValue(ising)
-    adam.optimise(objective)
+    adam.optimise(objective, n_jobs=1)
 
 
 # This is potentially a higher effort test:
@@ -53,19 +53,19 @@ def test_optimise():
         break_param=25,
         a=4 * 10 ** -2,
     )
-    adam.optimise(exp_val_z)
+    res = adam.optimise(exp_val_z, n_jobs=1)
 
     wf = ising.simulator.simulate(
         ising.circuit,
         param_resolver=ising.get_param_resolver(ising.circuit_param_values),
     ).state_vector()
     # Result smaller than -0.5 up to eta
-    assert -0.5 > exp_val_z.evaluate(wf) - eps
+    assert -0.5 > res.get_latest_objective_value() - eps
     # Result smaller than -0.5 up to eta
 
 
 @pytest.mark.higheffort
-def test_adam_multiple_models():
+def test_adam_multiple_models_and_auto_joblib():
     ising1 = Ising(
         "GridQubit",
         [2, 2],
@@ -88,10 +88,10 @@ def test_adam_multiple_models():
 
     objective1 = ExpectationValue(ising1, field="Z")
 
-    res1 = adam.optimise(objective1)
+    res1 = adam.optimise(objective1, n_jobs=-1)
 
     objective2 = ExpectationValue(ising2, field="Z")
-    res2 = adam.optimise(objective2)
+    res2 = adam.optimise(objective2, n_jobs=-1)
 
     print(res1, res2)
 
@@ -104,7 +104,11 @@ def test_adam_multiple_models():
 @pytest.mark.higheffort
 def test_optimise_joblib():
     ising = Ising(
-        "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
+        "GridQubit",
+        [2, 2],
+        0.1 * np.ones((1, 2)),
+        0.5 * np.ones((2, 1)),
+        0.2 * np.ones((2, 2)),
     )
     ising.set_circuit("qaoa", 2)
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))

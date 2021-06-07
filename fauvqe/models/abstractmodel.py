@@ -22,7 +22,9 @@ import qsimcirq
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 
-class AbstractModel(abc.ABC):
+from fauvqe.restorable import Restorable
+
+class AbstractModel(Restorable):
     """
     The idea is to write a common VQE framework to which all
     our code fits so we can easily use bits and pieces from one

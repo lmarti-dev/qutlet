@@ -7,14 +7,14 @@ This file is not exectuded, rather called within Ising() class when:
 or functions are handed over to classical optimiser
 """
 from numbers import Real, Integral
-from typing import Literal, Union
+from typing import Literal, Union, Dict
 
-import numpy as np
 import cirq
+import numpy as np
 
-from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.objective import Objective
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.optimisers.optimiser import Optimiser
 
 
 class GradientDescent(Optimiser):
@@ -33,9 +33,6 @@ class GradientDescent(Optimiser):
 
     break_param : int default 100
       Amount of steps of iteration
-
-    n_print : int default -1
-      debug print out after n steps, disable with -1
     """
 
     def __init__(
@@ -142,3 +139,17 @@ class GradientDescent(Optimiser):
             )
 
         return gradient_values
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "eps": self._eps,
+                "eta": self._eta,
+                "break_cond": self._break_cond,
+                "break_param": self._break_param,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        return cls(**dct["constructor_params"])
