@@ -42,6 +42,7 @@ from typing import Literal, Optional, Dict
 
 import cirq
 import joblib
+import timeit
 import numpy as np
 
 from fauvqe.objectives.objective import Objective
@@ -193,8 +194,12 @@ class ADAM(Optimiser):
         if self._break_cond == "iterations":
             for i in range(self._break_param - skip_steps):
                 # Make ADAM step
+                t0 = timeit.default_timer()
                 temp_cpv = self._ADAM_step(temp_cpv, n_jobs, step=i + 1)
+                t1 = timeit.default_timer()
                 res.add_step(temp_cpv.copy())
+                t2 = timeit.default_timer()
+                #print("{}. ADAM step: \t t_step: {}s,\t t_store {}s".format(i, t1-t0, t2-t1))
 
         return res
 
