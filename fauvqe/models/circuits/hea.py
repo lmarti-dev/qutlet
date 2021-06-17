@@ -32,6 +32,7 @@ https://quantumai.google/reference/cc/qsim/struct/qsim/cirq/f-sim-gate
 import numpy as np
 import cirq
 import sympy
+from numbers import Number
 
 def _PhXZ_layer(self, i):
     """
@@ -52,7 +53,35 @@ def _PhXZ_layer(self, i):
                 yield cirq.PhasedXZGate(x_exponent=variables[1], 
                                         z_exponent=variables[2], 
                                         axis_phase_exponent=variables[0]).on(qubit)
+    elif self.hea.options["parametrisation"] == "individual":
+        v_mask = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                v_mask[j] = variable
+            j +=1
+        j = 0
+        print(v_mask)
 
+        #sympy.Symbol(variable + str(i) + "_" + str(j))
+        for row in self.qubits:
+            for qubit in row:
+                yield cirq.PhasedXZGate(x_exponent=self.hea.__get_sympy_Symbol(self, v_mask[1],i,j), 
+                                        z_exponent=self.hea.__get_sympy_Symbol(self, v_mask[2],i,j), 
+                                        axis_phase_exponent=self.hea.__get_sympy_Symbol(self, v_mask[0],i,j)).on(qubit)
+                j +=1
+    else:
+        assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
+            'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
+
+def __get_sympy_Symbol(self, v_mask_element,i,j):
+    if isinstance(v_mask_element, str):
+        return sympy.Symbol(v_mask_element + str(i) + "_" + str(j))
+    elif isinstance(v_mask_element, Number):
+        return v_mask_element
+    else:
+        assert (False), "In HEA: invalid input type in __get_sympy_Symbol() received: '{}', allowed is \n \
+            'str' or any number type".format(type(v_mask_element))
 
 def _partial_2Qubit_layer(self, i_p, v_v, v_h):
     """
@@ -74,7 +103,8 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
             for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
                 #Bulk terms
                 for i in np.arange(int(i_p/2), self.n[0]-1, 2, dtype=int):
-                    print("i: \t{}, j: \t{}".format(i,j))
+                    #print("i: \t{}, j: \t{}".format(i,j))
+                    #print(*v_v[:][i][j])
                     yield gate(*v_v[:][i][j]).on(self.qubits[i][j], self.qubits[i+1][j])
                 #Boundary terms
                 if self.boundaries[0] == 0 and self.n[0]%2 == int(1-i_p/2):
@@ -144,8 +174,46 @@ def _2Qubit_layer(self, i):
             yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
 
     elif self.hea.options["parametrisation"] == "individual":
-        raise NotImplementedError()
+        for i_p in range(4):
+            gate_variables = [0, 0]
+            j = 0
+            for variable in ["theta", "phi"]:
+                if variable in self.hea.options["variables"]:
+                    gate_variables[j] = sympy.Symbol(variable + str(i) + "_" + str(i_p))
+                j +=1
 
+            v_mask = [0, 0]
+            h_mask = [0, 0]
+            j = 0
+            for variable in ["theta", "phi"]:
+                if variable in self.hea.options["variables"]:
+                    v_mask[j] = variable + str(i) + "_" + str(i_p) + "_v"
+                    h_mask[j] = variable + str(i) + "_" + str(i_p) + "_h"
+                j +=1
+
+            v_v = []
+            for i in range(self.n[0]-self.boundaries[0]):
+                temp = []
+                for j in range(self.n[1]):
+                    temp.append([self.hea.__get_sympy_Symbol(self, v_mask[0],i,j),
+                                 self.hea.__get_sympy_Symbol(self, v_mask[1],i,j)])
+                print("temp:\n {}".format(temp))
+                v_v.append(temp)
+            print("v_v:\n {}".format(v_v))
+
+            v_h = []
+            for i in range(self.n[0]):
+                temp = []
+                for j in range(self.n[1]-self.boundaries[1]):
+                    temp.append([self.hea.__get_sympy_Symbol(self, h_mask[0],i,j),
+                                 self.hea.__get_sympy_Symbol(self, h_mask[1],i,j)])
+                print("temp:\n {}".format(temp))
+                v_h.append(temp)
+            print("v_h:\n {}".format(v_h))  
+            #temp = [gate_variables for i in range(self.n[1]-self.boundaries[1])]
+            #v_h = [temp for i in range(self.n[0])]
+
+            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
     else:
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )

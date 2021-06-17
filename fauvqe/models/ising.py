@@ -232,6 +232,7 @@ class Ising(AbstractModel):
             self.hea.set_symbols(self)
             self.hea.set_circuit(self)
             self.basics.rm_unused_cpv(self)  
+            self.basics.add_missing_cpv(self)
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             self.qaoa.options = {"append": False,

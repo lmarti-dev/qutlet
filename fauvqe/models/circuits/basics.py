@@ -15,6 +15,29 @@ def _hadamard_layer(self):
         for qubit in row:
             yield cirq.H.on(qubit)
 
+def add_missing_cpv(self):
+    _add_vec = []
+    
+    #1. Find all circuit parameter|variables that are used
+    for moment in self.circuit.moments:
+        #print(moment.__dict__)
+        for operation in moment._operations:
+            #print(operation._gate.__dict__.values())
+            symbols = list(operation._gate.__dict__.values())
+            for element in symbols:
+                try:
+                    symbol = next(iter(element.atoms(sympy.Symbol)))
+                    #print(symbol)
+                    if symbol not in self.circuit_param:
+                        _add_vec.append(symbol)
+                    #print("_add_vec: \t {}".format(_add_vec))
+                except:
+                    pass 
+                #print(next(iter(symbol)) )
+    print("_add_vec: \t {}".format(_add_vec))
+    self.circuit_param.extend(_add_vec)
+    self.circuit_param_values = np.append(self.circuit_param_values , [0]*len(_add_vec))
+
 def rm_unused_cpv(self):
     #print(self.circuit_param)
     _erase_vec = self.circuit_param.copy()
