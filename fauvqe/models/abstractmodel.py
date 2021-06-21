@@ -13,14 +13,18 @@
 """
 import abc
 from typing import Tuple, List
+from numbers import Number
 
 import numpy as np
 import sympy
 import cirq
 import qsimcirq
+import timeit
+import fastmat
 
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver
+from scipy.sparse import dia_matrix as scipy_dia_matrix 
 
 from fauvqe.restorable import Restorable
 
@@ -253,3 +257,37 @@ class AbstractModel(Restorable):
             assert False, "Invalid simulator option, received {}, allowed is 'numpy', 'scipy', 'scipy.sparse'".format(
                 solver
             )
+
+    def Ut(self, t: Number):
+        #https://docs.sympy.org/latest/modules/numeric-computation.html
+        #1.If exact diagonalisation exists already, don't calculate it again
+        # Potentially rather use scipy here!
+        _N = 2**(np.size(self.qubits))
+        try:
+            if np.size(self.eig_val) != _N or \
+            (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
+                self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
+        except:
+            # It might not work if self.eig_val does not exist yet
+            self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
+        
+        #print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
+        #                format(np.size(self.eig_val), np.shape(self.eig_vec) ,_N))
+        
+        #2. The do exact diagonlisation + use sympy symbol
+        # U(t) = (v1 .. vN) diag(e⁻iE1t .. e-iENt) (v1 .. vN)^+
+        t0 = timeit.default_timer()
+        if np.size(self.qubits) < 12:
+            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*t)), dtype = np.complex64),
+                            self.eig_vec.conjugate())
+        else:
+            #This pays off for _N > 11
+            self._Ut  = np.matmul(self.eig_vec, 
+                            scipy_dia_matrix(np.exp(-1j*self.eig_val*t)).multiply(self.eig_vec.conjugate()).toarray(), 
+                            dtype = np.complex64)
+        #possible further option?'
+        #self._Ut = fastmat.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*_t)))
+        t1 = timeit.default_timer()
+        print("Time Mat mult.: \t {}".format(t1-t0))
+
+        return self._Ut
