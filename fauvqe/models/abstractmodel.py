@@ -278,7 +278,8 @@ class AbstractModel(Restorable):
         
         #2. The do exact diagonlisation + use sympy symbol
         # U(t) = (v1 .. vN) diag(e⁻iE1t .. e-iENt) (v1 .. vN)^+
-        t0 = timeit.default_timer()
+        
+        #t0 = timeit.default_timer()
         if np.size(self.qubits) < 12:
             self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*self.t)), dtype = np.complex64),
                             self.eig_vec.conjugate())
@@ -289,7 +290,94 @@ class AbstractModel(Restorable):
                             dtype = np.complex64)
         #possible further option?'
         #self._Ut = fastmat.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*_t)))
-        t1 = timeit.default_timer()
-        print("Time Mat mult.: \t {}".format(t1-t0))
+        #t1 = timeit.default_timer()
+        #print("Time Mat mult.: \t {}".format(t1-t0))
 
-        #return self._Ut
+    def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
+        #General function to glue arbitrary GridQubit circuits 
+        # given that they periodic boundary gates
+        assert(repetitions > 1),\
+            "AbstractModelError in glue_circuit: repetitions need to > 1, received {}".format(repetitions)
+        if self.qubittype != "GridQubit":
+            raise NotImplementedError()
+
+        #1.Find 2-qubit gates along the given axis
+        # Through error if there are none
+        # Use 2D list, [Moment][Operation]
+
+        glueing_gates = [[] for _ in range(np.size(self.circuit.moments))]
+        m = 0
+        for moment in self.circuit.moments:
+            #print("{}.Moment: \n{}\n ".format(i, moment.__dict__))
+            for operation in moment._operations:
+                #Here we are only interested in 2-qubit gates
+                if len(operation._qubits) == 2:
+                    if axis == 0:
+                        #_row must be 0 and n0-1
+                        #_col must be equal
+                        if  ((operation._qubits[0]._row == 0 and operation._qubits[1]._row == self.n[0]-1 ) or \
+                            (operation._qubits[0]._row == self.n[0]-1 and operation._qubits[1]._row == 0 )) and \
+                            (operation._qubits[0]._col == operation._qubits[1]._col ) and self.n[0]>1:
+                            print("\nGlueing qubits: \t {}".format(operation._qubits))
+                            glueing_gates[m].append(operation)
+                    else:
+                        #axis == 1
+                        #_row must be equal
+                        #_col must be n1-1
+                        if  ((operation._qubits[0]._col == 0 and operation._qubits[1]._col == self.n[1]-1 ) or \
+                            (operation._qubits[0]._col == self.n[1]-1 and operation._qubits[1]._col == 0 )) and \
+                            (operation._qubits[0]._row == operation._qubits[1]._row )and self.n[1]>1:
+                            print("\nGlueing qubits: \t {}".format(operation._qubits))
+                            glueing_gates[m].append(operation)
+            m +=1
+        print("\nGlueing_gates: \t {}\n".format(glueing_gates))
+        assert(any(glueing_gates)),\
+            "AbstractModelError in glue_circuit: No periodic boundary 2-qubit gate found along glueing axis {}".format(int(axis))
+
+        #2. Generate glued circuit moment by moment
+        #2a init non-glue Moment and its duplicates
+        #       This includes duplicating/renaming sympy.Symbols
+        #       This also includes dublicating/copying circuit_param_values
+        #       Probably best done operation by operation in each Moment
+        #2b. Add 2-Qubit Glueing gates to each moment 
+        #2c. Calc/Determine new circuit_param/circuit_param_values based on existing
+        new_circuit = cirq.Circuit()
+
+        #2a + 2b
+        m = 0
+        for moment in self.circuit.moments:
+            #2a
+            for operation in moment._operations:
+                if operation not in glueing_gates[m]:
+                    #for i in range(repetitions-1):
+                        #Add _g$i to any sympy.Symbol name
+                        #Add 
+                    i=0
+                    new_circuit.append(self._get_operation_for_gc(operation, axis, repetitions, "_g" + str(i)))
+            #2b
+            m += 1
+            print(new_circuit)
+
+        #2c
+        #Effectifly just 2 for loops
+        new_cricuit_param =         []
+        new_circuit_param_values =  []
+        #3. overwrite qubits, circuit_param, circuit_param_values
+
+    def _get_operation_for_gc(self,operation: cirq.Operation, axis: bool, repetitions: int, add_string: str):
+        _gate = operation._gate.__class__
+        _gate_params = operation._gate.__dict__
+        _qubits = operation._qubits
+
+        for key in list(_gate_params.keys()):
+            print(key)
+            if 'cached' in key:
+                # Remove dummies 
+                _gate_params.pop(key)
+            else:
+                if not isinstance(_gate_params.get(key), Number):
+                    _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
+                else:
+                    _gate_params[key[1:]] = _gate_params.pop(key)
+
+        yield _gate(**_gate_params).on(*_qubits)
