@@ -70,7 +70,7 @@ class UtCost(Objective):
         if batch_wavefunctions is None:
             self.batch_size = 0
         else:
-            print(batch_wavefunctions)
+            #print(batch_wavefunctions)
             assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
@@ -95,7 +95,12 @@ class UtCost(Objective):
             if self.batch_averaging:
                 raise NotImplementedError() 
             else:
+                #Need to use here the initial_state
+                #That was used to calculate wavefunction
+                #i = np.random.randint(self.batch_size)
+                #print("i: \t {}".format(i))
                 raise NotImplementedError() 
+                return 1 - np.matmul(self.batch_wavefunctions[i,:], wavefunction)
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
