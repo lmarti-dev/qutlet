@@ -192,21 +192,21 @@ def _2Qubit_layer(self, i):
                 j +=1
 
             v_v = []
-            for i in range(self.n[0]-self.boundaries[0]):
+            for l in range(self.n[0]-self.boundaries[0]):
                 temp = []
                 for j in range(self.n[1]):
-                    temp.append([self.hea.__get_sympy_Symbol(self, v_mask[0],i,j),
-                                 self.hea.__get_sympy_Symbol(self, v_mask[1],i,j)])
+                    temp.append([self.hea.__get_sympy_Symbol(self, v_mask[0],l,j),
+                                 self.hea.__get_sympy_Symbol(self, v_mask[1],l,j)])
                 print("temp:\n {}".format(temp))
                 v_v.append(temp)
             print("v_v:\n {}".format(v_v))
 
             v_h = []
-            for i in range(self.n[0]):
+            for l in range(self.n[0]):
                 temp = []
                 for j in range(self.n[1]-self.boundaries[1]):
-                    temp.append([self.hea.__get_sympy_Symbol(self, h_mask[0],i,j),
-                                 self.hea.__get_sympy_Symbol(self, h_mask[1],i,j)])
+                    temp.append([self.hea.__get_sympy_Symbol(self, h_mask[0],l,j),
+                                 self.hea.__get_sympy_Symbol(self, h_mask[1],l,j)])
                 print("temp:\n {}".format(temp))
                 v_h.append(temp)
             print("v_h:\n {}".format(v_h))  
