@@ -13,7 +13,7 @@
 """
 import abc
 from typing import Tuple, List
-from numbers import Number
+from numbers import Number, Real
 
 import numpy as np
 import sympy
@@ -50,11 +50,13 @@ class AbstractModel(Restorable):
             ######
             later intial state?
         """
-        self.circuit_param: List[sympy.Symbol] = []
-        self.init_qubits(qubittype, n)
         self.circuit = cirq.Circuit()
-        self.set_simulator()
+        self.circuit_param: List[sympy.Symbol] = []
         self.hamiltonian = cirq.PauliSum()
+        self.init_qubits(qubittype, n)
+        self.set_simulator()
+        self.t : Real = 0
+        
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
@@ -290,4 +292,4 @@ class AbstractModel(Restorable):
         t1 = timeit.default_timer()
         print("Time Mat mult.: \t {}".format(t1-t0))
 
-        return self._Ut
+        #return self._Ut
