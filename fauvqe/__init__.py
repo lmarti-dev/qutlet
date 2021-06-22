@@ -18,6 +18,7 @@ from fauvqe.objectives import (
     Objective,
     CVaR,
     ExpectationValue,
+    UtCost,
 )
 from fauvqe.optimisers import (
     Optimiser,

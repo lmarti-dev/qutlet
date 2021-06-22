@@ -260,7 +260,7 @@ class AbstractModel(Restorable):
                 solver
             )
 
-    def Ut(self, t: Number):
+    def set_Ut(self):
         #https://docs.sympy.org/latest/modules/numeric-computation.html
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
@@ -280,12 +280,12 @@ class AbstractModel(Restorable):
         # U(t) = (v1 .. vN) diag(e⁻iE1t .. e-iENt) (v1 .. vN)^+
         t0 = timeit.default_timer()
         if np.size(self.qubits) < 12:
-            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*t)), dtype = np.complex64),
+            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*self.t)), dtype = np.complex64),
                             self.eig_vec.conjugate())
         else:
             #This pays off for _N > 11
             self._Ut  = np.matmul(self.eig_vec, 
-                            scipy_dia_matrix(np.exp(-1j*self.eig_val*t)).multiply(self.eig_vec.conjugate()).toarray(), 
+                            scipy_dia_matrix(np.exp(-1j*self.eig_val*self.t)).multiply(self.eig_vec.conjugate()).toarray(), 
                             dtype = np.complex64)
         #possible further option?'
         #self._Ut = fastmat.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*_t)))

@@ -1,5 +1,6 @@
 import importlib
 from typing import Tuple, Dict, Literal
+from numbers import Real
 
 import numpy as np
 import cirq
@@ -16,7 +17,7 @@ class Ising(AbstractModel):
     hea  = importlib.import_module("fauvqe.models.circuits.hea")
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
-    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X"):
+    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X", t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -32,6 +33,7 @@ class Ising(AbstractModel):
         self.field = field
         self._set_hamiltonian()
         super().set_simulator()
+        self.t = t
 
     def _set_jh(self, j_v, j_h, h):
         # convert input to numpy array to be sure
