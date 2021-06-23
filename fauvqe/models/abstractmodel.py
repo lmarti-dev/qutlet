@@ -11,6 +11,8 @@
 # Then add own ideas and alternative optimisers, ising circuits etc.
 
 """
+from __future__ import annotations
+
 import abc
 from typing import Tuple, List,Optional
 from numbers import Number, Real
@@ -56,7 +58,10 @@ class AbstractModel(Restorable):
         self.init_qubits(qubittype, n)
         self.set_simulator()
         self.t : Real = 0
-        self._Ut: Optional[np.ndarray]
+
+        self.eig_val: Optional[np.ndarray] = None
+        self.eig_vec: Optional[np.ndarray] = None
+        self._Ut: Optional[np.ndarray] = None
         
 
     # initialise qubits or device

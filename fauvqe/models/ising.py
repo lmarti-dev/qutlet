@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib
 from typing import Tuple, Dict, Literal
 from numbers import Real
@@ -34,6 +36,26 @@ class Ising(AbstractModel):
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
+
+    def copy(self) -> Ising:
+        self_copy = Ising( self.qubittype,
+                self.n,
+                self.j_v,
+                self.j_h,
+                self.h,
+                self.field,
+                self.t )
+
+        self_copy.circuit = self.circuit.copy()
+        self_copy.circuit_param = self.circuit_param.copy()
+        self_copy.circuit_param_values = self.circuit_param_values.copy()
+        self_copy.hamiltonian = self.hamiltonian.copy()
+
+        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
+        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
+        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
+
+        return self_copy
 
     def _set_jh(self, j_v, j_h, h):
         # convert input to numpy array to be sure
