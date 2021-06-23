@@ -12,7 +12,7 @@
 
 """
 import abc
-from typing import Tuple, List
+from typing import Tuple, List,Optional
 from numbers import Number, Real
 
 import numpy as np
@@ -56,6 +56,7 @@ class AbstractModel(Restorable):
         self.init_qubits(qubittype, n)
         self.set_simulator()
         self.t : Real = 0
+        self._Ut: Optional[np.ndarray]
         
 
     # initialise qubits or device
@@ -193,6 +194,10 @@ class AbstractModel(Restorable):
         return cirq.ParamResolver(joined_dict)
 
     @abc.abstractmethod
+    def copy(self) -> AbstractModel:
+        raise NotImplementedError()  # pragma: no cover
+
+    @abc.abstractmethod
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         raise NotImplementedError()  # pragma: no cover
 
@@ -301,6 +306,7 @@ class AbstractModel(Restorable):
         if self.qubittype != "GridQubit":
             raise NotImplementedError()
 
+        ###########################################################################
         #1.Find 2-qubit gates along the given axis
         # Through error if there are none
         # Use 2D list, [Moment][Operation]
@@ -334,6 +340,7 @@ class AbstractModel(Restorable):
         assert(any(glueing_gates)),\
             "AbstractModelError in glue_circuit: No periodic boundary 2-qubit gate found along glueing axis {}".format(int(axis))
 
+        ###########################################################################
         #2. Generate glued circuit moment by moment
         #2a init non-glue Moment and its duplicates
         #       This includes duplicating/renaming sympy.Symbols
@@ -341,6 +348,7 @@ class AbstractModel(Restorable):
         #       Probably best done operation by operation in each Moment
         #2b. Add 2-Qubit Glueing gates to each moment 
         #2c. Calc/Determine new circuit_param/circuit_param_values based on existing
+        ###########################################################################
         new_circuit = cirq.Circuit()
 
         #2a + 2b
@@ -349,28 +357,57 @@ class AbstractModel(Restorable):
             #2a
             for operation in moment._operations:
                 if operation not in glueing_gates[m]:
-                    #for i in range(repetitions-1):
+                    for i in range(repetitions):
                         #Add _g$i to any sympy.Symbol name
-                        #Add 
-                    i=0
-                    new_circuit.append(self._get_operation_for_gc(operation, axis, repetitions, "_g" + str(i)))
+                        #Change if require qubit positions
+                        new_circuit.append(self._get_operation_for_gc(operation, axis, i, "_g" + str(i)))
             #2b
+            for operation in glueing_gates[m]:
+                for i in range(repetitions):
+                    new_circuit.append(self._get_operation_for_gc(operation, axis, i, "_g" + str(i), True, repetitions))
             m += 1
-            print(new_circuit)
+        #print(new_circuit)
 
         #2c
-        #Effectifly just 2 for loops
         new_cricuit_param =         []
-        new_circuit_param_values =  []
-        #3. overwrite qubits, circuit_param, circuit_param_values
+        for i in range(repetitions):
+            for j in range(len(self.circuit_param)):
+                new_cricuit_param.append(sympy.Symbol(self.circuit_param[j].name + "_g" + str(i)))
+        
+        ###########################################################################
+        #   3. overwrite qubits, circuit_param, circuit_param_values
+        #   
+        #   Overwrite is okay if previous copy works
+        #       ISSUE: so far deepcopy(isng) does not work
+        ###########################################################################
+        #Reset n
+        self.n = self.n + (repetitions-1)*[self.n[0]*(1-axis) ,self.n[1]*axis]
 
-    def _get_operation_for_gc(self,operation: cirq.Operation, axis: bool, repetitions: int, add_string: str):
+        #Reset qubits    
+        self.init_qubits(self.qubittype,self.n)
+
+        #Reset cricuit_param 
+        self.circuit_param = new_cricuit_param
+
+        #Reset circuit_param_values
+        self.circuit_param_values= np.tile(self.circuit_param_values, repetitions)
+
+        #Reset circuit
+        self.circuit= new_circuit
+
+
+    def _get_operation_for_gc(  self,
+                                operation: cirq.Operation, 
+                                axis: bool, 
+                                i: int, 
+                                add_string: str,
+                                glueing: bool = False,
+                                repetitions: int = -1):
         _gate = operation._gate.__class__
-        _gate_params = operation._gate.__dict__
+        _gate_params = operation._gate.__dict__.copy()
         _qubits = operation._qubits
 
         for key in list(_gate_params.keys()):
-            print(key)
             if 'cached' in key:
                 # Remove dummies 
                 _gate_params.pop(key)
@@ -379,5 +416,25 @@ class AbstractModel(Restorable):
                     _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
                 else:
                     _gate_params[key[1:]] = _gate_params.pop(key)
+
+        
+        if not glueing:
+            #if i > 0 adapt _qubits
+            if i > 0:
+                _qubits = list(_qubits)
+                for l in range(len(_qubits)):
+                    _qubits[l]=cirq.GridQubit(  _qubits[l]._row + self.n[0]*i*(1-axis), 
+                                                _qubits[l]._col+ self.n[1]*i*axis)
+        else:
+            #Always need to adapt qubits for glueing gates
+            #Here we know that every gate is a 2 qubit gate -> _qubits[1] exists
+            _qubits = list(_qubits)
+            if i == 0: 
+                _qubits[1]=cirq.GridQubit(  _qubits[1]._row + self.n[0]*(1-axis), 
+                                            _qubits[1]._col+ self.n[1]*axis)
+            else:
+                for l in range(len(_qubits)):
+                    _qubits[l]=cirq.GridQubit(  (_qubits[l]._row + self.n[0]*(i+l)*(1-axis))%(repetitions*self.n[0]), 
+                                                (_qubits[l]._col+ self.n[1]*(i+l)*axis)%(repetitions*self.n[1]))
 
         yield _gate(**_gate_params).on(*_qubits)
