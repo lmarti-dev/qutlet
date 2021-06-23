@@ -384,6 +384,7 @@ class AbstractModel(Restorable):
         #   
         #   Overwrite is okay if previous copy works
         #       ISSUE: so far deepcopy(isng) does not work
+        #   Need to overright this locally further to double further parameters locally!!
         ###########################################################################
         #Reset n
         self.n = self.n + (repetitions-1)*[self.n[0]*(1-axis) ,self.n[1]*axis]
