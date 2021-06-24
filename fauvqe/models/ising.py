@@ -108,7 +108,7 @@ class Ising(AbstractModel):
         # 1. Sum over inner bounds
         for i in range(self.n[0] - 1):
             for j in range(self.n[1] - 1):
-                print("i: \t{}, j: \t{}".format(i,j))
+                #print("i: \t{}, j: \t{}".format(i,j))
                 self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
                 self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
 

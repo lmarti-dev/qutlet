@@ -64,7 +64,7 @@ class UtCost(Objective):
             except:
                 model.set_Ut()
                 self._Ut = model._Ut.view()
-
+        self.t = t
         super().__init__(model)
 
         if batch_wavefunctions is None:
@@ -87,7 +87,7 @@ class UtCost(Objective):
         if self.batch_size == 0:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is the U(t) via VQE
-            return np.linalg.norm(np.matmul(self._Ut, wavefunction.transpose().conjugate())-np.identity(self._N))
+            return np.linalg.norm(np.matmul(self._Ut, wavefunction.transpose().conjugate())-np.identity(self._N))/np.sqrt(self._N)
             #return np.linalg.norm(np.matmul(self._Ut, wavefunction.transpose().conjugate())-np.identity(self._N))
         else:
             #Calculation via randomly choosing one state vector 
@@ -129,4 +129,4 @@ class UtCost(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<UtCost sampling={}>".format(self.__field)
+        return "<UtCost t={}>".format(self.t)

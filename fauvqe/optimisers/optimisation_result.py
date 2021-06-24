@@ -284,11 +284,11 @@ class OptimisationResult:
         # Note: this method is incompatible with making optimisation parameters dependant on step
         #return [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
         _n_jobs = 8 #int(multiprocessing.cpu_count() / 2)
-        print("n_jobs: \t {}".format(_n_jobs))
-        t00 = timeit.default_timer()
+        #print("n_jobs: \t {}".format(_n_jobs))
+        #t00 = timeit.default_timer()
         #_objective_values = [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
         #"loky", threading, multiprocessing 
-        t0 = timeit.default_timer()
+        #t0 = timeit.default_timer()
         #_wfs = self.get_wavefunctions()
         #[step.wavefunction for step in self.__steps]
         #_wfs = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
@@ -296,22 +296,22 @@ class OptimisationResult:
         #    for step in self.__steps
         #)
         #print(len(_wfs))
-        t1 = timeit.default_timer()
+        #t1 = timeit.default_timer()
         #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
         #    joblib.delayed(self.objective.evaluate)(_wfs[i])
         #    for i in range(len(_wfs))
         #)
-        t2 = timeit.default_timer()
+        #t2 = timeit.default_timer()
         #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
         #    joblib.delayed(self.objective.evaluate)(step.wavefunction)
         #    for step in self.__steps
         #)
-        t3 = timeit.default_timer()
+        #t3 = timeit.default_timer()
         #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
         #    joblib.delayed(self.objective.evaluate)(self.__steps[i].wavefunction)
         #    for i in range(len(self.__steps))
         #)
-        t4 = timeit.default_timer()
+        #t4 = timeit.default_timer()
         pool = Pool(_n_jobs-1)
         _wfs = pool.map(self._get_wf_from_i, range(self.__index))
         #_objective_values = pool.map(self.objective.evaluate, _wfs)
@@ -319,13 +319,13 @@ class OptimisationResult:
             joblib.delayed(self.objective.evaluate)(_wfs[i])
             for i in range(len(_wfs))
         )
-        t5 = timeit.default_timer()
-        print(" Time to get wfs non-parallel \t t[s] = {}\n \
-                Time to get wfs from steps \t t[s] = {}\n \
-                Time to get objectives from wfs \t t[s] = {}\n \
-                Time to get objectives from steps \t t[s] = {}\n \
-                Time to get objectives from steps v2 \t t[s] = {}\n \
-                Time to get wfs multiprocessing \t t[s] = {}".format(t0-t00, t1-t0, t2-t1, t3-t2, t4-t3, t5-t4))
+        #t5 = timeit.default_timer()
+        #print(" Time to get wfs non-parallel \t t[s] = {}\n \
+        #        Time to get wfs from steps \t t[s] = {}\n \
+        #        Time to get objectives from wfs \t t[s] = {}\n \
+        #        Time to get objectives from steps \t t[s] = {}\n \
+        #        Time to get objectives from steps v2 \t t[s] = {}\n \
+        #        Time to get wfs multiprocessing \t t[s] = {}".format(t0-t00, t1-t0, t2-t1, t3-t2, t4-t3, t5-t4))
         #print(_objective_values+1.3425236833316714*np.ones(np.size(_objective_values)))
         return _objective_values
         

@@ -61,7 +61,7 @@ def _PhXZ_layer(self, i):
                 v_mask[j] = variable
             j +=1
         j = 0
-        print(v_mask)
+        #print(v_mask)
 
         #sympy.Symbol(variable + str(i) + "_" + str(j))
         for row in self.qubits:
@@ -117,7 +117,7 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
             for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
                 #Bulk terms
                 for j in np.arange(int((i_p-1)/2), self.n[1]-1, 2, dtype=int):
-                    print("i: \t{}, j: \t{}".format(i,j))
+                    #print("i: \t{}, j: \t{}".format(i,j))
                     yield gate(*v_h[:][i][j]).on(self.qubits[i][j], self.qubits[i][j+1])
                 #Boundary terms
                 if self.boundaries[1] == 0 and self.n[1]%2 == int(1-(i_p-1)/2):
