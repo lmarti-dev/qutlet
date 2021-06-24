@@ -22,7 +22,7 @@ import sympy
 import cirq
 import qsimcirq
 import timeit
-import fastmat
+#import fastmat
 
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver
@@ -329,7 +329,7 @@ class AbstractModel(Restorable):
                         if  ((operation._qubits[0]._row == 0 and operation._qubits[1]._row == self.n[0]-1 ) or \
                             (operation._qubits[0]._row == self.n[0]-1 and operation._qubits[1]._row == 0 )) and \
                             (operation._qubits[0]._col == operation._qubits[1]._col ) and self.n[0]>1:
-                            print("\nGlueing qubits: \t {}".format(operation._qubits))
+                            #print("\nGlueing qubits: \t {}".format(operation._qubits))
                             glueing_gates[m].append(operation)
                     else:
                         #axis == 1
@@ -338,10 +338,10 @@ class AbstractModel(Restorable):
                         if  ((operation._qubits[0]._col == 0 and operation._qubits[1]._col == self.n[1]-1 ) or \
                             (operation._qubits[0]._col == self.n[1]-1 and operation._qubits[1]._col == 0 )) and \
                             (operation._qubits[0]._row == operation._qubits[1]._row )and self.n[1]>1:
-                            print("\nGlueing qubits: \t {}".format(operation._qubits))
+                            #print("\nGlueing qubits: \t {}".format(operation._qubits))
                             glueing_gates[m].append(operation)
             m +=1
-        print("\nGlueing_gates: \t {}\n".format(glueing_gates))
+        #print("\nGlueing_gates: \t {}\n".format(glueing_gates))
         assert(any(glueing_gates)),\
             "AbstractModelError in glue_circuit: No periodic boundary 2-qubit gate found along glueing axis {}".format(int(axis))
 

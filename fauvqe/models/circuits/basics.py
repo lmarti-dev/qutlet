@@ -34,7 +34,7 @@ def add_missing_cpv(self):
                 except:
                     pass 
                 #print(next(iter(symbol)) )
-    print("_add_vec: \t {}".format(_add_vec))
+    #print("_add_vec: \t {}".format(_add_vec))
     self.circuit_param.extend(_add_vec)
     self.circuit_param_values = np.append(self.circuit_param_values , [0]*len(_add_vec))
 
