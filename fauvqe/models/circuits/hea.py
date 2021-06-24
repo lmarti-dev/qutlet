@@ -74,6 +74,53 @@ def _PhXZ_layer(self, i):
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 
+def _1Qubit_layer(self, i):
+    """
+        Generator for general 1Qubit layer
+
+        a, x, z are possibly defined in 
+        if not set 0 
+    """
+    gate = self.hea.options["1QubitGate"]
+
+    if self.hea.options["parametrisation"] in {"joint", "layerwise"}:
+        variables = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                variables[j] = sympy.Symbol(variable + str(i))
+            j +=1
+
+        for row in self.qubits:
+            for qubit in row:
+                yield gate(*variables).on(qubit)
+    elif self.hea.options["parametrisation"] == "individual":
+        v_mask = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                v_mask[j] = variable
+            j +=1
+        
+        #print(v_mask)
+        
+        j = 0
+        #sympy.Symbol(variable + str(i) + "_" + str(j))
+        for row in self.qubits:
+            for qubit in row:
+                variables = [0, 0, 0]
+                for k in range(3):
+                    variables[k] = self.hea.__get_sympy_Symbol(self, v_mask[k],i,j)
+                yield gate(*variables).on(qubit)
+                #print(variables)
+                #yield cirq.PhasedXZGate(x_exponent=self.hea.__get_sympy_Symbol(self, v_mask[1],i,j), 
+                #                        z_exponent=self.hea.__get_sympy_Symbol(self, v_mask[2],i,j), 
+                #                        axis_phase_exponent=self.hea.__get_sympy_Symbol(self, v_mask[0],i,j)).on(qubit)
+                j +=1
+    else:
+        assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
+            'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
+
 def __get_sympy_Symbol(self, v_mask_element,i,j):
     if isinstance(v_mask_element, str):
         return sympy.Symbol(v_mask_element + str(i) + "_" + str(j))
@@ -284,8 +331,11 @@ def set_circuit(self):
         self.circuit_param_values = np.zeros(np.size(self.circuit_param))
 
     for i in range(self.p):
-        self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
-        self.circuit.append(self.hea._2Qubit_layer(self, i))
+        if self.hea.options["1QubitGate"] is not None:
+            self.circuit.append(cirq.Moment(self.hea._1Qubit_layer(self, i)))
+            #self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
+        if self.hea.options["2QubitGate"] is not None:
+            self.circuit.append(self.hea._2Qubit_layer(self, i))
 
     #Erase hea circuit parameters, that are not used
     # e.g. in 1D case
