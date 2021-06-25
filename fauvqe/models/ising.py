@@ -10,6 +10,7 @@ import cirq
 from fauvqe.models.abstractmodel import AbstractModel
 
 
+
 class Ising(AbstractModel):
     """
     2D Ising class inherits AbstractModel
@@ -211,7 +212,7 @@ class Ising(AbstractModel):
 
         return ZZ_filter, self.h.reshape(n_sites).dot(Z)
 
-    def set_circuit(self, qalgorithm, param, options: dict = {"append": False}):
+    def set_circuit(self, qalgorithm, param, options: dict = {}):
         """
         Adds custom circuit to self.circuit (default)
 
@@ -245,7 +246,10 @@ class Ising(AbstractModel):
         """
         if qalgorithm == "basics":
             self.basics.options = { "append": True,
-                                    "start": "neel"}
+                                    "start": "neel",
+                                    "end": None,
+                                    "n_exact" : [1, 2],
+                                    "b_exact" : [0, 0]}
             self.basics.options.update(options)
             self.basics.set_circuit(self)
         elif qalgorithm == "hea":

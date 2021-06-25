@@ -279,9 +279,11 @@ class AbstractModel(Restorable):
             if np.size(self.eig_val) != _N or \
             (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
                 self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
+                #self.diagonalise(solver="numpy")
         except:
             # It might not work if self.eig_val does not exist yet
             self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
+            #self.diagonalise(solver="numpy")
         
         #print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
         #                format(np.size(self.eig_val), np.shape(self.eig_vec) ,_N))
@@ -292,11 +294,11 @@ class AbstractModel(Restorable):
         #t0 = timeit.default_timer()
         if np.size(self.qubits) < 12:
             self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*self.t)), dtype = np.complex64),
-                            self.eig_vec.conjugate())
+                            self.eig_vec.conjugate().transpose())
         else:
             #This pays off for _N > 11
             self._Ut  = np.matmul(self.eig_vec, 
-                            scipy_dia_matrix(np.exp(-1j*self.eig_val*self.t)).multiply(self.eig_vec.conjugate()).toarray(), 
+                            scipy_dia_matrix(np.exp(-1j*self.eig_val*self.t)).multiply(self.eig_vec.conjugate().transpose()).toarray(), 
                             dtype = np.complex64)
         #possible further option?'
         #self._Ut = fastmat.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*_t)))
@@ -400,7 +402,6 @@ class AbstractModel(Restorable):
 
         #Reset circuit
         self.circuit= new_circuit
-
 
     def _get_operation_for_gc(  self,
                                 operation: cirq.Operation, 
