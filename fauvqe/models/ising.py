@@ -246,7 +246,7 @@ class Ising(AbstractModel):
         """
         if qalgorithm == "basics":
             self.basics.options = { "append": True,
-                                    "start": "neel",
+                                    "start": None,
                                     "end": None,
                                     "n_exact" : [1, 2],
                                     "b_exact" : [0, 0]}
