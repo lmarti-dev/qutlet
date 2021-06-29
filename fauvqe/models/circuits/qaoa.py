@@ -149,7 +149,12 @@ def _UC_layer(self, gamma):
             if j < self.n[1] - 1:
                 yield cirq.ZZ(self.qubits[i][j], self.qubits[i][j + 1]) ** (gamma * self.j_h[i, j])
 
-            yield cirq.Z(self.qubits[i][j]) ** (gamma * self.h[i, j])
+            if self.field == "Z":
+                yield cirq.Z(self.qubits[i][j]) ** (gamma * self.h[i, j])
+            elif self.field =="X":
+                yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
+            else:
+                pass
 
 
 def _get_param_resolver(self, beta_values, gamma_values):
