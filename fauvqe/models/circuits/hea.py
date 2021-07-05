@@ -313,7 +313,7 @@ def set_symbols(self):
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
-    if not self.hea.options['append']:
+    if not self.hea.options['append'] or self.circuit_param is None:
         self.circuit_param = temp
     else:
         self.circuit_param.extend(temp)
