@@ -105,7 +105,7 @@ class Ising(AbstractModel):
         j_h = self.j_h.tolist()
         h = self.h.tolist()
         
-        print(self.n)
+        #print(self.n)
         # 1. Sum over inner bounds
         for i in range(self.n[0] - 1):
             for j in range(self.n[1] - 1):
