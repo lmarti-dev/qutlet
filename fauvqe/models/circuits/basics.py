@@ -43,7 +43,7 @@ def _exact_layer(self):
         warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
     
     n_rep=self.n//n_exact
-    print(n_rep)
+    print("n_rep: \t {}".format(n_rep))
 
     #Poentially paralise this:
     for i in range(n_rep[0]):
@@ -64,11 +64,14 @@ def _exact_layer(self):
                                        j*n_exact[1]: (j+1)*n_exact[1]],
                                 self.field)
             temp_ising.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
-            #print("temp_ising.hamiltonian: \t {},\ntemp_ising.hamiltian.matrix() \n {} ,\ntemp_ising.eig_vec() \n {} \n"\
-            #    .format(temp_ising.hamiltonian, temp_ising.hamiltonian.matrix(), temp_ising.eig_vec))
+            
+            temp_qubits = []
+            for k in range(n_exact[0]):
+                for l in range(n_exact[1]):
+                    temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
+            #print("temp_qubits: \t {}".format(temp_qubits))
 
-            yield cirq.MatrixGate(temp_ising.eig_vec).\
-                on(*list(itertools.chain(*self.qubits[i*n_exact[0]:(i+1)*n_exact[0]][j*n_exact[1]: (j+1)*n_exact[1]])))
+            yield cirq.MatrixGate(temp_ising.eig_vec).on(*temp_qubits)
     if (self.n == n_exact).all() :
         self.eig_val = temp_ising.eig_val
         self.eig_vec = temp_ising.eig_vec
