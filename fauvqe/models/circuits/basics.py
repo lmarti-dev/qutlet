@@ -17,6 +17,38 @@ import itertools
 from typing import Literal
 from numbers import Real
 
+def set_circuit(self):
+    if not self.basics.options['append']:
+        self.circuit = cirq.Circuit()
+
+    if self.basics.options["start"] == None:
+        pass
+    elif self.basics.options["start"] == "exact":
+        self.circuit.insert(0,self.basics._exact_layer(self))
+    elif self.basics.options["start"] == "hadamard":
+        self.circuit.insert(0,self.basics._hadamard_layer(self))
+    elif self.basics.options["start"] == "neel":
+        self.circuit.insert(0,self.basics._neel_layer(self))
+    elif self.basics.options["start"] == "mf":
+        self.circuit.insert(0,self.basics._mf_layer(self))
+    else:
+        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
+                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["start"] )
+
+    if self.basics.options["end"] == None:
+        pass
+    elif self.basics.options["end"] == "exact":
+        self.circuit.append(self.basics._exact_layer(self))
+    elif self.basics.options["end"] == "hadamard":
+        self.circuit.append(self.basics._hadamard_layer(self))
+    elif self.basics.options["end"] == "neel":
+        self.circuit.append(self.basics._neel_layer(self))
+    elif self.basics.options["end"] == "mf":
+        self.circuit.append(self.basics._mf_layer(self))
+    else:
+        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
+                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["end"]  )
+
 def _exact_layer(self):
     #1. Check whether given subgrid is multiple of overall grid
     #2. Use this to determine where/ how to apply it
@@ -83,56 +115,13 @@ def _hadamard_layer(self):
         for qubit in row:
             yield cirq.H.on(qubit)
 
-def add_missing_cpv(self):
-    _add_vec = []
-    
-    #1. Find all circuit parameter|variables that are used
-    for moment in self.circuit.moments:
-        #print(moment.__dict__)
-        for operation in moment._operations:
-            #print(operation._gate.__dict__.values())
-            symbols = list(operation._gate.__dict__.values())
-            for element in symbols:
-                try:
-                    symbol = next(iter(element.atoms(sympy.Symbol)))
-                    #print(symbol)
-                    if symbol not in self.circuit_param:
-                        _add_vec.append(symbol)
-                    #print("_add_vec: \t {}".format(_add_vec))
-                except:
-                    pass 
-                #print(next(iter(symbol)) )
-    #print("_add_vec: \t {}".format(_add_vec))
-    self.circuit_param.extend(_add_vec)
-    self.circuit_param_values = np.append(self.circuit_param_values , [0]*len(_add_vec))
-
-def rm_unused_cpv(self):
-    #print(self.circuit_param)
-    _erase_vec = self.circuit_param.copy()
-    
-    #1. Find all circuit parameter|variables that are used
-    for moment in self.circuit.moments:
-        #print(moment.__dict__)
-        for operation in moment._operations:
-            #print(operation._gate.__dict__.values())
-            symbols = list(operation._gate.__dict__.values())
-            for element in symbols:
-                try:
-                    #print(element.atoms(sympy.Symbol))
-                    symbol = element.atoms(sympy.Symbol)
-                    _erase_vec=set(_erase_vec) - symbol
-                except:
-                    pass 
-    
-    #2. Erase elements that are still in _erase_vec from self.circuit_param
-    _erase_ind = []
-    for redundant_element in _erase_vec:
-        _erase_ind.append(self.circuit_param.index(redundant_element))
-    
-    _erase_ind.sort(reverse = True)
-    for index in _erase_ind:
-        del self.circuit_param[index]
-    self.circuit_param_values = np.delete(self.circuit_param_values, _erase_ind, None)
+def _mf_layer(self):
+    assert self.field == "X","Mean field layer only implemented for self.field == 'X'"
+    for row in self.qubits:
+        for qubit in row:
+            theta = self.basics.__get_mf_angle(self, qubit)
+            #print("theta: \t{}".format(theta))
+            yield cirq.XPowGate(exponent=(theta/np.pi)).on(qubit)
 
 def _neel_layer(self):
     for row in self.qubits:
@@ -140,14 +129,6 @@ def _neel_layer(self):
             # Possibly only specific to Grid Qubit:
             if (qubit._row + qubit._col)%2 == 0:
                 yield cirq.X(qubit)
-
-
-def _mf_layer(self):
-    for row in self.qubits:
-        for qubit in row:
-            theta = self.basics.__get_mf_angle(self, qubit)
-            #print("theta: \t{}".format(theta))
-            yield cirq.XPowGate(exponent=(theta/np.pi)).on(qubit)
 
 def __get_mf_angle(self, qubit):
     #1. Calculate mean J
@@ -199,39 +180,57 @@ def __get_mf_angle(self, qubit):
         return (-1)**(qubit._col+qubit._row)*\
             np.arccos(np.sqrt(1-(self.h[qubit._row, qubit._col]/J_mean)**2))
 
-def set_circuit(self):
-    if not self.basics.options['append']:
-        self.circuit = cirq.Circuit()
+def add_missing_cpv(self):
+    _add_vec = []
+    
+    #1. Find all circuit parameter|variables that are used
+    for moment in self.circuit.moments:
+        #print(moment.__dict__)
+        for operation in moment._operations:
+            #print(operation._gate.__dict__.values())
+            symbols = list(operation._gate.__dict__.values())
+            for element in symbols:
+                try:
+                    symbol = next(iter(element.atoms(sympy.Symbol)))
+                    #print(symbol)
+                    if symbol not in self.circuit_param and\
+                       symbol not in _add_vec:
+                        _add_vec.append(symbol)
+                    #print("_add_vec: \t {}".format(_add_vec))
+                except:
+                    pass 
+                #print(next(iter(symbol)) )
+    #print("_add_vec: \t {}".format(_add_vec))
+    self.circuit_param.extend(_add_vec)
+    self.circuit_param_values = np.append(self.circuit_param_values , [0]*len(_add_vec))
 
-    if self.basics.options["start"] == None:
-        pass
-    elif self.basics.options["start"] == "exact":
-        self.circuit.insert(0,self.basics._exact_layer(self))
-    elif self.basics.options["start"] == "hadamard":
-        self.circuit.insert(0,self.basics._hadamard_layer(self))
-    elif self.basics.options["start"] == "neel":
-        self.circuit.insert(0,self.basics._neel_layer(self))
-    elif self.basics.options["start"] == "mf":
-        self.circuit.insert(0,self.basics._mf_layer(self))
-    else:
-        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["start"] )
-
-    if self.basics.options["end"] == None:
-        pass
-    elif self.basics.options["end"] == "exact":
-        self.circuit.append(self.basics._exact_layer(self))
-    elif self.basics.options["end"] == "hadamard":
-        self.circuit.append(self.basics._hadamard_layer(self))
-    elif self.basics.options["end"] == "neel":
-        self.circuit.append(self.basics._neel_layer(self))
-    elif self.basics.options["end"] == "mf":
-        self.circuit.append(self.basics._mf_layer(self))
-    else:
-        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["end"]  )
-
-
+def rm_unused_cpv(self):
+    #print(self.circuit_param)
+    _erase_vec = self.circuit_param.copy()
+    
+    #1. Find all circuit parameter|variables that are used
+    for moment in self.circuit.moments:
+        #print(moment.__dict__)
+        for operation in moment._operations:
+            #print(operation._gate.__dict__.values())
+            symbols = list(operation._gate.__dict__.values())
+            for element in symbols:
+                try:
+                    #print(element.atoms(sympy.Symbol))
+                    symbol = element.atoms(sympy.Symbol)
+                    _erase_vec=set(_erase_vec) - symbol
+                except:
+                    pass 
+    
+    #2. Erase elements that are still in _erase_vec from self.circuit_param
+    _erase_ind = []
+    for redundant_element in _erase_vec:
+        _erase_ind.append(self.circuit_param.index(redundant_element))
+    
+    _erase_ind.sort(reverse = True)
+    for index in _erase_ind:
+        del self.circuit_param[index]
+    self.circuit_param_values = np.delete(self.circuit_param_values, _erase_ind, None)
 
 class IsingDummy(AbstractModel):
     """
@@ -256,6 +255,7 @@ class IsingDummy(AbstractModel):
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
+        self.circuit_param_values = np.array([])
         self._set_jh(j_v, j_h, h)
         self.field = field
         self._set_hamiltonian()
