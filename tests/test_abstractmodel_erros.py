@@ -14,6 +14,9 @@ from fauvqe import AbstractModel
 
 
 class MockAbstractModel(AbstractModel):
+    def copy(self):
+        return MockAbstractModel()
+        
     def to_json_dict(self):
         return {}
 
