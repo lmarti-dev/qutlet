@@ -32,6 +32,7 @@ class Ising(AbstractModel):
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
+        self.circuit_param_values = np.array([])
         self._set_jh(j_v, j_h, h)
         self.field = field
         self._set_hamiltonian()
@@ -212,7 +213,7 @@ class Ising(AbstractModel):
 
         return ZZ_filter, self.h.reshape(n_sites).dot(Z)
 
-    def set_circuit(self, qalgorithm, param, options: dict = {}):
+    def set_circuit(self, qalgorithm, options: dict = {}):
         """
         Adds custom circuit to self.circuit (default)
 
@@ -268,15 +269,19 @@ class Ising(AbstractModel):
             self.basics.add_missing_cpv(self)
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
+            #This needs some further revisions as some parts are not very general yet
             self.qaoa.options = {"append": False,
-                                "p": 1}
-            self.qaoa.set_symbols(self, param)
-            self.qaoa.set_circuit(self, options)  # this is the former circuit_QAOA()
+                                "p": 1,
+                                "H_layer": True,
+                                "i0": 0}
+            self.qaoa.options.update(options)
+            self.qaoa.set_symbols(self)
+            self.qaoa.set_circuit(self)
         else:
             assert (
                 False
             ), "Invalid quantum algorithm, received: '{}', allowed is \n \
-                'hea', 'qaoa'".format(
+                'basics', 'hea', 'qaoa'".format(
                 qalgorithm
             )
 
