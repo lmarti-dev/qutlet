@@ -54,6 +54,7 @@ class AbstractModel(Restorable):
         """
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
+        self.circuit_param_values: Optional[np.ndarray] = None
         self.hamiltonian = cirq.PauliSum()
         self.init_qubits(qubittype, n)
         self.set_simulator()
