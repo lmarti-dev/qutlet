@@ -106,6 +106,8 @@ def set_circuit(self):
     for i in range(p):
         self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[i0 + 2 * i])))
         self.circuit.append(self.qaoa._UC_layer(self, self.circuit_param[i0 + 2 * i + 1]))
+        if self.field == "Z":
+            self.circuit.append(cirq.Moment(self.qaoa._Z_layer(self, self.circuit_param[i0 + 2 * i + 1])))
 
 
 def _UB_layer(self, beta):
@@ -124,7 +126,7 @@ def _UC_layer(self, gamma):
       self.h: Array of floats of external magnetic field values
       self.J_v, self.J_h, vertikal/horizontal Interaction Hamiltonian ZZ -h Z:
       U(\gamma, C) = \prod_{\langle i,j\rangle}e^{-i\pi\gamma Z_iZ_j/2} \prod_i e^{-i\pi \gamma h_i Z_i/2
-    """
+    
     for i in range(self.n[0]):
         for j in range(self.n[1]):
             if i < self.n[0] - 1:
@@ -138,7 +140,30 @@ def _UC_layer(self, gamma):
             # This X gate does not make a difference as UB layer are XpowerGates
             #elif self.field =="X":
             #    yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
+    """
+    for k in range(2):
+        if self.n[0] > 1:
+            for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
+                #Bulk terms
+                for i in np.arange(int(k), self.n[0]-1, 2, dtype=int):
+                    yield cirq.ZZ(self.qubits[i][j], self.qubits[i+1][j]) ** (gamma * self.j_v[i, j])
+                #Boundary terms
+                if self.boundaries[0] == 0 and self.n[0]%2 == int(1-k):
+                    yield cirq.ZZ(self.qubits[self.n[0]-1][j], self.qubits[0][j])** (gamma * self.j_v[self.n[0]-1, j])
 
+        if self.n[1] > 1:
+            for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
+                #Bulk terms
+                for j in np.arange(k, self.n[1]-1, 2, dtype=int):
+                    yield  cirq.ZZ(self.qubits[i][j], self.qubits[i][j+1])** (gamma * self.j_h[i, j])
+                #Boundary terms
+                if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
+                    yield cirq.ZZ(self.qubits[i][self.n[1]-1], self.qubits[i][0])** (gamma * self.j_h[i, self.n[1]-1])
+
+def _Z_layer(self, gamma):
+    for i in range(self.n[0]):
+        for j in range(self.n[1]):
+            yield cirq.Z(self.qubits[i][j]) ** (gamma * self.h[i, j])
 
 def _get_param_resolver(self, beta_values, gamma_values):
     p = self.qaoa.options["p"] 
