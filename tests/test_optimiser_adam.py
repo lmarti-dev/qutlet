@@ -23,7 +23,7 @@ from fauvqe import Ising, ADAM, ExpectationValue
 
 def test_set_optimiser():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising.set_circuit("qaoa", 1)
+    ising.set_circuit("qaoa", {"p": 1})
     adam = ADAM()
     objective = ExpectationValue(ising)
     adam.optimise(objective, n_jobs=1)
@@ -43,8 +43,9 @@ def test_optimise():
         0.1 * np.ones((1, 2)),
         0.5 * np.ones((2, 1)),
         0.2 * np.ones((2, 2)),
+        "Z"
     )
-    ising.set_circuit("qaoa", 2)
+    ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     eps = 10 ** -3
     exp_val_z = ExpectationValue(ising, field="Z")
@@ -55,10 +56,10 @@ def test_optimise():
     )
     res = adam.optimise(exp_val_z, n_jobs=1)
 
-    wf = ising.simulator.simulate(
-        ising.circuit,
-        param_resolver=ising.get_param_resolver(ising.circuit_param_values),
-    ).state_vector()
+    #wf = ising.simulator.simulate(
+    #    ising.circuit,
+    #    param_resolver=ising.get_param_resolver(ising.circuit_param_values),
+    #).state_vector()
     # Result smaller than -0.5 up to eta
     assert -0.5 > res.get_latest_objective_value() - eps
     # Result smaller than -0.5 up to eta
@@ -73,7 +74,7 @@ def test_adam_multiple_models_and_auto_joblib():
         0.5 * np.ones((2, 1)),
         0.2 * np.ones((2, 2)),
     )
-    ising1.set_circuit("qaoa", 2)
+    ising1.set_circuit("qaoa", {"p": 2})
     ising1.set_circuit_param_values(0.3 * np.ones(np.size(ising1.circuit_param)))
     ising2 = Ising(
         "GridQubit",
@@ -82,7 +83,7 @@ def test_adam_multiple_models_and_auto_joblib():
         np.ones((1, 1)),
         np.ones((1, 2)),
     )
-    ising2.set_circuit("qaoa", 1)
+    ising2.set_circuit("qaoa", {"p": 1})
 
     adam = ADAM()
 
@@ -109,8 +110,9 @@ def test_optimise_joblib():
         0.1 * np.ones((1, 2)),
         0.5 * np.ones((2, 1)),
         0.2 * np.ones((2, 2)),
+        "Z"
     )
-    ising.set_circuit("qaoa", 2)
+    ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     adam = ADAM(
         break_param=25,
@@ -131,7 +133,7 @@ def test_optimise_no_simulator_change():
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
-    ising.set_circuit("qaoa", 2)
+    ising.set_circuit("qaoa", {"p": 2})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     ising.set_simulator(simulator_name = "cirq")
     
@@ -149,7 +151,7 @@ def test__get_single_energy():
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
-    ising.set_circuit("qaoa", 2)
+    ising.set_circuit("qaoa", {"p": 2})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
 
     adam = ADAM(break_param=1,a=4e-2)

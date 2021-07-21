@@ -7,7 +7,7 @@ from fauvqe import ExpectationValue, Ising
 def test_expectationvalue():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", 5)
+    ising.set_circuit("qaoa", {"p": 5})
     objective = ExpectationValue(ising, field="Z")
 
     wavefunction = objective.simulate(
