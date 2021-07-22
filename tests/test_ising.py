@@ -10,6 +10,7 @@
 import pytest
 import numpy as np
 import cirq
+import sympy
 
 # internal imports
 from fauvqe import Ising
@@ -28,6 +29,102 @@ def test__eq__():
 
     ising.set_Ut()
     assert ising != ising2 
+
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_v, j_h, h, basis",
+    [
+        #############################################################
+        #                   2 qubit tests                           #
+        #############################################################
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((1, 2)) / 5,
+            np.zeros((1, 2)) / 10,
+            "Z",
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((1, 2)) / 5,
+            np.zeros((1, 2)) / 10,
+            "Z",
+        ),
+        (
+            "GridQubit",
+            [2, 1],
+            np.ones((2, 1)) / 2,
+            np.ones((2, 0)) / 5,
+            np.zeros((2, 1)) / 10,
+            "Z",
+        ),
+        (
+            "GridQubit",
+            [2, 1],
+            np.ones((2, 1)) / 2,
+            np.ones((2, 0)) / 5,
+            np.zeros((2, 1)) / 10,
+            "Z",
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.zeros((1, 2)) / 2,
+            np.zeros((1, 2)) / 5,
+            np.ones((1, 2)) / 3,
+            "X",
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.zeros((1, 2)) / 2,
+            np.zeros((1, 2)) / 5,
+            np.ones((1, 2)) / 3,
+            "X",
+        ),
+        #############################################################
+        #                   4 qubit tests                           #
+        #############################################################
+        (
+            "GridQubit",
+            [2, 2],
+            np.zeros((2, 2)) / 2,
+            np.zeros((2, 2)) / 5,
+            np.ones((2, 2)) / 3,
+            "X",
+        ),
+        (
+            "GridQubit",
+            [2, 2],
+            np.zeros((2, 2)) / 2,
+            np.zeros((2, 2)) / 5,
+            np.ones((2, 2)) / 3,
+            "X",
+        ),
+        (
+            "GridQubit",
+            [2, 2],
+            np.zeros((2, 2)) / 2,
+            np.zeros((2, 2)) / 5,
+            np.ones((2, 2)) / 3,
+            "X",
+        ),
+    ],
+)
+def test_copy(qubittype, n, j_v, j_h, h, basis):
+    ising = Ising(qubittype, n, j_v, j_h, h, basis)
+    ising.set_circuit("qaoa")
+    ising2 = ising.copy()
+
+    #Test whether the objects are the same
+    assert( ising == ising2 )
+
+    #But there ID is different
+    assert( ising is not ising2 )
+
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, test_gate, E_exp, basis",
@@ -935,6 +1032,62 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
         
         cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
         cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_v, j_h, h, field, sol_circuit, sol_circuit_param",
+    [
+        (
+            "GridQubit",
+            [3, 1],
+            np.ones((3, 1)),
+            np.ones((3, 0)),
+            np.ones((3, 1)),
+            "X",
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(2, 0)),
+                        cirq.H.on(cirq.GridQubit(3, 0)), cirq.H.on(cirq.GridQubit(4, 0)), cirq.H.on(cirq.GridQubit(5, 0)),
+                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 0)), (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(1, 0)),
+                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(2, 0)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(3, 0)),
+                        (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(4, 0)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(5, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(3, 0), cirq.GridQubit(4, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(2, 0), cirq.GridQubit(3, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(5, 0), cirq.GridQubit(0, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(1, 0), cirq.GridQubit(2, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(4, 0), cirq.GridQubit(5, 0)),),
+            [sympy.Symbol('b0_g0'),sympy.Symbol('g0_g0'),sympy.Symbol('b0_g1'),sympy.Symbol('g0_g1')]
+        ),
+    ]
+)
+def test_glues_circuit(qubittype, n, j_v, j_h, h, field, sol_circuit, sol_circuit_param):
+    ising = Ising(qubittype, n, j_v, j_h, h, field)
+    ising.set_circuit("qaoa")
+    #print(ising.circuit)
+    
+    ising.glue_circuit()
+    #print(ising.circuit)
+
+    ising2 = Ising(qubittype, 
+                    [2*n[0], n[1]], 
+                    np.concatenate((j_v, j_v), axis=0),
+                    np.concatenate((j_h, j_h), axis=0) , 
+                    np.concatenate((h, h), axis=0) , 
+                    field)
+    ising2.circuit = sol_circuit
+    ising2.circuit_param = sol_circuit_param
+    ising2.circuit_param_values = np.array([0]*len(ising2.circuit_param))
+    #print(sol_circuit)
+
+    #print("ising.circuit == ising2.circuit: \t {}".format(ising.circuit == ising2.circuit))
+    #print("ising.hamiltonian == ising2.hamiltonian: \t {}".format(ising.hamiltonian == ising2.hamiltonian))
+    #print("ising.circuit_param_values: \t{}".format(ising.circuit_param_values))
+    #print("ising2.circuit_param_values: \t{}".format(ising2.circuit_param_values))
+    #assert(ising.circuit == ising2.circuit)
+    assert(ising == ising2)
+
+    #ising.set_circuit("basics", {"start": "mf")
+    #ising.set_circuit("qaoa", {"p": 1, "append": True})
+
+
 
 #############################################################
 #                                                           #

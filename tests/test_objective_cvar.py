@@ -10,6 +10,9 @@ class MockModel(AbstractModel):
     def __init__(self):
         super().__init__("GridQubit", [1, 1])
 
+    def copy(self):
+        return MockModel()
+    
     def to_json_dict(self) -> Dict:
         return {}
 

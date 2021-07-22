@@ -73,10 +73,11 @@ class AbstractModel(Restorable):
         #Most general: avoid to define Attributes
         temp_bools = []
         for key in self.__dict__.keys():
+            print(key)
             if isinstance(getattr(self, key), np.ndarray):
                 if isinstance(getattr(other, key), np.ndarray):
                     if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                         temp_bools.append((getattr(self, key) == getattr(other, key)).all())
                     else:
                         temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
@@ -84,7 +85,7 @@ class AbstractModel(Restorable):
                     return False
             else:
                 if key != 'simulator':
-                    print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                    #print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                     temp_bools.append(getattr(self, key) == getattr(other, key))
                 else:
                     temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
@@ -439,15 +440,26 @@ class AbstractModel(Restorable):
                                 repetitions: int = -1):
         _gate = operation._gate.__class__
         _gate_params = operation._gate.__dict__.copy()
+        #print(_gate_params)
+        #print(_gate_params.keys())
         _qubits = operation._qubits
 
         for key in list(_gate_params.keys()):
-            if 'cached' in key:
+            if 'cached' in key or '_doc_' in key:
                 # Remove dummies 
                 _gate_params.pop(key)
+                #print("Popped key: \t{}".format(key))
             else:
                 if not isinstance(_gate_params.get(key), Number):
-                    _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
+                    if isinstance(_gate_params.get(key), sympy.core.symbol.Symbol):
+                        #print("key: \t{}\ntype: \t {}".format(key, type(_gate_params.get(key))))
+                        _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
+                    else:
+                        #type here: lass 'sympy.core.mul.Mul'
+                        #print("key: \t{}\ntype: \t {}\ndict: \t {}"\
+                        #    .format(key, type(_gate_params.get(key)), _gate_params.get(key).as_coeff_Mul()))
+                        temp = _gate_params.pop(key).as_coeff_Mul()
+                        _gate_params[key[1:]] = temp[0]*sympy.Symbol(temp[1].name + add_string)
                 else:
                     _gate_params[key[1:]] = _gate_params.pop(key)
 
