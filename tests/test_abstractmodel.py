@@ -31,6 +31,13 @@ class MockAbstractModel(AbstractModel):
     def _set_hamiltonian(self, reset: bool = True):
         self.hamiltonian = cirq.PauliSum()
 
+def test__eq__():
+    model1 = MockAbstractModel("GridQubit", [2, 2])
+    model2 = MockAbstractModel("GridQubit", [2, 2])
+    assert (model1 == model2)
+
+    model1.t = 1
+    assert (model1 != model2)
 
 # test_AbstractModel_set_qubits
 @pytest.mark.parametrize(

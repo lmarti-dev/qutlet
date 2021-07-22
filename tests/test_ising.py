@@ -15,6 +15,19 @@ import cirq
 from fauvqe import Ising
 from tests.test_isings import IsingTester
 
+def test__eq__():
+    n = [1,3]; boundaries = [1, 0]
+    ising = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])),"Z")
+    ising.set_circuit("qaoa")
+    
+    ising2 = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])),"Z")
+    ising2.set_circuit("qaoa")
+
+    #print("ising == ising2: \t {}".format(ising == ising2))
+    assert (ising == ising2)
+
+    ising.set_Ut()
+    assert ising != ising2 
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, test_gate, E_exp, basis",
