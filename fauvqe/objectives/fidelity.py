@@ -48,9 +48,11 @@ class Fidelity(Objective):
 
     def evaluate(self, wavefunction) -> np.float64:
     if(self.pure):
+        #Numpy's ndarray required
         assert(isinstance(wavefunction, np.ndarray) and isinstance(self.target, np.ndarray)), 'WARNING: Input not of type np.ndarray'
         return abs(np.matrix.getH(vwavefunction) @ self.target)
     else:
+        #Qutip' Qobj required
         assert(isinstance(wavefunction, qutip.qobj) and isinstance(self.target, qutip.qobj)), 'WARNING: Input not of type qutip.qobj'
         return fidelity(wavefunction, self.target)
 
