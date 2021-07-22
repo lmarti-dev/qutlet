@@ -6,6 +6,7 @@ from numbers import Integral, Real
 
 import numpy as np
 
+import qutip
 from qutip.metrics import fidelity
 
 from fauvqe.objectives.objective import Objective
@@ -21,11 +22,8 @@ class Fidelity(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "t"         -> Float    t in U(t)
-                "U"         -> Literal  exact or Trotter (only matters if not exists or t wrong)
-                "wavefunctions"  -> np.ndarray      if None Use U csot, 
-                                                    otherwise batch wavefunctions for random batch cost
-                "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
+    options:    "target"    -> np.ndarray    target state to calculate fidelity with
+                "pure"      -> bool  True, if target and input are both 
 
     Methods
     ----------
@@ -34,10 +32,19 @@ class Fidelity(Objective):
         ---------
         str:
             <UtCost field=self.field>
+    
+    evaluate(self, wavefunction) : np.float64
+        Returns
+        ---------
+        np.float64:
+            if(self.pure):
+                target^dagger @ wavefunction
+            else:
+                qutip.metrics.fidelity(target, wavefunction)
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target: np.ndarray,
+                    target,
                     pure: bool = False):
         
         self.target = target
@@ -47,14 +54,14 @@ class Fidelity(Objective):
         self._N = 2**np.size(model.qubits)
 
     def evaluate(self, wavefunction) -> np.float64:
-    if(self.pure):
-        #Numpy's ndarray required
-        assert(isinstance(wavefunction, np.ndarray) and isinstance(self.target, np.ndarray)), 'WARNING: Input not of type np.ndarray'
-        return abs(np.matrix.getH(vwavefunction) @ self.target)
-    else:
-        #Qutip' Qobj required
-        assert(isinstance(wavefunction, qutip.qobj) and isinstance(self.target, qutip.qobj)), 'WARNING: Input not of type qutip.qobj'
-        return fidelity(wavefunction, self.target)
+        if(self.pure):
+            #Numpy's ndarray required
+            assert(isinstance(wavefunction, np.ndarray) and isinstance(self.target, np.ndarray)), 'WARNING: Input not of type np.ndarray'
+            return abs(np.matrix.getH(wavefunction) @ self.target)
+        else:
+            #Qutip' Qobj required
+            assert(isinstance(wavefunction, qutip.Qobj) and isinstance(self.target, qutip.Qobj)), 'WARNING: Input not of type qutip.qobj'
+            return fidelity(wavefunction, self.target)
 
     def to_json_dict(self) -> Dict:
         raise NotImplementedError() 
