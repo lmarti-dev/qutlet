@@ -61,6 +61,9 @@ class Fidelity(Objective):
         return {
             "constructor_params": {
                 "model": self._model,
+                "N": self._N,
+                "target": self.target,
+                "pure": self.pure,
             },
         }
 
@@ -70,4 +73,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<UtCost t={}>".format(self.t)
+        return "<Fidelity target={}>".format(self.target)
