@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 from typing import Tuple, Dict, Literal
 from numbers import Real
+import itertools
 
 import numpy as np
 import cirq

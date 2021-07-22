@@ -54,6 +54,7 @@ class AbstractModel(Restorable):
         """
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
+        self.circuit_param_values: Optional[np.ndarray] = None
         self.hamiltonian = cirq.PauliSum()
         self.init_qubits(qubittype, n)
         self.set_simulator()
@@ -62,7 +63,34 @@ class AbstractModel(Restorable):
         self.eig_val: Optional[np.ndarray] = None
         self.eig_vec: Optional[np.ndarray] = None
         self._Ut: Optional[np.ndarray] = None
-        
+
+    #This allows use to compare two AbstractClass objects
+    def __eq__(self, other): 
+        if not isinstance(other, self.__class__):
+            # don't attempt to compare against unrelated types
+            return False
+
+        #Most general: avoid to define Attributes
+        temp_bools = []
+        for key in self.__dict__.keys():
+            print(key)
+            if isinstance(getattr(self, key), np.ndarray):
+                if isinstance(getattr(other, key), np.ndarray):
+                    if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
+                        print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                        temp_bools.append((getattr(self, key) == getattr(other, key)).all())
+                    else:
+                        temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
+                else:
+                    return False
+            else:
+                if key != 'simulator':
+                    #print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                    temp_bools.append(getattr(self, key) == getattr(other, key))
+                else:
+                    temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
+        print(temp_bools)
+        return all(temp_bools)   
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
@@ -275,15 +303,14 @@ class AbstractModel(Restorable):
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
         _N = 2**(np.size(self.qubits))
-        try:
-            if np.size(self.eig_val) != _N or \
-            (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
-                self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
-                #self.diagonalise(solver="numpy")
-        except:
-            # It might not work if self.eig_val does not exist yet
+        
+        if self.t == 0:
+            self._Ut = np.identity(_N)
+            return True
+        
+        if np.size(self.eig_val) != _N or \
+        (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
             self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
-            #self.diagonalise(solver="numpy")
         
         #print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
         #                format(np.size(self.eig_val), np.shape(self.eig_vec) ,_N))
@@ -412,15 +439,26 @@ class AbstractModel(Restorable):
                                 repetitions: int = -1):
         _gate = operation._gate.__class__
         _gate_params = operation._gate.__dict__.copy()
+        #print(_gate_params)
+        #print(_gate_params.keys())
         _qubits = operation._qubits
 
         for key in list(_gate_params.keys()):
-            if 'cached' in key:
+            if 'cached' in key or '_doc_' in key:
                 # Remove dummies 
                 _gate_params.pop(key)
+                #print("Popped key: \t{}".format(key))
             else:
                 if not isinstance(_gate_params.get(key), Number):
-                    _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
+                    if isinstance(_gate_params.get(key), sympy.core.symbol.Symbol):
+                        #print("key: \t{}\ntype: \t {}".format(key, type(_gate_params.get(key))))
+                        _gate_params[key[1:]] = sympy.Symbol(_gate_params.pop(key).name + add_string)
+                    else:
+                        #type here: lass 'sympy.core.mul.Mul'
+                        #print("key: \t{}\ntype: \t {}\ndict: \t {}"\
+                        #    .format(key, type(_gate_params.get(key)), _gate_params.get(key).as_coeff_Mul()))
+                        temp = _gate_params.pop(key).as_coeff_Mul()
+                        _gate_params[key[1:]] = temp[0]*sympy.Symbol(temp[1].name + add_string)
                 else:
                     _gate_params[key[1:]] = _gate_params.pop(key)
 

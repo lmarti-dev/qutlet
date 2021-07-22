@@ -34,45 +34,6 @@ import cirq
 import sympy
 from numbers import Number
 
-def _PhXZ_layer(self, i):
-    """
-        Generator for PhasedXZGate Layer
-
-        a, x, z are possibly defined in 
-        if not set 0 
-    """
-    if self.hea.options["parametrisation"] in {"joint", "layerwise"}:
-        variables = [0, 0, 0]
-        j = 0
-        for variable in ["a", "x", "z"]:
-            if variable in self.hea.options["variables"]:
-                variables[j] = sympy.Symbol(variable + str(i))
-            j +=1
-        for row in self.qubits:
-            for qubit in row:
-                yield cirq.PhasedXZGate(x_exponent=variables[1], 
-                                        z_exponent=variables[2], 
-                                        axis_phase_exponent=variables[0]).on(qubit)
-    elif self.hea.options["parametrisation"] == "individual":
-        v_mask = [0, 0, 0]
-        j = 0
-        for variable in ["a", "x", "z"]:
-            if variable in self.hea.options["variables"]:
-                v_mask[j] = variable
-            j +=1
-        j = 0
-        #print(v_mask)
-
-        #sympy.Symbol(variable + str(i) + "_" + str(j))
-        for row in self.qubits:
-            for qubit in row:
-                yield cirq.PhasedXZGate(x_exponent=self.hea.__get_sympy_Symbol(self, v_mask[1],i,j), 
-                                        z_exponent=self.hea.__get_sympy_Symbol(self, v_mask[2],i,j), 
-                                        axis_phase_exponent=self.hea.__get_sympy_Symbol(self, v_mask[0],i,j)).on(qubit)
-                j +=1
-    else:
-        assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
-            'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 
 def _1Qubit_layer(self, i):
     """
@@ -121,14 +82,7 @@ def _1Qubit_layer(self, i):
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 
-def __get_sympy_Symbol(self, v_mask_element,i,j):
-    if isinstance(v_mask_element, str):
-        return sympy.Symbol(v_mask_element + str(i) + "_" + str(j))
-    elif isinstance(v_mask_element, Number):
-        return v_mask_element
-    else:
-        assert (False), "In HEA: invalid input type in __get_sympy_Symbol() received: '{}', allowed is \n \
-            'str' or any number type".format(type(v_mask_element))
+
 
 def _partial_2Qubit_layer(self, i_p, v_v, v_h):
     """
@@ -144,7 +98,8 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
     gate = self.hea.options["2QubitGate"]
 
     # if i_p 0 or 2
-    if i_p%2 == 0:
+    #less specific: i_p%2 == 0
+    if i_p in [0,2]:
         #Need to be smarter ordered!!!
         if self.n[0] > 1:
             for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
@@ -158,7 +113,8 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
                     yield gate(*v_v[:][self.n[0]-1][j]).on(self.qubits[self.n[0]-1][j], self.qubits[0][j])
 
     # if i_p 1 or 3
-    elif i_p%2 == 1:
+    #less specific: i_p%2 == 1
+    elif i_p in [1,3]:
         #Need to be smarter ordered!!!
         if self.n[1] > 1:
             for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
@@ -169,9 +125,6 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
                 #Boundary terms
                 if self.boundaries[1] == 0 and self.n[1]%2 == int(1-(i_p-1)/2):
                     yield gate(*v_h[:][:][i][self.n[1]-1]).on(self.qubits[i][self.n[1]-1], self.qubits[i][0])
-    else:
-        assert (False), "Error in hea._partial_2Qubit_layer, received: i_p '{}', allowed is \n \
-                0, 1, 2 or 3 ".format(i_p)
             
 def _2Qubit_layer(self, i):
     """
@@ -264,6 +217,16 @@ def _2Qubit_layer(self, i):
     else:
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
+
+def __get_sympy_Symbol(self, v_mask_element,i,j):
+    if isinstance(v_mask_element, str):
+        return sympy.Symbol(v_mask_element + str(i) + "_" + str(j))
+    elif isinstance(v_mask_element, Number):
+        return v_mask_element
+    #else:
+    #    assert (False), "In HEA: invalid input type in __get_sympy_Symbol() received: '{}', allowed is \n \
+    #        'str' or any number type".format(type(v_mask_element))
+
 def set_symbols(self):
     """
         Creates a list of sympy Symbols to parametrise the to be create circuit
@@ -324,10 +287,7 @@ def set_circuit(self):
     if not self.hea.options['append']:
         self.circuit = cirq.Circuit()
 
-    try:
-        if np.size(self.circuit_param_values) != np.size(self.circuit_param):
-            self.circuit_param_values = np.zeros(np.size(self.circuit_param))
-    except AttributeError:  # self.circuit_param_values has not been initialised earlier
+    if np.size(self.circuit_param_values) != np.size(self.circuit_param):
         self.circuit_param_values = np.zeros(np.size(self.circuit_param))
 
     for i in range(self.p):
@@ -341,95 +301,75 @@ def set_circuit(self):
     # e.g. in 1D case
     # Can should be more general/basic function
 
-def set_circuit_param_values(self):
+def set_circuit_param_values(self, key, values):
     """
         Receives one or more parameter keys
-            "a", "x", "z", "phi", "theta"
+            e.g. "a", "x", "z", "phi", "theta", "b", "g" 
 
         Sets/resets all self.circuit_param_values that fit to respective parameter key
+
+        1. Find all self.circuit_param that fit and get their index
+        2. Set the respective self.cricuit_param
     """
-    pass
+    indices = []
+    temp_variables = []
+    for i in range(len(self.circuit_param)):
+        if str(self.circuit_param[i]).startswith(key):
+            indices.append(i)
+            temp_variables.append(str(self.circuit_param[i]))
+   
+    assert(np.size(indices) == np.size(values)),\
+        "HEAError: Number of variables ({}) != given variable values ({})".format(np.size(indices), np.size(self.circuit_param))
 
+     #Order by alphabet/indices
+    x = np.argsort(temp_variables)
+    indices = np.array(indices)
+    sorted_indices = indices[x]
+
+    #Reset self.circuit_param_values
+    #This also works for single parameters
+    self.circuit_param_values[sorted_indices] = values
+    
 """
+#Not required anymore:
+def _PhXZ_layer(self, i):
+    ""
+        Generator for PhasedXZGate Layer
 
+        a, x, z are possibly defined in 
+        if not set 0 
+    ""
+    if self.hea.options["parametrisation"] in {"joint", "layerwise"}:
+        variables = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                variables[j] = sympy.Symbol(variable + str(i))
+            j +=1
+        for row in self.qubits:
+            for qubit in row:
+                yield cirq.PhasedXZGate(x_exponent=variables[1], 
+                                        z_exponent=variables[2], 
+                                        axis_phase_exponent=variables[0]).on(qubit)
+    elif self.hea.options["parametrisation"] == "individual":
+        v_mask = [0, 0, 0]
+        j = 0
+        for variable in ["a", "x", "z"]:
+            if variable in self.hea.options["variables"]:
+                v_mask[j] = variable
+            j +=1
+        j = 0
+        #print(v_mask)
 
-def _set_beta_values(self, beta_values):
-    try:
-        assert np.size(beta_values) == self.p, "Error: size(beta_values !=  p; {} != {}".format(
-            np.size(beta_values), self.p
-        )
-    except AttributeError:
-        # set p to length beta_values if it does not exist
-        print(
-            "Set self.p to np.size(beta_values) = {}, as not defined".format(np.size(beta_values))
-        )
-        self.p = np.size(beta_values)
-
-    # catch if self. circuit_param_values does not exist yet
-    # also require that circuit_param_values = 2*p this conflicts with the append option, resolve later if needed
-    try:
-        if np.size(self.circuit_param_values) != 2 * self.p:
-            self.circuit_param_values = np.zeros(2 * self.p)
-    except AttributeError:  # self.circuit_param_values has not been initialised earlier
-        self.circuit_param_values = np.zeros(2 * self.p)
-
-    if self.p > 1:
-        for i in range(self.p):
-            self.circuit_param_values[2 * i] = beta_values[i]
+        #sympy.Symbol(variable + str(i) + "_" + str(j))
+        for row in self.qubits:
+            for qubit in row:
+                yield cirq.PhasedXZGate(x_exponent=self.hea.__get_sympy_Symbol(self, v_mask[1],i,j), 
+                                        z_exponent=self.hea.__get_sympy_Symbol(self, v_mask[2],i,j), 
+                                        axis_phase_exponent=self.hea.__get_sympy_Symbol(self, v_mask[0],i,j)).on(qubit)
+                j +=1
     else:
-        self.circuit_param_values[0] = beta_values
-
-
-def _set_gamma_values(self, gamma_values):
-    try:
-        assert np.size(gamma_values) == self.p, "Error: size(gamma values) !=  p; {} != {}".format(
-            np.size(gamma_values), self.p
-        )
-    except AttributeError:
-        # set p to length beta_values if it does not exist
-        print(
-            "Set self.p to np.size(gamma_values) = {}, as not defined".format(np.size(gamma_values))
-        )
-        self.p = np.size(gamma_values)
-
-    # catch if self. circuit_param_values does not exist yet
-    # also require that circuit_param_values = 2*p this conflicts with the append option, resolve later if needed
-    try:
-        if np.size(self.circuit_param_values) != 2 * self.p:
-            self.circuit_param_values = np.zeros(2 * self.p)
-    except AttributeError:  # self.circuit_param_values has not been initialised earlier
-        self.circuit_param_values = np.zeros(2 * self.p)
-
-    if self.p > 1:
-        for i in range(self.p):
-            self.circuit_param_values[2 * i + 1] = gamma_values[i]
-    else:
-        self.circuit_param_values[1] = gamma_values
-
-
-def set_circuit(self, append):
-    # Reset circuit
-    if not append:
-        self.circuit = cirq.Circuit()
-
-    # catch if self. circuit_param_values does not exist yet
-    # also require that circuit_param_values = 2*p this conflicts with the append option, resolve later if needed
-    try:
-        if np.size(self.circuit_param_values) < 2 * self.p:
-            self.circuit_param_values = np.zeros(2 * self.p)
-    except AttributeError:  # self.circuit_param_values has not been initialised earlier
-        self.circuit_param_values = np.zeros(2 * self.p)
-
-    for i in range(self.p):
-        # Issue: how to call _UB_layer, _UC_layer correctly?
-        # Whatch out self.circuit_param[2*i] is the former self.betas()!!!
-        # Whatch out self.circuit_param[2*i+1] is the former self.gamma()!!!
-        # need to use cirq.ParamResolver and simulate(), compare final_state_vector
-        self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[2 * i])))
-        self.circuit.append(self.qaoa._UC_layer(self, self.circuit_param[2 * i + 1]))
-
-
-
-
+        assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
+            'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 
 """
