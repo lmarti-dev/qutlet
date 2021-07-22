@@ -77,7 +77,7 @@ class AbstractModel(Restorable):
             if isinstance(getattr(self, key), np.ndarray):
                 if isinstance(getattr(other, key), np.ndarray):
                     if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                        print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                         temp_bools.append((getattr(self, key) == getattr(other, key)).all())
                     else:
                         temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
@@ -303,15 +303,14 @@ class AbstractModel(Restorable):
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
         _N = 2**(np.size(self.qubits))
-        try:
-            if np.size(self.eig_val) != _N or \
-            (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
-                self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
-                #self.diagonalise(solver="numpy")
-        except:
-            # It might not work if self.eig_val does not exist yet
+        
+        if self.t == 0:
+            self._Ut = np.identity(_N)
+            return True
+        
+        if np.size(self.eig_val) != _N or \
+        (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
             self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
-            #self.diagonalise(solver="numpy")
         
         #print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
         #                format(np.size(self.eig_val), np.shape(self.eig_vec) ,_N))
