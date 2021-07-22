@@ -31,7 +31,7 @@ class Fidelity(Objective):
         Returns
         ---------
         str:
-            <UtCost field=self.field>
+            <Fidelity target=self.target>
     
     evaluate(self, wavefunction) : np.float64
         Returns
