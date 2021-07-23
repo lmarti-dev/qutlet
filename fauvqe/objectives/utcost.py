@@ -87,20 +87,21 @@ class UtCost(Objective):
         if self.batch_size == 0:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is the U(t) via VQE
-            return np.linalg.norm(np.matmul(self._Ut, wavefunction.transpose().conjugate())-np.identity(self._N))/np.sqrt(self._N)
-            #return np.linalg.norm(np.matmul(self._Ut, wavefunction.transpose().conjugate())-np.identity(self._N))
+            return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / np.sqrt(self._N)
         else:
             #Calculation via randomly choosing one state vector 
             #Possible add on average over all 
             if self.batch_averaging:
-                raise NotImplementedError() 
+                cost=0
+                for k in range(self.batch_size):
+                    #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
+                    cost = cost + 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
             else:
                 #Need to use here the initial_state
                 #That was used to calculate wavefunction
-                #i = np.random.randint(self.batch_size)
+                i = np.random.randint(self.batch_size)
                 #print("i: \t {}".format(i))
-                raise NotImplementedError() 
-                return 1 - np.matmul(self.batch_wavefunctions[i,:], wavefunction)
+                return 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
