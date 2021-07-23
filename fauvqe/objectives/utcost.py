@@ -87,7 +87,7 @@ class UtCost(Objective):
         if self.batch_size == 0:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is the U(t) via VQE
-            return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / np.sqrt(self._N)
+            return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
             #Calculation via randomly choosing one state vector 
             #Possible add on average over all 
