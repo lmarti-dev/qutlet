@@ -70,12 +70,12 @@ def _exact_layer(self):
     
     n_exact = self.basics.options["n_exact"]
     b_exact = self.basics.options["b_exact"]
-    print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
+    #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
     if np.sum(self.n%n_exact) != 0:
         warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
     
     n_rep=self.n//n_exact
-    print("n_rep: \t {}".format(n_rep))
+    #print("n_rep: \t {}".format(n_rep))
 
     #Poentially paralise this:
     for i in range(n_rep[0]):
@@ -105,7 +105,10 @@ def _exact_layer(self):
                     temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
             #print("temp_qubits: \t {}".format(temp_qubits))
 
-            yield cirq.MatrixGate(temp_ising.eig_vec).on(*temp_qubits)
+            if self.basics.options["cc_exact"]:
+                yield cirq.MatrixGate(np.matrix.getH(temp_ising.eig_vec)).on(*temp_qubits)
+            else:
+                yield cirq.MatrixGate(temp_ising.eig_vec).on(*temp_qubits)
     if (self.n == n_exact).all() :
         self.eig_val = temp_ising.eig_val
         self.eig_vec = temp_ising.eig_vec
@@ -309,7 +312,7 @@ class IsingDummy(AbstractModel):
         j_h = self.j_h.tolist()
         h = self.h.tolist()
         
-        print(self.n)
+        #print(self.n)
         # 1. Sum over inner bounds
         for i in range(self.n[0] - 1):
             for j in range(self.n[1] - 1):
