@@ -15,30 +15,30 @@ def hamiltonian():
 @pytest.mark.parametrize(
     "t",
     [
-        (200*np.pi), (0.1), #(15), (-0.01)
+        (200*np.pi), (0.1), (15), (-0.01)
     ],
 )
 def test_evaluate_op(t):
+    np.set_printoptions(precision=16)
+    
+    #Define reference system
     mat = hamiltonian()
     vals, vecs = scipy.linalg.eigh(mat)
     mat_exp = scipy.linalg.expm(-1j*t*mat)
     mat_diag = vecs @ np.diag(np.exp(-1j*t*vals)) @ np.matrix.getH(vecs)
     
+    #Compare with fauvqe
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
     ising.set_Ut()
-    print(ising._Ut - mat_diag)
+    #print(ising._Ut.shape)
+    #print(ising._Ut)
+    #print(mat_diag.shape)
+    #print(mat_diag)
+    #print("np.linalg.norm(ising._Ut - mat_diag): {}".format(np.linalg.norm(ising._Ut - mat_diag)))
     objective = UtCost(ising, t, "Exact")
     
     res = scipy.linalg.expm(-1j*t*hamiltonian())
-    print(res - mat_exp)
-    acc = objective.evaluate(res)
-    #acc = objective.evaluate(ising._Ut)
-    print(acc)
-    
-    print(ising.eig_val)
-    np.set_printoptions(precision=16)
-    #print(ising.hamiltonian.matrix() - hamiltonian())
-    assert acc < 1e-7
+    assert objective.evaluate(res) < 1e-7
     
 @pytest.mark.parametrize(
     "t",

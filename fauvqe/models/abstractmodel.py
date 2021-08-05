@@ -73,11 +73,11 @@ class AbstractModel(Restorable):
         #Most general: avoid to define Attributes
         temp_bools = []
         for key in self.__dict__.keys():
-            print(key)
+            #print(key)
             if isinstance(getattr(self, key), np.ndarray):
                 if isinstance(getattr(other, key), np.ndarray):
                     if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                         temp_bools.append((getattr(self, key) == getattr(other, key)).all())
                     else:
                         temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
@@ -89,7 +89,7 @@ class AbstractModel(Restorable):
                     temp_bools.append(getattr(self, key) == getattr(other, key))
                 else:
                     temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
-        print(temp_bools)
+        #print(temp_bools)
         return all(temp_bools)   
 
     # initialise qubits or device
@@ -302,7 +302,8 @@ class AbstractModel(Restorable):
         #https://docs.sympy.org/latest/modules/numeric-computation.html
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
-        _N = 2**(np.size(self.qubits))
+        _n = np.size(self.qubits)
+        _N = 2**(_n)
         
         if self.t == 0:
             self._Ut = np.identity(_N)
@@ -319,13 +320,14 @@ class AbstractModel(Restorable):
         # U(t) = (v1 .. vN) diag(e⁻iE1t .. e-iENt) (v1 .. vN)^+
         
         #t0 = timeit.default_timer()
+        # by *_n account for eigen values are /_n but want time evolution of actual Hamiltonian
         if np.size(self.qubits) < 12:
-            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*self.t)), dtype = np.complex64),
+            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*_n*self.eig_val*self.t)), dtype = np.complex64),
                             self.eig_vec.conjugate().transpose())
         else:
             #This pays off for _N > 11
             self._Ut  = np.matmul(self.eig_vec, 
-                            scipy_dia_matrix(np.exp(-1j*self.eig_val*self.t)).multiply(self.eig_vec.conjugate().transpose()).toarray(), 
+                            scipy_dia_matrix(np.exp(-1j*_n*self.eig_val*self.t)).multiply(self.eig_vec.conjugate().transpose()).toarray(), 
                             dtype = np.complex64)
         #possible further option?'
         #self._Ut = fastmat.matmul(self.eig_vec,np.diag(np.exp(-1j*self.eig_val*_t)))
