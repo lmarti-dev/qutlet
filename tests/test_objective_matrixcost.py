@@ -1,38 +1,54 @@
 import pytest
 import numpy as np
+from scipy.stats import unitary_group
 
 from fauvqe import MatrixCost, Ising
     
 @pytest.mark.parametrize(
     "n",
     [
-        (200*np.pi), 
-        (0.1), 
-        (15), 
-        (-0.01)
+        (
+            2
+        ), 
+        (
+            [2, 2]
+        ),  
+        (
+            4
+        ), 
+        (
+            [4, 4]
+        ),
+        (
+            8
+        ), 
+        (
+            [8, 8]
+        ), 
+        (
+            16
+        ), 
+        (
+            [16, 16]
+        ), 
     ],
 )
-def test_evaluate(t):
+def test_evaluate(n):
     np.set_printoptions(precision=16)
-    
-    #Define reference system
-    mat = hamiltonian()
-    vals, vecs = scipy.linalg.eigh(mat)
-    mat_exp = scipy.linalg.expm(-1j*t*mat)
-    mat_diag = vecs @ np.diag(np.exp(-1j*t*vals)) @ np.matrix.getH(vecs)
-    
-    #Compare with fauvqe
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
-    ising.set_Ut()
-    #print(ising._Ut.shape)
-    #print(ising._Ut)
-    #print(mat_diag.shape)
-    #print(mat_diag)
-    #print("np.linalg.norm(ising._Ut - mat_diag): {}".format(np.linalg.norm(ising._Ut - mat_diag)))
-    objective = UtCost(ising, t, "Exact")
-    
-    res = scipy.linalg.expm(-1j*t*hamiltonian())
-    assert objective.evaluate(res) < 1e-7
+    #Generate Ising Object as MockAbstractModel
+    mockmodel = Ising("GridQubit", [1, 1], np.ones((0, 1)), np.ones((1, 1)), np.ones((1, 1)))
+
+    #Generate random state vector or unitary
+    if isinstance(n,int):
+        rand_matrix = np.random.rand(n) + 1j*np.random.rand(n)
+        rand_matrix /= np.linalg.norm(rand_matrix)
+    else:
+        rand_matrix = unitary_group.rvs(n[0])
+
+    #Generate MatrixCost object and test by evaluating it by comparing 
+    #rand_matrix with itself
+    objective = MatrixCost(mockmodel, rand_matrix)
+    assert objective.evaluate(rand_matrix) < 1e-15
     
 @pytest.mark.parametrize(
     "t",
@@ -41,19 +57,7 @@ def test_evaluate(t):
     ],
 )
 def test_simulate(t):
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
-    ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", {"p": 5})
-    ising.set_Ut()
-    
-    objective = UtCost(ising, t, "Exact")
-    
-    op = objective.simulate(
-        param_resolver=ising.get_param_resolver(ising.circuit_param_values)
-    )
-    print(objective.evaluate(op))
-    return
-    #assert False
+    assert False
 
 #############################################################
 #                                                           #

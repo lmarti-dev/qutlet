@@ -56,7 +56,7 @@ class MatrixCost(Objective):
         else:
             #Calculation of the overlap of the given wavefunction with
             #vector self._matrix
-            return 1 - abs( np.vdot(np.matrix.getH(self._matrix), wavefunction))
+            return 1 - abs( np.vdot(self._matrix, wavefunction))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
