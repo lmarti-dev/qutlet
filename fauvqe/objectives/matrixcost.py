@@ -64,19 +64,19 @@ class MatrixCost(Objective):
         if self.__IsVec == False:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            super().simulate(param_resolver, initial_state)
+            print("param_resolver: {}".format(param_resolver))
+            return super().simulate(param_resolver, initial_state)
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError() 
         return {
             "constructor_params": {
                 "model": self._model,
+                "matrix": self._matrix,
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError() 
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
