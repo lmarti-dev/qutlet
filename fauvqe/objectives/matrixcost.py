@@ -64,7 +64,6 @@ class MatrixCost(Objective):
         if self.__IsVec == False:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            print("param_resolver: {}".format(param_resolver))
             return super().simulate(param_resolver, initial_state)
 
     def to_json_dict(self) -> Dict:
