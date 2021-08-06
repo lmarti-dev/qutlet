@@ -2,6 +2,8 @@ import pytest
 import numpy as np
 import scipy
 import scipy.linalg
+import cirq
+
 
 from fauvqe import UtCost, Ising
 
@@ -38,41 +40,57 @@ def test_evaluate_op(t):
     objective = UtCost(ising, t, "Exact")
     
     res = scipy.linalg.expm(-1j*t*hamiltonian())
-    assert objective.evaluate(res) < 1e-7
+    assert objective.evaluate(res) < 1e-10
     
 @pytest.mark.parametrize(
     "t",
     [
-        (0.1), #(15), (-0.01)
+        (0.1), (1), (-0.01)
     ],
 )
 def test_simulate_op(t):
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    order = 100
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
     ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", {"p": 5})
-    ising.set_Ut()
+    ising.set_circuit("hea", {
+        "parametrisation": "joint", #"layerwise",
+        "p": order,
+        "variables": {"x", "theta"},
+        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+    })
     
     objective = UtCost(ising, t, "Exact")
-    
+    params = -(2/np.pi)*t*(np.ones(2*order)/order)
+    pdict = {}
+    for k in range(order):
+        pdict['x' + str(k)] = params[k]
+        pdict['theta' + str(k)] = params[order + k]
     op = objective.simulate(
-        param_resolver=ising.get_param_resolver(ising.circuit_param_values)
+        param_resolver=pdict
     )
-    print(objective.evaluate(op))
-    return
-    #assert False
+    assert (objective.evaluate(op) < 1e-3)
 
-def test_evaluate_batch_avg():
-    return
-    #assert False
-
-def test_evaluate_batch_random():
-    return
-    #assert False
-
-def test_simulate_batch_avg():
-    return
-    #assert False
+@pytest.mark.parametrize(
+    "t, avg",
+    [
+        (0.1, True), (0.1, False), (-0.01, True)
+    ],
+)
+def test_evaluate_batch(t, avg):
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
+    ising.set_Ut()
     
-def test_simulate_batch_random():
+    objective = UtCost(ising, t, "Exact",
+                       batch_wavefunctions =  Optional[np.ndarray] = None,
+                       batch_averaging= avg,
+                       sample_size=5)
+    
+    res = scipy.linalg.expm(-1j*t*hamiltonian())
+    assert objective.evaluate(res) < 1e-10
+
+def test_simulate_batch():
     return
     #assert False
