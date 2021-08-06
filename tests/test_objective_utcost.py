@@ -97,8 +97,42 @@ def test_evaluate_batch(t, avg_size):
     outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
     for k in range(len(eval_indices)):
         outputs[k] = res @ initials[eval_indices[k]]
-    assert print(objective.evaluate(outputs, eval_indices)) < 1e-10
+    assert objective.evaluate(outputs, eval_indices) < 1e-10
+
+@pytest.mark.parametrize(
+    "t",
+    [
+        (0.1), (1), (-0.01)
+    ],
+)
+def test_simulate_batch(t):
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    order = 100
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    ising.set_simulator("qsim")
+    ising.set_circuit("hea", {
+        "parametrisation": "joint", #"layerwise",
+        "p": order,
+        "variables": {"x", "theta"},
+        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+    })
     
-def test_simulate_batch():
-    return
-    #assert False
+    bsize = 1
+    initial_rands= (np.random.rand(bsize, 4)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    
+    objective = UtCost(ising, t, "Exact", batch_wavefunctions = initials)
+    params = -(2/np.pi)*t*(np.ones(2*order)/order)
+    pdict = {}
+    for k in range(order):
+        pdict['x' + str(k)] = params[k]
+        pdict['theta' + str(k)] = params[order + k]
+    op = objective.simulate(
+        param_resolver=pdict,
+        initial_state = initials[0]
+    )
+    assert (objective.evaluate([op], [0]) < 1e-3)

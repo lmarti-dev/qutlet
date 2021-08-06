@@ -95,7 +95,7 @@ class UtCost(Objective):
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
             assert (self.batch_size > 0), 'Please provide batch wavefunction'
-            assert indices != None, 'Please provide indices for batch'
+            assert type(indices) is not None, 'Please provide indices for batch'
             #Calculation via randomly choosing one state vector
             #Possible add on average over all
             cost=0
@@ -111,7 +111,7 @@ class UtCost(Objective):
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            super().simulate(param_resolver, initial_state)
+            return super().simulate(param_resolver, initial_state)
 
     def to_json_dict(self) -> Dict:
         raise NotImplementedError() 
