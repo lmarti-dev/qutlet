@@ -64,13 +64,13 @@ class Objective(Restorable):
         -------
         numpy.ndarray: The simulated wavefunction.
         """
-        simulator_result = self._model.simulator.simulate(
+        wf = self._model.simulator.simulate(
             self._model.circuit,
             param_resolver=param_resolver,
             initial_state=initial_state,
-        )
+        ).state_vector()
 
-        return simulator_result.state_vector()
+        return wf/np.linalg.norm(wf)
 
     @abc.abstractmethod
     def evaluate(self, wavefunction: np.ndarray) -> Real:
