@@ -45,7 +45,10 @@ def set_symbols(self):
         self.circuit_param = temp
     else:
         self.qaoa.options['i0'] = np.size(self.circuit_param)
-        self.circuit_param.extend(temp)
+        try:
+            self.circuit_param.extend(temp)
+        except:
+            self.circuit_param = temp
 
 
 def _set_beta_values(self, beta_values):
