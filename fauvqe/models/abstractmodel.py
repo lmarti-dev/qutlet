@@ -322,7 +322,7 @@ class AbstractModel(Restorable):
         #t0 = timeit.default_timer()
         # by *_n account for eigen values are /_n but want time evolution of actual Hamiltonian
         if np.size(self.qubits) < 12:
-            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*_n*self.eig_val*self.t)), dtype = np.complex128)
+            self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*_n*self.eig_val*self.t)), dtype = np.complex128),
                             self.eig_vec.conjugate().transpose())
         else:
             #This pays off for _N > 11

@@ -74,23 +74,31 @@ def test_simulate_op(t):
     assert (objective.evaluate(op) < 1e-3)
 
 @pytest.mark.parametrize(
-    "t, avg",
+    "t, avg_size",
     [
-        (0.1, True), (0.1, False), (-0.01, True)
+        (0.1, 1), (0.1, 5), (-0.01, 1)
     ],
 )
-def test_evaluate_batch(t, avg):
+def test_evaluate_batch(t, avg_size):
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X", t)
     ising.set_Ut()
     
-    objective = UtCost(ising, t, "Exact",
-                       batch_wavefunctions =  Optional[np.ndarray] = None,
-                       batch_averaging= avg,
-                       sample_size=5)
+    bsize = 10
+    initial_rands= (np.random.rand(bsize, 4)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex128)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
+    objective = UtCost(ising, t, "Exact", batch_wavefunctions = initials)
+    
+    eval_indices = np.random.randint(low=0, high=bsize, size=avg_size)
+    print(eval_indices)
     res = scipy.linalg.expm(-1j*t*hamiltonian())
-    assert objective.evaluate(res) < 1e-10
-
+    outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
+    for k in range(len(eval_indices)):
+        outputs[k] = res @ initials[eval_indices[k]]
+    assert print(objective.evaluate(outputs, eval_indices)) < 1e-10
+    
 def test_simulate_batch():
     return
     #assert False

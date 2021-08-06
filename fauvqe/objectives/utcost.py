@@ -75,33 +75,35 @@ class UtCost(Objective):
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
-            self.batch_wavefunctions = batch_wavefunctions
-        
+            self._generate_batch_wfcts(batch_wavefunctions)
+            
         self.batch_averaging = batch_averaging
         self.sample_size = sample_size
 
         self._N = 2**np.size(model.qubits)
 
-    def evaluate(self, wavefunction: np.ndarray) -> np.float64:
+    def _generate_batch_wfcts(self, initials: np.ndarray):
+        self.batch_wavefunctions = [np.copy(initials), np.copy(initials)]
+        for k in range(len(initials)):
+            self.batch_wavefunctions[1][k] = self._Ut @ initials[k]
+
+    def evaluate(self, wavefunction: np.ndarray, indices: Optional[list] = None) -> np.float64:
         # Here we already have the correct model._Ut
-        if self.batch_size == 0:
+        if self.batch_size == 0 and indices == None:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is the U(t) via VQE
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
-            #Calculation via randomly choosing one state vector 
-            #Possible add on average over all 
-            if self.batch_averaging:
-                cost=0
-                for k in range(self.batch_size):
-                    #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
-                    cost = cost + 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
-            else:
-                #Need to use here the initial_state
-                #That was used to calculate wavefunction
-                i = np.random.randint(self.batch_size)
-                #print("i: \t {}".format(i))
-                return 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
+            assert (self.batch_size > 0), 'Please provide batch wavefunction'
+            assert indices != None, 'Please provide indices for batch'
+            #Calculation via randomly choosing one state vector
+            #Possible add on average over all
+            cost=0
+            for k in range(len(indices)):
+                #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
+                print(indices[k])
+                cost = cost + 1 - abs( np.matrix.getH(wavefunction[k]) @ self.batch_wavefunctions[1][indices[k]])
+            return 1/len(indices) * cost
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -110,11 +112,6 @@ class UtCost(Objective):
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
             super().simulate(param_resolver, initial_state)
-            #return self._model.simulator.simulate(self._model.circuit,
-            #                param_resolver=param_resolver,
-            #                initial_state=initial_state).state_vector()
-
-        
 
     def to_json_dict(self) -> Dict:
         raise NotImplementedError() 
