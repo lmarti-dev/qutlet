@@ -100,12 +100,12 @@ def test_evaluate_batch(t, avg_size):
     assert objective.evaluate(outputs, eval_indices) < 1e-10
 
 @pytest.mark.parametrize(
-    "t",
+    "t,U",
     [
-        (0.1), (1), (-0.01)
+        (0.1, "Exact"), (1, "Exact"), (-0.01, "Exact"), (0.1, "Trotter"), (1, "Trotter"), (-0.01, "Trotter")
     ],
 )
-def test_simulate_batch(t):
+def test_simulate_batch(t, U):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -125,14 +125,10 @@ def test_simulate_batch(t):
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
-    objective = UtCost(ising, t, "Exact", batch_wavefunctions = initials)
     params = -(2/np.pi)*t*(np.ones(2*order)/order)
-    pdict = {}
-    for k in range(order):
-        pdict['x' + str(k)] = params[k]
-        pdict['theta' + str(k)] = params[order + k]
+    objective = UtCost(ising, t, U, ising, params, batch_wavefunctions = initials)
     op = objective.simulate(
-        param_resolver=pdict,
+        param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
     assert (objective.evaluate([op], [0]) < 1e-3)

@@ -37,7 +37,9 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    U: Literal["Exact", "Trotter"] = "Exact", 
+                    U: Literal["Exact", "Trotter"] = "Exact",
+                    benchm: Optional[AbstractModel] = None,
+                    params: Optional[np.ndarray] = None,
                     batch_wavefunctions: Optional[np.ndarray] = None,
                     batch_averaging: bool = False,
                     sample_size: int = -1):
@@ -75,17 +77,23 @@ class UtCost(Objective):
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
-            self._generate_batch_wfcts(batch_wavefunctions)
+            self._generate_batch_wfcts(batch_wavefunctions, U, benchm, params)
             
         self.batch_averaging = batch_averaging
         self.sample_size = sample_size
-
+        
         self._N = 2**np.size(model.qubits)
 
-    def _generate_batch_wfcts(self, initials: np.ndarray):
+    def _generate_batch_wfcts(self, initials: np.ndarray, U: Literal["Exact", "Trotter"] = "Exact", benchm: Optional[AbstractModel] = None, params: Optional[np.ndarray]=None):
         self.batch_wavefunctions = [np.copy(initials), np.copy(initials)]
-        for k in range(len(initials)):
-            self.batch_wavefunctions[1][k] = self._Ut @ initials[k]
+        if(U == "Exact"):
+            for k in range(len(initials)):
+                self.batch_wavefunctions[1][k] = self._Ut @ initials[k]
+        elif(U == "Trotter"):
+            assert benchm is not None, "Please provide model for randomized benchmarking"
+            assert params is not None, "Please provide parameters for randomized benchmarking"
+            for k in range(len(initials)):
+                self.batch_wavefunctions[1][k] = benchm.simulator.simulate(benchm.circuit, param_resolver=benchm.get_param_resolver(params), initial_state=initials[k]).state_vector()
 
     def evaluate(self, wavefunction: np.ndarray, indices: Optional[list] = None) -> np.float64:
         # Here we already have the correct model._Ut
