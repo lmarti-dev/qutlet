@@ -57,7 +57,9 @@ class Entanglement(Objective):
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
 
-    def evaluate(self, wavefunction, indices: Optional[list] = range(int(np.size(self.model.qubits) / 2 ))) -> np.float64:
+    def evaluate(self, wavefunction, indices: Optional[list] = None) -> np.float64:
+        if(indices is None):
+            indices = range(int(np.size(self.model.qubits) / 2 ))
         if(self.pure):
             q = qtp.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
@@ -66,24 +68,23 @@ class Entanglement(Objective):
         if(self.typ == 'Neumann'):
             return np.real( - np.trace(rho * scipy.linalg.logm(rho)) )
         elif(self.typ == 'Renyi'):
-            return np.real( 1/(1-self.alpha) * np.log(np.trace(fractional_matrix_power(rho, self.alpha))))
+            return np.real( 1/(1-self.alpha) * np.log(np.trace(scipy.linalg.fractional_matrix_power(rho, self.alpha))))
         else:
             raise NotImplementedError()
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError() 
         return {
             "constructor_params": {
                 "model": self._model,
                 "N": self._N,
-                "target": self.target,
                 "pure": self.pure,
+                "typ": self.typ,
+                "alpha": self.alpha
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError() 
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
