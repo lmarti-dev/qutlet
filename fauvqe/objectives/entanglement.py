@@ -79,10 +79,10 @@ class Entanglement(Objective):
         return {
             "constructor_params": {
                 "model": self._model,
-                "N": self._N,
                 "pure": self.pure,
                 "typ": self.typ,
-                "alpha": self.alpha
+                "alpha": self.alpha,
+                "indices": self.indices
             },
         }
 
@@ -91,4 +91,4 @@ class Entanglement(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target={}>".format(self.target)
+        return "<Entanglement type={}>".format(self.typ)
