@@ -59,3 +59,20 @@ def test_mixed(state1, state2, res):
     fid = objective.evaluate(state2)
     print(state1, fid)
     assert abs(fid - res) < 1e-10
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        (qutip.Qobj(0.5*np.array([[1, -1], [-1, 1]])))
+    ],
+)
+def test_json(state):
+    model = MockModel()
+    
+    objective = Fidelity(model, state)
+    
+    json = objective.to_json_dict()
+    
+    objective2 = Fidelity.from_json_dict(json)
+    
+    assert (objective == objective2)

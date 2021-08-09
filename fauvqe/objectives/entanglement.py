@@ -90,6 +90,3 @@ class Entanglement(Objective):
 
     def __repr__(self) -> str:
         return "<Entanglement type={}>".format(self.typ)
-
-    def __eq__(self, other) : 
-        return self.__dict__ == other.__dict__

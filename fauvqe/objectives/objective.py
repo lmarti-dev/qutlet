@@ -119,3 +119,6 @@ class Objective(Restorable):
     @abc.abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()  # pragma: no cover
+
+    def __eq__(self, other) : 
+        return self.__dict__ == other.__dict__
