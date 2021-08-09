@@ -23,7 +23,7 @@ class Fidelity(Objective):
     ----------
     model: AbstractModel, The linked model
     options:    "target"    -> np.ndarray    target state to calculate fidelity with
-                "pure"      -> bool  True, if target and input are both 
+                "pure"      -> bool  True, if target and input are both pure
 
     Methods
     ----------
