@@ -61,7 +61,6 @@ class TrFid(Objective):
         return qutip.metrics.tracedist(q, self.target)
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError() 
         return {
             "constructor_params": {
                 "model": self._model,
@@ -71,7 +70,6 @@ class TrFid(Objective):
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError() 
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:

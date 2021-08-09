@@ -20,7 +20,8 @@ from fauvqe.objectives import (
     ExpectationValue,
     UtCost,
     Fidelity,
-    Entanglement
+    Entanglement,
+    TrFid
 )
 from fauvqe.optimisers import (
     Optimiser,

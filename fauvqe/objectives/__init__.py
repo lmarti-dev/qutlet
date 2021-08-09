@@ -8,3 +8,4 @@ from fauvqe.objectives.cvar import CVaR
 from fauvqe.objectives.utcost import UtCost
 from fauvqe.objectives.fidelity import Fidelity
 from fauvqe.objectives.entanglement import Entanglement
+from fauvqe.objectives.trFid import TrFid
