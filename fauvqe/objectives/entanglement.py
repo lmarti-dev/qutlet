@@ -8,7 +8,6 @@ import numpy as np
 import scipy
 
 import qutip
-from qutip.metrics import fidelity
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -45,26 +44,30 @@ class Entanglement(Objective):
                     model: AbstractModel, 
                     pure: bool = False,
                     typ: Literal['Neumann, Renyi'] = 'Neumann',
-                    alpha: Optional[np.float64] = None):
+                    alpha: Optional[np.float64] = None,
+                    indices: Optional[list] = None):
         
         self.pure = pure
         self.typ = typ
         if(typ == 'Renyi'):
             assert alpha is not None, 'Please provide a Renyi index'
         self.alpha = alpha
+        if(indices is None):
+            self.indices = range(int(np.size(self.model.qubits) / 2 ))
+        else:
+            self.indices = indices
         
         super().__init__(model)
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
 
-    def evaluate(self, wavefunction, indices: Optional[list] = None) -> np.float64:
-        if(indices is None):
-            indices = range(int(np.size(self.model.qubits) / 2 ))
+    def evaluate(self, wavefunction) -> np.float64:
         if(self.pure):
-            q = qtp.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
             assert isinstance(wavefunction, qutip.Qobj), 'Please provide a qutip Qobj'
-        rho = q.ptrace(indices)
+            q = wavefunction
+        rho = q.ptrace(self.indices)
         if(self.typ == 'Neumann'):
             return np.real( - np.trace(rho * scipy.linalg.logm(rho)) )
         elif(self.typ == 'Renyi'):

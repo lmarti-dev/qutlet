@@ -19,7 +19,8 @@ from fauvqe.objectives import (
     CVaR,
     ExpectationValue,
     UtCost,
-    Fidelity
+    Fidelity,
+    Entanglement
 )
 from fauvqe.optimisers import (
     Optimiser,
