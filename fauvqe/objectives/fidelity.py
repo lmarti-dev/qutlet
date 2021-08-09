@@ -23,8 +23,7 @@ class Fidelity(Objective):
     ----------
     model: AbstractModel, The linked model
     options:    "target"    -> np.ndarray    target state to calculate fidelity with
-                "pure"      -> bool  True, if target and input are both pure
-
+                
     Methods
     ----------
     __repr__() : str
@@ -44,24 +43,25 @@ class Fidelity(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target,
-                    pure: bool = False):
+                    target):
         
-        self.target = target
-        self.pure = pure
+        self._N = 2**np.size(model.qubits)
+        self._n = np.size(model.qubits)
+        if(not isinstance(target, qutip.Qobj)):
+            self.target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        else:
+            self.target = target
         
         super().__init__(model)
-        self._N = 2**np.size(model.qubits)
 
     def evaluate(self, wavefunction) -> np.float64:
-        if(self.pure):
-            #Numpy's ndarray required
-            assert(isinstance(wavefunction, np.ndarray) and isinstance(self.target, np.ndarray)), 'WARNING: Input not of type np.ndarray'
-            return abs(np.matrix.getH(wavefunction) @ self.target)
+        if(isinstance(wavefunction, np.ndarray)):
+            q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        elif(isinstance(wavefunction, qutip.Qobj)):
+            q = wavefunction
         else:
-            #Qutip' Qobj required
-            assert(isinstance(wavefunction, qutip.Qobj) and isinstance(self.target, qutip.Qobj)), 'WARNING: Input not of type qutip.qobj'
-            return fidelity(wavefunction, self.target)
+            raise NotImplementedError()
+        return fidelity(q, self.target)
 
     def to_json_dict(self) -> Dict:
         raise NotImplementedError() 

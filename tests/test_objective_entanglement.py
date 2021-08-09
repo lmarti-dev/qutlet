@@ -41,7 +41,7 @@ class MockModel(AbstractModel):
 def test_evaluate_pure(state, indices, typ, alpha, res):
     model = MockModel(2)
     
-    objective = Entanglement(model, True, typ, alpha, indices)
+    objective = Entanglement(model, typ, alpha, indices)
     
     ent = objective.evaluate(state)
     print(ent)
@@ -60,7 +60,7 @@ def test_evaluate_pure(state, indices, typ, alpha, res):
 def test_evaluate_mixed(state, indices, typ, alpha, res):
     model = MockModel(2)
     
-    objective = Entanglement(model, False, typ, alpha, indices)
+    objective = Entanglement(model, typ, alpha, indices)
     
     mat = 0.5 * np.kron(state.reshape(1, 4), state.reshape(4, 1)) + 0.5 * np.array([[0, 0, 0, 0],
                                                                        [0, 0, 0, 0],
@@ -74,3 +74,20 @@ def test_evaluate_mixed(state, indices, typ, alpha, res):
     print(ent)
     
     assert abs(ent - res) < 1e-10
+
+@pytest.mark.parametrize(
+    "indices, typ, alpha",
+    [
+        ([0], 'Neumann', None)
+    ],
+)
+def test_json(typ, alpha, indices):
+    model = MockModel(2)
+    
+    objective = Entanglement(model, typ, alpha, indices)
+    
+    json = objective.to_json_dict()
+    
+    objective2 = Entanglement.from_json_dict(json)
+    
+    assert (objective == objective2)

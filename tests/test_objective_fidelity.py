@@ -38,7 +38,7 @@ class MockModel(AbstractModel):
 def test_pure(state1, state2, res):
     model = MockModel()
     
-    objective = Fidelity(model, state1, pure=True)
+    objective = Fidelity(model, state1)
     
     fid = objective.evaluate(state2)
     print(fid)
@@ -54,7 +54,7 @@ def test_pure(state1, state2, res):
 def test_mixed(state1, state2, res):
     model = MockModel()
     
-    objective = Fidelity(model, state1, pure=False)
+    objective = Fidelity(model, state1)
     
     fid = objective.evaluate(state2)
     print(state1, fid)

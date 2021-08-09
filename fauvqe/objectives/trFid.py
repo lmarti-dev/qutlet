@@ -23,24 +23,20 @@ class TrFid(Objective):
     ----------
     model: AbstractModel, The linked model
     options:    "target"    -> np.ndarray    target state to calculate fidelity with
-                "pure"      -> bool  True, if target and input are both pure
-
+                
     Methods
     ----------
     __repr__() : str
         Returns
         ---------
         str:
-            <Fidelity target=self.target>
+            <Trace Distance target=self.target>
     
     evaluate(self, wavefunction) : np.float64
         Returns
         ---------
         np.float64:
-            if(self.pure):
-                target^dagger @ wavefunction
-            else:
-                qutip.metrics.fidelity(target, wavefunction)
+            qutip.metrics.tracedist(wavefunction, self.target)
     """
     def __init__(   self,
                     model: AbstractModel, 

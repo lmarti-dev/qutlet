@@ -22,9 +22,9 @@ class Entanglement(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "pure"      -> bool                            True, if target and input are both pure
-                "typ"       -> Literal['Neumann', 'Renyi']     Determines, whether to calculate von Neumann or Renyi Entanglement Entropy
+    options:    "typ"       -> Literal['Neumann', 'Renyi']     Determines, whether to calculate von Neumann or Renyi Entanglement Entropy
                 "alpha"     -> Optional[np.float64]            Renyi-index. Only used, if typ == 'Renyi'
+                "indices"   -> Optional[list]                  Subsystem, for which the entanglement entropy shall be calculated
     
     Methods
     ----------
@@ -42,12 +42,10 @@ class Entanglement(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    pure: bool = False,
                     typ: Literal['Neumann, Renyi'] = 'Neumann',
                     alpha: Optional[np.float64] = None,
                     indices: Optional[list] = None):
         
-        self.pure = pure
         self.typ = typ
         if(typ == 'Renyi'):
             assert alpha is not None, 'Please provide a Renyi index'
@@ -62,11 +60,12 @@ class Entanglement(Objective):
         self._n = np.size(model.qubits)
 
     def evaluate(self, wavefunction) -> np.float64:
-        if(self.pure):
+        if(isinstance(wavefunction, np.ndarray)):
             q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
-        else:
-            assert isinstance(wavefunction, qutip.Qobj), 'Please provide a qutip Qobj'
+        elif(isinstance(wavefunction, qutip.Qobj)):
             q = wavefunction
+        else:
+            raise NotImplementedError()
         rho = q.ptrace(self.indices)
         if(self.typ == 'Neumann'):
             return np.real( - np.trace(rho * scipy.linalg.logm(rho)) )
@@ -79,7 +78,6 @@ class Entanglement(Objective):
         return {
             "constructor_params": {
                 "model": self._model,
-                "pure": self.pure,
                 "typ": self.typ,
                 "alpha": self.alpha,
                 "indices": self.indices
@@ -92,3 +90,6 @@ class Entanglement(Objective):
 
     def __repr__(self) -> str:
         return "<Entanglement type={}>".format(self.typ)
+
+    def __eq__(self, other) : 
+        return self.__dict__ == other.__dict__
