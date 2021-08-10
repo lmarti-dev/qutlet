@@ -110,7 +110,7 @@ def test_simulate_batch(t, U):
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
     order = 100
-    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t+1)
     ising.set_simulator("qsim")
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
@@ -127,6 +127,7 @@ def test_simulate_batch(t, U):
     
     params = -(2/np.pi)*t*(np.ones(2*order)/order)
     objective = UtCost(ising, t, U, ising, params, batch_wavefunctions = initials)
+    print(objective)
     op = objective.simulate(
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
