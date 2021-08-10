@@ -22,8 +22,9 @@ class UtCost(Objective):
     model: AbstractModel, The linked model
     options:    "t"         -> Float    t in U(t)
                 "U"         -> Literal  exact or Trotter (only matters if not exists or t wrong)
-                "wavefunctions"  -> np.ndarray      if None Use U csot, 
-                                                    otherwise batch wavefunctions for random batch cost
+                "benchm"         -> AbstractModel   Only needed for approximate randomized benchmarking. Defines the benchmark model
+                "params"         -> np.ndarray      Parameters of the benchmark model
+                "batch_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
                 "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
 
     Methods
@@ -41,7 +42,6 @@ class UtCost(Objective):
                     benchm: Optional[AbstractModel] = None,
                     params: Optional[np.ndarray] = None,
                     batch_wavefunctions: Optional[np.ndarray] = None,
-                    batch_averaging: bool = False,
                     sample_size: int = -1):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
@@ -72,14 +72,12 @@ class UtCost(Objective):
         if batch_wavefunctions is None:
             self.batch_size = 0
         else:
-            #print(batch_wavefunctions)
             assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
             self._generate_batch_wfcts(batch_wavefunctions, U, benchm, params)
             
-        self.batch_averaging = batch_averaging
         self.sample_size = sample_size
         
         self._N = 2**np.size(model.qubits)
@@ -105,11 +103,9 @@ class UtCost(Objective):
             assert (self.batch_size > 0), 'Please provide batch wavefunction'
             assert type(indices) is not None, 'Please provide indices for batch'
             #Calculation via randomly choosing one state vector
-            #Possible add on average over all
             cost=0
             for k in range(len(indices)):
                 #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
-                print(indices[k])
                 cost = cost + 1 - abs( np.matrix.getH(wavefunction[k]) @ self.batch_wavefunctions[1][indices[k]])
             return 1/len(indices) * cost
 

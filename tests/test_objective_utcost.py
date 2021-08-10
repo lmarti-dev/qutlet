@@ -132,3 +132,4 @@ def test_simulate_batch(t, U):
         initial_state = initials[0]
     )
     assert (objective.evaluate([op], [0]) < 1e-3)
+
