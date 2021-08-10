@@ -74,4 +74,4 @@ class Energy(ExpectationValue):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<ExpectationValue field={}>".format(self.__field)
+        return "<Energy field={}>".format(self.__field)

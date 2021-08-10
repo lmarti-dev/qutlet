@@ -36,7 +36,7 @@ class ExpectationValue(Objective):
         
     def evaluate(self, wavefunction: np.ndarray, q_map, atol: float = 1e-7) -> np.float64:
         if(self.observable is not None):
-            return self.observable.expectation_from_state_vector(wavefunction, q_map, atol)
+            return self.observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
         else:
             raise NotImplementedError()
 
@@ -53,4 +53,4 @@ class ExpectationValue(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<ExpectationValue field={}>".format(self.__field)
+        return "<ExpectationValue observable={}>".format(self.__field)

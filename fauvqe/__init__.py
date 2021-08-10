@@ -22,7 +22,8 @@ from fauvqe.objectives import (
     Fidelity,
     Entanglement,
     TrFid,
-    Energy
+    Energy,
+    Magnetisation
 )
 from fauvqe.optimisers import (
     Optimiser,
