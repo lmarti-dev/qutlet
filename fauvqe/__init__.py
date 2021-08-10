@@ -21,7 +21,8 @@ from fauvqe.objectives import (
     UtCost,
     Fidelity,
     Entanglement,
-    TrFid
+    TrFid,
+    Energy
 )
 from fauvqe.optimisers import (
     Optimiser,
