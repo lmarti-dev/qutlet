@@ -3,12 +3,18 @@ import numpy as np
 
 from fauvqe import Energy, Ising
 
-
-def test_energy():
+@pytest.mark.parametrize(
+    "field",
+    [
+        ("Z"),
+        ("X")
+    ],
+)
+def test_energy(field):
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
-    objective = Energy(ising, field="Z")
+    objective = Energy(ising, field)
 
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(ising.circuit_param_values)
