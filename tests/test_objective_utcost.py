@@ -133,3 +133,21 @@ def test_simulate_batch(t, U):
     )
     assert (objective.evaluate([op], [0]) < 1e-3)
 
+@pytest.mark.parametrize(
+    "t, U",
+    [
+        (0.1, 'Exact')
+    ],
+)
+def test_json(t, U):
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    objective = UtCost(ising, t, U)
+    
+    json = objective.to_json_dict()
+    
+    objective2 = UtCost.from_json_dict(json)
+    
+    assert (objective == objective2)

@@ -71,6 +71,7 @@ class UtCost(Objective):
 
         if batch_wavefunctions is None:
             self.batch_size = 0
+            self.batch_wavefunctions = [None, None]
         else:
             assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
@@ -79,7 +80,9 @@ class UtCost(Objective):
             self._generate_batch_wfcts(batch_wavefunctions, U, benchm, params)
             
         self.sample_size = sample_size
-        
+        self._U = U
+        self._benchm = benchm
+        self._params = params
         self._N = 2**np.size(model.qubits)
 
     def _generate_batch_wfcts(self, initials: np.ndarray, U: Literal["Exact", "Trotter"] = "Exact", benchm: Optional[AbstractModel] = None, params: Optional[np.ndarray]=None):
@@ -118,16 +121,20 @@ class UtCost(Objective):
             return super().simulate(param_resolver, initial_state)
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError() 
         return {
             "constructor_params": {
                 "model": self._model,
+                "t": self.t, 
+                "U": self._U,
+                "benchm": self._benchm,
+                "params": self._params,
+                "batch_wavefunctions": self.batch_wavefunctions[0],
+                "sample_size": self.sample_size
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError() 
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
