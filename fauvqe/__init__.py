@@ -17,12 +17,12 @@ from fauvqe.models import (
 from fauvqe.objectives import (
     Objective,
     CVaR,
+    AbsExpectationValue,
     ExpectationValue,
     UtCost,
     Fidelity,
     Entanglement,
     TrFid,
-    Energy,
     Magnetisation,
     Correlation
 )

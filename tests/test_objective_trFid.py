@@ -70,9 +70,16 @@ def test_json(state):
     model = MockModel()
     
     objective = TrFid(model, state)
+    print(objective)
     
     json = objective.to_json_dict()
     
     objective2 = TrFid.from_json_dict(json)
     
     assert (objective == objective2)
+
+def test_exception():
+    model = MockModel()
+    test = TrFid(model, np.zeros(2))
+    with pytest.raises(NotImplementedError):
+        assert test.evaluate("Foo")

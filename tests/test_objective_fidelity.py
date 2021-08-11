@@ -70,9 +70,16 @@ def test_json(state):
     model = MockModel()
     
     objective = Fidelity(model, state)
-    
+    print(objective)
     json = objective.to_json_dict()
     
     objective2 = Fidelity.from_json_dict(json)
     
     assert (objective == objective2)
+
+def test_exceptions():
+    model = MockModel()
+    
+    objective = Fidelity(model, np.zeros(2))
+    with pytest.raises(NotImplementedError):
+        assert objective.evaluate("Foo")

@@ -34,6 +34,7 @@ class MockModel(AbstractModel):
     [
         (0.5*np.array([1,1,1,1]), [0], 'Neumann', None, 0),
         (0.5*np.array([1,1,1,1]), [0], 'Renyi', 2, 0),
+        (0.5*np.array([1,1,1,1]), None, 'Renyi', 2, 0),
         (1/np.sqrt(2)*np.array([1,0,0,1]), [0], 'Neumann', None, np.log(2)),
         (1/np.sqrt(2)*np.array([1,0,0,1]), [0], 'Renyi', 0.5, np.log(2))
     ],
@@ -87,7 +88,27 @@ def test_json(typ, alpha, indices):
     objective = Entanglement(model, typ, alpha, indices)
     
     json = objective.to_json_dict()
+    print(objective)
     
     objective2 = Entanglement.from_json_dict(json)
     
     assert (objective == objective2)
+
+def test_exceptions():
+    model = MockModel(2)
+    
+    with pytest.raises(NotImplementedError):
+        assert Entanglement(model, "Foo", 0, [0])
+
+@pytest.mark.parametrize(
+    "typ, state",
+    [
+        ('Neumann', "Foo"),
+        ('Foo', np.zeros(4))
+    ],
+)
+def test_exceptions(typ, state):
+    model = MockModel(2)
+    objective = Entanglement(model, typ, 2, [0])
+    with pytest.raises(NotImplementedError):
+        objective.evaluate(state)

@@ -29,6 +29,7 @@ def test_json():
     ising.set_circuit("qaoa", {"p": 5})
     objective = Magnetisation(ising, "Z", 0,0)
     print(objective)
+    print(objective.model)
     json = objective.to_json_dict()
     
     objective2 = Magnetisation.from_json_dict(json)

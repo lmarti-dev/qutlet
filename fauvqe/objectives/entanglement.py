@@ -51,7 +51,7 @@ class Entanglement(Objective):
             assert alpha is not None, 'Please provide a Renyi index'
         self.alpha = alpha
         if(indices is None):
-            self.indices = range(int(np.size(self.model.qubits) / 2 ))
+            self.indices = range(int(np.size(model.qubits) / 2 ))
         else:
             self.indices = indices
         

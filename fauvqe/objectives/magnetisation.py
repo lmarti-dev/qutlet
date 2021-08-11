@@ -7,11 +7,11 @@ import numpy as np
 import cirq
 
 from fauvqe.objectives.objective import Objective
-from fauvqe.objectives.expectationvalue import ExpectationValue
+from fauvqe.objectives.expectationvalue import AbsExpectationValue
 from fauvqe.models.abstractmodel import AbstractModel
 
 
-class Magnetisation(ExpectationValue):
+class Magnetisation(AbsExpectationValue):
     """Magnetisation Expectation value objective
 
     This class implements as objective the magnetisation of a given state vector.
