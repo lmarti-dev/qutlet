@@ -23,7 +23,8 @@ from fauvqe.objectives import (
     Entanglement,
     TrFid,
     Energy,
-    Magnetisation
+    Magnetisation,
+    Correlation
 )
 from fauvqe.optimisers import (
     Optimiser,
