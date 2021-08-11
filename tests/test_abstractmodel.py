@@ -31,6 +31,16 @@ class MockAbstractModel(AbstractModel):
     def _set_hamiltonian(self, reset: bool = True):
         self.hamiltonian = cirq.PauliSum()
 
+def test__eq__():
+    model1 = MockAbstractModel("GridQubit", [2, 2])
+    model2 = MockAbstractModel("GridQubit", [2, 2])
+    assert (model1 == model2)
+
+    model1.t = 1
+    assert (model1 != model2)
+
+    non_model = dict()
+    assert (model1 != non_model)
 
 # test_AbstractModel_set_qubits
 @pytest.mark.parametrize(
@@ -215,3 +225,9 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
         
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
+
+
+def test_glue_circuit_error():
+    model = MockAbstractModel("LineQubit", 3)
+    with pytest.raises(NotImplementedError):
+        model.glue_circuit()

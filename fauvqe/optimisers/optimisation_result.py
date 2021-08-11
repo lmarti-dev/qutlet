@@ -125,17 +125,17 @@ class OptimisationResult:
         store_objectives: Literal["none", "available", "all"] = "none",
         ) -> None:
         #"loky", threading, multiprocessing sequential
-        t0 = timeit.default_timer()
+        #t0 = timeit.default_timer()
         #_n_jobs = 4
         #_energies = joblib.Parallel(n_jobs=_n_jobs, backend="sequential")(
         #    joblib.delayed(self._get_single_objective)(i)
         #    for i in range(self.__index)
         #)
-        t1 = timeit.default_timer()
+        #t1 = timeit.default_timer()
         #np.savetxt(path, _energies)
         np.savetxt(path, self.get_objectives())
-        t2 = timeit.default_timer()
-        print("storetxt(), get objective value: {}s,\t write to txt {}s".format(t1-t0, t2-t1))
+        #t2 = timeit.default_timer()
+        #print("storetxt(), get objective value: {}s,\t write to txt {}s".format(t1-t0, t2-t1))
 
     @classmethod
     def restore(cls, path: Union[pathlib.Path, str]) -> "OptimisationResult":
@@ -255,19 +255,19 @@ class OptimisationResult:
         # Todo: optimise with joblib?
         return [step.wavefunction for step in self.__steps]
 
-    def _get_wf_from_step(self, step) -> np.ndarray:
-        return step.wavefunction 
+#    def _get_wf_from_step(self, step) -> np.ndarray:
+#        return step.wavefunction 
 
     def _get_wf_from_i(self, i) -> np.ndarray:
         return self.__steps[i].wavefunction
 
-    def _get_single_objective(self, i):
-        _n_param = np.size(self.__steps[i].params)
-        joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
-        #_n_param = np.size(self.__steps[i].params)
-        #joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
-        wf = self.__objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
-        return self.__objective.evaluate(wf)
+#   def _get_single_objective(self, i):
+#        _n_param = np.size(self.__steps[i].params)
+#        joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
+#        #_n_param = np.size(self.__steps[i].params)
+#        #joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
+#        wf = self.__objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+#        return self.__objective.evaluate(wf)
 
     def get_objectives(self) -> List[Real]:
         """Get all objective values.

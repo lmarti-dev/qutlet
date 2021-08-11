@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 from typing import Tuple, Dict, Literal
 from numbers import Real
+import itertools
 
 import numpy as np
 import cirq
@@ -250,7 +251,8 @@ class Ising(AbstractModel):
                                     "start": None,
                                     "end": None,
                                     "n_exact" : [1, 2],
-                                    "b_exact" : [0, 0]}
+                                    "b_exact" : [0, 0],
+                                    "cc_exact": False}
             self.basics.options.update(options)
             self.basics.set_circuit(self)
         elif qalgorithm == "hea":
