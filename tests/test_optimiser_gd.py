@@ -22,7 +22,7 @@ from fauvqe import Ising, Optimiser, GradientDescent, ExpectationValue
 
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising_obj.set_circuit("qaoa", 1)
+    ising_obj.set_circuit("qaoa", {"p": 1})
     gd = GradientDescent()
     obj = ExpectationValue(ising_obj)
     gd.optimise(obj)
@@ -37,8 +37,9 @@ def test_optimise():
         0.1 * np.ones((1, 2)),
         0.5 * np.ones((2, 1)),
         0.2 * np.ones((2, 2)),
+        "Z"
     )
-    ising_obj.set_circuit("qaoa", 2)
+    ising_obj.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
     eta = 2e-2
     gd = GradientDescent(

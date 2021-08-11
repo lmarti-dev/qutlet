@@ -36,17 +36,18 @@ return θ t (Resulting parameters)
 Potential MUCH BETTER alternative option: load from scipy??
 
 """
-from numbers import Real, Integral
-from typing import Union, Literal
 import multiprocessing
+from numbers import Real, Integral
+from typing import Literal, Optional, Dict
 
-import numpy as np
 import cirq
 import joblib
+import timeit
+import numpy as np
 
-from fauvqe.optimisers.optimiser import Optimiser
-from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.objective import Objective
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.optimisers.optimiser import Optimiser
 
 
 class ADAM(Optimiser):
@@ -106,16 +107,19 @@ class ADAM(Optimiser):
         self._break_param: Integral = break_param
 
         # The following attributes change for each objective
-        self._objective: Union[Objective, None] = None
+        self._objective: Optional[Objective] = None
         self._v_t: np.ndarray = np.array([])
         self._m_t: np.ndarray = np.array([])
         self._circuit_param: np.ndarray = np.array([])
         self._n_param: Integral = 0
 
-    def optimise(self, objective: Objective, n_jobs: Union[Integral] = -1) -> OptimisationResult:
-        """Run optimiser until break condition is fulfilled. Use n_jobs = 1 to essentially previous non-parallel version of optimise()
-        Watch out: Due to initialisation cost of n_jobs = 2 might be more expensive than n_jobs = 1
-
+    def optimise(
+        self,
+        objective: Objective,
+        continue_at: Optional[OptimisationResult] = None,
+        n_jobs: Integral = -1,
+    ) -> OptimisationResult:
+        """Run optimiser until break condition is fulfilled
 
         1. Make copies of param_values (to not accidentally overwrite)
         2. Do steps until break condition. Tricky need to generalise get_param_resolver method
@@ -123,59 +127,79 @@ class ADAM(Optimiser):
 
         Parameters
         ----------
+        n_jobs: Integral, default -1
+            The number ob simultaneous jobs (-1 for auto detection)
         objective: Objective
             The objective to optimise
+        continue_at: OptimisationResult, optional
+            Continue a optimisation
 
         Returns
         -------
         OptimisationResult
-
-        Raises
-        -------
-        AssertionError
-        NotImpl
         """
-        self._objective = objective
-        self._circuit_param = objective.model.circuit_param
-
-        # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
-        if n_jobs < 1:
-            # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
-            n_jobs = int(
-                min(max(multiprocessing.cpu_count() / 2, 1), 2 * np.size(self._circuit_param))
-            )
-            # Try to reset qsim threads, which overrights the simulator if it was not qsim
-            try:
-                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
-                self._objective.model.set_simulator(simulator_options={"t": t_new})
-            except:
-                pass
-
-        assert isinstance(
-            n_jobs, Integral
-        ), "The number of jobs must be an integer or 'default'. Given: {}".format(n_jobs)
-
-        print("n_jobs: \t {}".format(n_jobs))
-
         assert isinstance(
             objective, Objective
         ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
             type(objective).__name__
         )
+        self._objective = objective
+        self._circuit_param = objective.model.circuit_param
+        if continue_at is not None:
+            assert isinstance(
+                continue_at, OptimisationResult
+            ), "continue_at must be a OptimisationResult"
+            res = continue_at
+            params = continue_at.get_latest_step().params
+            temp_cpv = params.view()
+            skip_steps = len(continue_at.get_steps())
+        else:
+            res = OptimisationResult(objective)
+            temp_cpv = objective.model.circuit_param_values.view()
+            skip_steps = 0
 
-        # 1.make copies of param_values (to not accidentally overwrite)
-        temp_cpv = objective.model.circuit_param_values.view()
         self._n_param = np.size(temp_cpv)
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
 
-        res = OptimisationResult(objective)
+        # Handle n_jobs parameter
+        assert isinstance(
+            n_jobs, Integral
+        ), "The number of jobs must be a positive integer or -1 (default)'. Given: {}".format(
+            n_jobs
+        )
+
+        # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
+        if n_jobs < 1:
+            # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
+            n_jobs = int(
+                min(
+                    max(multiprocessing.cpu_count() / 2, 1),
+                    2 * np.size(self._circuit_param),
+                )
+            )
+            assert n_jobs != 0, "{} {}".format(
+                multiprocessing.cpu_count(), np.size(self._circuit_param)
+            )
+            # Try to reset qsim threads, which overwrites the simulator if it was not qsim
+            try:
+                if str(self._objective.model.simulator.__class__).find('qsim') > 0:
+                    sim_name = "qsim"
+                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
+                self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
+            except:
+                pass
+
         # Do step until break condition
         if self._break_cond == "iterations":
-            for step in range(self._break_param):
+            for i in range(self._break_param - skip_steps):
                 # Make ADAM step
-                temp_cpv = self._ADAM_step(temp_cpv, n_jobs, step=step + 1)
+                t0 = timeit.default_timer()
+                temp_cpv = self._ADAM_step(temp_cpv, n_jobs, step=i + 1)
+                t1 = timeit.default_timer()
                 res.add_step(temp_cpv.copy())
+                t2 = timeit.default_timer()
+                #print("{}. ADAM step: \t t_step: {}s,\t t_store {}s".format(i, t1-t0, t2-t1))
 
         return res
 
@@ -238,3 +262,20 @@ class ADAM(Optimiser):
         wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
 
         return self._objective.evaluate(wf)
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "eps": self._eps,
+                "eps_2": self.eps_2,
+                "a": self._a,
+                "b_1": self._b_1,
+                "b_2": self._b_2,
+                "break_cond": self._break_cond,
+                "break_param": self._break_param,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        return cls(**dct["constructor_params"])
