@@ -49,6 +49,8 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+tests/fauvqe-pytest.txt
+testsfauvqe-pytest.json
 htmlcov/
 .tox/
 .nox/
