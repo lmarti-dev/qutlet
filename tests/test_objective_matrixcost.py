@@ -166,6 +166,40 @@ def test__repr__(n):
     objective = MatrixCost(mockmodel, rand_matrix)
     assert repr(objective) == "<MatrixCost matrix={}>".format(rand_matrix)
 
+@pytest.mark.parametrize(
+    "n",
+    [
+        (
+            2
+        ), 
+        (
+            [2, 2]
+        ),  
+        (
+            4
+        ), 
+        (
+            [4, 4]
+        ),
+    ],
+)
+def test_json(n):
+    mockmodel = Ising("GridQubit", [1, 1], np.ones((0, 1)), np.ones((1, 1)), np.ones((1, 1)))
+
+    #Generate random state vector or unitary
+    if isinstance(n,int):
+        rand_matrix = np.random.rand(n) + 1j*np.random.rand(n)
+        rand_matrix /= np.linalg.norm(rand_matrix)
+    else:
+        rand_matrix = unitary_group.rvs(n[0])
+
+    #Generate MatrixCost object and test by comparing it
+    #with itself after to_json_dict and from_json_dict
+    objective = MatrixCost(mockmodel, rand_matrix)
+    json = objective.to_json_dict()
+    objective2 = MatrixCost.from_json_dict(json)
+    assert (objective == objective2)
+
 #############################################################
 #                                                           #
 #                    Assert tests                           #
