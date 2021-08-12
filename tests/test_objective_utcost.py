@@ -4,7 +4,6 @@ import scipy
 import scipy.linalg
 import cirq
 
-
 from fauvqe import UtCost, Ising
 
 def hamiltonian():
@@ -37,7 +36,7 @@ def test_evaluate_op(t):
     #print(mat_diag.shape)
     #print(mat_diag)
     #print("np.linalg.norm(ising._Ut - mat_diag): {}".format(np.linalg.norm(ising._Ut - mat_diag)))
-    objective = UtCost(ising, t, "Exact")
+    objective = UtCost(ising, t, 0)
     
     res = scipy.linalg.expm(-1j*t*hamiltonian())
     assert objective.evaluate(res) < 1e-10
@@ -62,7 +61,7 @@ def test_simulate_op(t):
         "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
     })
     
-    objective = UtCost(ising, t, "Exact")
+    objective = UtCost(ising, t, 0)
     params = -(2/np.pi)*t*(np.ones(2*order)/order)
     pdict = {}
     for k in range(order):
@@ -89,7 +88,7 @@ def test_evaluate_batch(t, avg_size):
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
-    objective = UtCost(ising, t, "Exact", batch_wavefunctions = initials)
+    objective = UtCost(ising, t, 0, batch_wavefunctions = initials)
     
     eval_indices = np.random.randint(low=0, high=bsize, size=avg_size)
     print(eval_indices)
@@ -100,21 +99,22 @@ def test_evaluate_batch(t, avg_size):
     assert objective.evaluate(outputs, eval_indices) < 1e-10
 
 @pytest.mark.parametrize(
-    "t,U",
+    "t,order",
     [
-        (0.1, "Exact"), (1, "Exact"), (-0.01, "Exact"), (0.1, "Trotter"), (1, "Trotter"), (-0.01, "Trotter")
+        (0.1, 0), (1, 0), (-0.01, 0), (0.1, 100), (1, 100), (-0.01, 100)
     ],
 )
-def test_simulate_batch(t, U):
+def test_simulate_batch(t, order):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
-    order = 100
-    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t+1)
+    t_new = t - 0.01
+    ex=100
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t_new)
     ising.set_simulator("qsim")
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
-        "p": order,
+        "p": ex,
         "variables": {"x", "theta"},
         "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
     })
@@ -125,9 +125,10 @@ def test_simulate_batch(t, U):
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
-    params = -(2/np.pi)*t*(np.ones(2*order)/order)
-    objective = UtCost(ising, t, U, ising, params, batch_wavefunctions = initials)
+    params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
+    objective = UtCost(ising, t, order, batch_wavefunctions = initials)
     print(objective)
+    
     op = objective.simulate(
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
@@ -135,17 +136,17 @@ def test_simulate_batch(t, U):
     assert (objective.evaluate([op], [0]) < 1e-3)
 
 @pytest.mark.parametrize(
-    "t, U",
+    "t, order",
     [
-        (0.1, 'Exact')
+        (0.1, 25)
     ],
 )
-def test_json(t, U):
+def test_json(t, order):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
     ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
-    objective = UtCost(ising, t, U)
+    objective = UtCost(ising, t, order)
     
     json = objective.to_json_dict()
     

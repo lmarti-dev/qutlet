@@ -3,7 +3,9 @@ from numbers import Integral, Real
 
 import numpy as np
 
-from fauvqe import Objective, AbstractModel
+from fauvqe.objectives.objective import Objective
+from fauvqe.models.abstractmodel import AbstractModel
+#from fauvqe import Objective, AbstractModel
 import cirq
 
 class UtCost(Objective):
@@ -72,29 +74,31 @@ class UtCost(Objective):
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
-            self._init_trotter_circuit()
+            if(self._order != 0):
+                self._init_trotter_circuit()
             self._init_batch_wfcts()
 
     def _init_trotter_circuit(self):
-        self.circuit = cirq.Circuit()
+        self.trotter_circuit = cirq.Circuit()
         hamiltonian = self.model.hamiltonian
+        print(hamiltonian)
         for pstr in hamiltonian._linear_dict:
             #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
             temp = 1
             for pauli in pstr:
                 temp = temp * pauli[1](pauli[0])
-            self.circuit.append(temp**(2/np.pi * hamiltonian._linear_dict[pstr]))
-        self.circuit = self.order * self.circuit
+            self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._order))
+        self.trotter_circuit = self._order * self.trotter_circuit
     
     def _init_batch_wfcts(self):
-        if(self.order <= 0):
+        if(self._order < 1):
             self._outputs = (self._Ut @ self._initials.T).T
         else:
             self._outputs = np.zeros(shape=self._initials.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
             for k in range(self._initials.shape[0]):
                 self._outputs[k] = self.model.simulator.simulate(
-                    self.trotter_circuit(), 
+                    self.trotter_circuit,
                     initial_state=self._initials[k]
                 ).state_vector()
 
@@ -105,14 +109,9 @@ class UtCost(Objective):
             #Then the "wavefunction" is the U(t) via VQE
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
-            assert (self.batch_size > 0), 'Please provide batch wavefunction'
             assert type(indices) is not None, 'Please provide indices for batch'
-            #Calculation via randomly choosing one state vector
-            cost=0
-            for k in range(len(indices)):
-                #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
-                cost = cost + 1 - abs( np.matrix.getH(wavefunction[k]) @ self._outputs[indices[k]])
-            return 1/len(indices) * cost
+            print(np.conjugate(wavefunction)*self._outputs[indices])
+            return 1/len(indices) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._outputs[indices], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -127,8 +126,8 @@ class UtCost(Objective):
             "constructor_params": {
                 "model": self._model,
                 "t": self.t, 
-                "order": self.order,
-                "batch_wavefunctions": self.initials
+                "order": self._order,
+                "batch_wavefunctions": self._initials
             },
         }
 
