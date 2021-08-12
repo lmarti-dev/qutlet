@@ -6,8 +6,7 @@ from numbers import Integral, Real
 
 import numpy as np
 
-from fauvqe.objectives.objective import Objective
-from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe import Objective, AbstractModel
 import cirq
 
 class UtCost(Objective):
