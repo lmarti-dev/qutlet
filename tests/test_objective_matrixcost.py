@@ -41,7 +41,7 @@ def test_evaluate(n):
 
     #Generate random state vector or unitary
     if isinstance(n,int):
-        rand_matrix = np.random.rand(n) + 1j*np.random.rand(n)
+        rand_matrix = 2*(np.random.rand(n)-0.5) + 2j*(np.random.rand(n)-0.5)
         rand_matrix /= np.linalg.norm(rand_matrix)
     else:
         rand_matrix = unitary_group.rvs(n[0])
@@ -50,6 +50,16 @@ def test_evaluate(n):
     #rand_matrix with itself
     objective = MatrixCost(mockmodel, rand_matrix)
     assert objective.evaluate(rand_matrix) < 1e-15
+
+    #Generate 2nd random state vector or unitary
+    #Check wether MatrixCost \in [0,1]
+    if isinstance(n,int):
+        rand_matrix2 = 2*(np.random.rand(n)-0.5) + 2j*(np.random.rand(n)-0.5)
+        rand_matrix2 /= np.linalg.norm(rand_matrix2)
+    else:
+        rand_matrix2 = unitary_group.rvs(n[0])
+
+    assert 0 <= objective.evaluate(rand_matrix2) <= 1
     
 @pytest.mark.parametrize(
     "model, circuit, param_resolver, solution",
