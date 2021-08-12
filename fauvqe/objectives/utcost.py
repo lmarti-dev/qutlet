@@ -1,6 +1,3 @@
-"""
-    Implementation of the expectation value as objective function for an AbstractModel object.
-"""
 from typing import Literal, Tuple, Dict, Optional
 from numbers import Integral, Real
 
@@ -19,10 +16,10 @@ class UtCost(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "t"         -> Float    t in U(t)
-                "U"         -> Literal  exact or Trotter (only matters if not exists or t wrong)
-                "benchm"         -> AbstractModel   Only needed for approximate randomized benchmarking. Defines the benchmark model
-                "params"         -> np.ndarray      Parameters of the benchmark model
+    options:    "t"         -> Float
+                    t in U(t)
+                "order"         -> int
+                    Trotter approximation order (Exact if 0 or negative)
                 "batch_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
                 "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
 
@@ -37,11 +34,8 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    U: Literal["Exact", "Trotter"] = "Exact",
-                    benchm: Optional[AbstractModel] = None,
-                    params: Optional[np.ndarray] = None,
-                    batch_wavefunctions: Optional[np.ndarray] = None,
-                    sample_size: int = -1):
+                    order: int = 0,
+                    batch_wavefunctions: Optional[np.ndarray] = None):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -67,33 +61,42 @@ class UtCost(Objective):
                 self._Ut = model._Ut.view()
         self.t = t
         super().__init__(model)
-
+        
+        self._order = order
+        self._N = 2**np.size(model.qubits)
+        self._initials = batch_wavefunctions
         if batch_wavefunctions is None:
             self.batch_size = 0
-            self.batch_wavefunctions = [None, None]
         else:
             assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
-            self._generate_batch_wfcts(batch_wavefunctions, U, benchm, params)
-            
-        self.sample_size = sample_size
-        self._U = U
-        self._benchm = benchm
-        self._params = params
-        self._N = 2**np.size(model.qubits)
+            self._init_trotter_circuit()
+            self._init_batch_wfcts()
 
-    def _generate_batch_wfcts(self, initials: np.ndarray, U: Literal["Exact", "Trotter"] = "Exact", benchm: Optional[AbstractModel] = None, params: Optional[np.ndarray]=None):
-        self.batch_wavefunctions = [np.copy(initials), np.copy(initials)]
-        if(U == "Exact"):
-            for k in range(len(initials)):
-                self.batch_wavefunctions[1][k] = self._Ut @ initials[k]
-        elif(U == "Trotter"):
-            assert benchm is not None, "Please provide model for randomized benchmarking"
-            assert params is not None, "Please provide parameters for randomized benchmarking"
-            for k in range(len(initials)):
-                self.batch_wavefunctions[1][k] = benchm.simulator.simulate(benchm.circuit, param_resolver=benchm.get_param_resolver(params), initial_state=initials[k]).state_vector()
+    def _init_trotter_circuit(self):
+        self.circuit = cirq.Circuit()
+        hamiltonian = self.model.hamiltonian
+        for pstr in hamiltonian._linear_dict:
+            #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
+            temp = 1
+            for pauli in pstr:
+                temp = temp * pauli[1](pauli[0])
+            self.circuit.append(temp**(2/np.pi * hamiltonian._linear_dict[pstr]))
+        self.circuit = self.order * self.circuit
+    
+    def _init_batch_wfcts(self):
+        if(self.order <= 0):
+            self._outputs = (self._Ut @ self._initials.T).T
+        else:
+            self._outputs = np.zeros(shape=self._initials.shape, dtype=np.complex128)
+            #Didn't find any cirq function which accepts a batch of initials
+            for k in range(self._initials.shape[0]):
+                self._outputs[k] = self.model.simulator.simulate(
+                    self.trotter_circuit(), 
+                    initial_state=self._initials[k]
+                ).state_vector()
 
     def evaluate(self, wavefunction: np.ndarray, indices: Optional[list] = None) -> np.float64:
         # Here we already have the correct model._Ut
@@ -108,7 +111,7 @@ class UtCost(Objective):
             cost=0
             for k in range(len(indices)):
                 #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
-                cost = cost + 1 - abs( np.matrix.getH(wavefunction[k]) @ self.batch_wavefunctions[1][indices[k]])
+                cost = cost + 1 - abs( np.matrix.getH(wavefunction[k]) @ self._outputs[indices[k]])
             return 1/len(indices) * cost
 
     #Need to overwrite simulate from parent class in order to work
@@ -124,11 +127,8 @@ class UtCost(Objective):
             "constructor_params": {
                 "model": self._model,
                 "t": self.t, 
-                "U": self._U,
-                "benchm": self._benchm,
-                "params": self._params,
-                "batch_wavefunctions": self.batch_wavefunctions[0],
-                "sample_size": self.sample_size
+                "order": self.order,
+                "batch_wavefunctions": self.initials
             },
         }
 
