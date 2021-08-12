@@ -39,6 +39,24 @@ class Objective(Restorable):
 
         self._model: AbstractModel = model
 
+    def __eq__(self, other): 
+        if not isinstance(other, self.__class__):
+            # don't attempt to compare against unrelated types
+            return False
+
+        #Most general: avoid to define Attributes
+        temp_bools = []
+        for key in self.__dict__.keys():
+            if isinstance(getattr(self, key), np.ndarray):
+                if isinstance(getattr(other, key), np.ndarray):
+                    if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
+                        temp_bools.append((getattr(self, key) == getattr(other, key)).all())
+                    else:
+                        temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
+                else:
+                    return False
+        return all(temp_bools)
+
     @property
     def model(self) -> AbstractModel:
         """The AbstractModel instance linked to this objective
