@@ -118,24 +118,50 @@ class OptimisationResult:
 
     def storetxt(self,
         path: Union[pathlib.Path, str],  # Todo: Support File-like objects
-        #  (see: https://docs.python.org/3/library/io.html#io.TextIOBase)
-        indent: Optional[Integral] = None,
         overwrite: bool = False,
-        store_wavefunctions: Literal["none", "available", "all"] = "none",
-        store_objectives: Literal["none", "available", "all"] = "none",
+        additional_objectives: List[Objective] = None,
         ) -> None:
-        #"loky", threading, multiprocessing sequential
-        #t0 = timeit.default_timer()
-        #_n_jobs = 4
-        #_energies = joblib.Parallel(n_jobs=_n_jobs, backend="sequential")(
-        #    joblib.delayed(self._get_single_objective)(i)
-        #    for i in range(self.__index)
-        #)
-        #t1 = timeit.default_timer()
-        #np.savetxt(path, _energies)
-        np.savetxt(path, self.get_objectives())
-        #t2 = timeit.default_timer()
-        #print("storetxt(), get objective value: {}s,\t write to txt {}s".format(t1-t0, t2-t1))
+        """
+        Store Objective values of ths `OptimisationResult` in a txt file.
+
+        Parameters
+        ----------
+        path: pathlib.Path or str
+            The path to store the file to
+        overwrite: bool, default False
+            Overwrite existing files
+        additional_objectives: List[Objective]
+            Calculate and include objective values of the given additional objectives in txt file
+        
+
+        Raises
+        ---------
+        FileExistsError
+            If the desired path exists and `overwrite` is not set to True.
+        """
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        # Never overwrite existing paths
+        if not overwrite and path.exists():
+            raise FileExistsError("Not overwriting existing path {}".format(path))
+
+        save_data = np.empty([self.__index, 1 + len(additional_objectives)]) 
+        save_data[:,0] = self.get_objectives()
+        header_string="{} \t".format(self.__objective.__class__.__name__)
+        
+        i=1
+        for objective in additional_objectives:
+            header_string+="{} \t".format(objective.__class__.__name__)
+            save_data[:,i]=self.get_objectives(objective)
+            i+=1
+
+
+        np.savetxt( path, 
+                    save_data,
+                    header=header_string,
+                    delimiter='\t')
+
 
     @classmethod
     def restore(cls, path: Union[pathlib.Path, str]) -> "OptimisationResult":
@@ -255,21 +281,11 @@ class OptimisationResult:
         # Todo: optimise with joblib?
         return [step.wavefunction for step in self.__steps]
 
-#    def _get_wf_from_step(self, step) -> np.ndarray:
-#        return step.wavefunction 
 
     def _get_wf_from_i(self, i) -> np.ndarray:
         return self.__steps[i].wavefunction
 
-#   def _get_single_objective(self, i):
-#        _n_param = np.size(self.__steps[i].params)
-#        joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
-#        #_n_param = np.size(self.__steps[i].params)
-#        #joined_dict = {**{str(self.__objective._model.circuit_param[j]): self.__steps[i].params[j] for j in range(_n_param)}}
-#        wf = self.__objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
-#        return self.__objective.evaluate(wf)
-
-    def get_objectives(self) -> List[Real]:
+    def get_objectives(self, objective: Optional[Objective] = None) -> List[Real]:
         """Get all objective values.
 
         Notes
@@ -281,52 +297,19 @@ class OptimisationResult:
         -------
         list of Real
         """
-        # Note: this method is incompatible with making optimisation parameters dependant on step
-        #return [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
-        _n_jobs = 8 #int(multiprocessing.cpu_count() / 2)
-        #print("n_jobs: \t {}".format(_n_jobs))
-        #t00 = timeit.default_timer()
-        #_objective_values = [self.objective.evaluate(wavefunction) for wavefunction in self.get_wavefunctions()]
-        #"loky", threading, multiprocessing 
-        #t0 = timeit.default_timer()
-        #_wfs = self.get_wavefunctions()
-        #[step.wavefunction for step in self.__steps]
-        #_wfs = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-        #    joblib.delayed(self._get_wf_from_step)(step)
-        #    for step in self.__steps
-        #)
-        #print(len(_wfs))
-        #t1 = timeit.default_timer()
-        #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-        #    joblib.delayed(self.objective.evaluate)(_wfs[i])
-        #    for i in range(len(_wfs))
-        #)
-        #t2 = timeit.default_timer()
-        #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-        #    joblib.delayed(self.objective.evaluate)(step.wavefunction)
-        #    for step in self.__steps
-        #)
-        #t3 = timeit.default_timer()
-        #_objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-        #    joblib.delayed(self.objective.evaluate)(self.__steps[i].wavefunction)
-        #    for i in range(len(self.__steps))
-        #)
-        #t4 = timeit.default_timer()
+        if objective == None:
+            objective=self.objective
+
+        _n_jobs = 8
+        
         pool = Pool(_n_jobs-1)
         _wfs = pool.map(self._get_wf_from_i, range(self.__index))
-        #_objective_values = pool.map(self.objective.evaluate, _wfs)
+        
         _objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-            joblib.delayed(self.objective.evaluate)(_wfs[i])
+            joblib.delayed(objective.evaluate)(_wfs[i])
             for i in range(len(_wfs))
         )
-        #t5 = timeit.default_timer()
-        #print(" Time to get wfs non-parallel \t t[s] = {}\n \
-        #        Time to get wfs from steps \t t[s] = {}\n \
-        #        Time to get objectives from wfs \t t[s] = {}\n \
-        #        Time to get objectives from steps \t t[s] = {}\n \
-        #        Time to get objectives from steps v2 \t t[s] = {}\n \
-        #        Time to get wfs multiprocessing \t t[s] = {}".format(t0-t00, t1-t0, t2-t1, t3-t2, t4-t3, t5-t4))
-        #print(_objective_values+1.3425236833316714*np.ones(np.size(_objective_values)))
+
         return _objective_values
         
 
