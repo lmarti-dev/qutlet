@@ -64,34 +64,6 @@ class AbstractModel(Restorable):
         self.eig_vec: Optional[np.ndarray] = None
         self._Ut: Optional[np.ndarray] = None
 
-    #This allows use to compare two AbstractClass objects
-    """def __eq__(self, other): 
-        if not isinstance(other, self.__class__):
-            # don't attempt to compare against unrelated types
-            return False
-
-        #Most general: avoid to define Attributes
-        temp_bools = []
-        for key in self.__dict__.keys():
-            #print(key)
-            if isinstance(getattr(self, key), np.ndarray):
-                if isinstance(getattr(other, key), np.ndarray):
-                    if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
-                        temp_bools.append((getattr(self, key) == getattr(other, key)).all())
-                    else:
-                        temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
-                else:
-                    return False
-            else:
-                if key != 'simulator':
-                    #print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
-                    temp_bools.append(getattr(self, key) == getattr(other, key))
-                else:
-                    temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
-        #print(temp_bools)
-        return all(temp_bools)   """
-
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
 
