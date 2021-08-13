@@ -50,24 +50,25 @@ class UtCost(Objective):
         
         #Make sure correct Ut is used
         # U: Literal["Exact", "Trotter"] = "Exact" is not used yet, this requires implementation of Trotter circuit
-        if t != model.t:
-            model.t = t
-            model.set_Ut()
-            self._Ut = model._Ut.view()
-        else:
-            try:
-                #Fails if does not exist
-                self._Ut = model._Ut.view()
-            except:
-                model.set_Ut()
-                self._Ut = model._Ut.view()
         self.t = t
         super().__init__(model)
         
         self._order = order
         self._N = 2**np.size(model.qubits)
         self._initials = batch_wavefunctions
-        if batch_wavefunctions is None:
+        if self._order == 0:
+            if t != model.t:
+                model.t = t
+                model.set_Ut()
+                self._Ut = model._Ut.view()
+            else:
+                try:
+                    #Fails if does not exist
+                    self._Ut = model._Ut.view()
+                except:
+                    model.set_Ut()
+                    self._Ut = model._Ut.view()
+        if (batch_wavefunctions is None):
             self.batch_size = 0
         else:
             assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
