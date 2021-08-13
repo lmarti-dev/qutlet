@@ -65,7 +65,7 @@ class AbstractModel(Restorable):
         self._Ut: Optional[np.ndarray] = None
 
     #This allows use to compare two AbstractClass objects
-    def __eq__(self, other): 
+    """def __eq__(self, other): 
         if not isinstance(other, self.__class__):
             # don't attempt to compare against unrelated types
             return False
@@ -90,7 +90,7 @@ class AbstractModel(Restorable):
                 else:
                     temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
         #print(temp_bools)
-        return all(temp_bools)   
+        return all(temp_bools)   """
 
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
