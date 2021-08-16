@@ -88,7 +88,7 @@ def test_evaluate_batch(t, avg_size):
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
-    objective = UtCost(ising, t, 0, batch_wavefunctions = initials)
+    objective = UtCost(ising, t, 0, initial_wavefunctions = initials)
     
     eval_indices = np.random.randint(low=0, high=bsize, size=avg_size)
     print(eval_indices)
@@ -126,7 +126,7 @@ def test_simulate_batch(t, order):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, batch_wavefunctions = initials)
+    objective = UtCost(ising, t, order, initial_wavefunctions = initials)
     print(objective)
     
     op = objective.simulate(
@@ -151,7 +151,7 @@ def test_json(t, order):
     initials = np.zeros(initial_rands.shape, dtype=np.complex64)
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
-    objective = UtCost(ising, t, order, batch_wavefunctions=initials)
+    objective = UtCost(ising, t, order, initial_wavefunctions=initials)
     
     json = objective.to_json_dict()
     

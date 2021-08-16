@@ -10,8 +10,6 @@ from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
 #from fauvqe import Objective, AbstractModel
 import cirq
-import qsimcirq
-from time import time
 
 class UtCost(Objective):
     """
@@ -27,7 +25,7 @@ class UtCost(Objective):
                     t in U(t)
                 "order"         -> np.uint
                     Trotter approximation order (Exact if 0 or negative)
-                "batch_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
+                "initial_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
                 "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
 
     Methods
@@ -57,9 +55,10 @@ class UtCost(Objective):
         self.t = t
         super().__init__(model)
         
+        self._initial_wavefunctions = initial_wavefunctions
         self._order = order
         self._N = 2**np.size(model.qubits)
-        self._initial_wavefunctions = initial_wavefunctions
+        
         if self._order == 0:
             if t != model.t:
                 model.t = t
@@ -75,12 +74,12 @@ class UtCost(Objective):
         else:
             assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
             self._init_trotter_circuit()
-        if (batch_wavefunctions is None):
+        if (initial_wavefunctions is None):
             self.batch_size = 0
         else:
             assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
-                    format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
+                    format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(initial_wavefunctions[:,0])
             self._init_batch_wfcts()
 
