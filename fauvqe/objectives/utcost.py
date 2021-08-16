@@ -1,4 +1,7 @@
-from typing import Literal, Tuple, Dict, Optional
+"""
+    Implementation of the Frobenius distance between a given approximate time evolution and the exact time evolution of the system hamiltonian as objective function for an AbstractModel object.
+"""
+from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
 import numpy as np
@@ -20,7 +23,7 @@ class UtCost(Objective):
     model: AbstractModel, The linked model
     options:    "t"         -> Float
                     t in U(t)
-                "order"         -> int
+                "order"         -> np.uint
                     Trotter approximation order (Exact if 0 or negative)
                 "batch_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
                 "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
@@ -36,7 +39,7 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    order: int = 0,
+                    order: np.uint = 0,
                     batch_wavefunctions: Optional[np.ndarray] = None):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
@@ -55,7 +58,7 @@ class UtCost(Objective):
         
         self._order = order
         self._N = 2**np.size(model.qubits)
-        self._initials = batch_wavefunctions
+        self._initial_wavefunctions = batch_wavefunctions
         if self._order == 0:
             if t != model.t:
                 model.t = t
@@ -68,6 +71,9 @@ class UtCost(Objective):
                 except:
                     model.set_Ut()
                     self._Ut = model._Ut.view()
+        else:
+            assert batch_wavefunctions is not None
+            self._init_trotter_circuit()
         if (batch_wavefunctions is None):
             self.batch_size = 0
         else:
@@ -75,35 +81,58 @@ class UtCost(Objective):
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(batch_wavefunctions[:,0])
-            if(self._order != 0):
-                self._init_trotter_circuit()
             self._init_batch_wfcts()
 
     def _init_trotter_circuit(self):
+        """
+        This function initialises the circuit for Trotter approximation and sets self.trotter_circuit
+        
+        Parameters
+        ----------
+        self
+        
+        Returns
+        ---------
+        void
+        """
         self.trotter_circuit = cirq.Circuit()
         hamiltonian = self.model.hamiltonian
-        print(hamiltonian)
+        #Loop through all the addends in the PauliSum Hamiltonian
         for pstr in hamiltonian._linear_dict:
             #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
             temp = 1
+            #Loop through Paulis in the PauliString (pauli[1] encodes the cirq gate and pauli[0] encodes the qubit on which the gate acts)
             for pauli in pstr:
                 temp = temp * pauli[1](pauli[0])
+            #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
             self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._order))
+        #Copy the Trotter layer *order times.
         self.trotter_circuit = self._order * self.trotter_circuit
     
     def _init_batch_wfcts(self):
+        """
+        This function initialises the initial and output batch wavefunctions as sampling data and sets self._output_wavefunctions.
+        
+        Parameters
+        ----------
+        self
+        
+        Returns
+        ---------
+        void
+        """
         if(self._order < 1):
-            self._outputs = (self._Ut @ self._initials.T).T
+            self._output_wavefunctions = (self._Ut @ self._initial_wavefunctions.T).T
         else:
-            self._outputs = np.zeros(shape=self._initials.shape, dtype=np.complex128)
+            self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
-            for k in range(self._initials.shape[0]):
-                self._outputs[k] = self.model.simulator.simulate(
+            for k in range(self._initial_wavefunctions.shape[0]):
+                self._output_wavefunctions[k] = self.model.simulator.simulate(
                     self.trotter_circuit,
-                    initial_state=self._initials[k]
+                    initial_state=self._initial_wavefunctions[k]
                 ).state_vector()
 
-    def evaluate(self, wavefunction: np.ndarray, indices: Optional[list] = None) -> np.float64:
+    def evaluate(self, wavefunction: np.ndarray, indices: Optional[List[int]] = None) -> np.float64:
         # Here we already have the correct model._Ut
         if self.batch_size == 0 and indices == None:
             #Calculation via Forbenius norm
@@ -111,8 +140,8 @@ class UtCost(Objective):
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
             assert type(indices) is not None, 'Please provide indices for batch'
-            print(np.conjugate(wavefunction)*self._outputs[indices])
-            return 1/len(indices) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._outputs[indices], axis=1)))
+            print(np.conjugate(wavefunction)*self._output_wavefunctions[indices])
+            return 1/len(indices) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[indices], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -128,7 +157,7 @@ class UtCost(Objective):
                 "model": self._model,
                 "t": self.t, 
                 "order": self._order,
-                "batch_wavefunctions": self._initials
+                "batch_wavefunctions": self._initial_wavefunctions
             },
         }
 
