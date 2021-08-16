@@ -60,7 +60,7 @@ def test_neumann_renyi():
     renyi_ent = renyi.evaluate(state)
     neumann_ent = neumann.evaluate(state)
     
-    assert abs(renyi_ent - neumann_ent) < 1e-5
+    assert abs(renyi_ent - neumann_ent) < 1e-4
 
 @pytest.mark.parametrize(
     "state, indices, alpha, res",
