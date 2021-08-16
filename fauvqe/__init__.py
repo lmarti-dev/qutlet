@@ -22,7 +22,7 @@ from fauvqe.objectives import (
     UtCost,
     Fidelity,
     Entanglement,
-    TrFid,
+    TraceDistance,
     Magnetisation,
     Correlation
 )

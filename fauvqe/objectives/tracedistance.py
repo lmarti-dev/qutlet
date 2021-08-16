@@ -1,7 +1,7 @@
 """
     Implementation of the expectation value as objective function for an AbstractModel object.
 """
-from typing import Literal, Tuple, Dict, Optional
+from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
 
 import numpy as np
@@ -13,7 +13,7 @@ from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
 import cirq
 
-class TrFid(Objective):
+class TraceDistance(Objective):
     """
     Trace Distance objective
 
@@ -40,14 +40,14 @@ class TrFid(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target):
+                    target: Union[np.ndarray, qutip.Qobj]):
         
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
         if(not isinstance(target, qutip.Qobj)):
-            self.target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            self._target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self.target = target
+            self._target = target
         
         super().__init__(model)
         
@@ -58,13 +58,13 @@ class TrFid(Objective):
             q = wavefunction
         else:
             raise NotImplementedError()
-        return qutip.metrics.tracedist(q, self.target)
+        return qutip.metrics.tracedist(q, self._target)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self.target
+                "target": self._target
             },
         }
 
@@ -73,4 +73,4 @@ class TrFid(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Trace Distance target={}>".format(self.target)
+        return "<Trace Distance target={}>".format(self._target)

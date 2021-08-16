@@ -1,4 +1,4 @@
-from typing import Literal, Tuple, Dict, Optional
+from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
 
 import numpy as np
@@ -40,14 +40,14 @@ class Fidelity(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target):
+                    target: Union[np.ndarray, qutip.Qobj]):
         
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
         if(not isinstance(target, qutip.Qobj)):
-            self.target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            self._target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self.target = target
+            self._target = target
         
         super().__init__(model)
 
@@ -58,13 +58,13 @@ class Fidelity(Objective):
             q = wavefunction
         else:
             raise NotImplementedError()
-        return fidelity(q, self.target)
+        return fidelity(q, self._target)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self.target
+                "target": self._target
             },
         }
 
@@ -73,4 +73,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target={}>".format(self.target)
+        return "<Fidelity target={}>".format(self._target)

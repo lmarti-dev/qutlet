@@ -31,7 +31,7 @@ class ExpectationValue(AbsExpectationValue):
     """
 
     def __init__(self, model: AbstractModel, field: Literal["Z", "X"] = "Z"):
-        super().__init__(model, None)
+        super().__init__(model, model.hamiltonian)
         assert field in [
             "Z",
             "X",

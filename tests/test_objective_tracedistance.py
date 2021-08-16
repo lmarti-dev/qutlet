@@ -5,7 +5,7 @@ import numpy as np
 
 import qutip
 
-from fauvqe import TrFid, AbstractModel
+from fauvqe import TraceDistance, AbstractModel
 
 
 class MockModel(AbstractModel):
@@ -38,7 +38,7 @@ class MockModel(AbstractModel):
 def test_pure(state1, state2, res):
     model = MockModel()
     
-    objective = TrFid(model, state1)
+    objective = TraceDistance(model, state1)
     
     dist = objective.evaluate(state2)
     print(dist)
@@ -54,7 +54,7 @@ def test_pure(state1, state2, res):
 def test_mixed(state1, state2, res):
     model = MockModel()
     
-    objective = TrFid(model, state1)
+    objective = TraceDistance(model, state1)
     
     dist = objective.evaluate(state2)
     print(state1, dist)
@@ -69,17 +69,17 @@ def test_mixed(state1, state2, res):
 def test_json(state):
     model = MockModel()
     
-    objective = TrFid(model, state)
+    objective = TraceDistance(model, state)
     print(objective)
     
     json = objective.to_json_dict()
     
-    objective2 = TrFid.from_json_dict(json)
+    objective2 = TraceDistance.from_json_dict(json)
     
     assert (objective == objective2)
 
 def test_exception():
     model = MockModel()
-    test = TrFid(model, np.zeros(2))
+    test = TraceDistance(model, np.zeros(2))
     with pytest.raises(NotImplementedError):
         assert test.evaluate("Foo")
