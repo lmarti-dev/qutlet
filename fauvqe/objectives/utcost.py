@@ -42,7 +42,7 @@ class UtCost(Objective):
                     model: AbstractModel, 
                     t: Real, 
                     order: np.uint = 0,
-                    batch_wavefunctions: Optional[np.ndarray] = None):
+                    initial_wavefunctions: Optional[np.ndarray] = None):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -54,13 +54,12 @@ class UtCost(Objective):
         # To be implemented: U exact unitatry cost, U exact random batch sampling cost with wf 
         
         #Make sure correct Ut is used
-        # U: Literal["Exact", "Trotter"] = "Exact" is not used yet, this requires implementation of Trotter circuit
         self.t = t
         super().__init__(model)
         
         self._order = order
         self._N = 2**np.size(model.qubits)
-        self._initial_wavefunctions = batch_wavefunctions
+        self._initial_wavefunctions = initial_wavefunctions
         if self._order == 0:
             if t != model.t:
                 model.t = t
@@ -74,15 +73,15 @@ class UtCost(Objective):
                     model.set_Ut()
                     self._Ut = model._Ut.view()
         else:
-            assert batch_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
+            assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
             self._init_trotter_circuit()
         if (batch_wavefunctions is None):
             self.batch_size = 0
         else:
-            assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
+            assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
-            self.batch_size = np.size(batch_wavefunctions[:,0])
+            self.batch_size = np.size(initial_wavefunctions[:,0])
             self._init_batch_wfcts()
 
     def _init_trotter_circuit(self):
@@ -172,7 +171,7 @@ class UtCost(Objective):
                 "model": self._model,
                 "t": self.t, 
                 "order": self._order,
-                "batch_wavefunctions": self._initial_wavefunctions
+                "initial_wavefunctions": self._initial_wavefunctions
             },
         }
 
