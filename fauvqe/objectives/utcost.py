@@ -135,6 +135,17 @@ class UtCost(Objective):
                     initial_state=self._initial_wavefunctions[k]
                     #dtype=np.complex128
                 ).state_vector()
+            
+            #self.trotter_circuit = qsimcirq.QSimCircuit(self.trotter_circuit)
+            #start = time()
+            #for k in range(self._initial_wavefunctions.shape[0]):
+            #    self._output_wavefunctions[k] = self.trotter_circuit.final_state_vector(
+            #        initial_state=self._initial_wavefunctions[k],
+            #        dtype=np.complex64
+            #    )
+            #end = time()
+            #print(end-start)
+            
     
     def evaluate(self, wavefunction: np.ndarray, indices: Optional[List[int]] = None) -> np.float64:
         # Here we already have the correct model._Ut

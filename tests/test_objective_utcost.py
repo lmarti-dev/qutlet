@@ -158,3 +158,28 @@ def test_json(t, order):
     objective2 = UtCost.from_json_dict(json)
     
     assert (objective == objective2)
+
+"""
+    Old test of simulating np.complex128 wavefunctions
+@pytest.mark.parametrize(
+    "n",
+    [
+        (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12), (13), (14), (15), (16), (17)
+    ],
+)
+def test_128(n):
+    n = int(n)
+    t=0.1
+    order = 100
+    j_v = np.ones((0, n))
+    j_h = np.ones((1, n))
+    h = np.ones((1, n))
+    ising = Ising("GridQubit", [1, n], j_v, j_h, h, "X", t)
+    bsize=1
+    initial_rands= (np.random.rand(bsize, 2**n)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    objective = UtCost(ising, t, order, batch_wavefunctions=initials)
+    assert False
+"""
