@@ -72,7 +72,7 @@ class UtCost(Objective):
                     model.set_Ut()
                     self._Ut = model._Ut.view()
         else:
-            assert batch_wavefunctions is not None
+            assert batch_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
             self._init_trotter_circuit()
         if (batch_wavefunctions is None):
             self.batch_size = 0

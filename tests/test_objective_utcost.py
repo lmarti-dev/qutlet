@@ -146,7 +146,8 @@ def test_json(t, order):
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
     ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
-    objective = UtCost(ising, t, order)
+    initial_rands= (np.random.rand(100, 4)).astype(np.complex64)
+    objective = UtCost(ising, t, order, batch_wavefunctions=initial_rands)
     
     json = objective.to_json_dict()
     
