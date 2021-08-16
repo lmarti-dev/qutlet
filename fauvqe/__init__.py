@@ -19,6 +19,7 @@ from fauvqe.objectives import (
     CVaR,
     AbsExpectationValue,
     ExpectationValue,
+    MatrixCost,
     UtCost,
     Fidelity,
     Entanglement,
