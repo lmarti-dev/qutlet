@@ -137,23 +137,3 @@ class Objective(Restorable):
     @abc.abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()  # pragma: no cover
-
-    def __eq__(self, other): 
-        if not isinstance(other, self.__class__):
-            # don't attempt to compare against unrelated types
-            return False
-
-        #Most general: avoid to define Attributes
-        temp_bools = []
-        for key in self.__dict__.keys():
-            #print(key)
-            if isinstance(getattr(self, key), np.ndarray):
-                if isinstance(getattr(other, key), np.ndarray):
-                    if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
-                        temp_bools.append((getattr(self, key) == getattr(other, key)).all())
-                    else:
-                        temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
-                else:
-                    return False
-        return all(temp_bools)
