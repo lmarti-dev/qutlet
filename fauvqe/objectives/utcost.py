@@ -10,6 +10,8 @@ from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
 #from fauvqe import Objective, AbstractModel
 import cirq
+import qsimcirq
+from time import time
 
 class UtCost(Objective):
     """
@@ -107,6 +109,7 @@ class UtCost(Objective):
             #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
             self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._order))
         #Copy the Trotter layer *order times.
+        #self.trotter_circuit = qsimcirq.QSimCircuit(self._order * self.trotter_circuit)
         self.trotter_circuit = self._order * self.trotter_circuit
     
     def _init_batch_wfcts(self):
@@ -130,8 +133,9 @@ class UtCost(Objective):
                 self._output_wavefunctions[k] = self.model.simulator.simulate(
                     self.trotter_circuit,
                     initial_state=self._initial_wavefunctions[k]
+                    #dtype=np.complex128
                 ).state_vector()
-
+    
     def evaluate(self, wavefunction: np.ndarray, indices: Optional[List[int]] = None) -> np.float64:
         # Here we already have the correct model._Ut
         if self.batch_size == 0 and indices == None:
