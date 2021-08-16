@@ -1,5 +1,5 @@
 """
-    Implementation of the expectation value as objective function for an AbstractModel object.
+    Implementation of the trace distance as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
@@ -22,7 +22,7 @@ class TraceDistance(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "target"    -> np.ndarray    target state to calculate fidelity with
+    options:    "target"    -> np.ndarray    target state to calculate trace distance to
                 
     Methods
     ----------
@@ -45,9 +45,9 @@ class TraceDistance(Objective):
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
         if(not isinstance(target, qutip.Qobj)):
-            self._target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            self._target_state = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self._target = target
+            self._target_state = target
         
         super().__init__(model)
         
@@ -57,14 +57,14 @@ class TraceDistance(Objective):
         elif(isinstance(wavefunction, qutip.Qobj)):
             q = wavefunction
         else:
-            raise NotImplementedError()
-        return qutip.metrics.tracedist(q, self._target)
+            assert False, "Please provide target state as np.ndarray or qutip.Qobj"
+        return qutip.metrics.tracedist(q, self._target_state)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self._target
+                "target": self._target_state
             },
         }
 
@@ -73,4 +73,4 @@ class TraceDistance(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Trace Distance target={}>".format(self._target)
+        return "<Trace Distance target={}>".format(self._target_state)

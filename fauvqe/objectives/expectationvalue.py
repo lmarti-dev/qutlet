@@ -7,10 +7,10 @@ import numpy as np
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
-from fauvqe.objectives.absexpectationvalue import AbsExpectationValue
+from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 
 
-class ExpectationValue(AbsExpectationValue):
+class ExpectationValue(AbstractExpectationValue):
     """Energy expectation value objective
 
     This class implements as objective the expectation value of the energies
@@ -19,27 +19,19 @@ class ExpectationValue(AbsExpectationValue):
     Parameters
     ----------
     model: AbstractModel    The linked model
-    field: {"X", "Z"}, default "Z"    The field to be evaluated
-
+    
     Methods
     ----------
     __repr__() : str
         Returns
         ---------
         str:
-            <Energy field=self.field>
+            <ExpectationValue field=self.field>
     """
 
-    def __init__(self, model: AbstractModel, field: Literal["Z", "X"] = "Z"):
+    def __init__(self, model: AbstractModel):
         super().__init__(model, model.hamiltonian)
-        assert field in [
-            "Z",
-            "X",
-        ], "Bad argument 'field'. Allowed values are ['X', 'Z' (default)], received {}".format(
-            field
-        )
-
-        self.__field: Literal["Z", "X"] = field
+        self.__field: Literal["Z", "X"] = model.field
         self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
     
@@ -64,7 +56,6 @@ class ExpectationValue(AbsExpectationValue):
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
-                "field": self.__field,
                 "model": self._model,
             },
         }
@@ -74,4 +65,4 @@ class ExpectationValue(AbsExpectationValue):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Energy field={}>".format(self.__field)
+        return "<ExpectationValue field={}>".format(self.__field)

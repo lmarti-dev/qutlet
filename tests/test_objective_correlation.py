@@ -13,7 +13,6 @@ from fauvqe import Correlation, Ising
 )
 def test_corr(field):
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
     objective = Correlation(ising, field, [0,0],[0,1])
 
@@ -39,5 +38,5 @@ def test_exception():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
-    with pytest.raises(NotImplementedError):
-        assert Correlation(ising, "Foo", [0,0],[0,1])
+    with pytest.raises(AssertionError):
+        assert not Correlation(ising, "Foo", [0,0],[0,1])

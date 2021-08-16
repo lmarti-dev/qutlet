@@ -1,4 +1,5 @@
-"""Implementation of the expectation value as objective function for an AbstractModel object.
+"""
+    Implementation of the magnetisation as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict, Mapping, Optional
 from numbers import Integral
@@ -7,11 +8,11 @@ import numpy as np
 import cirq
 
 from fauvqe.objectives.objective import Objective
-from fauvqe.objectives.expectationvalue import AbsExpectationValue
+from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.models.abstractmodel import AbstractModel
 
 
-class Magnetisation(AbsExpectationValue):
+class Magnetisation(AbstractExpectationValue):
     """Magnetisation Expectation value objective
 
     This class implements as objective the magnetisation of a given state vector.
@@ -32,6 +33,9 @@ class Magnetisation(AbsExpectationValue):
     """
 
     def __init__(self, model: AbstractModel, field: Literal["X", "Y", "Z"] = "Z", row: int = 0, col: int = 0):
+        self._field = field
+        self._row = row
+        self._col = col
         if(field == "X"):
             obs = cirq.X
         elif(field == "Y"):
@@ -40,19 +44,15 @@ class Magnetisation(AbsExpectationValue):
             obs = cirq.Z
         else:
             raise NotImplementedError()
-        
-        self.field = field
-        self.row = row
-        self.col = col
         super().__init__(model, cirq.PauliString(obs(model.qubits[row][col])))
     
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "field": self.field,
-                "col": self.col,
-                "row": self.row
+                "field": self._field,
+                "col": self._col,
+                "row": self._row
             },
         }
 
@@ -61,4 +61,4 @@ class Magnetisation(AbsExpectationValue):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Magnetisation field={}>".format(self.field)
+        return "<Magnetisation field={}>".format(self._field)

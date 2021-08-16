@@ -2,7 +2,7 @@
 Objectives used in the `fauvqe` optimisation.
 """
 
-from fauvqe.objectives.absexpectationvalue import AbsExpectationValue
+from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.objectives.correlation import Correlation
 from fauvqe.objectives.cvar import CVaR
 from fauvqe.objectives.entanglement import Entanglement

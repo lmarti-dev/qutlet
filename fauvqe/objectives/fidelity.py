@@ -1,3 +1,6 @@
+"""
+    Implementation of the fidelity as objective function for an AbstractModel object.
+"""
 from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
 
@@ -41,30 +44,27 @@ class Fidelity(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     target: Union[np.ndarray, qutip.Qobj]):
-        
-        self._N = 2**np.size(model.qubits)
+        super().__init__(model)
         self._n = np.size(model.qubits)
         if(not isinstance(target, qutip.Qobj)):
-            self._target = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            self._target_state = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self._target = target
-        
-        super().__init__(model)
+            self._target_state = target
 
-    def evaluate(self, wavefunction) -> np.float64:
+    def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
             q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         elif(isinstance(wavefunction, qutip.Qobj)):
             q = wavefunction
         else:
             raise NotImplementedError()
-        return fidelity(q, self._target)
+        return fidelity(q, self._target_state)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self._target
+                "target": self._target_state
             },
         }
 
@@ -73,4 +73,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target={}>".format(self._target)
+        return "<Fidelity target={}>".format(self._target_state)

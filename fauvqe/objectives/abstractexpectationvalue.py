@@ -10,11 +10,10 @@ from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
 
 
-class AbsExpectationValue(Objective):
-    """Expectation value objective
+class AbstractExpectationValue(Objective):
+    """Abstract Expectation value objective
 
-    This class implements as objective the expectation value of the energies
-    of the linked model.
+    This class implements as objective the expectation value of a given observable.
 
     Parameters
     ----------
@@ -27,16 +26,16 @@ class AbsExpectationValue(Objective):
         Returns
         ---------
         str:
-            <ExpectationValue field=self.field>
+            <AbstractExpectationValue field=self.field>
     """
 
     def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]):
-        self.observable = observable
+        self._observable = observable
         super().__init__(model)
         
     def evaluate(self, wavefunction: np.ndarray, q_map, atol: float = 1e-7) -> np.float64:
-        if(self.observable is not None):
-            return self.observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
+        if(self._observable is not None):
+            return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
         else:
             raise NotImplementedError()
 
@@ -44,7 +43,7 @@ class AbsExpectationValue(Objective):
         return {
             "constructor_params": {
                 "model": self._model,
-                "observable": self.observable
+                "observable": self._observable
             },
         }
 
@@ -53,4 +52,4 @@ class AbsExpectationValue(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<AbsExpectationValue observable={}>".format(self.observable)
+        return "<AbstractExpectationValue observable={}>".format(self._observable)

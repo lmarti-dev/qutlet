@@ -81,5 +81,5 @@ def test_json(state):
 def test_exception():
     model = MockModel()
     test = TraceDistance(model, np.zeros(2))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(AssertionError):
         assert test.evaluate("Foo")

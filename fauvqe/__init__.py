@@ -17,7 +17,7 @@ from fauvqe.models import (
 from fauvqe.objectives import (
     Objective,
     CVaR,
-    AbsExpectationValue,
+    AbstractExpectationValue,
     ExpectationValue,
     MatrixCost,
     UtCost,

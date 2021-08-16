@@ -6,4 +6,3 @@ sympy~=1.8
 joblib~=1.0.1
 qutip~=4.6.2
 pathos~=0.2.8
-

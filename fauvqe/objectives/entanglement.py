@@ -1,16 +1,17 @@
 """
     Implementation of the expectation value as objective function for an AbstractModel object.
 """
-from typing import Literal, Tuple, Dict, Optional
+from typing import Literal, Tuple, Dict, Optional, Union, List
 from numbers import Integral, Real
 
 import numpy as np
-import scipy
+import scipy.linalg
 
 import qutip
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
+#from fauvqe import Objective, AbstractModel
 import cirq
 
 class Entanglement(Objective):
@@ -22,9 +23,8 @@ class Entanglement(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "typ"       -> Literal['Neumann', 'Renyi']     Determines, whether to calculate von Neumann or Renyi Entanglement Entropy
-                "alpha"     -> Optional[np.float64]            Renyi-index. Only used, if typ == 'Renyi'
-                "indices"   -> Optional[list]                  Subsystem, for which the entanglement entropy shall be calculated
+    options:    "alpha"     -> np.float64            Renyi-index. An Index of 1 indicates the use of von Neumann entropy
+                "indices"   -> Optional[List[int]]        Subsystem, for which the entanglement entropy shall be calculated
     
     Methods
     ----------
@@ -32,7 +32,7 @@ class Entanglement(Objective):
         Returns
         ---------
         str:
-            <Fidelity target=self.target>
+            <Entanglement Renyi index=self._alpha>
     
     evaluate(self, wavefunction, indices) : np.float64
         Returns
@@ -42,45 +42,38 @@ class Entanglement(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    typ: Literal['Neumann, Renyi'] = 'Neumann',
-                    alpha: Optional[np.float64] = None,
-                    indices: Optional[list] = None):
+                    alpha: np.float64 = 1,
+                    indices: Optional[List[int]] = None):
         
-        self.typ = typ
-        if(typ == 'Renyi'):
-            assert alpha is not None, 'Please provide a Renyi index'
-        self.alpha = alpha
+        self._alpha = alpha
         if(indices is None):
-            self.indices = range(int(np.size(model.qubits) / 2 ))
+            self._indices = range(int(np.size(model.qubits) / 2 ))
         else:
-            self.indices = indices
+            self._indices = indices
         
         super().__init__(model)
-        self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
 
-    def evaluate(self, wavefunction) -> np.float64:
+    def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
             q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         elif(isinstance(wavefunction, qutip.Qobj)):
             q = wavefunction
         else:
             raise NotImplementedError()
-        rho = q.ptrace(self.indices)
-        if(self.typ == 'Neumann'):
+        rho = q.ptrace(self._indices)
+        #Use von Neumann Entropy for alpha = 1 and Renyi entropy else
+        if(self._alpha == 1):
             return np.real( - np.trace(rho * scipy.linalg.logm(rho)) )
-        elif(self.typ == 'Renyi'):
-            return np.real( 1/(1-self.alpha) * np.log(np.trace(scipy.linalg.fractional_matrix_power(rho, self.alpha))))
         else:
-            raise NotImplementedError()
-
+            return np.real( 1/(1-self._alpha) * np.log(np.trace(scipy.linalg.fractional_matrix_power(rho, self._alpha))))
+        
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "typ": self.typ,
-                "alpha": self.alpha,
-                "indices": self.indices
+                "alpha": self._alpha,
+                "indices": self._indices
             },
         }
 
@@ -89,4 +82,4 @@ class Entanglement(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Entanglement type={}>".format(self.typ)
+        return "<Entanglement Renyi index={}>".format(self._alpha)
