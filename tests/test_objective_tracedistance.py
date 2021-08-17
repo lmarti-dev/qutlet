@@ -42,6 +42,16 @@ def test_evaluate_mixed(state1, state2, res):
     print(state1, dist)
     assert abs(dist - res) < 1e-10
 
+def test_simulate():
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising.set_simulator("qsim")
+    ising.set_circuit("qaoa", {"p": 5})
+    objective = TraceDistance(ising, np.array([1, 0, 0, 0]))
+    
+    wavefunction = objective.simulate(
+        param_resolver=ising.get_param_resolver(ising.circuit_param_values)
+    )
+
 @pytest.mark.parametrize(
     "state",
     [

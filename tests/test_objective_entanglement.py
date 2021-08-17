@@ -70,6 +70,15 @@ def test_evaluate_mixed(state, indices, alpha, res):
     
     assert abs(ent - res) < 1e-10
 
+def test_simulate():
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising.set_circuit("qaoa", {"p": 5})
+    objective = Entanglement(ising, 1)
+    
+    wavefunction = objective.simulate(
+        param_resolver=ising.get_param_resolver(ising.circuit_param_values)
+    )
+
 @pytest.mark.parametrize(
     "indices, alpha",
     [
@@ -100,7 +109,7 @@ def test_exceptions():
         ("Foo")
     ],
 )
-def test_exceptions(state):
+def test_evaluate_exceptions(state):
     model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     model.set_circuit("qaoa", {"p": 5})
     objective = Entanglement(model, 2, [0])

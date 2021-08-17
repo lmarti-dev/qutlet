@@ -40,7 +40,12 @@ class AbstractExpectationValue(Objective):
     def evaluate(self, wavefunction: np.ndarray, q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, atol: float = 1e-7) -> np.float64:
         if(q_map is None):
             q_map = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
-        return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
+        if(wavefunction.ndim == 1):
+            return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
+        elif(wavefunction.ndim==2):
+            return self._observable.expectation_from_density_matrix(wavefunction, q_map, atol=atol)
+        else:
+            assert False, 'Please provide either state vector or density matrix'
     
     def to_json_dict(self) -> Dict:
         return {
