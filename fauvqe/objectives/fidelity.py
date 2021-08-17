@@ -11,7 +11,6 @@ from qutip.metrics import fidelity
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
-import cirq
 
 class Fidelity(Objective):
     """
@@ -43,13 +42,13 @@ class Fidelity(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target: Union[np.ndarray, qutip.Qobj]):
+                    target_state: Union[np.ndarray, qutip.Qobj]):
         super().__init__(model)
         self._n = np.size(model.qubits)
-        if(not isinstance(target, qutip.Qobj)):
-            self._target_state = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        if(not isinstance(target_state, qutip.Qobj)):
+            self._target_state = qutip.Qobj(target_state, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self._target_state = target
+            self._target_state = target_state
 
     def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
@@ -64,7 +63,7 @@ class Fidelity(Objective):
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self._target_state
+                "target_state": self._target_state
             },
         }
 

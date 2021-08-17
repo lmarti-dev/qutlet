@@ -6,8 +6,8 @@ from numbers import Integral, Real
 
 import numpy as np
 
-import qutip
-import qutip.metrics
+from qutip import Qobj
+from qutip.metrics import tracedist
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -40,31 +40,31 @@ class TraceDistance(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target: Union[np.ndarray, qutip.Qobj]):
+                    target_state: Union[np.ndarray, Qobj]):
         
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
-        if(not isinstance(target, qutip.Qobj)):
-            self._target_state = qutip.Qobj(target, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        if(not isinstance(target_state, Qobj)):
+            self._target_state = Qobj(target_state, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
-            self._target_state = target
+            self._target_state = target_state
         
         super().__init__(model)
         
     def evaluate(self, wavefunction) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
-            q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
-        elif(isinstance(wavefunction, qutip.Qobj)):
+            q = Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        elif(isinstance(wavefunction, Qobj)):
             q = wavefunction
         else:
             assert False, "Please provide target state as np.ndarray or qutip.Qobj"
-        return qutip.metrics.tracedist(q, self._target_state)
+        return tracedist(q, self._target_state)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
-                "target": self._target_state
+                "target_state": self._target_state
             },
         }
 

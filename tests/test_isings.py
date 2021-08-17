@@ -29,7 +29,7 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        exp_val = ExpectationValue(ising_obj, field=basis)
+        exp_val = ExpectationValue(ising_obj)
         wf_energy = exp_val.evaluate(wf)
         assert (
             abs(E_exp - wf_energy) < self.atol
@@ -53,7 +53,7 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        exp_val = ExpectationValue(ising_obj, field="Z")
+        exp_val = ExpectationValue(ising_obj)
         wf_energy = exp_val.evaluate(wf)
 
         assert (

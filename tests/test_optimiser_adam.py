@@ -48,7 +48,7 @@ def test_optimise():
     ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     eps = 10 ** -3
-    exp_val_z = ExpectationValue(ising, field="Z")
+    exp_val_z = ExpectationValue(ising)
     adam = ADAM(
         eps=eps,
         break_param=25,
@@ -87,11 +87,11 @@ def test_adam_multiple_models_and_auto_joblib():
 
     adam = ADAM()
 
-    objective1 = ExpectationValue(ising1, field="Z")
+    objective1 = ExpectationValue(ising1)
 
     res1 = adam.optimise(objective1, n_jobs=-1)
 
-    objective2 = ExpectationValue(ising2, field="Z")
+    objective2 = ExpectationValue(ising2)
     res2 = adam.optimise(objective2, n_jobs=-1)
 
     print(res1, res2)
@@ -118,7 +118,7 @@ def test_optimise_joblib():
         break_param=25,
         a=4e-2,
     )
-    expval_z = ExpectationValue(ising, field="Z")
+    expval_z = ExpectationValue(ising)
 
     res = adam.optimise(expval_z, n_jobs=-1)
     wavefunction = expval_z.simulate(
@@ -141,7 +141,7 @@ def test_optimise_no_simulator_change():
         break_param=1,
         a=4e-2,
     )
-    expval_z = ExpectationValue(ising, field="Z")
+    expval_z = ExpectationValue(ising)
     #assert(ising.simulator == 0)
 
     res = adam.optimise(expval_z, n_jobs=-1)
@@ -155,7 +155,7 @@ def test__get_single_energy():
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
 
     adam = ADAM(break_param=1,a=4e-2)
-    expval_z = ExpectationValue(ising, field="Z")
+    expval_z = ExpectationValue(ising)
     res = adam.optimise(expval_z, n_jobs=-1)
     gg_gradients = adam._get_gradients(adam._objective.model.circuit_param_values, 8)
 

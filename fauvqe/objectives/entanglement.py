@@ -1,13 +1,13 @@
 """
-    Implementation of the expectation value as objective function for an AbstractModel object.
+    Implementation of the entanglement entropy as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict, Optional, Union, List
 from numbers import Integral, Real
 
 import numpy as np
-import scipy.linalg
+from scipy.linalg import logm, fractional_matrix_power
 
-import qutip
+from qutip import Qobj
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -54,19 +54,19 @@ class Entanglement(Objective):
         super().__init__(model)
         self._n = np.size(model.qubits)
 
-    def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
+    def evaluate(self, wavefunction: Union[np.ndarray, Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
-            q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
-        elif(isinstance(wavefunction, qutip.Qobj)):
+            q = Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+        elif(isinstance(wavefunction, Qobj)):
             q = wavefunction
         else:
-            raise NotImplementedError()
+            assert False, 'Please provide either np.ndarray or qutip.Qobj'
         rho = q.ptrace(self._indices)
         #Use von Neumann Entropy for alpha = 1 and Renyi entropy else
         if(self._alpha == 1):
-            return np.real( - np.trace(rho * scipy.linalg.logm(rho)) )
+            return np.real( - np.trace(rho * logm(rho)) )
         else:
-            return np.real( 1/(1-self._alpha) * np.log(np.trace(scipy.linalg.fractional_matrix_power(rho, self._alpha))))
+            return np.real( 1/(1-self._alpha) * np.log(np.trace(fractional_matrix_power(rho, self._alpha))))
         
     def to_json_dict(self) -> Dict:
         return {

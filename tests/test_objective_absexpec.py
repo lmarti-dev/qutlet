@@ -15,9 +15,3 @@ def test_json():
     objective2 = AbstractExpectationValue.from_json_dict(json)
     
     assert (objective == objective2)
-
-def test_exception():
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    test = AbstractExpectationValue(ising, None)
-    with pytest.raises(NotImplementedError):
-        assert test.evaluate(np.zeros(2, dtype=np.complex64), q_map={ising.qubits[0][k]: k for k in range(2)})

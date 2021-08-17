@@ -21,7 +21,7 @@ def get_simple_result(break_param0=25, a0 = 4 * 10 ** -2):
     ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     eps = 10 ** -3
-    objective = ExpectationValue(ising, field="Z")
+    objective = ExpectationValue(ising)
     adam = ADAM(
         eps=eps,
         break_param=break_param0,

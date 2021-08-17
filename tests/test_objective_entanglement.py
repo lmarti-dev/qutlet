@@ -3,31 +3,10 @@ from typing import Tuple, Dict
 import pytest
 import numpy as np
 
-import qutip
+from qutip import Qobj
 
-from fauvqe import Entanglement, AbstractModel
+from fauvqe import Entanglement, Ising
 
-
-class MockModel(AbstractModel):
-    def __init__(self, n: int):
-        self._n = n
-        super().__init__("GridQubit", [1, n])
-
-    def to_json_dict(self) -> Dict:
-        return {}
-
-    @classmethod
-    def from_json_dict(cls, params: Dict):
-        return cls()
-
-    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        return np.array([0]), np.array([0])
-    
-    def _set_hamiltonian(self, reset: bool = True):
-        self.hamiltonian = cirq.PauliSum()
-    
-    def copy(self):
-        return MockModel(self._n)
 
 @pytest.mark.parametrize(
     "state, indices, alpha, res",
@@ -40,7 +19,8 @@ class MockModel(AbstractModel):
     ],
 )
 def test_evaluate_pure(state, indices, alpha, res):
-    model = MockModel(2)
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     
     objective = Entanglement(model, alpha, indices)
     
@@ -49,10 +29,11 @@ def test_evaluate_pure(state, indices, alpha, res):
     
     assert abs(ent - res) < 1e-10
 
-def test_neumann_renyi():
+def test_evaluate_neumann_renyi():
     state = np.random.rand(4)
     state = state / np.linalg.norm(state)
-    model = MockModel(2)
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     alpha = 1 + 1e-10
     renyi = Entanglement(model, alpha)
     neumann = Entanglement(model, 1)
@@ -72,8 +53,8 @@ def test_neumann_renyi():
     ],
 )
 def test_evaluate_mixed(state, indices, alpha, res):
-    model = MockModel(2)
-    
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     objective = Entanglement(model, alpha, indices)
     
     mat = 0.5 * np.kron(state.reshape(1, 4), state.reshape(4, 1)) + 0.5 * np.array([[0, 0, 0, 0],
@@ -82,7 +63,7 @@ def test_evaluate_mixed(state, indices, alpha, res):
                                                                        [0, 0, 0, 0]])
     
     
-    q = qutip.Qobj(mat, dims=[[2 for k in range(objective._n)], [2 for k in range(objective._n)]])
+    q = Qobj(mat, dims=[[2 for k in range(objective._n)], [2 for k in range(objective._n)]])
     
     ent = objective.evaluate(q)
     print(ent)
@@ -96,8 +77,8 @@ def test_evaluate_mixed(state, indices, alpha, res):
     ],
 )
 def test_json(alpha, indices):
-    model = MockModel(2)
-    
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     objective = Entanglement(model, alpha, indices)
     
     json = objective.to_json_dict()
@@ -108,8 +89,8 @@ def test_json(alpha, indices):
     assert (objective == objective2)
 
 def test_exceptions():
-    model = MockModel(2)
-    
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     with pytest.raises(NotImplementedError):
         assert Entanglement(model, "Foo", 0, [0])
 
@@ -120,7 +101,8 @@ def test_exceptions():
     ],
 )
 def test_exceptions(state):
-    model = MockModel(2)
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     objective = Entanglement(model, 2, [0])
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(AssertionError):
         objective.evaluate(state)

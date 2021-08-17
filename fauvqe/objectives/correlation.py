@@ -1,7 +1,7 @@
 """
-    Implementation of the 2-point correlation expectation value as objective function for an AbstractModel object. 
+    Implementation of the n-point correlation expectation value as objective function for an AbstractModel object. 
 """
-from typing import Literal, Tuple, Dict, Mapping, Optional
+from typing import Literal, Tuple, Dict, Mapping, Optional, List, Union
 from numbers import Integral
 
 import numpy as np
@@ -15,13 +15,13 @@ from fauvqe.models.abstractmodel import AbstractModel
 class Correlation(AbstractExpectationValue):
     """Correlation Expectation value objective
 
-    This class implements as objective the correlation of a given state vector.
+    This class implements as objective the n-point correlation of a given state vector. The special case n=1 reduces to the magnetisation objective.
 
     Parameters
     ----------
     model: AbstractModel        The linked model
-    field: Literal["X", "Y", "Z"]        Orientation of Magnetic field to be calculated
-    position: list        list of qubit numbers on which magnetisation shall be calculated
+    field: Literal["X", "Y", "Z"]        Pauli Matrix to be used in n-point correlation
+    qreg: List[cirq.ops.Qid]        list of qubits on which n-point correlation shall be calculated
     
     Methods
     ----------
@@ -32,29 +32,28 @@ class Correlation(AbstractExpectationValue):
             <Correlation field=self.field>
     """
 
-    def __init__(self, model: AbstractModel, field: Literal["X", "Y", "Z"] = "Z", rows: list = [0,0], cols: list = [0,1]):
+    def __init__(self, model: AbstractModel, field: Union[Literal["X", "Y", "Z"], cirq.PauliString] = "Z", qreg: List[cirq.ops.Qid]=[cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)]):
         self._field = field
-        self._rows = rows
-        self._cols = cols
-        assert len(rows) == len(cols), 'Please provide as many row indices as column indices for cirq.GridQubit'
-        if(field == "X"):
+        self._qreg = qreg
+        if(isinstance(field, cirq.PauliString)):
+            super().__init__(model, field)
+            return
+        elif(field == "X"):
             obs = cirq.X
         elif(field == "Y"):
             obs = cirq.Y
         elif(field == "Z"):
             obs = cirq.Z
         else:
-            assert False, "Please choose a Pauli matrix for the 2-point correlation"
-        
-        super().__init__(model, cirq.PauliString(obs(model.qubits[rows[k]][cols[k]]) for k in range(len(rows))))
+            assert False, "Please choose a Pauli matrix or provide cirq.PauliString for the n-point correlation"
+        super().__init__(model, cirq.PauliString(obs(qubit) for qubit in qreg))
     
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
                 "field": self._field,
-                "cols": self._cols,
-                "rows": self._rows
+                "qreg": self._qreg
             },
         }
 

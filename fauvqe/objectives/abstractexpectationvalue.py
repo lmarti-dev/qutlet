@@ -1,4 +1,5 @@
-"""Implementation of the expectation value as objective function for an AbstractModel object.
+"""
+    Abstract class for the expectation value as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict, Mapping, Optional
 from numbers import Integral
@@ -12,13 +13,13 @@ from fauvqe.models.abstractmodel import AbstractModel
 
 class AbstractExpectationValue(Objective):
     """Abstract Expectation value objective
-
-    This class implements as objective the expectation value of a given observable.
-
+    
+    This class implements an abstract class for expectation values of a given observable.
+    
     Parameters
     ----------
     model: AbstractModel        The linked model
-    observable: Optional[cirq.PauliSum]       Observable of which the expectation value will be calculated. If not provided, the function evaluate needs to be overwritten
+    observable: Optional[cirq.PauliSum]       Observable of which the expectation value will be calculated. If not provided, the model hamiltonian will be set
     
     Methods
     ----------
@@ -29,16 +30,18 @@ class AbstractExpectationValue(Objective):
             <AbstractExpectationValue field=self.field>
     """
 
-    def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]):
-        self._observable = observable
-        super().__init__(model)
-        
-    def evaluate(self, wavefunction: np.ndarray, q_map, atol: float = 1e-7) -> np.float64:
-        if(self._observable is not None):
-            return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
+    def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]=None):
+        if(observable is None):
+            self._observable = model.hamiltonian
         else:
-            raise NotImplementedError()
-
+            self._observable = observable
+        super().__init__(model)
+    
+    def evaluate(self, wavefunction: np.ndarray, q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, atol: float = 1e-7) -> np.float64:
+        if(q_map is None):
+            q_map = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
+        return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
+    
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {

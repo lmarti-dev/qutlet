@@ -3,30 +3,10 @@ from typing import Tuple, Dict
 import pytest
 import numpy as np
 
-import qutip
+from qutip import Qobj
 
-from fauvqe import Fidelity, AbstractModel
+from fauvqe import Fidelity, Ising
 
-
-class MockModel(AbstractModel):
-    def __init__(self):
-        super().__init__("GridQubit", [1, 1])
-
-    def to_json_dict(self) -> Dict:
-        return {}
-
-    @classmethod
-    def from_json_dict(cls, params: Dict):
-        return cls()
-
-    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        return np.array([0]), np.array([0])
-    
-    def _set_hamiltonian(self, reset: bool = True):
-        self.hamiltonian = cirq.PauliSum()
-    
-    def copy():
-        return MockModel()
 
 @pytest.mark.parametrize(
     "state1, state2, res",
@@ -35,8 +15,9 @@ class MockModel(AbstractModel):
         (1/np.sqrt(2) *np.array([1,1,0,0]), 1/np.sqrt(2) *np.array([1,1,0,0,]), 1)
     ],
 )
-def test_pure(state1, state2, res):
-    model = MockModel()
+def test_evaluate_pure(state1, state2, res):
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     
     objective = Fidelity(model, state1)
     
@@ -47,12 +28,13 @@ def test_pure(state1, state2, res):
 @pytest.mark.parametrize(
     "state1, state2, res",
     [
-        (qutip.Qobj(0.5*np.array([[1, 1], [1, 1]])), qutip.Qobj(0.5*np.array([[1, -1], [-1, 1]])), 0),
-        (qutip.Qobj(0.5*np.array([[1, 0], [0, 1]])), qutip.Qobj(0.5*np.array([[1, 1], [1, 1]])), 1/np.sqrt(2))
+        (Qobj(0.5*np.array([[1, 1], [1, 1]])), Qobj(0.5*np.array([[1, -1], [-1, 1]])), 0),
+        (Qobj(0.5*np.array([[1, 0], [0, 1]])), Qobj(0.5*np.array([[1, 1], [1, 1]])), 1/np.sqrt(2))
     ],
 )
-def test_mixed(state1, state2, res):
-    model = MockModel()
+def test_evaluate_mixed(state1, state2, res):
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     
     objective = Fidelity(model, state1)
     
@@ -63,11 +45,12 @@ def test_mixed(state1, state2, res):
 @pytest.mark.parametrize(
     "state",
     [
-        (qutip.Qobj(0.5*np.array([[1, -1], [-1, 1]])))
+        (Qobj(0.5*np.array([[1, -1], [-1, 1]])))
     ],
 )
 def test_json(state):
-    model = MockModel()
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     
     objective = Fidelity(model, state)
     print(objective)
@@ -78,7 +61,8 @@ def test_json(state):
     assert (objective == objective2)
 
 def test_exceptions():
-    model = MockModel()
+    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model.set_circuit("qaoa", {"p": 5})
     
     objective = Fidelity(model, np.zeros(2))
     with pytest.raises(NotImplementedError):

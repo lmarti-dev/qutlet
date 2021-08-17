@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import cirq
 
 from fauvqe import Correlation, Ising
 
@@ -8,14 +9,17 @@ from fauvqe import Correlation, Ising
     [
         ("Z"),
         ("Y"),
-        ("X")
+        ("X"),
+        ("S")
     ],
 )
-def test_corr(field):
+def test_evaluate(field):
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_circuit("qaoa", {"p": 5})
-    objective = Correlation(ising, field, [0,0],[0,1])
-
+    if(field == "S"):
+        field = cirq.PauliString(cirq.X(q) for q in ising.qubits[0])
+    objective = Correlation(ising, field)
+    
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(ising.circuit_param_values)
     )
@@ -26,7 +30,7 @@ def test_json():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
-    objective = Correlation(ising, "Z", [0,0],[0,1])
+    objective = Correlation(ising, "Z")
     print(objective)
     json = objective.to_json_dict()
     
@@ -39,4 +43,4 @@ def test_exception():
     ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
     with pytest.raises(AssertionError):
-        assert not Correlation(ising, "Foo", [0,0],[0,1])
+        assert not Correlation(ising, "Foo")

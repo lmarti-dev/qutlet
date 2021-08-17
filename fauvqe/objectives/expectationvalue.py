@@ -1,4 +1,5 @@
-"""Implementation of the expectation value as objective function for an AbstractModel object.
+"""
+    Implementation of the expectation value of the model hamiltonian as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict
 from numbers import Integral
@@ -30,7 +31,7 @@ class ExpectationValue(AbstractExpectationValue):
     """
 
     def __init__(self, model: AbstractModel):
-        super().__init__(model, model.hamiltonian)
+        super().__init__(model)
         self.__field: Literal["Z", "X"] = model.field
         self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
