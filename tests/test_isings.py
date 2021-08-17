@@ -39,7 +39,7 @@ class IsingTester:
 
     def simple_energy_JZZ_hZ_test(self, qubittype, n, j_v, j_h, h, test_gate, E_exp):
         # Create Ising object
-        ising_obj = Ising(qubittype, n, j_v, j_h, h)
+        ising_obj = Ising(qubittype, n, j_v, j_h, h, "Z")
 
         # Apply test gate
         for i in range(ising_obj.n[0]):
