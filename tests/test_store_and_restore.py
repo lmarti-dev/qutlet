@@ -57,6 +57,9 @@ def test_no_overwrite():
     with pytest.raises(FileExistsError):
         res.store(temp_path)
 
+    with pytest.raises(FileExistsError):
+        res.storetxt(temp_path)
+
     temp_path.unlink()
 
 
@@ -123,17 +126,70 @@ def test_continue_at():
 
     for i in range(len(steps1)):
         np.testing.assert_equal(steps2[i].params, steps1[i].params)
+@pytest.mark.parametrize(
+    "additional_objective, n_objectives, header_string",
+    [
+        (
+            None, 0, "# ExpectationValue \t\n"
+        ),
+        (
+            ExpectationValue(   Ising(  "GridQubit",
+                                        [2, 2],
+                                        0.1 * np.ones((1, 2)),
+                                        0.5 * np.ones((2, 1)),
+                                        0.2 * np.ones((2, 2)))),
+            1, 
+            "# ExpectationValue \tExpectationValue \t\n"
+        ),
+        (
+            [ExpectationValue(   Ising(  "GridQubit",
+                                        [2, 2],
+                                        0.1 * np.ones((1, 2)),
+                                        0.5 * np.ones((2, 1)),
+                                        0.2 * np.ones((2, 2)))),
+             ExpectationValue(   Ising(  "GridQubit",
+                                        [2, 2],
+                                        0.1 * np.ones((1, 2)),
+                                        0.5 * np.ones((2, 1)),
+                                        0.2 * np.ones((2, 2))))],
+            #This fails but should not!:
+            #CVaR(   Ising(  "GridQubit",
+            #                            [2, 2],
+            #                            0.1 * np.ones((1, 2)),
+            #                            0.5 * np.ones((2, 1)),
+            #                            0.2 * np.ones((2, 2))), alpha=1, field="X")],
+            2, 
+            "# ExpectationValue \tExpectationValue \tExpectationValue \t\n"
 
-def test_storetxt():
+        ),
+    ]
+)
+def test_storetxt(additional_objective, n_objectives,header_string):
     res = get_simple_result()
     temp_path = os.path.dirname(os.path.abspath(__file__)) + "/fauvqe-pytest.txt"
 
-    res.storetxt(temp_path, overwrite=True)
+    res.storetxt(   temp_path, 
+                    overwrite=True,
+                    additional_objectives=additional_objective)
 
     temp_data = np.loadtxt(temp_path)
 
-    assert temp_data.shape == (25,)
-    assert (res.get_objectives() == temp_data).all()
+    f = open(temp_path)
+    header = f.readline()
+    f.close()
+    assert header == header_string
+
+    if n_objectives == 0:
+        assert temp_data.shape == (25,)
+        assert (res.get_objectives() == temp_data).all()
+    else:
+        assert temp_data.shape == (25,n_objectives+1)
+        for i in range(n_objectives+1):
+            print("i: {}".format(i))
+            print(res.get_objectives())
+            print(temp_data[:,i])
+            print(res.get_objectives()/temp_data[:,i])
+            np.testing.assert_allclose(res.get_objectives(), temp_data[:,i], rtol=1e-15, atol=1e-15)
 
 def test_get_wf_from_i():
     res = get_simple_result(1, a0 = 1e-100)
@@ -146,6 +202,7 @@ def test_get_wf_from_i():
         0.2 * np.ones((2, 2)),
         "Z"
     )
+    ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
 
@@ -154,7 +211,12 @@ def test_get_wf_from_i():
                                     dict(zip(ising.circuit_param, ising.circuit_param_values))
                                     )).state_vector()
 
-    print(wf)
-    print(res._get_wf_from_i(0))
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, res._get_wf_from_i(0), rtol=1e-15, atol=1e-15)
+    #With np.complex128 this should pass:
+    #cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, res._get_wf_from_i(0), rtol=1e-15, atol=1e-15)
+
+    #With np.complex64 only have square root tolerances
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( wf/np.linalg.norm(wf), 
+                                                                    res._get_wf_from_i(0)/np.linalg.norm(res._get_wf_from_i(0)), 
+                                                                    rtol=np.sqrt(1e-15), 
+                                                                    atol=np.sqrt(1e-15))
     
