@@ -146,15 +146,20 @@ class OptimisationResult:
         if not overwrite and path.exists():
             raise FileExistsError("Not overwriting existing path {}".format(path))
 
-        save_data = np.empty([self.__index, 1 + len(additional_objectives)]) 
-        save_data[:,0] = self.get_objectives()
         header_string="{} \t".format(self.__objective.__class__.__name__)
-        
-        i=1
-        for objective in additional_objectives:
-            header_string+="{} \t".format(objective.__class__.__name__)
-            save_data[:,i]=self.get_objectives(objective)
-            i+=1
+        if additional_objectives is None:
+            save_data = self.get_objectives()
+        else:
+            if isinstance(additional_objectives,Objective):
+                additional_objectives = [additional_objectives]
+            save_data = np.empty([self.__index, 1 + len(additional_objectives)]) 
+            save_data[:,0] = self.get_objectives()
+
+            i=1
+            for objective in additional_objectives:
+                header_string+="{} \t".format(objective.__class__.__name__)
+                save_data[:,i]=self.get_objectives(objective)
+                i+=1
 
 
         np.savetxt( path, 
