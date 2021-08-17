@@ -1,13 +1,14 @@
 """
-    Implementation of the expectation value as objective function for an AbstractModel object.
+    Implementation of the Frobenius distance between a given approximate time evolution and the exact time evolution of the system hamiltonian as objective function for an AbstractModel object.
 """
-from typing import Literal, Tuple, Dict, Optional
+from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
 import numpy as np
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
+#from fauvqe import Objective, AbstractModel
 import cirq
 
 class UtCost(Objective):
@@ -20,10 +21,11 @@ class UtCost(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "t"         -> Float    t in U(t)
-                "U"         -> Literal  exact or Trotter (only matters if not exists or t wrong)
-                "wavefunctions"  -> np.ndarray      if None Use U csot, 
-                                                    otherwise batch wavefunctions for random batch cost
+    options:    "t"         -> Float
+                    t in U(t)
+                "order"         -> np.uint
+                    Trotter approximation order (Exact if 0 or negative)
+                "initial_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
                 "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
 
     Methods
@@ -37,10 +39,8 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    U: Literal["Exact", "Trotter"] = "Exact", 
-                    batch_wavefunctions: Optional[np.ndarray] = None,
-                    batch_averaging: bool = False,
-                    sample_size: int = -1):
+                    order: np.uint = 0,
+                    initial_wavefunctions: Optional[np.ndarray] = None):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -52,56 +52,109 @@ class UtCost(Objective):
         # To be implemented: U exact unitatry cost, U exact random batch sampling cost with wf 
         
         #Make sure correct Ut is used
-        # U: Literal["Exact", "Trotter"] = "Exact" is not used yet, this requires implementation of Trotter circuit
-        if t != model.t:
-            model.t = t
-            model.set_Ut()
-            self._Ut = model._Ut.view()
-        else:
-            try:
-                #Fails if does not exist
-                self._Ut = model._Ut.view()
-            except:
-                model.set_Ut()
-                self._Ut = model._Ut.view()
         self.t = t
         super().__init__(model)
-
-        if batch_wavefunctions is None:
+        
+        self._initial_wavefunctions = initial_wavefunctions
+        self._order = order
+        self._N = 2**np.size(model.qubits)
+        
+        if self._order == 0:
+            if t != model.t:
+                model.t = t
+                model.set_Ut()
+                self._Ut = model._Ut.view()
+            else:
+                try:
+                    #Fails if does not exist
+                    self._Ut = model._Ut.view()
+                except:
+                    model.set_Ut()
+                    self._Ut = model._Ut.view()
+        else:
+            assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
+            self._init_trotter_circuit()
+        if (initial_wavefunctions is None):
             self.batch_size = 0
         else:
-            #print(batch_wavefunctions)
-            assert(np.size(batch_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
+            assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
-                    format(np.log2(np.size(batch_wavefunctions[0,:])), np.size(model.qubits))
-            self.batch_size = np.size(batch_wavefunctions[:,0])
-            self.batch_wavefunctions = batch_wavefunctions
+                    format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
+            self.batch_size = np.size(initial_wavefunctions[:,0])
+            self._init_batch_wfcts()
+
+    def _init_trotter_circuit(self):
+        """
+        This function initialises the circuit for Trotter approximation and sets self.trotter_circuit
         
-        self.batch_averaging = batch_averaging
-        self.sample_size = sample_size
-
-        self._N = 2**np.size(model.qubits)
-
-    def evaluate(self, wavefunction: np.ndarray) -> np.float64:
+        Parameters
+        ----------
+        self
+        
+        Returns
+        ---------
+        void
+        """
+        self.trotter_circuit = cirq.Circuit()
+        hamiltonian = self.model.hamiltonian
+        #Loop through all the addends in the PauliSum Hamiltonian
+        for pstr in hamiltonian._linear_dict:
+            #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
+            temp = 1
+            #Loop through Paulis in the PauliString (pauli[1] encodes the cirq gate and pauli[0] encodes the qubit on which the gate acts)
+            for pauli in pstr:
+                temp = temp * pauli[1](pauli[0])
+            #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
+            self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._order))
+        #Copy the Trotter layer *order times.
+        #self.trotter_circuit = qsimcirq.QSimCircuit(self._order * self.trotter_circuit)
+        self.trotter_circuit = self._order * self.trotter_circuit
+    
+    def _init_batch_wfcts(self):
+        """
+        This function initialises the initial and output batch wavefunctions as sampling data and sets self._output_wavefunctions.
+        
+        Parameters
+        ----------
+        self
+        
+        Returns
+        ---------
+        void
+        """
+        if(self._order < 1):
+            self._output_wavefunctions = (self._Ut @ self._initial_wavefunctions.T).T
+        else:
+            self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
+            #Didn't find any cirq function which accepts a batch of initials
+            for k in range(self._initial_wavefunctions.shape[0]):
+                self._output_wavefunctions[k] = self.model.simulator.simulate(
+                    self.trotter_circuit,
+                    initial_state=self._initial_wavefunctions[k]
+                    #dtype=np.complex128
+                ).state_vector()
+            
+            #self.trotter_circuit = qsimcirq.QSimCircuit(self.trotter_circuit)
+            #start = time()
+            #for k in range(self._initial_wavefunctions.shape[0]):
+            #    self._output_wavefunctions[k] = self.trotter_circuit.final_state_vector(
+            #        initial_state=self._initial_wavefunctions[k],
+            #        dtype=np.complex64
+            #    )
+            #end = time()
+            #print(end-start)
+            
+    
+    def evaluate(self, wavefunction: np.ndarray, indices: Optional[List[int]] = None) -> np.float64:
         # Here we already have the correct model._Ut
-        if self.batch_size == 0:
+        if self.batch_size == 0 and indices == None:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is the U(t) via VQE
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
-            #Calculation via randomly choosing one state vector 
-            #Possible add on average over all 
-            if self.batch_averaging:
-                cost=0
-                for k in range(self.batch_size):
-                    #This assumes the batch to be the outputs of self._Ut (more efficient if reused as a traning data set)
-                    cost = cost + 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
-            else:
-                #Need to use here the initial_state
-                #That was used to calculate wavefunction
-                i = np.random.randint(self.batch_size)
-                #print("i: \t {}".format(i))
-                return 1 - abs( np.matrix.getH(wavefunction) @ self.batch_wavefunctions[k,:])
+            assert type(indices) is not None, 'Please provide indices for batch'
+            print(np.conjugate(wavefunction)*self._output_wavefunctions[indices])
+            return 1/len(indices) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[indices], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -109,24 +162,20 @@ class UtCost(Objective):
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            super().simulate(param_resolver, initial_state)
-            #return self._model.simulator.simulate(self._model.circuit,
-            #                param_resolver=param_resolver,
-            #                initial_state=initial_state).state_vector()
-
-        
+            return super().simulate(param_resolver, initial_state)
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError() 
         return {
             "constructor_params": {
                 "model": self._model,
+                "t": self.t, 
+                "order": self._order,
+                "initial_wavefunctions": self._initial_wavefunctions
             },
         }
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError() 
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
