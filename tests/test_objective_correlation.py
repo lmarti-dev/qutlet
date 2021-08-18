@@ -65,4 +65,12 @@ def test_exception():
     ising.set_simulator("qsim")
     ising.set_circuit("qaoa", {"p": 5})
     with pytest.raises(AssertionError):
-        assert not Correlation(ising, "Foo")
+        assert Correlation(ising, "Foo")
+
+def test_exception():
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    ising.set_simulator("qsim")
+    ising.set_circuit("qaoa", {"p": 5})
+    obj = Correlation(ising, "Z")
+    with pytest.raises(AssertionError):
+        assert obj.evaluate(np.zeros(shape=(5, 5, 5)))
