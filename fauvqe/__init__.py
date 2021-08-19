@@ -15,17 +15,17 @@ from fauvqe.models import (
     Ising,
 )
 from fauvqe.objectives import (
-    Objective,
-    CVaR,
     AbstractExpectationValue,
-    ExpectationValue,
-    MatrixCost,
-    UtCost,
-    Fidelity,
+    Correlation,
+    CVaR,
     Entanglement,
-    TraceDistance,
+    ExpectationValue,
+    Fidelity,
     Magnetisation,
-    Correlation
+    MatrixCost,
+    Objective,
+    TraceDistance,
+    UtCost
 )
 from fauvqe.optimisers import (
     Optimiser,

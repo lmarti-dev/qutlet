@@ -27,15 +27,15 @@ class AbstractExpectationValue(Objective):
         Returns
         ---------
         str:
-            <AbstractExpectationValue field=self.field>
+            <AbstractExpectationValue observable=self._observable>
     """
 
     def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]=None):
+        super().__init__(model)
         if(observable is None):
             self._observable = model.hamiltonian
         else:
             self._observable = observable
-        super().__init__(model)
     
     def evaluate(self, wavefunction: np.ndarray, q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, atol: float = 1e-7) -> np.float64:
         if(q_map is None):

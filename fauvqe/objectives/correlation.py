@@ -21,7 +21,7 @@ class Correlation(AbstractExpectationValue):
     ----------
     model: AbstractModel        The linked model
     field: Literal["X", "Y", "Z"]        Pauli Matrix to be used in n-point correlation
-    qreg: List[cirq.ops.Qid]        list of qubits on which n-point correlation shall be calculated
+    points: List[cirq.ops.Qid]        list of qubits on which n-point correlation shall be calculated
     
     Methods
     ----------
@@ -32,28 +32,28 @@ class Correlation(AbstractExpectationValue):
             <Correlation field=self.field>
     """
 
-    def __init__(self, model: AbstractModel, field: Union[Literal["X", "Y", "Z"], cirq.PauliString] = "Z", qreg: List[cirq.ops.Qid]=[cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)]):
+    def __init__(self, model: AbstractModel, field: Union[Literal["X", "Y", "Z"], cirq.PauliString] = "Z", points: List[cirq.ops.Qid]=[cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)]):
         self._field = field
-        self._qreg = qreg
+        self._points = points
         if(isinstance(field, cirq.PauliString)):
             super().__init__(model, field)
             return
         elif(field == "X"):
-            obs = cirq.X
+            self._pauli = cirq.X
         elif(field == "Y"):
-            obs = cirq.Y
+            self._pauli = cirq.Y
         elif(field == "Z"):
-            obs = cirq.Z
+            self._pauli = cirq.Z
         else:
             assert False, "Please choose a Pauli matrix or provide cirq.PauliString for the n-point correlation"
-        super().__init__(model, cirq.PauliString(obs(qubit) for qubit in qreg))
+        super().__init__(model, cirq.PauliString(self._pauli(qubit) for qubit in points))
     
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "model": self._model,
                 "field": self._field,
-                "qreg": self._qreg
+                "points": self._points
             },
         }
 
@@ -62,4 +62,4 @@ class Correlation(AbstractExpectationValue):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Correlation field={}>".format(self._field)
+        return "<Correlation observable={}>".format(self._observable)

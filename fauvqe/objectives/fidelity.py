@@ -21,7 +21,7 @@ class Fidelity(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "target"    -> np.ndarray    target state to calculate fidelity with
+    options:    "target_state"    -> np.ndarray    target state to calculate fidelity with
                 
     Methods
     ----------
@@ -29,7 +29,7 @@ class Fidelity(Objective):
         Returns
         ---------
         str:
-            <Fidelity target=self.target>
+            <Fidelity target state=self._target_state>
     
     evaluate(self, wavefunction) : np.float64
         Returns
@@ -72,4 +72,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target={}>".format(self._target_state)
+        return "<Fidelity target_state={}>".format(self._target_state)

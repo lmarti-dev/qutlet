@@ -22,7 +22,7 @@ class TraceDistance(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "target"    -> np.ndarray    target state to calculate trace distance to
+    options:    "target_state"    -> np.ndarray    target state to calculate trace distance to
                 
     Methods
     ----------
@@ -36,12 +36,12 @@ class TraceDistance(Objective):
         Returns
         ---------
         np.float64:
-            qutip.metrics.tracedist(wavefunction, self.target)
+            qutip.metrics.tracedist(wavefunction, self._target_state)
     """
     def __init__(   self,
                     model: AbstractModel, 
                     target_state: Union[np.ndarray, Qobj]):
-        
+        super().__init__(model)
         self._N = 2**np.size(model.qubits)
         self._n = np.size(model.qubits)
         if(not isinstance(target_state, Qobj)):
@@ -49,16 +49,16 @@ class TraceDistance(Objective):
         else:
             self._target_state = target_state
         
-        super().__init__(model)
-        
     def evaluate(self, wavefunction) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
-            q = Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            return tracedist(
+                Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]]), 
+                self._target_state
+            )
         elif(isinstance(wavefunction, Qobj)):
-            q = wavefunction
+            return tracedist(wavefunction, self._target_state)
         else:
             assert False, "Please provide target state as np.ndarray or qutip.Qobj"
-        return tracedist(q, self._target_state)
 
     def to_json_dict(self) -> Dict:
         return {
@@ -73,4 +73,4 @@ class TraceDistance(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Trace Distance target={}>".format(self._target_state)
+        return "<Trace Distance target_state={}>".format(self._target_state)
