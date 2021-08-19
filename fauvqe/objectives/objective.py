@@ -1,4 +1,5 @@
-"""Abstract base class for Objectives required to optimise circuit.
+"""
+    Abstract base class for Objectives required to optimise circuit.
 """
 import abc
 from numbers import Real

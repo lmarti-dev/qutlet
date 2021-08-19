@@ -408,7 +408,7 @@ class Ising(AbstractModel):
         """
         _n = self.n[0] * self.n[1]
         _k = (
-            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 , step=1) / _n
+            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 , step=1, dtype=np.complex128) / _n
         )
 
         if self.j_h.size > 0:
@@ -416,7 +416,7 @@ class Ising(AbstractModel):
         else:
             _j = self.j_v[0][0]
 
-        return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k))
+        return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k), dtype=np.complex128)
 
     def to_json_dict(self) -> Dict:
         return {

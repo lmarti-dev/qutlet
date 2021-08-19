@@ -46,7 +46,7 @@ def test_optimise():
         break_param=25,
         eta=eta,
     )
-    obj = ExpectationValue(ising_obj, field="Z")
+    obj = ExpectationValue(ising_obj)
     res = gd.optimise(obj)
 
     final_step = res.get_latest_step()

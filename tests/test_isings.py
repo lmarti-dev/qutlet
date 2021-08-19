@@ -29,7 +29,7 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        exp_val = ExpectationValue(ising_obj, field=basis)
+        exp_val = ExpectationValue(ising_obj)
         wf_energy = exp_val.evaluate(wf)
         assert (
             abs(E_exp - wf_energy) < self.atol
@@ -39,7 +39,7 @@ class IsingTester:
 
     def simple_energy_JZZ_hZ_test(self, qubittype, n, j_v, j_h, h, test_gate, E_exp):
         # Create Ising object
-        ising_obj = Ising(qubittype, n, j_v, j_h, h)
+        ising_obj = Ising(qubittype, n, j_v, j_h, h, "Z")
 
         # Apply test gate
         for i in range(ising_obj.n[0]):
@@ -53,7 +53,7 @@ class IsingTester:
         wf = wf / np.sqrt(abs(wf.dot(np.conj(wf))))
 
         # Test where calculated energy fits to energy expectation E_exp
-        exp_val = ExpectationValue(ising_obj, field="Z")
+        exp_val = ExpectationValue(ising_obj)
         wf_energy = exp_val.evaluate(wf)
 
         assert (

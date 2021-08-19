@@ -1,5 +1,5 @@
 """
-    Implementation of the expectation value as objective function for an AbstractModel object.
+    Implementation of the Frobenius distance between two matrices as objective function for an AbstractModel object.
 """
 from typing import Literal, Tuple, Dict, Optional
 from numbers import Integral, Real

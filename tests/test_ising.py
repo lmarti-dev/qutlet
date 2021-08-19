@@ -954,6 +954,8 @@ def test_consistency_pfeuty_sol(n):
         h_x * np.ones((1, n)),
         "X")
 
+    print("J_zz: \t {}, h_x \t {}".format(J_zz, h_x))
+
     ising_obj.diagonalise()
     assert (min(abs(ising_obj.energy_pfeuty_sol() - ising_obj.eig_val)) < atol),\
             "Pfeuty solution inconsistent with scipy sparse eig solver; Pfeuty: {}, scipy.sparse {}, tolerance {}".\
