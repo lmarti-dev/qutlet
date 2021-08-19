@@ -97,12 +97,6 @@ def test_json(alpha, indices):
     
     assert (objective == objective2)
 
-def test_exceptions():
-    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    model.set_circuit("qaoa", {"p": 5})
-    with pytest.raises(NotImplementedError):
-        assert Entanglement(model, "Foo", 0, [0])
-
 @pytest.mark.parametrize(
     "state",
     [

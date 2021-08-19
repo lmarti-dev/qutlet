@@ -67,3 +67,20 @@ class ExpectationValue(AbstractExpectationValue):
 
     def __repr__(self) -> str:
         return "<ExpectationValue field={}>".format(self.__field)
+
+    def __eq__(self, other): 
+        '''Temporary solution'''
+        if not isinstance(other, self.__class__):
+            # don't attempt to compare against unrelated types
+            return False
+
+        #Most general: avoid to define Attributes
+        temp_bools = []
+        for key in self.__dict__.keys():
+            print(key)
+            if(key == '_ExpectationValue__energies'):
+                temp_bools.append((getattr(self, key)[0] == getattr(other, key)[0]).all())
+                temp_bools.append((getattr(self, key)[1] == getattr(other, key)[1]).all())
+                continue
+            temp_bools.append(getattr(self, key) == getattr(other, key))
+        return all(temp_bools)
