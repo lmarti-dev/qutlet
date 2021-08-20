@@ -6,7 +6,7 @@ import multiprocessing
 from numbers import Real, Integral
 from typing import Literal, Optional, Dict
 
-#import cirq
+import cirq
 import joblib
 import numpy as np
 
@@ -65,8 +65,8 @@ class GradientOptimiser(Optimiser):
 
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
-        #self._circuit_param: np.ndarray = np.array([])
-        #self._n_param: Integral = 0
+        self._circuit_param: np.ndarray = np.array([])
+        self._n_param: Integral = 0
 
     def optimise(
         self,
