@@ -23,10 +23,10 @@ class GradientDescent(Optimiser):
     Arguments
     -----------
     eps : Real default 0.001
-      Epsilon for gradient
+      Discretisation finesse for numerical gradient
 
     eta : Real default 0.01
-      Velocity of gradient method
+      Step size for parameter update rule
 
     break_cond : {"iterations"} default "iterations"
       Break condition for optimisation
@@ -37,8 +37,8 @@ class GradientDescent(Optimiser):
 
     def __init__(
         self,
-        eps: Real = 10 ** -3,
-        eta: Real = 10 ** -2,
+        eps: Real = 1e-3,
+        eta: Real = 1e-2,
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
     ):
