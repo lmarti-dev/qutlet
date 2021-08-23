@@ -56,7 +56,7 @@ class GradientDescent(GradientOptimiser):
         2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
-        return temp_cpv - self._eta * gradient_values
+        return temp_cpv - self._eta * self._get_gradients(temp_cpv, _n_jobs)
 
     def to_json_dict(self) -> Dict:
         return {

@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 
 # internal imports
-from fauvqe import Ising, Optimiser, GradientDescent, ExpectationValue
+from fauvqe import Ising, GradientOptimiser, GradientDescent, ExpectationValue
 
 
 def test_set_optimiser():
@@ -66,4 +66,4 @@ def test_GradientDescent_break_cond_assert():
 def test_optimiser_optimise_assert():
     # Test if abstract base class can be initiated
     with pytest.raises(TypeError):
-        Optimiser()
+        GradientOptimiser()

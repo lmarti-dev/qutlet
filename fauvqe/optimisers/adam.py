@@ -50,7 +50,7 @@ from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.gradientoptimiser import GradientOptimiser
 
 
-class ADAM(Optimiser):
+class ADAM(GradientOptimiser):
     """ADAM class docstring"""
 
     def __init__(
@@ -126,11 +126,11 @@ class ADAM(Optimiser):
         OptimisationResult
         """
         #Do we even need these two lines?
-        self._v_t = np.zeros(np.shape(temp_cpv))
-        self._m_t = np.zeros(np.shape(temp_cpv))
+        self._v_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
+        self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
         
-    def _ADAM_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -149,7 +149,7 @@ class ADAM(Optimiser):
         self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
         self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
-            self._a
+            self._eta
             * (1 - self._b_2 ** step) ** 0.5
             / (1 - self._b_1 ** step)
             * self._m_t
