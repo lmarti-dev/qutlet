@@ -47,7 +47,7 @@ import numpy as np
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
-from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe.optimisers.gradientoptimiser import GradientOptimiser
 
 
 class ADAM(Optimiser):
@@ -55,9 +55,9 @@ class ADAM(Optimiser):
 
     def __init__(
         self,
-        eps: Real = 10 ** -3,
-        eps_2: Real = 10 ** -8,
-        a: Real = 10 ** -2,
+        eps: Real = 1e-3,
+        eps_2: Real = 1e-8,
+        eta: Real = 1e-2,
         b_1: Real = 0.9,
         b_2: Real = 0.999,
         break_cond: Literal["iterations"] = "iterations",
@@ -83,29 +83,16 @@ class ADAM(Optimiser):
             Break parameter for the optimisation
         """
 
-        super().__init__()
+        super().__init__(eps, eta, break_cond, break_param)
         assert all(
-            isinstance(n, Real) and n > 0.0 for n in [eps, eps_2, a, b_1, b_2]
+            isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
-        assert (
-            isinstance(break_param, Integral) and break_param > 0
-        ), "Break parameter must be a positive integer"
-        valid_break_cond = ["iterations"]
-        assert (
-            break_cond in valid_break_cond
-        ), "Invalid break condition, received: '{}', allowed are {}".format(
-            break_cond, valid_break_cond
-        )
-
+        
         # The following attributes remain constant for the lifetime of this optimiser
-        self._eps: Real = eps
         self._eps_2: Real = eps_2
-        self._a: Real = a
         self._b_1: Real = b_1
         self._b_2: Real = b_2
-        self._break_cond: Literal["iterations"] = break_cond
-        self._break_param: Integral = break_param
-
+        
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
         self._v_t: np.ndarray = np.array([])
@@ -138,71 +125,11 @@ class ADAM(Optimiser):
         -------
         OptimisationResult
         """
-        assert isinstance(
-            objective, Objective
-        ), "objective is not an instance of a subclass of Objective, given type '{}'".format(
-            type(objective).__name__
-        )
-        self._objective = objective
-        self._circuit_param = objective.model.circuit_param
-        if continue_at is not None:
-            assert isinstance(
-                continue_at, OptimisationResult
-            ), "continue_at must be a OptimisationResult"
-            res = continue_at
-            params = continue_at.get_latest_step().params
-            temp_cpv = params.view()
-            skip_steps = len(continue_at.get_steps())
-        else:
-            res = OptimisationResult(objective)
-            temp_cpv = objective.model.circuit_param_values.view()
-            skip_steps = 0
-
-        self._n_param = np.size(temp_cpv)
+        #Do we even need these two lines?
         self._v_t = np.zeros(np.shape(temp_cpv))
         self._m_t = np.zeros(np.shape(temp_cpv))
-
-        # Handle n_jobs parameter
-        assert isinstance(
-            n_jobs, Integral
-        ), "The number of jobs must be a positive integer or -1 (default)'. Given: {}".format(
-            n_jobs
-        )
-
-        # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
-        if n_jobs < 1:
-            # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
-            n_jobs = int(
-                min(
-                    max(multiprocessing.cpu_count() / 2, 1),
-                    2 * np.size(self._circuit_param),
-                )
-            )
-            assert n_jobs != 0, "{} {}".format(
-                multiprocessing.cpu_count(), np.size(self._circuit_param)
-            )
-            # Try to reset qsim threads, which overwrites the simulator if it was not qsim
-            try:
-                if str(self._objective.model.simulator.__class__).find('qsim') > 0:
-                    sim_name = "qsim"
-                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
-                self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
-            except:
-                pass
-
-        # Do step until break condition
-        if self._break_cond == "iterations":
-            for i in range(self._break_param - skip_steps):
-                # Make ADAM step
-                t0 = timeit.default_timer()
-                temp_cpv = self._ADAM_step(temp_cpv, n_jobs, step=i + 1)
-                t1 = timeit.default_timer()
-                res.add_step(temp_cpv.copy())
-                t2 = timeit.default_timer()
-                #print("{}. ADAM step: \t t_step: {}s,\t t_store {}s".format(i, t1-t0, t2-t1))
-
-        return res
-
+        return super().optimise(objective, continue_at, n_jobs)
+        
     def _ADAM_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         """
         t ← t + 1
@@ -230,45 +157,13 @@ class ADAM(Optimiser):
         )
 
         return temp_cpv
-
-    def _get_gradients(self, temp_cpv, _n_jobs):
-        joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
-        # backend options: -'loky'               seems to be always the slowest
-        #                   'multiprocessing'   crashes where both other options do not
-        #                   'threading'         supposedly best option, still so far slower than
-        #                                       seqquential _get_gradients()
-        # 1. Get single energies via joblib.Parallel
-        # Format E_1 +eps, E_1 - eps
-        # Potential issue: Need 2*n_param copies of joined_dict
-        _energies = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
-            joblib.delayed(self._get_single_energy)(joined_dict.copy(), j)
-            for j in range(2 * self._n_param)
-        )
-        # 2. Return gradiens
-        # Make np array?
-        _energies = np.array(_energies).reshape((self._n_param, 2))
-        gradients_values = np.matmul(_energies, np.array((1, -1))) / (2 * self._eps)
-        return gradients_values
-
-    def _get_single_energy(self, joined_dict, j):
-        # Simulate wavefunction at p_j +/- eps
-        # j even: +  j odd: -
-
-        # Alternative: _str_cp = str(self.circuit_param[np.divmod(j,2)[0]])
-        joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])] = (
-            joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])]
-            + 2 * (0.5 - np.mod(j, 2)) * self._eps
-        )
-        wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
-
-        return self._objective.evaluate(wf)
-
+    
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "eps": self._eps,
                 "eps_2": self.eps_2,
-                "a": self._a,
+                "eta": self._eta,
                 "b_1": self._b_1,
                 "b_2": self._b_2,
                 "break_cond": self._break_cond,

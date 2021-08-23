@@ -9,6 +9,7 @@ from typing import Literal, Optional, Dict
 import cirq
 import joblib
 import numpy as np
+import abc
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult

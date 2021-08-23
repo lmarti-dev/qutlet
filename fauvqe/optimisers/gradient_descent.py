@@ -14,7 +14,7 @@ import numpy as np
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
-from fauvqe.optimisers.optimiser import GradientOptimiser
+from fauvqe.optimisers.gradientoptimiser import GradientOptimiser
 
 
 class GradientDescent(GradientOptimiser):
