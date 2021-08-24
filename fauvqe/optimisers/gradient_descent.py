@@ -7,7 +7,7 @@ This file is not exectuded, rather called within Ising() class when:
 or functions are handed over to classical optimiser
 """
 from numbers import Real, Integral
-from typing import Literal, Union, Dict
+from typing import Literal, Union, Dict, Optional
 
 import cirq
 import numpy as np
@@ -48,7 +48,7 @@ class GradientDescent(GradientOptimiser):
     ):
         super().__init__(eps, eta, break_cond, break_param, break_tol)
 
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, initial_state: Optional[np.ndarray] = None):
         """
         Run optimiser until break condition is fullfilled
 
@@ -56,7 +56,7 @@ class GradientDescent(GradientOptimiser):
         2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
-        return temp_cpv - self._eta * self._get_gradients(temp_cpv, _n_jobs)
+        return temp_cpv - self._eta * self._get_gradients(temp_cpv, _n_jobs, initial_state)
 
     def to_json_dict(self) -> Dict:
         return {

@@ -130,7 +130,7 @@ class ADAM(GradientOptimiser):
         self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
         
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, initial_state: Optional[np.ndarray] = None):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -145,7 +145,7 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        gradient_values = np.array(self._get_gradients(temp_cpv, _n_jobs))
+        gradient_values = np.array(self._get_gradients(temp_cpv, _n_jobs, initial_state))
         self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
         self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
@@ -155,7 +155,7 @@ class ADAM(GradientOptimiser):
             * self._m_t
             / (self._v_t ** 0.5 + self._eps_2)
         )
-
+        
         return temp_cpv
     
     def to_json_dict(self) -> Dict:
