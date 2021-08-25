@@ -25,7 +25,7 @@ def get_simple_result(break_param0=25, a0 = 4 * 10 ** -2):
     adam = ADAM(
         eps=eps,
         break_param=break_param0,
-        a=a0,
+        eta=a0,
     )
 
     return adam.optimise(objective, n_jobs=8)

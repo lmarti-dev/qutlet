@@ -96,7 +96,7 @@ def test_evaluate_batch(t, avg_size):
     outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
     for k in range(len(eval_indices)):
         outputs[k] = res @ initials[eval_indices[k]]
-    assert objective.evaluate(outputs, eval_indices) < 1e-10
+    assert objective.evaluate(outputs, options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
     "t,order",
@@ -133,7 +133,7 @@ def test_simulate_batch(t, order):
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
-    assert (objective.evaluate([op], [0]) < 1e-3)
+    assert (objective.evaluate([op], options={'indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
     "t, order",
