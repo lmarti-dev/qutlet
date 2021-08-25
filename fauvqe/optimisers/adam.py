@@ -64,6 +64,7 @@ class ADAM(GradientOptimiser):
         break_param: Integral = 100,
         break_tol: Real = 1e-12,
         batch_size: Integral = 0,
+        symmetric_gradient: bool = True,
     ):
         """ADAM optimiser
 
@@ -83,9 +84,11 @@ class ADAM(GradientOptimiser):
             Break condition for the optimisation
         break_param: Integral
             Break parameter for the optimisation
+        symmetric_gradient: bool
+            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
         """
 
-        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size)
+        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size, symmetric_gradient)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
@@ -147,7 +150,7 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        gradient_values, tmp_c = self._get_gradients(temp_cpv, _n_jobs, indices)
+        gradient_values = self._get_gradients(temp_cpv, _n_jobs, indices)
         self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
         self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
@@ -158,7 +161,7 @@ class ADAM(GradientOptimiser):
             / (self._v_t ** 0.5 + self._eps_2)
         )
         
-        return temp_cpv, tmp_c
+        return temp_cpv
     
     def to_json_dict(self) -> Dict:
         return {

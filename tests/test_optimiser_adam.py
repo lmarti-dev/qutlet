@@ -22,7 +22,7 @@ import cirq
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost
 
 
-def atest_set_optimiser():
+def test_set_optimiser():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_circuit("qaoa", {"p": 1})
     adam = ADAM()
@@ -37,7 +37,7 @@ def atest_set_optimiser():
 #                                                           #
 #############################################################
 @pytest.mark.higheffort
-def atest_optimise():
+def test_optimise():
     ising = Ising(
         "GridQubit",
         [2, 2],
@@ -67,7 +67,7 @@ def atest_optimise():
 
 
 @pytest.mark.higheffort
-def atest_adam_multiple_models_and_auto_joblib():
+def test_adam_multiple_models_and_auto_joblib():
     ising1 = Ising(
         "GridQubit",
         [2, 2],
@@ -104,7 +104,7 @@ def atest_adam_multiple_models_and_auto_joblib():
 #                                                           #
 #############################################################
 @pytest.mark.higheffort
-def atest_optimise_joblib():
+def test_optimise_joblib():
     ising = Ising(
         "GridQubit",
         [2, 2],
@@ -130,7 +130,7 @@ def atest_optimise_joblib():
     assert -0.5 > expval_z.evaluate(wavefunction) - adam._eps
     # Result smaller than -0.5 up to eta
 
-def atest_optimise_no_simulator_change():
+def test_optimise_no_simulator_change():
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
@@ -148,7 +148,7 @@ def atest_optimise_no_simulator_change():
     res = adam.optimise(expval_z, n_jobs=-1)
     assert(ising.simulator == adam._objective.model.simulator)
 
-def atest__get_single_energy():
+def test__get_single_energy():
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
@@ -172,7 +172,7 @@ def atest__get_single_energy():
 
 @pytest.mark.higheffort
 def test_optimise_batch():
-    t=0.1
+    t=0.5
     ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X", t)
     ising.set_Ut()
     ising.set_circuit("hea", {
@@ -183,7 +183,7 @@ def test_optimise_batch():
     })
     ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
     
-    bsize = 10
+    bsize = 100
     initial_rands= (np.random.rand(bsize, 16)).astype(np.complex128)
     initials = np.zeros(initial_rands.shape, dtype=np.complex64)
     for k in range(bsize):
@@ -194,16 +194,18 @@ def test_optimise_batch():
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(ising.circuit_param_values), initial_state=initials[0]
     )
-    print( objective.evaluate([wavefunction], options={'indices': [0]}) )
-    adam = ADAM(break_param = 100, batch_size = 4, eps=1e-5, eta=4e-2)
+    trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
+    print(trotter_cost)
+    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = False)
     print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective)
     print(res.get_latest_step().params)
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params), initial_state=initials[0]
     )
-    print(objective.evaluate([wavefunction], options={'indices': [0]}))
-    assert objective.evaluate([wavefunction], options={'indices': [0]}) < 1e-10
+    var_cost = (objective.evaluate([wavefunction], options={'indices': [0]}))
+    print(var_cost)
+    assert var_cost/10 < trotter_cost
 
 #############################################################
 #                                                           #

@@ -29,6 +29,7 @@ class GradientOptimiser(Optimiser):
         break_param: Integral = 100,
         break_tol: Real = 1e-12,
         batch_size: Integral = 0,
+        symmetric_gradient: bool = True,
     ):
         """GradientOptimiser
         
@@ -46,6 +47,8 @@ class GradientOptimiser(Optimiser):
             "accuracy" break parameter for the optimisation
         batch_size: Integral
             number of batch wavefunctions, une None as initial_state if batch_size = 0 
+        symmetric_gradient: bool
+            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
         """
 
         super().__init__()
@@ -69,7 +72,13 @@ class GradientOptimiser(Optimiser):
         self._break_param: Integral = break_param
         self._break_tol: Real = break_tol
         self._batch_size: Integral = batch_size
-
+        if(symmetric_gradient):
+            self._get_gradients = self._get_gradients_sym
+            self._get_single_cost = self._get_single_cost_sym
+        else:
+            self._get_gradients = self._get_gradients_asym
+            self._get_single_cost = self._get_single_cost_asym
+        
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
         self._circuit_param: np.ndarray = np.array([])
@@ -95,9 +104,7 @@ class GradientOptimiser(Optimiser):
             The objective to optimise
         continue_at: OptimisationResult, optional
             Continue a optimisation
-        initial_state: np.ndarray, optional
-            Specify an initial state for objective.simulate
-
+        
         Returns
         -------
         OptimisationResult
@@ -152,19 +159,20 @@ class GradientOptimiser(Optimiser):
             except:
                 pass
         if self._batch_size > 0:
-            indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
+            indices = [[0] for k in range(self._break_param - skip_steps)]
+            #indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
         else:
             indices = [None for k in range(self._break_param - skip_steps)]
         # Do step until break condition
-        tmp_c = np.zeros(self._break_param)
         if self._break_cond == "iterations":
             for i in range(self._break_param - skip_steps):
-                temp_cpv, tmp_c[i] = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
+                temp_cpv = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
                 res.add_step(temp_cpv.copy())
         elif(self._break_cond == "accuracy"):
             raise NotImplementedError()
-        plt.plot(range(self._break_param), tmp_c)
-        plt.savefig('test.png')
+        #plt.plot(range(self._break_param), tmp_c)
+        #plt.yscale('log')
+        #plt.savefig('test.png')
         return res
 
     @abc.abstractmethod
@@ -180,7 +188,7 @@ class GradientOptimiser(Optimiser):
         """
         raise NotImplementedError()
     
-    def _get_gradients(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
+    def _get_gradients_sym(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
         # backend options: -'loky'               seems to be always the slowest
         #                   'multiprocessing'   crashes where both other options do not
@@ -197,9 +205,9 @@ class GradientOptimiser(Optimiser):
         # Make np array?
         _costs = np.array(_costs).reshape((self._n_param, 2))
         gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self._eps)
-        return gradients_values, _costs[0][0]
+        return gradients_values
 
-    def _get_single_cost(self, joined_dict, j, indices: Optional[List[int]] = None):
+    def _get_single_cost_sym(self, joined_dict, j, indices: Optional[List[int]] = None):
         # Simulate wavefunction at p_j +/- eps
         # j even: +  j odd: -
 
@@ -211,7 +219,30 @@ class GradientOptimiser(Optimiser):
         if (indices is None):
             wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
         else:
-            wf = np.zeros(shape=(len(indices), self._objective._N))
+            wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
+            for k in range(len(indices)):
+                wf[k] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
+        return self._objective.evaluate(wf, options={'indices': indices})
+    
+    def _get_gradients_asym(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
+        joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
+        _costs = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
+            joblib.delayed(self._get_single_cost)(joined_dict.copy(), j, indices)
+            for j in range(self._n_param + 1)
+        )
+        _costs = np.array(_costs)
+        gradients_values = (_costs[1:] - _costs[0]) / (self._eps)
+        return gradients_values
+
+    def _get_single_cost_asym(self, joined_dict, j, indices: Optional[List[int]] = None):
+        if(j>0):
+            joined_dict[str(self._circuit_param[j-1])] = (
+                joined_dict[str(self._circuit_param[j-1])] + self._eps
+            )
+        if (indices is None):
+            wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+        else:
+            wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
             for k in range(len(indices)):
                 wf[k][:] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})

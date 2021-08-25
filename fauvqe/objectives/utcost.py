@@ -143,7 +143,6 @@ class UtCost(Objective):
             #    )
             #end = time()
             #print(end-start)
-            
     
     def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
         # Here we already have the correct model._Ut
@@ -153,10 +152,6 @@ class UtCost(Objective):
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
             assert ('indices' in options.keys()) and (options['indices'] is not None), 'Please provide indices for batch'
-            #cost = 0
-            #for k in range(len(options['indices'])):
-            #    cost = cost + 1 - abs( np.conjugate(wavefunction[k]) @ self._output_wavefunctions[(options['indices'][k])])
-            #return 1/len(options['indices']) * cost
             return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
