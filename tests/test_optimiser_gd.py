@@ -93,6 +93,25 @@ def test_optimise_batch():
     print(var_cost)
     assert var_cost/10 < trotter_cost
 
+def test_json():
+    t=0.1
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    bsize=10
+    initial_rands= (np.random.rand(bsize, 4)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    objective = UtCost(ising, t, 0, initial_wavefunctions=initials)
+    gd = GradientDescent()
+    json = gd.to_json_dict()
+    
+    gd2 = GradientDescent.from_json_dict(json)
+    
+    assert gd == gd2
+
 #############################################################
 #                     Test errors                           #
 #############################################################

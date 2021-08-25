@@ -62,7 +62,6 @@ class ADAM(GradientOptimiser):
         b_2: Real = 0.999,
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
-        break_tol: Real = 1e-12,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
     ):
@@ -88,7 +87,7 @@ class ADAM(GradientOptimiser):
             Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
         """
 
-        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size, symmetric_gradient)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
@@ -167,13 +166,14 @@ class ADAM(GradientOptimiser):
         return {
             "constructor_params": {
                 "eps": self._eps,
-                "eps_2": self.eps_2,
+                "eps_2": self._eps_2,
                 "eta": self._eta,
                 "b_1": self._b_1,
                 "b_2": self._b_2,
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
-                "batch_size": self._batch_size
+                "batch_size": self._batch_size,
+                "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
             },
         }
 

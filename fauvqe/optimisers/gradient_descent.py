@@ -28,27 +28,23 @@ class GradientDescent(GradientOptimiser):
     eta : Real default 0.01
       Step size for parameter update rule
 
-    break_cond : {"iterations", "accuracy"} default "iterations"
+    break_cond : {"iterations"} default "iterations"
       Break condition for optimisation
 
     break_param : int default 100
       Amount of steps of iteration
-    
-    break_tol: Real default 1e-12
-      "accuracy" break parameter for the optimisation
     """
 
     def __init__(
         self,
         eps: Real = 1e-3,
         eta: Real = 1e-2,
-        break_cond: Literal["iterations", "accuracy"] = "iterations",
+        break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
-        break_tol: Real = 1e-12,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
     ):
-        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size, symmetric_gradient)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient)
 
     def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """
@@ -59,19 +55,3 @@ class GradientDescent(GradientOptimiser):
         3. Update self.circuit_param_values = temp_cpv
         """
         return temp_cpv - self._eta * self._get_gradients(temp_cpv, _n_jobs, indices)
-
-    def to_json_dict(self) -> Dict:
-        return {
-            "constructor_params": {
-                "eps": self._eps,
-                "eta": self._eta,
-                "break_cond": self._break_cond,
-                "break_param": self._break_param,
-                "break_tol": self._break_tol,
-                "batch_size": self._batch_size
-            },
-        }
-
-    @classmethod
-    def from_json_dict(cls, dct: Dict):
-        return cls(**dct["constructor_params"])

@@ -130,7 +130,13 @@ def test_optimise_joblib():
     assert -0.5 > expval_z.evaluate(wavefunction) - adam._eps
     # Result smaller than -0.5 up to eta
 
-def test_optimise_no_simulator_change():
+@pytest.mark.parametrize(
+    "sym",
+    [
+        (True),(False)
+    ],
+)
+def test_optimise_no_simulator_change(sym):
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
@@ -141,6 +147,7 @@ def test_optimise_no_simulator_change():
     adam = ADAM(
         break_param=1,
         eta=4e-2,
+        symmetric_gradient=sym
     )
     expval_z = ExpectationValue(ising)
     #assert(ising.simulator == 0)
@@ -170,8 +177,14 @@ def test__get_single_energy():
     se_gradients = np.matmul(single_energies, np.array((1, -1))) / (2 * adam._eps) 
     np.testing.assert_allclose(gg_gradients    , se_gradients, rtol=1e-15, atol=1e-15)
 
+@pytest.mark.parametrize(
+    "sym",
+    [
+        (True),(False)
+    ],
+)
 @pytest.mark.higheffort
-def test_optimise_batch():
+def test_optimise_batch(sym):
     t=0.5
     ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X", t)
     ising.set_Ut()
@@ -196,7 +209,7 @@ def test_optimise_batch():
     )
     trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
     print(trotter_cost)
-    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = False)
+    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = sym)
     print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective)
     print(res.get_latest_step().params)
@@ -206,6 +219,25 @@ def test_optimise_batch():
     var_cost = (objective.evaluate([wavefunction], options={'indices': [0]}))
     print(var_cost)
     assert var_cost/10 < trotter_cost
+
+def test_json():
+    t=0.1
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    bsize=10
+    initial_rands= (np.random.rand(bsize, 4)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    objective = UtCost(ising, t, 0, initial_wavefunctions=initials)
+    adam = ADAM()
+    json = adam.to_json_dict()
+    
+    adam2 = ADAM.from_json_dict(json)
+    
+    assert adam.__eq__(adam2)
 
 #############################################################
 #                                                           #

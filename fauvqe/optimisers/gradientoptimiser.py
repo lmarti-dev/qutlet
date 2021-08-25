@@ -25,9 +25,8 @@ class GradientOptimiser(Optimiser):
         self,
         eps: Real = 1e-3,
         eta: Real = 1e-2,
-        break_cond: Literal["iterations", "accuracy"] = "iterations",
+        break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
-        break_tol: Real = 1e-12,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
     ):
@@ -39,12 +38,10 @@ class GradientOptimiser(Optimiser):
             Discretisation finesse for numerical gradient
         eta: Real
             Step size for parameter update rule
-        break_cond: {"iterations", "accuracy"} default "iterations"
+        break_cond: {"iterations"} default "iterations"
             Break condition for the optimisation
         break_param: Integral
             "iterations" break parameter for the optimisation
-        break_tol: Real
-            "accuracy" break parameter for the optimisation
         batch_size: Integral
             number of batch wavefunctions, une None as initial_state if batch_size = 0 
         symmetric_gradient: bool
@@ -53,12 +50,12 @@ class GradientOptimiser(Optimiser):
 
         super().__init__()
         assert all(
-            isinstance(n, Real) and n > 0.0 for n in [eps, eta, break_tol]
+            isinstance(n, Real) and n > 0.0 for n in [eps, eta]
         ), "Parameters must be positive, real numbers"
         assert (
             isinstance(n, Integral) and n > 0 for n in [break_param, batch_size]
         ), "Parameters must be positive integers"
-        valid_break_cond = ["iterations", "accuracy"]
+        valid_break_cond = ["iterations"]
         assert (
             break_cond in valid_break_cond
         ), "Invalid break condition, received: '{}', allowed are {}".format(
@@ -70,7 +67,6 @@ class GradientOptimiser(Optimiser):
         self._eta: Real = eta
         self._break_cond: Literal["iterations"] = break_cond
         self._break_param: Integral = break_param
-        self._break_tol: Real = break_tol
         self._batch_size: Integral = batch_size
         if(symmetric_gradient):
             self._get_gradients = self._get_gradients_sym
@@ -159,8 +155,7 @@ class GradientOptimiser(Optimiser):
             except:
                 pass
         if self._batch_size > 0:
-            indices = [[0] for k in range(self._break_param - skip_steps)]
-            #indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
+            indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
         else:
             indices = [None for k in range(self._break_param - skip_steps)]
         # Do step until break condition
@@ -168,8 +163,6 @@ class GradientOptimiser(Optimiser):
             for i in range(self._break_param - skip_steps):
                 temp_cpv = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
                 res.add_step(temp_cpv.copy())
-        elif(self._break_cond == "accuracy"):
-            raise NotImplementedError()
         #plt.plot(range(self._break_param), tmp_c)
         #plt.yscale('log')
         #plt.savefig('test.png')
@@ -254,8 +247,8 @@ class GradientOptimiser(Optimiser):
                 "eta": self._eta,
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
-                "break_tol": self._break_tol,
                 "batch_size": self._batch_size,
+                "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
             },
         }
 
