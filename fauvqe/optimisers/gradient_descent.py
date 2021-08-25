@@ -44,9 +44,10 @@ class GradientDescent(GradientOptimiser):
         eta: Real = 1e-2,
         break_cond: Literal["iterations", "accuracy"] = "iterations",
         break_param: Integral = 100,
-        break_tol: Real = 1e-12
+        break_tol: Real = 1e-12,
+        batch_size: Integral = 0,
     ):
-        super().__init__(eps, eta, break_cond, break_param, break_tol)
+        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size)
 
     def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, initial_state: Optional[np.ndarray] = None):
         """
@@ -65,7 +66,8 @@ class GradientDescent(GradientOptimiser):
                 "eta": self._eta,
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
-                "break_tol": self._break_tol
+                "break_tol": self._break_tol,
+                "batch_size": self._batch_size
             },
         }
 

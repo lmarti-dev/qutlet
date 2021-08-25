@@ -38,7 +38,7 @@ Potential MUCH BETTER alternative option: load from scipy??
 """
 import multiprocessing
 from numbers import Real, Integral
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, List
 
 import cirq
 import joblib
@@ -62,6 +62,8 @@ class ADAM(GradientOptimiser):
         b_2: Real = 0.999,
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
+        break_tol: Real = 1e-12,
+        batch_size: Integral = 0,
     ):
         """ADAM optimiser
 
@@ -83,7 +85,7 @@ class ADAM(GradientOptimiser):
             Break parameter for the optimisation
         """
 
-        super().__init__(eps, eta, break_cond, break_param)
+        super().__init__(eps, eta, break_cond, break_param, break_tol, batch_size)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
@@ -130,7 +132,7 @@ class ADAM(GradientOptimiser):
         self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
         
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, initial_state: Optional[np.ndarray] = None):
+    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -145,7 +147,7 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        gradient_values = np.array(self._get_gradients(temp_cpv, _n_jobs, initial_state))
+        gradient_values, tmp_c = self._get_gradients(temp_cpv, _n_jobs, indices)
         self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
         self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
@@ -156,7 +158,7 @@ class ADAM(GradientOptimiser):
             / (self._v_t ** 0.5 + self._eps_2)
         )
         
-        return temp_cpv
+        return temp_cpv, tmp_c
     
     def to_json_dict(self) -> Dict:
         return {
@@ -168,6 +170,7 @@ class ADAM(GradientOptimiser):
                 "b_2": self._b_2,
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
+                "batch_size": self._batch_size
             },
         }
 
