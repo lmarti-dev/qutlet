@@ -13,6 +13,11 @@ import joblib
 import numpy as np
 import abc
 
+import os
+dir_path = os.path.abspath(os.path.dirname(__file__))
+
+import math
+
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.optimiser import Optimiser
@@ -29,6 +34,7 @@ class GradientOptimiser(Optimiser):
         break_param: Integral = 100,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
+        plot_run: bool = False,
     ):
         """GradientOptimiser
         
@@ -36,16 +42,24 @@ class GradientOptimiser(Optimiser):
         ----------
         eps: Real
             Discretisation finesse for numerical gradient
+        
         eta: Real
             Step size for parameter update rule
+        
         break_cond: {"iterations"} default "iterations"
             Break condition for the optimisation
+        
         break_param: Integral
             "iterations" break parameter for the optimisation
+        
         batch_size: Integral
             number of batch wavefunctions, une None as initial_state if batch_size = 0 
+        
         symmetric_gradient: bool
             Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+        
+        plot_run: bool
+            Plot cost development in optimisation run and save to fauvqe/plots 
         """
 
         super().__init__()
@@ -74,6 +88,7 @@ class GradientOptimiser(Optimiser):
         else:
             self._get_gradients = self._get_gradients_asym
             self._get_single_cost = self._get_single_cost_asym
+        self._plot_run = plot_run
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -158,14 +173,16 @@ class GradientOptimiser(Optimiser):
             indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
         else:
             indices = [None for k in range(self._break_param - skip_steps)]
+        costs = [None for k in range(self._break_param - skip_steps)]
         # Do step until break condition
         if self._break_cond == "iterations":
             for i in range(self._break_param - skip_steps):
-                temp_cpv = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                res.add_step(temp_cpv.copy())
-        #plt.plot(range(self._break_param), tmp_c)
-        #plt.yscale('log')
-        #plt.savefig('test.png')
+                temp_cpv, costs[i] = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
+                res.add_step(temp_cpv.copy(), objective = costs[i])
+        if(self._plot_run):
+            plt.plot(range(self._break_param), costs)
+            plt.yscale('log')
+            plt.savefig(dir_path + '../../plots/GD_Optimisation.png')
         return res
 
     @abc.abstractmethod
@@ -198,7 +215,7 @@ class GradientOptimiser(Optimiser):
         # Make np array?
         _costs = np.array(_costs).reshape((self._n_param, 2))
         gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self._eps)
-        return gradients_values
+        return gradients_values, None
 
     def _get_single_cost_sym(self, joined_dict, j, indices: Optional[List[int]] = None):
         # Simulate wavefunction at p_j +/- eps
@@ -225,7 +242,7 @@ class GradientOptimiser(Optimiser):
         )
         _costs = np.array(_costs)
         gradients_values = (_costs[1:] - _costs[0]) / (self._eps)
-        return gradients_values
+        return gradients_values, _costs[0]
 
     def _get_single_cost_asym(self, joined_dict, j, indices: Optional[List[int]] = None):
         if(j>0):
@@ -249,6 +266,7 @@ class GradientOptimiser(Optimiser):
                 "break_param": self._break_param,
                 "batch_size": self._batch_size,
                 "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
+                "plot_run": self._plot_run,
             },
         }
 

@@ -165,7 +165,7 @@ def test__get_single_energy():
     adam = ADAM(break_param=1,eta=4e-2)
     expval_z = ExpectationValue(ising)
     res = adam.optimise(expval_z, n_jobs=-1)
-    gg_gradients = adam._get_gradients(adam._objective.model.circuit_param_values, 8)
+    gg_gradients, cost = adam._get_gradients(adam._objective.model.circuit_param_values, 8)
 
     # 2 layer, 2 parameters, 2 energies each
     single_energies = np.zeros(2*2*2)

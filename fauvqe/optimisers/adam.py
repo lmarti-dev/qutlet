@@ -1,5 +1,5 @@
 """
-This is the ADAM-submodule for Optimiser()
+This is the ADAM-submodule of GradientOptimiser()
 
 This file is not exectuded, rather called within Ising() class when:
 -set_circuit('qaoa') is called
@@ -64,6 +64,7 @@ class ADAM(GradientOptimiser):
         break_param: Integral = 100,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
+        plot_run: bool = False,
     ):
         """ADAM optimiser
 
@@ -71,23 +72,33 @@ class ADAM(GradientOptimiser):
         ----------
         eps: Real
             :math:`\\epsilon` for gradient
+        
         eps_2: Real
             :math:`\\epsilon` for adam
-        a: Real
+        
+        eta: Real
             Step size :math:`\\alpha` for adam
+        
         b_1: Real
             :math:`\\beta_1` for adam
+        
         b_2: Real
             :math:`\\beta_2` for adam
+        
         break_cond: {"iterations"} default "iterations"
             Break condition for the optimisation
+        
         break_param: Integral
             Break parameter for the optimisation
+        
         symmetric_gradient: bool
             Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+        
+        plot_run: bool
+            Plot cost development in optimisation run and save to fauvqe/plots 
         """
 
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
@@ -149,7 +160,7 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        gradient_values = self._get_gradients(temp_cpv, _n_jobs, indices)
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
         self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
         self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
         temp_cpv -= (
@@ -160,7 +171,7 @@ class ADAM(GradientOptimiser):
             / (self._v_t ** 0.5 + self._eps_2)
         )
         
-        return temp_cpv
+        return temp_cpv, cost
     
     def to_json_dict(self) -> Dict:
         return {
@@ -174,6 +185,7 @@ class ADAM(GradientOptimiser):
                 "break_param": self._break_param,
                 "batch_size": self._batch_size,
                 "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
+                "plot_run": self._plot_run
             },
         }
 

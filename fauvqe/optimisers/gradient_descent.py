@@ -1,5 +1,5 @@
 """
-This is a submodule for GradientOptimiser()
+This is a submodule of GradientOptimiser()
 
 This file is not exectuded, rather called within Ising() class when:
 -set_circuit('qaoa') is called
@@ -33,6 +33,15 @@ class GradientDescent(GradientOptimiser):
 
     break_param : int default 100
       Amount of steps of iteration
+    
+    batch_size: Integral
+            number of batch wavefunctions, une None as initial_state if batch_size = 0 
+    
+    symmetric_gradient: bool
+            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+    
+    plot_run: bool
+            Plot cost development in optimisation run and save to fauvqe/plots 
     """
 
     def __init__(
@@ -43,8 +52,9 @@ class GradientDescent(GradientOptimiser):
         break_param: Integral = 100,
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
+        plot_run: bool = False,
     ):
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run)
 
     def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """
@@ -54,4 +64,6 @@ class GradientDescent(GradientOptimiser):
         2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
-        return temp_cpv - self._eta * self._get_gradients(temp_cpv, _n_jobs, indices)
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
+        temp_cpv -= self._eta * gradient_values
+        return temp_cpv, cost
