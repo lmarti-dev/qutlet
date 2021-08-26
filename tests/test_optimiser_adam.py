@@ -209,7 +209,7 @@ def test_optimise_batch(sym):
     )
     trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
     print(trotter_cost)
-    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = sym)
+    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = sym, use_progress_bar = True)
     print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective)
     print(res.get_latest_step().params)

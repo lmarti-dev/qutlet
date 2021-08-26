@@ -13,6 +13,8 @@ import joblib
 import numpy as np
 import abc
 
+from tqdm import tqdm # progress bar
+from sys import stdout
 import os
 dir_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -35,6 +37,7 @@ class GradientOptimiser(Optimiser):
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
         plot_run: bool = False,
+        use_progress_bar: bool = False,
     ):
         """GradientOptimiser
         
@@ -59,7 +62,10 @@ class GradientOptimiser(Optimiser):
             Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
         
         plot_run: bool
-            Plot cost development in optimisation run and save to fauvqe/plots 
+            Plot cost development in optimisation run and save to fauvqe/plots
+        
+        use_progress_bar: bool
+            Determines whether to use tqdm's progress bar when running the optimisation
         """
 
         super().__init__()
@@ -89,6 +95,7 @@ class GradientOptimiser(Optimiser):
             self._get_gradients = self._get_gradients_asym
             self._get_single_cost = self._get_single_cost_asym
         self._plot_run = plot_run
+        self._use_progress_bar = use_progress_bar
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -173,10 +180,17 @@ class GradientOptimiser(Optimiser):
             indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self._break_param - skip_steps, self._batch_size))
         else:
             indices = [None for k in range(self._break_param - skip_steps)]
+        
+        #Set progress bar, if wanted
+        if(self._use_progress_bar):
+            pbar = tqdm(range(self._break_param - skip_steps), file=stdout)
+        else:
+            pbar = range(self._break_param - skip_steps)
+        
         costs = [None for k in range(self._break_param - skip_steps)]
         # Do step until break condition
         if self._break_cond == "iterations":
-            for i in range(self._break_param - skip_steps):
+            for i in pbar:
                 temp_cpv, costs[i] = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
                 res.add_step(temp_cpv.copy(), objective = costs[i])
         if(self._plot_run):

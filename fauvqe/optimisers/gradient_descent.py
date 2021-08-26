@@ -35,13 +35,16 @@ class GradientDescent(GradientOptimiser):
       Amount of steps of iteration
     
     batch_size: Integral
-            number of batch wavefunctions, une None as initial_state if batch_size = 0 
+        number of batch wavefunctions, une None as initial_state if batch_size = 0 
     
     symmetric_gradient: bool
-            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+        Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
     
     plot_run: bool
-            Plot cost development in optimisation run and save to fauvqe/plots 
+        Plot cost development in optimisation run and save to fauvqe/plots 
+    
+    use_progress_bar: bool
+        Determines whether to use tqdm's progress bar when running the optimisation
     """
 
     def __init__(
@@ -53,8 +56,9 @@ class GradientDescent(GradientOptimiser):
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
         plot_run: bool = False,
+        use_progress_bar: bool = False,
     ):
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar)
 
     def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """

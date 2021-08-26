@@ -65,6 +65,7 @@ class ADAM(GradientOptimiser):
         batch_size: Integral = 0,
         symmetric_gradient: bool = True,
         plot_run: bool = False,
+        use_progress_bar: bool = False,
     ):
         """ADAM optimiser
 
@@ -96,9 +97,12 @@ class ADAM(GradientOptimiser):
         
         plot_run: bool
             Plot cost development in optimisation run and save to fauvqe/plots 
+        
+        use_progress_bar: bool
+            Determines whether to use tqdm's progress bar when running the optimisation
         """
 
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
