@@ -196,7 +196,7 @@ class GradientOptimiser(Optimiser):
         if(self._plot_run):
             plt.plot(range(self._break_param), costs)
             plt.yscale('log')
-            plt.savefig(dir_path + '../../plots/GD_Optimisation.png')
+            plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
         return res
 
     @abc.abstractmethod
