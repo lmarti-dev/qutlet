@@ -5,6 +5,7 @@ from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
 import numpy as np
+from tqdm import tqdm
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -127,7 +128,7 @@ class UtCost(Objective):
         else:
             self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
-            for k in range(self._initial_wavefunctions.shape[0]):
+            for k in tqdm(range(self._initial_wavefunctions.shape[0])):
                 self._output_wavefunctions[k] = self.model.simulator.simulate(
                     self.trotter_circuit,
                     initial_state=self._initial_wavefunctions[k]
