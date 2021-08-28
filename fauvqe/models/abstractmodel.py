@@ -276,7 +276,7 @@ class AbstractModel(Restorable):
                 solver
             )
 
-    def set_Ut(self):
+    def set_Ut(self, use_dense: bool = False):
         #https://docs.sympy.org/latest/modules/numeric-computation.html
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
@@ -299,7 +299,7 @@ class AbstractModel(Restorable):
         
         #t0 = timeit.default_timer()
         # by *_n account for eigen values are /_n but want time evolution of actual Hamiltonian
-        if np.size(self.qubits) < 12:
+        if (np.size(self.qubits) < 12) or use_dense :
             self._Ut = np.matmul(np.matmul(self.eig_vec,np.diag(np.exp(-1j*_n*self.eig_val*self.t)), dtype = np.complex128),
                             self.eig_vec.conjugate().transpose())
         else:

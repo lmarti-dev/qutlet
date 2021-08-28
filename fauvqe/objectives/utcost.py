@@ -4,6 +4,9 @@
 from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
+from joblib import delayed, Parallel
+from multiprocessing import cpu_count
+
 import numpy as np
 from tqdm import tqdm
 
@@ -128,13 +131,12 @@ class UtCost(Objective):
         else:
             self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
-            for k in tqdm(range(self._initial_wavefunctions.shape[0])):
-                self._output_wavefunctions[k] = self.model.simulator.simulate(
-                    self.trotter_circuit,
-                    initial_state=self._initial_wavefunctions[k]
-                    #dtype=np.complex128
-                ).state_vector()
-            
+            #Use multiprocessing
+            tmp = Parallel(n_jobs=cpu_count())(
+            delayed(self.model.simulator.simulate)(self.trotter_circuit, initial_state=self._initial_wavefunctions[k]) for k in tqdm(range(self._initial_wavefunctions.shape[0]))
+            )
+            for k in range(self._initial_wavefunctions.shape[0]):
+                self._output_wavefunctions[k] = tmp[k].state_vector()
             #self.trotter_circuit = qsimcirq.QSimCircuit(self.trotter_circuit)
             #start = time()
             #for k in range(self._initial_wavefunctions.shape[0]):
@@ -153,6 +155,7 @@ class UtCost(Objective):
             return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
         else:
             assert ('indices' in options.keys()) and (options['indices'] is not None), 'Please provide indices for batch'
+            print(self._output_wavefunctions)
             return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
