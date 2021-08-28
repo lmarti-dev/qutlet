@@ -7,6 +7,8 @@
 .idea/
 # UML diagrams
 /*.png
+#Plots
+/plots/*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
