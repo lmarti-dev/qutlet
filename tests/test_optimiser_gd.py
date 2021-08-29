@@ -80,7 +80,7 @@ def test_optimise_batch():
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(ising.circuit_param_values), initial_state=initials[0]
     )
-    trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
+    trotter_cost = ( objective.evaluate(np.array([wavefunction]), options={'indices': [0]}) )
     print(trotter_cost)
     gd = GradientDescent(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, symmetric_gradient = False)
     print(objective.model.circuit_param_values.view())
@@ -89,7 +89,7 @@ def test_optimise_batch():
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params), initial_state=initials[0]
     )
-    var_cost = (objective.evaluate([wavefunction], options={'indices': [0]}))
+    var_cost = (objective.evaluate(np.array([wavefunction]), options={'indices': [0]}))
     print(var_cost)
     assert var_cost/10 < trotter_cost
 
