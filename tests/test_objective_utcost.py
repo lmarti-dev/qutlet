@@ -42,12 +42,12 @@ def test_evaluate_op(t):
     assert objective.evaluate(res) < 1e-10
     
 @pytest.mark.parametrize(
-    "t",
+    "t, times",
     [
-        (0.1), (1), (-0.01)
+        (0.1, [1]), (1, [1]), (-0.01, [1]), (0.1, [1, 3, 5]), (1, [1, 3, 5]), (-0.01, [1, 3, 5])
     ],
 )
-def test_simulate_op(t):
+def test_simulate_op(t, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -61,7 +61,7 @@ def test_simulate_op(t):
         "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
     })
     
-    objective = UtCost(ising, t, 0)
+    objective = UtCost(ising, t, 0, time_steps=times)
     params = -(2/np.pi)*t*(np.ones(2*order)/order)
     pdict = {}
     for k in range(order):
@@ -99,12 +99,12 @@ def test_evaluate_batch(t, avg_size):
     assert objective.evaluate(np.array([outputs]), options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
-    "t,order",
+    "t,order, times",
     [
-        (0.1, 0), (1, 0), (-0.01, 0), (0.1, 100), (1, 100), (-0.01, 100)
+        (0.1, 0, [1]), (1, 0, [1, 3, 5]), (-0.01, 0, [1, 3, 5]), (0.1, 100, [1, 3, 5]), (1, 100, [1]), (-0.01, 100, [1, 3, 5])
     ],
 )
-def test_simulate_batch(t, order):
+def test_simulate_batch(t, order, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
