@@ -45,6 +45,9 @@ class GradientDescent(GradientOptimiser):
     
     use_progress_bar: bool
         Determines whether to use tqdm's progress bar when running the optimisation
+    
+    dtype: np.dtype
+            data type of wavefunction
     """
 
     def __init__(
@@ -57,6 +60,7 @@ class GradientDescent(GradientOptimiser):
         symmetric_gradient: bool = True,
         plot_run: bool = False,
         use_progress_bar: bool = False,
+        dtype: np.dtype = np.complex64
     ):
         super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar)
 

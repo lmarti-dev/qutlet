@@ -159,7 +159,6 @@ class UtCost(Objective):
             return 1 / len(self._time_steps) * cost
         else:
             assert ('indices' in options.keys()) and (options['indices'] is not None), 'Please provide indices for batch'
-            print(wavefunction)
             assert wavefunction.size == (len(self._time_steps) * len(options['indices']) * self._N), 'Please provide one wavefunction for each time step. Expected: {} Received: {}'.\
             format( len(self._time_steps), wavefunction.size / self._N )
             cost = 0

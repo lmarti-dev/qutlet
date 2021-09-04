@@ -38,6 +38,7 @@ class GradientOptimiser(Optimiser):
         symmetric_gradient: bool = True,
         plot_run: bool = False,
         use_progress_bar: bool = False,
+        dtype: np.dtype = np.complex64
     ):
         """GradientOptimiser
         
@@ -88,6 +89,7 @@ class GradientOptimiser(Optimiser):
         self._break_cond: Literal["iterations"] = break_cond
         self._break_param: Integral = break_param
         self._batch_size: Integral = batch_size
+        self._dtype: np.dtype = dtype
         if(symmetric_gradient):
             self._get_gradients = self._get_gradients_sym
             self._get_single_cost = self._get_single_cost_sym
@@ -267,9 +269,12 @@ class GradientOptimiser(Optimiser):
         if (indices is None):
             wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
         else:
-            wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
+            if(hasattr(self._objective, '_time_steps')):
+                wf = np.zeros(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self._dtype)
+            else:
+                wf = np.zeros(shape=(len(indices), self._objective._N), dtype=self._dtype)
             for k in range(len(indices)):
-                wf[k][:] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
+                wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
 
     def to_json_dict(self) -> Dict:
