@@ -163,7 +163,7 @@ class UtCost(Objective):
             format( len(self._time_steps), wavefunction.size / self._N )
             cost = 0
             for step in range(len(self._time_steps)):
-                cost = cost + 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*self._output_wavefunctions[step][options['indices']], axis=1)))
+                cost += 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*self._output_wavefunctions[step][options['indices']], axis=1)))
             return 1 / len(self._time_steps) * cost
 
     #Need to overwrite simulate from parent class in order to work

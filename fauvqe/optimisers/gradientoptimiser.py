@@ -245,9 +245,12 @@ class GradientOptimiser(Optimiser):
         if (indices is None):
             wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
         else:
-            wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
+            if(hasattr(self._objective, '_time_steps')):
+                wf = np.zeros(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self._dtype)
+            else:
+                wf = np.zeros(shape=(1, len(indices), self._objective._N), dtype=self._dtype)
             for k in range(len(indices)):
-                wf[k] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
+                wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
     
     def _get_gradients_asym(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
@@ -272,7 +275,7 @@ class GradientOptimiser(Optimiser):
             if(hasattr(self._objective, '_time_steps')):
                 wf = np.zeros(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self._dtype)
             else:
-                wf = np.zeros(shape=(len(indices), self._objective._N), dtype=self._dtype)
+                wf = np.zeros(shape=(1, len(indices), self._objective._N), dtype=self._dtype)
             for k in range(len(indices)):
                 wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
