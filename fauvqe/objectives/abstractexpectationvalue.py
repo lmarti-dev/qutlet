@@ -32,6 +32,7 @@ class AbstractExpectationValue(Objective):
 
     def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]=None):
         super().__init__(model)
+        self._N = 2**np.size(model.qubits)
         if(observable is None):
             self._observable = model.hamiltonian
         else:
@@ -40,9 +41,9 @@ class AbstractExpectationValue(Objective):
     def evaluate(self, wavefunction: np.ndarray, q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, atol: float = 1e-7) -> np.float64:
         if(q_map is None):
             q_map = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
-        if(wavefunction.ndim == 1):
+        if(np.size(wavefunction) == self._N):
             return self._observable.expectation_from_state_vector(wavefunction, q_map, atol=atol)
-        elif(wavefunction.ndim==2):
+        elif(np.size(wavefunction)== self._N**2):
             return self._observable.expectation_from_density_matrix(wavefunction, q_map, atol=atol)
         else:
             assert False, 'Please provide either state vector or density matrix'
