@@ -143,7 +143,7 @@ class UtCost(Objective):
                     mul = self._time_steps[step]
                 #Use multiprocessing
                 tmp = Parallel(n_jobs=cpu_count())(
-                delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in tqdm(range(ini.shape[0]))
+                delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in range(ini.shape[0])
                 )
                 for k in range(self._initial_wavefunctions.shape[0]):
                     self._output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
