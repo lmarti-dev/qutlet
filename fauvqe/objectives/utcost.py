@@ -79,12 +79,14 @@ class UtCost(Objective):
             self._init_trotter_circuit()
         if (initial_wavefunctions is None):
             self.batch_size = 0
+            self.evaluate = self.evaluate_op
         else:
             assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(initial_wavefunctions[:,0])
             self._init_batch_wfcts()
+            self.evaluate = self.evaluate_batch
 
     def _init_trotter_circuit(self):
         """
@@ -153,14 +155,13 @@ class UtCost(Objective):
             #print(end-start)
     
     def evaluate(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
-        # Here we already have the correct model._Ut
-        if self.batch_size == 0:
-            #Calculation via Forbenius norm
-            #Then the "wavefunction" is the U(t) via VQE
-            return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
-        else:
-            assert (options['indices'] is not None), 'Please provide indices for batch'
-            return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
+        return self.evaluate_op(wavefunction, options)
+    
+    def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:
+        return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
+    
+    def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
+        return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
