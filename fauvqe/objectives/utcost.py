@@ -142,7 +142,7 @@ class UtCost(Objective):
                     ini = self._initial_wavefunctions
                     mul = self._time_steps[step]
                 #Use multiprocessing
-                tmp = Parallel(n_jobs=cpu_count())(
+                tmp = Parallel(n_jobs=min(cpu_count(), len(self._time_steps)))(
                 delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in range(ini.shape[0])
                 )
                 for k in range(self._initial_wavefunctions.shape[0]):

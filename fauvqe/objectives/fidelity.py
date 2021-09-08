@@ -45,11 +45,14 @@ class Fidelity(Objective):
                     target_state: Union[np.ndarray, qutip.Qobj]):
         super().__init__(model)
         self._n = np.size(model.qubits)
+        self.set_target_state(target_state)
+
+    def set_target_state(self, target_state: Union[np.ndarray, qutip.Qobj]) -> None:
         if(not isinstance(target_state, qutip.Qobj)):
             self._target_state = qutip.Qobj(target_state, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
         else:
             self._target_state = target_state
-
+    
     def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
             q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
