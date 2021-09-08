@@ -63,9 +63,7 @@ class ADAM(GradientOptimiser):
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
         batch_size: Integral = 0,
-        symmetric_gradient: bool = True,
-        plot_run: bool = False,
-        use_progress_bar: bool = False,
+        optimiser_options: dict = {}
     ):
         """ADAM optimiser
 
@@ -92,17 +90,19 @@ class ADAM(GradientOptimiser):
         break_param: Integral
             Break parameter for the optimisation
         
-        symmetric_gradient: bool
-            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-        
-        plot_run: bool
-            Plot cost development in optimisation run and save to fauvqe/plots 
-        
-        use_progress_bar: bool
-            Determines whether to use tqdm's progress bar when running the optimisation
+        optimiser_options: dict
+            Dictionary containing additional options to individualise the optimisation routine. Contains:
+                symmetric_gradient: bool
+                    Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+                
+                plot_run: bool
+                    Plot cost development in optimisation run and save to fauvqe/plots
+                
+                use_progress_bar: bool
+                    Determines whether to use tqdm's progress bar when running the optimisation
         """
 
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar)
+        super().__init__(eps, eta, break_cond, break_param, batch_size, optimiser_options)
         assert all(
             isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
         ), "Parameters must be positive, real numbers"
@@ -149,7 +149,7 @@ class ADAM(GradientOptimiser):
         self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
         
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+    def _parameter_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -188,8 +188,7 @@ class ADAM(GradientOptimiser):
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
                 "batch_size": self._batch_size,
-                "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
-                "plot_run": self._plot_run
+                'optimiser_options': self._optimiser_options,
             },
         }
 

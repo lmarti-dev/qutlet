@@ -2,27 +2,25 @@
 This abstract class resembles functions and attributes which Gradient Optimiser have in common. It hence inherits from Optimiser().
 
 """
-import multiprocessing
-from numbers import Real, Integral
-from typing import Literal, Optional, Dict, List
-
-import matplotlib.pyplot as plt
-
-import cirq
-import joblib
-import numpy as np
 import abc
-
-from tqdm import tqdm # progress bar
-from sys import stdout
-import os
-dir_path = os.path.abspath(os.path.dirname(__file__))
-
-import math
+import cirq
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.optimiser import Optimiser
+
+import joblib
+
+import math
+import matplotlib.pyplot as plt
+import multiprocessing
+from numbers import Real, Integral
+import numpy as np
+import os
+dir_path = os.path.abspath(os.path.dirname(__file__))
+from sys import stdout
+from tqdm import tqdm # progress bar
+from typing import Literal, Optional, Dict, List
 
 
 class GradientOptimiser(Optimiser):
@@ -35,9 +33,7 @@ class GradientOptimiser(Optimiser):
         break_cond: Literal["iterations"] = "iterations",
         break_param: Integral = 100,
         batch_size: Integral = 0,
-        symmetric_gradient: bool = True,
-        plot_run: bool = False,
-        use_progress_bar: bool = False,
+        optimiser_options: dict = {}
     ):
         """GradientOptimiser
         
@@ -58,14 +54,16 @@ class GradientOptimiser(Optimiser):
         batch_size: Integral
             number of batch wavefunctions, une None as initial_state if batch_size = 0 
         
-        symmetric_gradient: bool
-            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-        
-        plot_run: bool
-            Plot cost development in optimisation run and save to fauvqe/plots
-        
-        use_progress_bar: bool
-            Determines whether to use tqdm's progress bar when running the optimisation
+        optimiser_options: dict
+            Dictionary containing additional options to individualise the optimisation routine. Contains:
+                symmetric_gradient: bool
+                    Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+                
+                plot_run: bool
+                    Plot cost development in optimisation run and save to fauvqe/plots
+                
+                use_progress_bar: bool
+                    Determines whether to use tqdm's progress bar when running the optimisation
         """
 
         super().__init__()
@@ -88,14 +86,15 @@ class GradientOptimiser(Optimiser):
         self._break_cond: Literal["iterations"] = break_cond
         self._break_param: Integral = break_param
         self._batch_size: Integral = batch_size
-        if(symmetric_gradient):
+        
+        self._optimiser_options = {'symmetric_gradient': True, 'plot_run': False, 'use_progress_bar': False}
+        self._optimiser_options.update(optimiser_options)
+        if(self._optimiser_options['symmetric_gradient']):
             self._get_gradients = self._get_gradients_sym
             self._get_single_cost = self._get_single_cost_sym
         else:
             self._get_gradients = self._get_gradients_asym
             self._get_single_cost = self._get_single_cost_asym
-        self._plot_run = plot_run
-        self._use_progress_bar = use_progress_bar
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -182,7 +181,7 @@ class GradientOptimiser(Optimiser):
             indices = [None for k in range(self._break_param - skip_steps)]
         
         #Set progress bar, if wanted
-        if(self._use_progress_bar):
+        if(self._optimiser_options['use_progress_bar']):
             pbar = tqdm(range(self._break_param - skip_steps), file=stdout)
         else:
             pbar = range(self._break_param - skip_steps)
@@ -191,16 +190,18 @@ class GradientOptimiser(Optimiser):
         # Do step until break condition
         if self._break_cond == "iterations":
             for i in pbar:
-                temp_cpv, costs[i] = self._cpv_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
+                temp_cpv, costs[i] = self._parameter_update(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
                 res.add_step(temp_cpv.copy(), objective = costs[i])
-        if(self._plot_run):
+        if(self._optimiser_options['use_progress_bar']):
+            pbar.close()
+        if(self._optimiser_options['plot_run']):
             plt.plot(range(self._break_param), costs)
             plt.yscale('log')
             plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
         return res
 
     @abc.abstractmethod
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+    def _parameter_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         """
         Perform Optimiser specific update rule and return new parameters
         
@@ -280,8 +281,7 @@ class GradientOptimiser(Optimiser):
                 "break_cond": self._break_cond,
                 "break_param": self._break_param,
                 "batch_size": self._batch_size,
-                "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
-                "plot_run": self._plot_run,
+                'optimiser_options': self._optimiser_options,
             },
         }
 

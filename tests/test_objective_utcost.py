@@ -126,7 +126,7 @@ def test_simulate_batch(t, order):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials)
+    objective = UtCost(ising, t, order, initial_wavefunctions = initials, use_progress_bar=True)
     print(objective)
     
     op = objective.simulate(
