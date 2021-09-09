@@ -319,7 +319,6 @@ class GradientOptimiser(Optimiser):
     
     def _get_gradients_asym(self, temp_cpv, _n_jobs):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
-        
         _costs = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
             joblib.delayed(self._get_single_cost_asym)(joined_dict.copy(), j)
             for j in range(self._n_param + 1)
