@@ -111,6 +111,31 @@ class GradientOptimiser(Optimiser):
         self._circuit_param: np.ndarray = np.array([])
         self._n_param: Integral = 0
 
+    def _set_default_n_jobs(self):
+        # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
+        if(self.options['symmetric_gradient']):
+            max_thread = 2 * np.size(self._circuit_param)
+        else:
+            max_thread = np.size(self._circuit_param) + 1
+        n_jobs = int(
+            min(
+                max(multiprocessing.cpu_count() / 2, 1),
+                max_thread,
+            )
+        )
+        assert n_jobs != 0, "{} {}".format(
+            multiprocessing.cpu_count(), np.size(self._circuit_param)
+        )
+        # Try to reset qsim threads, which overwrites the simulator if it was not qsim
+        try:
+            if str(self._objective.model.simulator.__class__).find('qsim') > 0:
+                sim_name = "qsim"
+            t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
+            self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
+        except:
+            pass
+        return n_jobs
+    
     def optimise(
         self,
         objective: Objective,
@@ -167,54 +192,28 @@ class GradientOptimiser(Optimiser):
 
         # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
         if n_jobs < 1:
-            # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
-            n_jobs = int(
-                min(
-                    max(multiprocessing.cpu_count() / 2, 1),
-                    2 * np.size(self._circuit_param),
-                )
-            )
-            assert n_jobs != 0, "{} {}".format(
-                multiprocessing.cpu_count(), np.size(self._circuit_param)
-            )
-            # Try to reset qsim threads, which overwrites the simulator if it was not qsim
-            try:
-                if str(self._objective.model.simulator.__class__).find('qsim') > 0:
-                    sim_name = "qsim"
-                t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
-                self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
-            except:
-                pass
-        
-        #Set progress bar, if wanted
+            n_jobs = self._set_default_n_jobs()
         
         # Do step until break condition
         if self.options['break_cond'] == "iterations":
+            #Set progress bar, if wanted
             if(self.options['use_progress_bar']):
                 pbar = self._tqdm(range(self.options['break_param'] - skip_steps), file=stdout)
             else:
                 pbar = range(self.options['break_param'] - skip_steps)
+            #Case distinction between sym <-> asym and indices <-> no indices
             if self.options['batch_size'] > 0:
                 indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
-                if(self.options['symmetric_gradient']):
-                    for i in pbar:
-                        temp_cpv = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                        res.add_step(temp_cpv.copy())
-                else:
-                    costs = np.zeros(self.options['break_param'] - skip_steps)
-                    for i in pbar:
-                        temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                        res.add_step(temp_cpv.copy(), objective = costs[i])
+                costs = np.zeros(self.options['break_param'] - skip_steps)
+                for i in pbar:
+                    temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
+                    res.add_step(temp_cpv.copy())
             else:
-                if(self.options['symmetric_gradient']):
-                    for i in pbar:
-                        temp_cpv = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
-                        res.add_step(temp_cpv.copy())
-                else:
-                    costs = np.zeros(self.options['break_param'] - skip_steps)
-                    for i in pbar:
-                        temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
-                        res.add_step(temp_cpv.copy(), objective = costs[i])
+                costs = np.zeros(self.options['break_param'] - skip_steps)
+                for i in pbar:
+                    temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
+                    res.add_step(temp_cpv.copy())
+            #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
                 plt.plot(range(self._break_param), costs)
@@ -268,7 +267,7 @@ class GradientOptimiser(Optimiser):
         # Make np array?
         _costs = np.array(_costs).reshape((self._n_param, 2))
         gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options['eps'])
-        return gradients_values
+        return gradients_values, 0.5 * (_costs[0][0] + _costs[0][1])
 
     def _get_single_cost_sym(self, joined_dict, j):
         # Simulate wavefunction at p_j +/- eps
@@ -298,7 +297,7 @@ class GradientOptimiser(Optimiser):
         )
         _costs = np.array(_costs).reshape((self._n_param, 2))
         gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options['eps'])
-        return gradients_values
+        return gradients_values, 0.5 * (_costs[0][0] + _costs[0][1])
     
     def _get_single_cost_sym_indices(self, joined_dict, j, indices: Optional[List[int]] = None):
         joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])] = (

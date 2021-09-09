@@ -105,14 +105,8 @@ class ADAM(GradientOptimiser):
             isinstance(n, Real) and n > 0.0 for n in [self.options['eps_2'], self.options['b_1'], self.options['b_2']]
         ), "Parameters must be positive, real numbers"
         
-        if(self.options['symmetric_gradient'] and self.options['batch_size'] == 0):
-            self._optimise_step = self._optimise_step_sym
-        elif((not self.options['symmetric_gradient']) and self.options['batch_size'] == 0):
-            self._optimise_step = self._optimise_step_asym
-        elif(self.options['symmetric_gradient'] and self.options['batch_size'] > 0):
-            self._optimise_step = self._optimise_step_sym_indices
-        else:
-            self._optimise_step = self._optimise_step_asym_indices
+        if(self.options['batch_size'] > 0):
+            self._optimise_step = self._optimise_step_indices
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -171,21 +165,10 @@ class ADAM(GradientOptimiser):
         return self.options['eta'] * (1 - self.options['b_2'] ** step) ** 0.5 / (1 - self.options['b_1'] ** step) * self._m_t / (self._v_t ** 0.5 + self.options['eps_2'])
     
     def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
-        return self._optimise_step_sym(temp_cpv, _n_jobs, step)
-    
-    def _optimise_step_sym(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
-        gradient_values = self._get_gradients(temp_cpv, _n_jobs)
-        return temp_cpv - self._parameter_update(gradient_values, step)
-    
-    def _optimise_step_asym(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs)
         return temp_cpv - self._parameter_update(gradient_values, step), cost
     
-    def _optimise_step_sym_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
-        gradient_values = self._get_gradients(temp_cpv, _n_jobs, indices)
-        return temp_cpv - self._parameter_update(gradient_values, step)
-    
-    def _optimise_step_asym_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+    def _optimise_step_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
         return temp_cpv - self._parameter_update(gradient_values, step), cost
     

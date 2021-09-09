@@ -54,19 +54,10 @@ class GradientDescent(GradientOptimiser):
         options: dict = {}
     ):
         super().__init__(options)
-        if(self.options['symmetric_gradient'] and self.options['batch_size'] == 0):
-            self._optimise_step = self._optimise_step_sym
-        elif((not self.options['symmetric_gradient']) and self.options['batch_size'] == 0):
-            self._optimise_step = self._optimise_step_asym
-        elif(self.options['symmetric_gradient'] and self.options['batch_size'] > 0):
-            self._optimise_step = self._optimise_step_sym_indices
-        else:
-            self._optimise_step = self._optimise_step_asym_indices
-
-    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
-        return self._optimise_step_sym(temp_cpv, _n_jobs, step)
+        if(self.options['batch_size'] > 0):
+            self._optimise_step = self._optimise_step_indices
     
-    def _optimise_step_sym(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         """
         Run optimiser until break condition is fullfilled
 
@@ -74,21 +65,11 @@ class GradientDescent(GradientOptimiser):
         2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
-        gradient_values = self._get_gradients(temp_cpv, _n_jobs)
-        temp_cpv -= self.options['eta'] * gradient_values
-        return temp_cpv
-    
-    def _optimise_step_asym(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
-        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs)
         temp_cpv -= self.options['eta'] * gradient_values
         return temp_cpv, cost
     
-    def _optimise_step_sym_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
-        gradient_values = self._get_gradients(temp_cpv, _n_jobs, indices)
-        temp_cpv -= self.options['eta'] * gradient_values
-        return temp_cpv
-    
-    def _optimise_step_asym_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+    def _optimise_step_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
         temp_cpv -= self.options['eta'] * gradient_values
         return temp_cpv, cost
