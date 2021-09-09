@@ -44,10 +44,10 @@ def test_optimise():
     ising_obj.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
     eta = 2e-2
-    gd = GradientDescent(
-        break_param=25,
-        eta=eta,
-    )
+    gd = GradientDescent({
+        'break_param':25,
+        'eta':eta,
+    })
     obj = ExpectationValue(ising_obj)
     res = gd.optimise(obj)
 
@@ -82,7 +82,13 @@ def test_optimise_batch():
     )
     trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
     print(trotter_cost)
-    gd = GradientDescent(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, optimiser_options={'symmetric_gradient': False})
+    gd = GradientDescent({
+        'break_param': 100,
+        'batch_size': 1,
+        'eps': 1e-5,
+        'eta': 1e-2,
+        'symmetric_gradient': False
+    })
     print(objective.model.circuit_param_values.view())
     res = gd.optimise(objective)
     print(res.get_latest_step().params)
@@ -117,4 +123,4 @@ def test_json():
 #############################################################
 def test_GradientDescent_break_cond_assert():
     with pytest.raises(AssertionError):
-        GradientDescent(break_cond="atol")
+        GradientDescent({'break_cond': "atol"})

@@ -22,11 +22,11 @@ def get_simple_result(break_param0=25, a0 = 4 * 10 ** -2):
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     eps = 10 ** -3
     objective = ExpectationValue(ising)
-    adam = ADAM(
-        eps=eps,
-        break_param=break_param0,
-        eta=a0,
-    )
+    adam = ADAM({
+        'eps': eps,
+        'break_param': break_param0,
+        'eta': a0,
+    })
 
     return adam.optimise(objective, n_jobs=8)
 
@@ -82,7 +82,10 @@ def test_store_all():
         0.2 * np.ones((2, 2)),
     )
     ising.set_circuit("qaoa", {"p":1})
-    adam = ADAM(break_cond="iterations", break_param=3)
+    adam = ADAM({
+        'break_cond': "iterations",
+        'break_param':3
+    })
     objective = CVaR(ising, alpha=1.0)  # Equivalent to ExpectationValue
 
     res = adam.optimise(objective, n_jobs=-1)
@@ -110,13 +113,19 @@ def test_continue_at():
         0.2 * np.ones((2, 2)),
     )
     ising.set_circuit("qaoa", {"p": 1})
-    adam = ADAM(break_cond="iterations", break_param=5)
+    adam = ADAM({
+        'break_cond': "iterations",
+        'break_param': 5
+    })
     objective = ExpectationValue(ising)
     res1 = adam.optimise(objective, n_jobs=1)
 
     assert len(res1.get_steps()) == 5
 
-    adam = ADAM(break_cond="iterations", break_param=10)
+    adam = ADAM({
+        'break_cond': "iterations", 
+        'break_param': 10
+    })
     res2 = adam.optimise(objective, n_jobs=1, continue_at=res1)
 
     assert len(res2.get_steps()) == 10

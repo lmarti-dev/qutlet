@@ -9,8 +9,8 @@ from typing import Literal, Optional, Dict, List
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost, GradientOptimiser, Optimiser
 
 class MockGradientOptimiser(GradientOptimiser):
-    def _parameter_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
-        super()._parameter_update(temp_cpv, _n_jobs, step, indices)
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+        super()._optimise_step(temp_cpv, _n_jobs, step)
 
 #############################################################
 #                                                           #
@@ -29,4 +29,4 @@ def test_optimiser_optimise_assert():
 def test_parameter_update_NotImplemented():
     with pytest.raises(NotImplementedError):
         mockopt = MockGradientOptimiser()
-        mockopt._parameter_update(np.ones(2), 1, 1)
+        mockopt._optimise_step(np.ones(2), 1, 1)

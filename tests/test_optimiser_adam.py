@@ -50,10 +50,11 @@ def test_optimise():
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     eps = 10 ** -3
     exp_val_z = ExpectationValue(ising)
-    adam = ADAM(
-        eps=eps,
-        break_param=25,
-        eta=4 * 10 ** -2,
+    adam = ADAM({
+        'eps':eps,
+        'break_param':25,
+        'eta': 4 * 10 ** -2,
+    }
     )
     res = adam.optimise(exp_val_z, n_jobs=1)
 
@@ -97,7 +98,6 @@ def test_adam_multiple_models_and_auto_joblib():
 
     print(res1, res2)
 
-
 #############################################################
 #                                                           #
 #                    Joblib version                         #
@@ -115,9 +115,10 @@ def test_optimise_joblib():
     )
     ising.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
-    adam = ADAM(
-        break_param=25,
-        eta=4e-2,
+    adam = ADAM({
+        'break_param':25,
+        'eta': 4e-2,
+    }
     )
     expval_z = ExpectationValue(ising)
 
@@ -127,7 +128,7 @@ def test_optimise_joblib():
     )
 
     # Result smaller than -0.5 up to eta
-    assert -0.5 > expval_z.evaluate(wavefunction) - adam._eps
+    assert -0.5 > expval_z.evaluate(wavefunction) - adam.options['eps']
     # Result smaller than -0.5 up to eta
 
 @pytest.mark.parametrize(
@@ -144,11 +145,11 @@ def test_optimise_no_simulator_change(sym):
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
     ising.set_simulator(simulator_name = "cirq")
     
-    adam = ADAM(
-        break_param=1,
-        eta=4e-2,
-        optimiser_options={'symmetric_gradient': sym}
-    )
+    adam = ADAM({
+        'break_param':1,
+        'eta': 4e-2,
+        'symmetric_gradient': sym
+    })
     expval_z = ExpectationValue(ising)
     #assert(ising.simulator == 0)
 
@@ -162,10 +163,13 @@ def test__get_single_energy():
     ising.set_circuit("qaoa", {"p": 2})
     ising.set_circuit_param_values(0.3 * np.ones(np.size(ising.circuit_param)))
 
-    adam = ADAM(break_param=1,eta=4e-2)
+    adam = ADAM({
+        'break_param': 1,
+        'eta': 4e-2
+    })
     expval_z = ExpectationValue(ising)
     res = adam.optimise(expval_z, n_jobs=-1)
-    gg_gradients, cost = adam._get_gradients(adam._objective.model.circuit_param_values, 8)
+    gg_gradients = adam._get_gradients(adam._objective.model.circuit_param_values, 8)
 
     # 2 layer, 2 parameters, 2 energies each
     single_energies = np.zeros(2*2*2)
@@ -174,7 +178,7 @@ def test__get_single_energy():
             {**{str(adam._circuit_param[i]): adam._objective.model.circuit_param_values[i] for i in range(adam._n_param)}} , 
             j)
     single_energies = np.array(single_energies).reshape((adam._n_param, 2)) 
-    se_gradients = np.matmul(single_energies, np.array((1, -1))) / (2 * adam._eps) 
+    se_gradients = np.matmul(single_energies, np.array((1, -1))) / (2 * adam.options['eps']) 
     np.testing.assert_allclose(gg_gradients    , se_gradients, rtol=1e-15, atol=1e-15)
 
 @pytest.mark.parametrize(
@@ -209,7 +213,14 @@ def test_optimise_batch(sym):
     )
     trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
     print(trotter_cost)
-    adam = ADAM(break_param = 100, batch_size = 1, eps=1e-5, eta=1e-2, optimiser_options={'symmetric_gradient': sym, 'use_progress_bar': True})
+    adam = ADAM({
+        'break_param': 100,
+        'batch_size': 1, 
+        'eps': 1e-5, 
+        'eta': 1e-2,
+        'symmetric_gradient': sym, 
+        'use_progress_bar': True
+    })
     print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective)
     print(res.get_latest_step().params)
@@ -219,6 +230,14 @@ def test_optimise_batch(sym):
     var_cost = (objective.evaluate([wavefunction], options={'indices': [0]}))
     print(var_cost)
     assert var_cost/10 < trotter_cost
+
+#def test_times():
+#    start = time()
+#    test_optimise()
+#    end = time()
+#    
+#    test_optimise_joblib()
+#    ...
 
 def test_json():
     t=0.1
@@ -246,4 +265,4 @@ def test_json():
 #############################################################
 def test_adam_break_cond_assert():
     with pytest.raises(AssertionError):
-        ADAM(break_cond="atol")
+        ADAM({'break_cond':"atol"})

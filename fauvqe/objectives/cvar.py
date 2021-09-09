@@ -60,7 +60,7 @@ class CVaR(Objective):
             self.__mask: np.ndarray = np.argsort(energies)
             self.__energies = energies[self.__mask]
 
-    def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> Real:
+    def evaluate(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk (cVaR) for a given wavefunction
 
         Evaluates the wavefunction with the given :math:`\\alpha` and field.
@@ -78,7 +78,7 @@ class CVaR(Objective):
         """
         return self._evaluate_z(wavefunction)  # pragma: no cover
 
-    def _evaluate_x(self, wavefunction_z: np.ndarray, options: dict = {}) -> Real:
+    def _evaluate_x(self, wavefunction_z: np.ndarray) -> Real:
         """Calculate the conditional value at risk (cVaR) for a given wavefunction in x basis
 
         Equivalent to `CVaR.evaluate` when field="X".
@@ -102,7 +102,7 @@ class CVaR(Objective):
 
         return CVaR._calc_cvar(_probabilities, _energies, self.__alpha) / self.__n_qubits
 
-    def _evaluate_z(self, wavefunction: np.ndarray, options: dict = {}) -> Real:
+    def _evaluate_z(self, wavefunction: np.ndarray) -> Real:
         """Calculate the conditional value at risk (cVaR) for a given wavefunction in z basis
 
         Equivalent to `CVaR.evaluate` when field="Z".
