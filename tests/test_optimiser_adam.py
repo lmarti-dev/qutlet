@@ -18,6 +18,8 @@ import pytest
 import numpy as np
 import cirq
 
+from time import time
+
 # internal imports
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost
 
@@ -182,13 +184,13 @@ def test__get_single_energy():
     np.testing.assert_allclose(gg_gradients    , se_gradients, rtol=1e-15, atol=1e-15)
 
 @pytest.mark.parametrize(
-    "sym",
+    "sym, n_jobs, sim",
     [
-        (True),(False)
+        (True, -1, 'qsim'),(False, -1, 'qsim')
     ],
 )
 @pytest.mark.higheffort
-def test_optimise_batch(sym):
+def test_optimise_batch(sym, n_jobs, sim):
     t=0.5
     ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X", t)
     ising.set_Ut()
@@ -199,7 +201,7 @@ def test_optimise_batch(sym):
         "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
     })
     ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
-    
+    ising.set_simulator(sim)
     bsize = 100
     initial_rands= (np.random.rand(bsize, 16)).astype(np.complex128)
     initials = np.zeros(initial_rands.shape, dtype=np.complex64)
@@ -222,7 +224,7 @@ def test_optimise_batch(sym):
         'use_progress_bar': True
     })
     print(objective.model.circuit_param_values.view())
-    res = adam.optimise(objective)
+    res = adam.optimise(objective, n_jobs=n_jobs)
     print(res.get_latest_step().params)
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params), initial_state=initials[0]
@@ -231,13 +233,44 @@ def test_optimise_batch(sym):
     print(var_cost)
     assert var_cost/10 < trotter_cost
 
-#def test_times():
-#    start = time()
-#    test_optimise()
-#    end = time()
-#    
-#    test_optimise_joblib()
-#    ...
+def test_times():
+    start = time()
+    test_optimise()
+    end = time()
+    
+    time_seq = end - start
+    
+    start = time()
+    test_optimise_joblib()
+    end = time()
+    
+    time_par = end - start
+    
+    assert time_par < time_seq, 'No speedup through parallelisation'
+
+@pytest.mark.parametrize(
+    "sym, sim",
+    [
+        (True, 'qsim'),
+        (False, 'qsim'),
+        (True, 'cirq'),
+        (False, 'cirq')
+    ],
+)
+def test_times_batch(sym, sim):
+    start = time()
+    test_optimise_batch(sym, 1, sim)
+    end = time()
+    
+    time_seq = end - start
+    
+    start = time()
+    test_optimise_batch(sym, -1, sim)
+    end = time()
+    
+    time_par = end - start
+    
+    assert time_par < time_seq, 'No speedup through parallelisation'
 
 def test_json():
     t=0.1
