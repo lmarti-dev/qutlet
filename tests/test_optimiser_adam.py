@@ -246,7 +246,7 @@ def test_times():
     
     time_par = end - start
     
-    assert time_par < time_seq, 'No speedup through parallelisation'
+    assert 2*time_par < time_seq, 'No speedup through parallelisation'
 
 @pytest.mark.parametrize(
     "sym, sim",

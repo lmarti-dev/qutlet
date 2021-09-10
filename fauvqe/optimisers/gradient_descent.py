@@ -22,23 +22,23 @@ class GradientDescent(GradientOptimiser):
 
     Arguments
     -----------
-    eps : Real default 0.001
-      Discretisation finesse for numerical gradient
-
-    eta : Real default 0.01
-      Step size for parameter update rule
-
-    break_cond : {"iterations"} default "iterations"
-      Break condition for optimisation
-
-    break_param : int default 100
-      Amount of steps of iteration
-    
-    batch_size: Integral
-        number of batch wavefunctions, une None as initial_state if batch_size = 0 
-    
     optimiser_options: dict
             Dictionary containing additional options to individualise the optimisation routine. Contains:
+                eps : Real default 0.001
+                    Discretisation finesse for numerical gradient
+                
+                eta : Real default 0.01
+                    Step size for parameter update rule
+                
+                break_cond : {"iterations"} default "iterations"
+                    Break condition for optimisation
+                
+                break_param : int default 100
+                    Amount of steps of iteration
+                
+                batch_size: Integral
+                    number of batch wavefunctions, une None as initial_state if batch_size = 0 
+            
                 symmetric_gradient: bool
                     Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
                 

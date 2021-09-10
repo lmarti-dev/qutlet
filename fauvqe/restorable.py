@@ -1,6 +1,9 @@
+from __future__ import annotations
 import abc
-from typing import Dict
+import importlib
 import numpy as np
+from sys import stdout
+from typing import Dict
 
 
 class Restorable(abc.ABC):
@@ -12,12 +15,19 @@ class Restorable(abc.ABC):
     @abc.abstractmethod
     def from_json_dict(cls, params: Dict):
         raise NotImplementedError()  # pragma: no cover
-
+    
+    def create_range(self, max_index: int, use_progress_bar: bool = False):
+        if(use_progress_bar):
+            self._tqdm = importlib.import_module("tqdm").tqdm
+            return self._tqdm(range(max_index), file=stdout)
+        else:
+            return range(max_index)
+    
     def __eq__(self, other): 
         if not isinstance(other, self.__class__):
             # don't attempt to compare against unrelated types
             return False
-
+        
         #Most general: avoid to define Attributes
         temp_bools = []
         for key in self.__dict__.keys():

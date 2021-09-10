@@ -1,8 +1,6 @@
 """
     Implementation of the Frobenius distance between a given approximate time evolution and the exact time evolution of the system hamiltonian as objective function for an AbstractModel object.
 """
-from __future__ import annotations
-import importlib
 from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
@@ -55,8 +53,6 @@ class UtCost(Objective):
         # To be implemented: U exact unitatry cost, U exact random batch sampling cost with wf 
         
         #Make sure correct Ut is used
-        if(use_progress_bar):
-            self._tqdm = importlib.import_module("tqdm").tqdm
         self.t = t
         super().__init__(model)
         
@@ -133,10 +129,7 @@ class UtCost(Objective):
         if(self._order < 1):
             self._output_wavefunctions = (self._Ut @ self._initial_wavefunctions.T).T
         else:
-            if(self._use_progress_bar):
-                pbar = self._tqdm(range(self._initial_wavefunctions.shape[0]))
-            else:
-                pbar = range(self._initial_wavefunctions.shape[0])
+            pbar = self.create_range(self.batch_size, self._use_progress_bar)
             self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
             for k in pbar:

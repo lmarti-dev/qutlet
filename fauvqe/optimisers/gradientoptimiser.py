@@ -6,12 +6,8 @@ from __future__ import annotations
 import abc
 import cirq
 
-from fauvqe.objectives.objective import Objective
-from fauvqe.optimisers.optimisation_result import OptimisationResult
-from fauvqe.optimisers.optimiser import Optimiser
-
+#external imports
 import importlib
-
 import joblib
 
 import math
@@ -20,10 +16,13 @@ import multiprocessing
 from numbers import Real, Integral
 import numpy as np
 import os
-dir_path = os.path.abspath(os.path.dirname(__file__))
 from sys import stdout
 from typing import Literal, Optional, Dict, List
 
+#internal imports
+from fauvqe.objectives.objective import Objective
+from fauvqe.optimisers.optimisation_result import OptimisationResult
+from fauvqe.optimisers.optimiser import Optimiser
 
 class GradientOptimiser(Optimiser):
     """Abstract GradientOptimiser class"""
@@ -102,9 +101,6 @@ class GradientOptimiser(Optimiser):
         ), "Invalid break condition, received: '{}', allowed are {}".format(
             self.options['break_cond'], valid_break_cond
         )
-        
-        if(self.options['use_progress_bar']):
-            self._tqdm = importlib.import_module("tqdm").tqdm
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -197,10 +193,7 @@ class GradientOptimiser(Optimiser):
         # Do step until break condition
         if self.options['break_cond'] == "iterations":
             #Set progress bar, if wanted
-            if(self.options['use_progress_bar']):
-                pbar = self._tqdm(range(self.options['break_param'] - skip_steps), file=stdout)
-            else:
-                pbar = range(self.options['break_param'] - skip_steps)
+            pbar = self.create_range(self.options['break_param'] - skip_steps, self.options['use_progress_bar'])
             #Case distinction between sym <-> asym and indices <-> no indices
             if self.options['batch_size'] > 0:
                 indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
@@ -218,6 +211,7 @@ class GradientOptimiser(Optimiser):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
                 plt.plot(range(self._break_param), costs)
                 plt.yscale('log')
+                dir_path = os.path.abspath(os.path.dirname(__file__))
                 plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
             if(self.options['use_progress_bar']):
                 pbar.close()
@@ -328,10 +322,9 @@ class GradientOptimiser(Optimiser):
         return gradients_values, _costs[0]
 
     def _get_single_cost_asym(self, joined_dict, j):
-        if(j>0):
-            joined_dict[str(self._circuit_param[j-1])] = (
-                joined_dict[str(self._circuit_param[j-1])] + self.options['eps']
-            )
+        joined_dict[str(self._circuit_param[j-1])] = (
+            joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
+        )
         wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
         return self._objective.evaluate(wf)
     
@@ -355,10 +348,9 @@ class GradientOptimiser(Optimiser):
         return gradients_values, _costs[0]
 
     def _get_single_cost_asym_indices(self, joined_dict, j, indices: Optional[List[int]] = None):
-        if(j>0):
-            joined_dict[str(self._circuit_param[j-1])] = (
-                joined_dict[str(self._circuit_param[j-1])] + self.options['eps']
-            )
+        joined_dict[str(self._circuit_param[j-1])] = (
+            joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
+        )
         wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
         for k in range(len(indices)):
             wf[k][:] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])

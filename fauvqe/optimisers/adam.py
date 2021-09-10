@@ -61,29 +61,29 @@ class ADAM(GradientOptimiser):
 
         Parameters
         ----------
-        eps: Real
-            :math:`\\epsilon` for gradient
-        
-        eps_2: Real
-            :math:`\\epsilon` for adam
-        
-        eta: Real
-            Step size :math:`\\alpha` for adam
-        
-        b_1: Real
-            :math:`\\beta_1` for adam
-        
-        b_2: Real
-            :math:`\\beta_2` for adam
-        
-        break_cond: {"iterations"} default "iterations"
-            Break condition for the optimisation
-        
-        break_param: Integral
-            Break parameter for the optimisation
-        
         optimiser_options: dict
             Dictionary containing additional options to individualise the optimisation routine. Contains:
+                eps: Real
+                    :math:`\\epsilon` for gradient
+                
+                eps_2: Real
+                    :math:`\\epsilon` for adam
+                
+                eta: Real
+                    Step size :math:`\\alpha` for adam
+                
+                b_1: Real
+                    :math:`\\beta_1` for adam
+                
+                b_2: Real
+                    :math:`\\beta_2` for adam
+                
+                break_cond: {"iterations"} default "iterations"
+                    Break condition for the optimisation
+                
+                break_param: Integral
+                    Break parameter for the optimisation
+                
                 symmetric_gradient: bool
                     Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
                 
