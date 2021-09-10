@@ -1,0 +1,30 @@
+===Fri, 10 Sep 2021 15:53:01 +0000===
+Test No Indices 
+
+Sequential Time: 1.6210086345672607
+Parallel Time: 0.619178056716919
+
+===Fri, 10 Sep 2021 15:53:06 +0000===
+Test Indices 
+
+Sequential Time: 2.548377513885498
+Parallel Time: 1.6914522647857666
+
+===Fri, 10 Sep 2021 15:53:08 +0000===
+Test Indices 
+
+Sequential Time: 1.457606315612793
+Parallel Time: 1.1634595394134521
+
+===Fri, 10 Sep 2021 15:53:18 +0000===
+Test Indices 
+
+Sequential Time: 7.039487838745117
+Parallel Time: 2.7449183464050293
+
+===Fri, 10 Sep 2021 15:53:24 +0000===
+Test Indices 
+
+Sequential Time: 4.070335626602173
+Parallel Time: 1.8768703937530518
+

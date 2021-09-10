@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import cirq
 
-from time import time
+from time import time, localtime, strftime
 
 # internal imports
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost
@@ -246,6 +246,13 @@ def test_times():
     
     time_par = end - start
     
+    textfile = open("./tests/performance/times.txt", "a")
+    textfile.write('==='+ str(strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())) +'===\n')
+    textfile.write('Test No Indices \n\n')
+    textfile.write('Sequential Time: ' + str(time_seq) +'\n')
+    textfile.write('Parallel Time: ' + str(time_par) +'\n\n')
+    textfile.close()
+    
     assert 2*time_par < time_seq, 'No speedup through parallelisation'
 
 @pytest.mark.parametrize(
@@ -269,6 +276,13 @@ def test_times_batch(sym, sim):
     end = time()
     
     time_par = end - start
+    
+    textfile = open("./tests/performance/times.txt", "a")
+    textfile.write('==='+ str(strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())) +'===\n')
+    textfile.write('Test Indices \n\n')
+    textfile.write('Sequential Time: ' + str(time_seq) +'\n')
+    textfile.write('Parallel Time: ' + str(time_par) +'\n\n')
+    textfile.close()
     
     assert time_par < time_seq, 'No speedup through parallelisation'
 
