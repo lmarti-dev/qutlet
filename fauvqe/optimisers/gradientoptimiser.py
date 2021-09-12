@@ -147,7 +147,7 @@ class GradientOptimiser(Optimiser):
         Parameters
         ----------
         n_jobs: Integral, default -1
-            The number ob simultaneous jobs (-1 for auto detection)
+            The number ob simultaneous jobs (-1 for auto detection). Auto-detection is not sensible for the case that there is one more process than a multiple of available cores. Hence, it is advisable to hand over a suiting n_jobs in such a case. 
         objective: Objective
             The objective to optimise
         continue_at: OptimisationResult, optional

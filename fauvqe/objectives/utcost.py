@@ -140,15 +140,6 @@ class UtCost(Objective):
                 ).state_vector()
             if(self._use_progress_bar):
                 pbar.close()
-            #self.trotter_circuit = qsimcirq.QSimCircuit(self.trotter_circuit)
-            #start = time()
-            #for k in range(self._initial_wavefunctions.shape[0]):
-            #    self._output_wavefunctions[k] = self.trotter_circuit.final_state_vector(
-            #        initial_state=self._initial_wavefunctions[k],
-            #        dtype=np.complex64
-            #    )
-            #end = time()
-            #print(end-start)
     
     def evaluate():
         raise NotImplementedError
