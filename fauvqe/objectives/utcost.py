@@ -25,8 +25,8 @@ class UtCost(Objective):
                     t in U(t)
                 "order"         -> np.uint
                     Trotter approximation order (Exact if 0 or negative)
-                "initial_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
-                "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
+                "initial_wavefunctions"  -> np.ndarray      if None Use exact UtCost, otherwise batch wavefunctions for random batch cost. Also overwrites evaluate(), the NotImplementedError should never be raised.
+                "use_progress_bar"  -> bool      Determines whether to use a progress bar while initialising the batch wavefunctions (python module tqdm required)
 
     Methods
     ----------
@@ -150,8 +150,8 @@ class UtCost(Objective):
             #end = time()
             #print(end-start)
     
-    def evaluate(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
-        return self.evaluate_op(wavefunction, options)
+    def evaluate():
+        raise NotImplementedError
     
     def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:
         return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
