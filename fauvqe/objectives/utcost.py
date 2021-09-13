@@ -141,7 +141,7 @@ class UtCost(Objective):
             if(self._use_progress_bar):
                 pbar.close()
     
-    def evaluate():
+    def evaluate(self):
         raise NotImplementedError
     
     def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:

@@ -159,6 +159,20 @@ def test_json(t, order):
     
     assert (objective == objective2)
 
+
+#############################################################
+#                                                           #
+#                     Test errors                           #
+#                                                           #
+#############################################################
+class MockUtCost(UtCost):
+    def __init__(self):
+        return
+    
+def test_abstract_gradient_optimiser():
+    with pytest.raises(NotImplementedError):
+        MockUtCost().evaluate()
+    
 """
     Old test of simulating np.complex128 wavefunctions
 @pytest.mark.parametrize(
