@@ -36,7 +36,7 @@ class ExpectationValue(AbstractExpectationValue):
         self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
     
-    def evaluate(self, wavefunction: np.ndarray) -> np.float64:
+    def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
         if self.__field == "X":
             wf_x = self._rotate_x(wavefunction)
 

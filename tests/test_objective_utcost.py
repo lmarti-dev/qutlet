@@ -96,7 +96,7 @@ def test_evaluate_batch(t, avg_size):
     outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
     for k in range(len(eval_indices)):
         outputs[k] = res @ initials[eval_indices[k]]
-    assert objective.evaluate(outputs, eval_indices) < 1e-10
+    assert objective.evaluate(outputs, options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
     "t,order",
@@ -126,14 +126,14 @@ def test_simulate_batch(t, order):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials)
+    objective = UtCost(ising, t, order, initial_wavefunctions = initials, use_progress_bar=True)
     print(objective)
     
     op = objective.simulate(
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
-    assert (objective.evaluate([op], [0]) < 1e-3)
+    assert (objective.evaluate([op], options={'indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
     "t, order",
@@ -159,6 +159,20 @@ def test_json(t, order):
     
     assert (objective == objective2)
 
+
+#############################################################
+#                                                           #
+#                     Test errors                           #
+#                                                           #
+#############################################################
+class MockUtCost(UtCost):
+    def __init__(self):
+        return
+    
+def test_abstract_gradient_optimiser():
+    with pytest.raises(NotImplementedError):
+        MockUtCost().evaluate()
+    
 """
     Old test of simulating np.complex128 wavefunctions
 @pytest.mark.parametrize(

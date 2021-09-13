@@ -25,8 +25,8 @@ class UtCost(Objective):
                     t in U(t)
                 "order"         -> np.uint
                     Trotter approximation order (Exact if 0 or negative)
-                "initial_wavefunctions"  -> np.ndarray      if None Use U csot, otherwise batch wavefunctions for random batch cost
-                "sample_size"  -> Int      < 0 -> state vector, > 0 -> number of samples
+                "initial_wavefunctions"  -> np.ndarray      if None Use exact UtCost, otherwise batch wavefunctions for random batch cost. Also overwrites evaluate(), the NotImplementedError should never be raised.
+                "use_progress_bar"  -> bool      Determines whether to use a progress bar while initialising the batch wavefunctions (python module tqdm required)
 
     Methods
     ----------
@@ -40,7 +40,8 @@ class UtCost(Objective):
                     model: AbstractModel, 
                     t: Real, 
                     order: np.uint = 0,
-                    initial_wavefunctions: Optional[np.ndarray] = None):
+                    initial_wavefunctions: Optional[np.ndarray] = None,
+                    use_progress_bar: bool = False):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -57,6 +58,7 @@ class UtCost(Objective):
         
         self._initial_wavefunctions = initial_wavefunctions
         self._order = order
+        self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
         
         if self._order == 0:
@@ -76,12 +78,14 @@ class UtCost(Objective):
             self._init_trotter_circuit()
         if (initial_wavefunctions is None):
             self.batch_size = 0
+            self.evaluate = self.evaluate_op
         else:
             assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
                 "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
                     format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
             self.batch_size = np.size(initial_wavefunctions[:,0])
             self._init_batch_wfcts()
+            self.evaluate = self.evaluate_batch
 
     def _init_trotter_circuit(self):
         """
@@ -125,36 +129,26 @@ class UtCost(Objective):
         if(self._order < 1):
             self._output_wavefunctions = (self._Ut @ self._initial_wavefunctions.T).T
         else:
+            pbar = self.create_range(self.batch_size, self._use_progress_bar)
             self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
-            for k in range(self._initial_wavefunctions.shape[0]):
+            for k in pbar:
                 self._output_wavefunctions[k] = self.model.simulator.simulate(
                     self.trotter_circuit,
                     initial_state=self._initial_wavefunctions[k]
                     #dtype=np.complex128
                 ).state_vector()
-            
-            #self.trotter_circuit = qsimcirq.QSimCircuit(self.trotter_circuit)
-            #start = time()
-            #for k in range(self._initial_wavefunctions.shape[0]):
-            #    self._output_wavefunctions[k] = self.trotter_circuit.final_state_vector(
-            #        initial_state=self._initial_wavefunctions[k],
-            #        dtype=np.complex64
-            #    )
-            #end = time()
-            #print(end-start)
-            
+            if(self._use_progress_bar):
+                pbar.close()
     
-    def evaluate(self, wavefunction: np.ndarray, indices: Optional[List[int]] = None) -> np.float64:
-        # Here we already have the correct model._Ut
-        if self.batch_size == 0 and indices == None:
-            #Calculation via Forbenius norm
-            #Then the "wavefunction" is the U(t) via VQE
-            return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
-        else:
-            assert type(indices) is not None, 'Please provide indices for batch'
-            print(np.conjugate(wavefunction)*self._output_wavefunctions[indices])
-            return 1/len(indices) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[indices], axis=1)))
+    def evaluate(self):
+        raise NotImplementedError
+    
+    def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:
+        return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
+    
+    def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
+        return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:

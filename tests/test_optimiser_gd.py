@@ -16,8 +16,10 @@
 import pytest
 import numpy as np
 
+import cirq
+
 # internal imports
-from fauvqe import Ising, Optimiser, GradientDescent, ExpectationValue
+from fauvqe import Ising, GradientDescent, ExpectationValue, UtCost
 
 
 def test_set_optimiser():
@@ -42,10 +44,10 @@ def test_optimise():
     ising_obj.set_circuit("qaoa", {"p": 2, "H_layer": False})
     ising_obj.set_circuit_param_values(0.3 * np.ones(np.size(ising_obj.circuit_param)))
     eta = 2e-2
-    gd = GradientDescent(
-        break_param=25,
-        eta=eta,
-    )
+    gd = GradientDescent({
+        'break_param':25,
+        'eta':eta,
+    })
     obj = ExpectationValue(ising_obj)
     res = gd.optimise(obj)
 
@@ -54,16 +56,71 @@ def test_optimise():
     assert -0.5 > final_step.objective - eta
     # Result smaller than -0.5 up to eta
 
+@pytest.mark.higheffort
+def test_optimise_batch():
+    t=0.5
+    ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X", t)
+    ising.set_Ut()
+    ising.set_circuit("hea", {
+        "parametrisation": "joint", #"layerwise",
+        "p": 3,
+        "variables": {"x", "theta"},
+        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+    })
+    ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
+    
+    bsize = 100
+    initial_rands= (np.random.rand(bsize, 16)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    
+    objective = UtCost(ising, t, 0, initial_wavefunctions = initials)
+    
+    wavefunction = objective.simulate(
+        param_resolver=ising.get_param_resolver(ising.circuit_param_values), initial_state=initials[0]
+    )
+    trotter_cost = ( objective.evaluate([wavefunction], options={'indices': [0]}) )
+    print(trotter_cost)
+    gd = GradientDescent({
+        'break_param': 100,
+        'batch_size': 1,
+        'eps': 1e-5,
+        'eta': 1e-2,
+        'symmetric_gradient': False
+    })
+    print(objective.model.circuit_param_values.view())
+    res = gd.optimise(objective)
+    print(res.get_latest_step().params)
+    wavefunction = objective.simulate(
+        param_resolver=ising.get_param_resolver(res.get_latest_step().params), initial_state=initials[0]
+    )
+    var_cost = (objective.evaluate([wavefunction], options={'indices': [0]}))
+    print(var_cost)
+    assert var_cost/10 < trotter_cost
+
+def test_json():
+    t=0.1
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t)
+    bsize=10
+    initial_rands= (np.random.rand(bsize, 4)).astype(np.complex128)
+    initials = np.zeros(initial_rands.shape, dtype=np.complex64)
+    for k in range(bsize):
+        initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
+    objective = UtCost(ising, t, 0, initial_wavefunctions=initials)
+    gd = GradientDescent()
+    json = gd.to_json_dict()
+    
+    gd2 = GradientDescent.from_json_dict(json)
+    
+    assert gd == gd2
 
 #############################################################
 #                     Test errors                           #
 #############################################################
 def test_GradientDescent_break_cond_assert():
     with pytest.raises(AssertionError):
-        GradientDescent(break_cond="atol")
-
-
-def test_optimiser_optimise_assert():
-    # Test if abstract base class can be initiated
-    with pytest.raises(TypeError):
-        Optimiser()
+        GradientDescent({'break_cond': "atol"})

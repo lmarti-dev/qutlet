@@ -28,11 +28,12 @@ from fauvqe.objectives import (
     UtCost
 )
 from fauvqe.optimisers import (
-    Optimiser,
     ADAM,
     GradientDescent,
+    GradientOptimiser,
     OptimisationResult,
     OptimisationStep,
+    Optimiser
 )
 
 """
