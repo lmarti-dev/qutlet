@@ -19,6 +19,7 @@ import numpy as np
 import cirq
 
 from time import time, localtime, strftime
+from multiprocessing import cpu_count
 
 # internal imports
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost
@@ -233,6 +234,7 @@ def test_optimise_batch(sym, n_jobs, sim):
     print(var_cost)
     assert var_cost/10 < trotter_cost
 
+@pytest.mark.skipif(cpu_count() < 4, reason="No speed-up expected for single core machine")
 def test_times():
     start = time()
     test_optimise()
@@ -255,6 +257,7 @@ def test_times():
     
     assert 2*time_par < time_seq, 'No speedup through parallelisation'
 
+@pytest.mark.skipif(cpu_count() < 4, reason="No speed-up expected for single core machine")
 @pytest.mark.parametrize(
     "sym, sim",
     [

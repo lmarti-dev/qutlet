@@ -118,3 +118,33 @@ Test Indices
 Sequential Time: 4.0725932121276855
 Parallel Time: 1.864516019821167
 
+===Mon, 13 Sep 2021 12:35:40 +0000===
+Test No Indices 
+
+Sequential Time: 1.6289188861846924
+Parallel Time: 0.6115772724151611
+
+===Mon, 13 Sep 2021 12:35:45 +0000===
+Test Indices 
+
+Sequential Time: 2.4539597034454346
+Parallel Time: 1.6926839351654053
+
+===Mon, 13 Sep 2021 12:35:47 +0000===
+Test Indices 
+
+Sequential Time: 1.436875581741333
+Parallel Time: 1.1339647769927979
+
+===Mon, 13 Sep 2021 12:35:57 +0000===
+Test Indices 
+
+Sequential Time: 6.951914310455322
+Parallel Time: 2.7257983684539795
+
+===Mon, 13 Sep 2021 12:36:03 +0000===
+Test Indices 
+
+Sequential Time: 4.104467153549194
+Parallel Time: 1.8534519672393799
+
