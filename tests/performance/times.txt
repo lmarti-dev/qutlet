@@ -178,3 +178,135 @@ Test Indices
 Sequential Time: 4.108301401138306
 Parallel Time: 1.9345855712890625
 
+===Tue, 14 Sep 2021 11:56:33 +0000===
+Test No Indices 
+
+Sequential Time: 1.6059942245483398
+Parallel Time: 3.6476056575775146
+
+===Tue, 14 Sep 2021 12:01:13 +0000===
+Test No Indices 
+
+Sequential Time: 1.633589506149292
+Parallel Time: 3.994174003601074
+
+===Tue, 14 Sep 2021 12:03:38 +0000===
+Test No Indices 
+
+Sequential Time: 1.642115831375122
+Parallel Time: 0.6082508563995361
+
+===Tue, 14 Sep 2021 12:03:42 +0000===
+Test Indices 
+
+Sequential Time: 2.8031225204467773
+Parallel Time: 1.874115228652954
+
+===Tue, 14 Sep 2021 12:03:45 +0000===
+Test Indices 
+
+Sequential Time: 1.6779117584228516
+Parallel Time: 1.2117319107055664
+
+===Tue, 14 Sep 2021 12:03:55 +0000===
+Test Indices 
+
+Sequential Time: 7.379405975341797
+Parallel Time: 2.837880849838257
+
+===Tue, 14 Sep 2021 12:04:02 +0000===
+Test Indices 
+
+Sequential Time: 4.327260494232178
+Parallel Time: 1.9331214427947998
+
+===Tue, 14 Sep 2021 12:07:39 +0000===
+Test No Indices 
+
+Sequential Time: 1.6902759075164795
+Parallel Time: 0.6124820709228516
+
+===Tue, 14 Sep 2021 12:07:44 +0000===
+Test Indices 
+
+Sequential Time: 2.8027026653289795
+Parallel Time: 1.7525601387023926
+
+===Tue, 14 Sep 2021 12:07:47 +0000===
+Test Indices 
+
+Sequential Time: 1.6423158645629883
+Parallel Time: 1.1511073112487793
+
+===Tue, 14 Sep 2021 12:07:57 +0000===
+Test Indices 
+
+Sequential Time: 7.228623867034912
+Parallel Time: 2.794567823410034
+
+===Tue, 14 Sep 2021 12:08:03 +0000===
+Test Indices 
+
+Sequential Time: 4.262439489364624
+Parallel Time: 1.9052836894989014
+
+===Tue, 14 Sep 2021 12:11:50 +0000===
+Test No Indices 
+
+Sequential Time: 1.6137890815734863
+Parallel Time: 0.607884407043457
+
+===Tue, 14 Sep 2021 12:11:54 +0000===
+Test Indices 
+
+Sequential Time: 2.75248646736145
+Parallel Time: 1.741347074508667
+
+===Tue, 14 Sep 2021 12:11:57 +0000===
+Test Indices 
+
+Sequential Time: 1.6061511039733887
+Parallel Time: 1.1534183025360107
+
+===Tue, 14 Sep 2021 12:12:07 +0000===
+Test Indices 
+
+Sequential Time: 7.240864276885986
+Parallel Time: 2.798064708709717
+
+===Tue, 14 Sep 2021 12:12:13 +0000===
+Test Indices 
+
+Sequential Time: 4.347859144210815
+Parallel Time: 1.9129962921142578
+
+===Tue, 14 Sep 2021 12:21:58 +0000===
+Test No Indices 
+
+Sequential Time: 1.6137704849243164
+Parallel Time: 0.6113314628601074
+
+===Tue, 14 Sep 2021 12:22:03 +0000===
+Test Indices 
+
+Sequential Time: 2.758173942565918
+Parallel Time: 1.7369475364685059
+
+===Tue, 14 Sep 2021 12:22:05 +0000===
+Test Indices 
+
+Sequential Time: 1.6117830276489258
+Parallel Time: 1.1611621379852295
+
+===Tue, 14 Sep 2021 12:22:15 +0000===
+Test Indices 
+
+Sequential Time: 7.3489837646484375
+Parallel Time: 2.772686243057251
+
+===Tue, 14 Sep 2021 12:22:22 +0000===
+Test Indices 
+
+Sequential Time: 4.198533058166504
+Parallel Time: 1.9090769290924072
+

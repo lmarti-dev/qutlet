@@ -111,8 +111,8 @@ def test_json():
     assert mockopt.__eq__(mockopt2)
 
 class MockGradientOptimiser(GradientOptimiser):
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
-        super()._cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None)
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+        super()._optimise_step(temp_cpv, _n_jobs, step)
 
         
 #############################################################
