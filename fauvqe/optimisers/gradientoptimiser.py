@@ -203,16 +203,16 @@ class GradientOptimiser(Optimiser):
                 costs = np.zeros(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                    res.add_step(temp_cpv.copy())
+                    res.add_step(temp_cpv.copy(), objective=costs[i])
             else:
                 costs = np.zeros(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
-                    res.add_step(temp_cpv.copy())
+                    res.add_step(temp_cpv.copy(), objective=costs[i])
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
-                plt.plot(range(self._break_param), costs)
+                plt.plot(range(self.options['break_param']), costs)
                 plt.yscale('log')
                 dir_path = os.path.abspath(os.path.dirname(__file__))
                 plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
