@@ -21,50 +21,46 @@ class GradientDescent(GradientOptimiser):
     """GradientDescent implementation as a GradientOptimiser.
 
     Arguments
-    -----------
-    eps : Real default 0.001
-      Discretisation finesse for numerical gradient
-
-    eta : Real default 0.01
-      Step size for parameter update rule
-
-    break_cond : {"iterations"} default "iterations"
-      Break condition for optimisation
-
-    break_param : int default 100
-      Amount of steps of iteration
-    
-    batch_size: Integral
-        number of batch wavefunctions, une None as initial_state if batch_size = 0 
-    
-    symmetric_gradient: bool
-        Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-    
-    plot_run: bool
-        Plot cost development in optimisation run and save to fauvqe/plots 
-    
-    use_progress_bar: bool
-        Determines whether to use tqdm's progress bar when running the optimisation
-    
-    dtype: np.dtype
-            data type of wavefunction
+    -----------    
+    optimiser_options: dict
+            Dictionary containing additional options to individualise the optimisation routine. Contains:
+                eps : Real default 0.001
+                    Discretisation finesse for numerical gradient
+                
+                eta : Real default 0.01
+                    Step size for parameter update rule
+                
+                break_cond : {"iterations"} default "iterations"
+                    Break condition for optimisation
+                
+                break_param : int default 100
+                    Amount of steps of iteration
+                
+                batch_size: Integral
+                    number of batch wavefunctions, une None as initial_state if batch_size = 0 
+            
+                symmetric_gradient: bool
+                    Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+                
+                plot_run: bool
+                    Plot cost development in optimisation run and save to fauvqe/plots
+                
+                use_progress_bar: bool
+                    Determines whether to use tqdm's progress bar when running the optimisation
+                
+                dtype: np.dtype
+                    data type of wavefunction
     """
 
     def __init__(
         self,
-        eps: Real = 1e-3,
-        eta: Real = 1e-2,
-        break_cond: Literal["iterations"] = "iterations",
-        break_param: Integral = 100,
-        batch_size: Integral = 0,
-        symmetric_gradient: bool = True,
-        plot_run: bool = False,
-        use_progress_bar: bool = False,
-        dtype: np.dtype = np.complex64
+        options: dict = {}
     ):
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar)
-
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+        super().__init__(options)
+        if(self.options['batch_size'] > 0):
+            self._optimise_step = self._optimise_step_indices
+    
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         """
         Run optimiser until break condition is fullfilled
 
@@ -72,6 +68,11 @@ class GradientDescent(GradientOptimiser):
         2. Do steps until break condition.
         3. Update self.circuit_param_values = temp_cpv
         """
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs)
+        temp_cpv -= self.options['eta'] * gradient_values
+        return temp_cpv, cost
+    
+    def _optimise_step_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
-        temp_cpv -= self._eta * gradient_values
+        temp_cpv -= self.options['eta'] * gradient_values
         return temp_cpv, cost

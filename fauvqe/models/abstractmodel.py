@@ -463,3 +463,18 @@ class AbstractModel(Restorable):
                                                 (_qubits[l]._col+ self.n[1]*(i+l)*axis)%(repetitions*self.n[1]))
 
         yield _gate(**_gate_params).on(*_qubits)
+
+    def symmetrise_circuit(self, options: dict = {}):
+        """
+            This function takes the current circuit and adds the moments start to end to it.
+            If start > end then it iterates backwards, otherwise forwards
+        """
+        temp_options = {'start' : len(self.circuit)-1, 'end' : 0}
+        temp_options.update(options)
+
+        temp_sign= -np.sign(temp_options['start']-temp_options['end'])
+        if temp_sign == 0:
+             self.circuit.append(self.circuit._moments[0])
+        else:
+            for i in range(temp_options['start'],temp_options['end']+temp_sign, temp_sign):
+                self.circuit.append(self.circuit._moments[i])

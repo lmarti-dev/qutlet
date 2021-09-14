@@ -7,9 +7,11 @@ Test parent class AbstractModel;
 """
 # external import
 import cirq
+from cirq.circuits import circuit
 import qsimcirq
 import pytest
 import numpy as np
+import sympy
 
 # internal import
 from fauvqe import AbstractModel
@@ -226,6 +228,70 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
 
+@pytest.mark.parametrize(
+    "n, circuit, options, solution_circuit",
+    [
+        (   
+            [1,1],
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0))),
+            dict(),
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 0))),
+        ),
+        (   
+            [1,2],
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), 
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                ),
+            dict(),
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), 
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.H.on(cirq.GridQubit(0, 0)), 
+            ),
+        ),
+        (   
+            [2,1],
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), 
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                ),
+            {'start': 0, 'end': 1},
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), 
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.H.on(cirq.GridQubit(0, 0)), 
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (   
+            [2,2],
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.X.on(cirq.GridQubit(1, 0)), cirq.Y.on(cirq.GridQubit(0, 1)), cirq.Z.on(cirq.GridQubit(1, 1)),
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.YY**(sympy.Symbol('b'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                        (cirq.XX**(sympy.Symbol('c'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
+                ),
+            {'start': 2, 'end': 1},
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.X.on(cirq.GridQubit(1, 0)), cirq.Y.on(cirq.GridQubit(0, 1)), cirq.Z.on(cirq.GridQubit(1, 1)),
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.YY**(sympy.Symbol('b'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                        (cirq.XX**(sympy.Symbol('c'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
+                        (cirq.XX**(sympy.Symbol('c'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
+                        (cirq.ZZ**(sympy.Symbol('a'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.YY**(sympy.Symbol('b'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+            ),
+        ),
+    ]
+)
+def test_symmetrise_circuit(n, circuit, options, solution_circuit):
+    model = MockAbstractModel("GridQubit", n)
+    model.circuit=circuit
+
+    print(model.circuit)
+    model.symmetrise_circuit(options)
+    print(model.circuit)
+
+    assert(model.circuit == solution_circuit)
 
 def test_glue_circuit_error():
     model = MockAbstractModel("LineQubit", 3)

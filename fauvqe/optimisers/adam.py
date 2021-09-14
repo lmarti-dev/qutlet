@@ -55,66 +55,61 @@ class ADAM(GradientOptimiser):
 
     def __init__(
         self,
-        eps: Real = 1e-3,
-        eps_2: Real = 1e-8,
-        eta: Real = 1e-2,
-        b_1: Real = 0.9,
-        b_2: Real = 0.999,
-        break_cond: Literal["iterations"] = "iterations",
-        break_param: Integral = 100,
-        batch_size: Integral = 0,
-        symmetric_gradient: bool = True,
-        plot_run: bool = False,
-        use_progress_bar: bool = False,
-        dtype: np.dtype = np.complex64,
+        options: dict = {}
     ):
         """ADAM optimiser
 
         Parameters
         ----------
-        eps: Real
-            :math:`\\epsilon` for gradient
-        
-        eps_2: Real
-            :math:`\\epsilon` for adam
-        
-        eta: Real
-            Step size :math:`\\alpha` for adam
-        
-        b_1: Real
-            :math:`\\beta_1` for adam
-        
-        b_2: Real
-            :math:`\\beta_2` for adam
-        
-        break_cond: {"iterations"} default "iterations"
-            Break condition for the optimisation
-        
-        break_param: Integral
-            Break parameter for the optimisation
-        
-        symmetric_gradient: bool
-            Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-        
-        plot_run: bool
-            Plot cost development in optimisation run and save to fauvqe/plots 
-        
-        use_progress_bar: bool
-            Determines whether to use tqdm's progress bar when running the optimisation
-        
-        dtype: np.dtype
-            data type of wavefunction
+        optimiser_options: dict
+            Dictionary containing additional options to individualise the optimisation routine. Contains:
+                eps: Real
+                    :math:`\\epsilon` for gradient
+                
+                eps_2: Real
+                    :math:`\\epsilon` for adam
+                
+                eta: Real
+                    Step size :math:`\\alpha` for adam
+                
+                b_1: Real
+                    :math:`\\beta_1` for adam
+                
+                b_2: Real
+                    :math:`\\beta_2` for adam
+                
+                break_cond: {"iterations"} default "iterations"
+                    Break condition for the optimisation
+                
+                break_param: Integral
+                    Break parameter for the optimisation
+                
+                symmetric_gradient: bool
+                    Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
+                
+                plot_run: bool
+                    Plot cost development in optimisation run and save to fauvqe/plots
+                
+                use_progress_bar: bool
+                    Determines whether to use tqdm's progress bar when running the optimisation
+                
+                dtype: np.dtype
+                    data type of wavefunction
         """
-
-        super().__init__(eps, eta, break_cond, break_param, batch_size, symmetric_gradient, plot_run, use_progress_bar, dtype)
+        self.options = {
+            'eps_2': 1e-8,
+            'b_1': 0.9,
+            'b_2': 0.999,
+        }
+        self.options.update(options)
+        super().__init__(self.options)
+        
         assert all(
-            isinstance(n, Real) and n > 0.0 for n in [eps_2, b_1, b_2]
+            isinstance(n, Real) and n > 0.0 for n in [self.options['eps_2'], self.options['b_1'], self.options['b_2']]
         ), "Parameters must be positive, real numbers"
         
-        # The following attributes remain constant for the lifetime of this optimiser
-        self._eps_2: Real = eps_2
-        self._b_1: Real = b_1
-        self._b_2: Real = b_2
+        if(self.options['batch_size'] > 0):
+            self._optimise_step = self._optimise_step_indices
         
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -153,7 +148,7 @@ class ADAM(GradientOptimiser):
         self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
         
-    def _cpv_update(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+    def _parameter_update(self, gradient_values: np.ndarray, step: Integral):
         """
         t ← t + 1
         g_t ← ∇_θ f_t (θ_{t−1} )                    (Get gradients w.r.t. stochastic objective at timestep t)
@@ -168,35 +163,18 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
-        self._m_t = self._b_1 * self._m_t + (1 - self._b_1) * gradient_values
-        self._v_t = self._b_2 * self._v_t + (1 - self._b_2) * gradient_values ** 2
-        temp_cpv -= (
-            self._eta
-            * (1 - self._b_2 ** step) ** 0.5
-            / (1 - self._b_1 ** step)
-            * self._m_t
-            / (self._v_t ** 0.5 + self._eps_2)
-        )
-        
-        return temp_cpv, cost
+        self._m_t = self.options['b_1'] * self._m_t + (1 - self.options['b_1']) * gradient_values
+        self._v_t = self.options['b_2'] * self._v_t + (1 - self.options['b_2']) * gradient_values ** 2
+        return self.options['eta'] * (1 - self.options['b_2'] ** step) ** 0.5 / (1 - self.options['b_1'] ** step) * self._m_t / (self._v_t ** 0.5 + self.options['eps_2'])
     
-    def to_json_dict(self) -> Dict:
-        return {
-            "constructor_params": {
-                "eps": self._eps,
-                "eps_2": self._eps_2,
-                "eta": self._eta,
-                "b_1": self._b_1,
-                "b_2": self._b_2,
-                "break_cond": self._break_cond,
-                "break_param": self._break_param,
-                "batch_size": self._batch_size,
-                "symmetric_gradient": self._get_gradients == self._get_gradients_sym,
-                "plot_run": self._plot_run
-            },
-        }
-
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs)
+        return temp_cpv - self._parameter_update(gradient_values, step), cost
+    
+    def _optimise_step_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+        gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
+        return temp_cpv - self._parameter_update(gradient_values, step), cost
+    
     @classmethod
     def from_json_dict(cls, dct: Dict):
         return cls(**dct["constructor_params"])

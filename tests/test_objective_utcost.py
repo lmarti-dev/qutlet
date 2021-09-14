@@ -126,7 +126,7 @@ def test_simulate_batch(t, order, times):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials)
+    objective = UtCost(ising, t, order, initial_wavefunctions = initials, use_progress_bar=True)
     print(objective)
     
     op = objective.simulate(
@@ -159,6 +159,20 @@ def test_json(t, order):
     
     assert (objective == objective2)
 
+
+#############################################################
+#                                                           #
+#                     Test errors                           #
+#                                                           #
+#############################################################
+class MockUtCost(UtCost):
+    def __init__(self):
+        return
+    
+def test_abstract_gradient_optimiser():
+    with pytest.raises(NotImplementedError):
+        MockUtCost().evaluate()
+    
 """
     Old test of simulating np.complex128 wavefunctions
 @pytest.mark.parametrize(
