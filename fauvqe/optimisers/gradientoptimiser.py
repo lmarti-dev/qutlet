@@ -209,6 +209,8 @@ class GradientOptimiser(Optimiser):
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
                     res.add_step(temp_cpv.copy(), objective=costs[i])
+                if():
+                    res
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'

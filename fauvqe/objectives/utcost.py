@@ -49,7 +49,8 @@ class UtCost(Objective):
                     order: np.uint = 0,
                     initial_wavefunctions: Optional[np.ndarray] = None,
                     time_steps: List[int] = [1],
-                    use_progress_bar: bool = False):
+                    use_progress_bar: bool = False,
+                    dtype: np.dtype = np.complex128):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -69,6 +70,7 @@ class UtCost(Objective):
         self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
         self._time_steps = time_steps
+        self._dtype = dtype
         
         if self._order == 0:
             if t != model.t:
@@ -135,7 +137,7 @@ class UtCost(Objective):
         ---------
         void
         """
-        self._output_wavefunctions = np.zeros(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=np.complex128)
+        self._output_wavefunctions = np.zeros(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
         if(self._order < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
@@ -182,7 +184,7 @@ class UtCost(Objective):
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            output_state = np.zeros(shape=(len(self._time_steps), *initial_state.shape), dtype = np.complex128)
+            output_state = np.zeros(shape=(len(self._time_steps), *initial_state.shape), dtype = self._dtype)
             for step in range(len(self._time_steps)):
                 if(step != 0):
                     ini = output_state[step - 1]

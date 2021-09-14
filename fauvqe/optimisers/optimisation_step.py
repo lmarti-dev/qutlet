@@ -64,7 +64,10 @@ class OptimisationStep:
             self.__objective = self._parent.objective.evaluate(self.wavefunction)
 
         return self.__objective
-
+    
+    def reset_objective(self) -> None:
+        self.__objective = None
+    
     def __repr__(self) -> str:
         return "<OptimisationStep index={} params={}>".format(self.index, self.params)
 

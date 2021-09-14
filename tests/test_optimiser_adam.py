@@ -66,6 +66,7 @@ def test_optimise():
     #    param_resolver=ising.get_param_resolver(ising.circuit_param_values),
     #).state_vector()
     # Result smaller than -0.5 up to eta
+    res.get_latest_step().reset_objective()
     assert -0.5 > res.get_latest_objective_value() - eps
     # Result smaller than -0.5 up to eta
 
