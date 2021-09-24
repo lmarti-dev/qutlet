@@ -197,18 +197,21 @@ class GradientOptimiser(Optimiser):
         if self.options['break_cond'] == "iterations":
             #Set progress bar, if wanted
             pbar = self.create_range(self.options['break_param'] - skip_steps, self.options['use_progress_bar'])
+            costs = np.empty(self.options['break_param'] - skip_steps)
+            if(self.options['symmetric_gradient']):
+                tmp_cost = [None for i in range(self.options['break_param'] - skip_steps)]
+            else:
+                tmp_cost = costs.view()
             #Case distinction between sym <-> asym and indices <-> no indices
             if self.options['batch_size'] > 0:
                 indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
-                costs = np.empty(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                    res.add_step(temp_cpv.copy(), objective=costs[i])
+                    res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             else:
-                costs = np.empty(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
-                    res.add_step(temp_cpv.copy(), objective=costs[i])
+                    res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
