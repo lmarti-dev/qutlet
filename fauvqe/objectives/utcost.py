@@ -137,7 +137,7 @@ class UtCost(Objective):
         ---------
         void
         """
-        self._output_wavefunctions = np.zeros(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
+        self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
         if(self._order < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
@@ -184,14 +184,18 @@ class UtCost(Objective):
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            output_state = np.zeros(shape=(len(self._time_steps), *initial_state.shape), dtype = self._dtype)
-            for step in range(len(self._time_steps)):
-                if(step != 0):
-                    ini = output_state[step - 1]
-                    mul = self._time_steps[step] - self._time_steps[step - 1]
-                else:
-                    ini = initial_state
-                    mul = self._time_steps[step]
+            output_state = np.empty(shape=(len(self._time_steps), *initial_state.shape), dtype = self._dtype)
+            ini = initial_state
+            mul = self._time_steps[0]
+            wf = self._model.simulator.simulate(
+                    mul * self._model.circuit,
+                    param_resolver=param_resolver,
+                    initial_state=ini,
+                    ).state_vector()
+            output_state[0] = wf/np.linalg.norm(wf)
+            for step in range(1, len(self._time_steps)):
+                ini = output_state[step-1]
+                mul = self._time_steps[step] - self._time_steps[step-1]
                 wf = self._model.simulator.simulate(
                     mul * self._model.circuit,
                     param_resolver=param_resolver,

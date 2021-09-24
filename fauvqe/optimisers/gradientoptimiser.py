@@ -200,17 +200,15 @@ class GradientOptimiser(Optimiser):
             #Case distinction between sym <-> asym and indices <-> no indices
             if self.options['batch_size'] > 0:
                 indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
-                costs = np.zeros(self.options['break_param'] - skip_steps)
+                costs = np.empty(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
                     res.add_step(temp_cpv.copy(), objective=costs[i])
             else:
-                costs = np.zeros(self.options['break_param'] - skip_steps)
+                costs = np.empty(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
                     res.add_step(temp_cpv.copy(), objective=costs[i])
-                if():
-                    res
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
@@ -304,9 +302,9 @@ class GradientOptimiser(Optimiser):
             + 2 * (0.5 - np.mod(j, 2)) * self.options['eps']
         )
         if(hasattr(self._objective, '_time_steps')):
-            wf = np.zeros(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
         else:
-            wf = np.zeros(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
         for k in range(len(indices)):
             wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
@@ -360,9 +358,9 @@ class GradientOptimiser(Optimiser):
             joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
         )
         if(hasattr(self._objective, '_time_steps')):
-            wf = np.zeros(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
         else:
-            wf = np.zeros(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
         for k in range(len(indices)):
             wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
