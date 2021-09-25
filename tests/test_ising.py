@@ -10,6 +10,7 @@
 import pytest
 import numpy as np
 import cirq
+from scipy.linalg import expm
 import sympy
 
 # internal imports
@@ -1139,6 +1140,57 @@ def test_set_Ut(n):
     #print(np.round(ising._Ut, decimals=5))
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np.identity(2**np.size(ising.qubits)), ising._Ut,rtol=1.1, atol=1e-7)
 
+
+def hamiltonian(n):
+    N = 2**n
+    Z = np.array([[1, 0],
+                  [0, -1]])
+    X = np.array([[0, 1], 
+                  [1, 0]])
+    ham = np.zeros(shape=(N, N))
+    for k in range(n):
+        tmpx = 1
+        for m in range(n):
+            if(m == k):
+                tmpx = np.kron(tmpx, X)
+            else:
+                tmpx = np.kron(tmpx, np.eye(2))
+        ham = ham + tmpx
+    for k in range(n-1):
+        tmpzz = 1
+        for m in range(n):
+            if(m == k or m == k+1):
+                tmpzz = np.kron(tmpzz, Z)
+            else:
+                tmpzz = np.kron(tmpzz, np.eye(2))
+        ham = ham + tmpzz
+    return -1*ham
+
+@pytest.mark.higheffort
+@pytest.mark.parametrize(
+    "n",
+    [
+        (
+            [1,4]
+        ),
+        (
+            [1,12]
+        ),
+    ]
+)
+def test_Ut_correctness(n):
+    boundaries = [1, 1]
+    t=0.1
+    ising = Ising(  "GridQubit", 
+                    n, 
+                    np.ones((n[0]-boundaries[0], n[1])), 
+                    np.ones((n[0], n[1]-boundaries[1])), 
+                    np.ones((n[0], n[1])),
+                    "X",
+                    t)
+    ising.set_Ut()
+    res = expm(-1j*t*hamiltonian(n[1]))
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(res, ising._Ut,rtol=1.1, atol=1e-7)
 
 #############################################################
 #                                                           #
