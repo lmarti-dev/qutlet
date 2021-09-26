@@ -1168,17 +1168,20 @@ def hamiltonian(n):
 
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
-    "n",
+    "n, use_dense",
     [
         (
-            [1,4]
+            [1,4], True
         ),
         (
-            [1,12]
+            [1,12], False
+        ),
+        (
+            [1,12], True
         ),
     ]
 )
-def test_Ut_correctness(n):
+def test_Ut_correctness(n, use_dense):
     boundaries = [1, 1]
     t=0.1
     ising = Ising(  "GridQubit", 
@@ -1188,7 +1191,7 @@ def test_Ut_correctness(n):
                     np.ones((n[0], n[1])),
                     "X",
                     t)
-    ising.set_Ut()
+    ising.set_Ut(use_dense)
     res = expm(-1j*t*hamiltonian(n[1]))
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(res, ising._Ut,rtol=1.1, atol=1e-7)
 
