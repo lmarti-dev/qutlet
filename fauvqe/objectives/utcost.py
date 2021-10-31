@@ -26,8 +26,8 @@ class UtCost(Objective):
     model: AbstractModel, The linked model
     options:    "t"         -> Float
                     t in U(t)
-                "order"         -> np.uint
-                    Trotter approximation order (Exact if 0 or negative)
+                "tnumber"         -> np.uint
+                    Trotter number (Exact if 0 or negative)
 
                 "initial_wavefunctions"  -> np.ndarray      if None Use exact UtCost, otherwise batch wavefunctions for random batch cost. Also overwrites evaluate(), the NotImplementedError should never be raised.
                 
@@ -46,7 +46,7 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    order: np.uint = 0,
+                    tnumber: np.uint = 0,
                     initial_wavefunctions: Optional[np.ndarray] = None,
                     time_steps: List[int] = [1],
                     use_progress_bar: bool = False,
@@ -66,13 +66,13 @@ class UtCost(Objective):
         super().__init__(model)
         
         self._initial_wavefunctions = initial_wavefunctions
-        self._order = order
+        self._tnumber = tnumber
         self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
         self._time_steps = time_steps
         self._dtype = dtype
         
-        if self._order == 0:
+        if self._tnumber == 0:
             if t != model.t:
                 model.t = t
                 model.set_Ut()
@@ -120,10 +120,10 @@ class UtCost(Objective):
             for pauli in pstr:
                 temp = temp * pauli[1](pauli[0])
             #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
-            self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._order))
-        #Copy the Trotter layer *order times.
-        #self.trotter_circuit = qsimcirq.QSimCircuit(self._order * self.trotter_circuit)
-        self.trotter_circuit = self._order * self.trotter_circuit
+            self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._tnumber))
+        #Copy the Trotter layer *tnumber times.
+        #self.trotter_circuit = qsimcirq.QSimCircuit(self._tnumber * self.trotter_circuit)
+        self.trotter_circuit = self._tnumber * self.trotter_circuit
     
     def _init_batch_wfcts(self):
         """
@@ -138,7 +138,7 @@ class UtCost(Objective):
         void
         """
         self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
-        if(self._order < 1):
+        if(self._tnumber < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
         else:
@@ -209,7 +209,7 @@ class UtCost(Objective):
             "constructor_params": {
                 "model": self._model,
                 "t": self.t, 
-                "order": self._order,
+                "tnumber": self._tnumber,
                 "initial_wavefunctions": self._initial_wavefunctions
             },
         }
