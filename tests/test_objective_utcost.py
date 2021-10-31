@@ -99,17 +99,20 @@ def test_evaluate_batch(t, avg_size):
     assert objective.evaluate(np.array([outputs]), options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
-    "t,order, times",
+    "t, tnumber, order, times",
     [
-        (0.1, 0, [1]), 
-        (1, 0, [1, 3, 5]), 
-        (-0.01, 0, [1, 3, 5]), 
-        (0.1, 100, [1, 3, 5]), 
-        (1, 100, [1]), 
-        (-0.01, 100, [1, 3, 5])
+        (0.1, 0, 1, [1]), 
+        (1, 0, 1, [1, 3, 5]), 
+        (-0.01, 0, 1, [1, 3, 5]), 
+        (0.1, 100, 1, [1, 3, 5]), 
+        (1, 100, 1, [1]), 
+        (-0.01, 100, 1, [1, 3, 5]),
+        (0.1, 100, 2, [1, 3, 5]), 
+        (1, 10, 4, [1]), 
+        (-0.01, 10, 6, [1, 3, 5])
     ],
 )
-def test_simulate_batch(t, order, times):
+def test_simulate_batch(t, tnumber, order, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -131,7 +134,7 @@ def test_simulate_batch(t, order, times):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
+    objective = UtCost(ising, t, tnumber, order, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
     print(objective)
     
     op = objective.simulate(

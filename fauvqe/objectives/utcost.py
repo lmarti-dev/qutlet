@@ -100,21 +100,29 @@ class UtCost(Objective):
             self._init_batch_wfcts()
             self.evaluate = self.evaluate_batch
 
+    def _init_trotter_circuit(self):
+        self.trotter_circuit = self.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._order, self._tnumber)
+    
     def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order, trotter_number):
+        return trotter_number * self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, t/trotter_number, order)
+    
+    def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order):
         if(order == 1):
-            return self._first_order_trotter_circuit(hamiltonian, t, trotter_number)
+            return self._first_order_trotter_circuit(hamiltonian, t)
         elif(order == 2):
-            half = self._first_order_trotter_circuit(hamiltonian, t, trotter_number)
-            return half * inv(half)
+            half = self._first_order_trotter_circuit(hamiltonian, 0.5*t)
+            for k in range(len(half)-1, -1, -1):
+                half.append(half[k])
+            return half
         elif( (order % 2) == 0):
-            nu = 1/(4 - 4**(1/(order - 1))) - 1
-            partone = self.get_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, order-2, trotter_number)
-            parttwo = self.get_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, order-2, trotter_number)
-            return partone + partone + parttwo + partone + partone
+            nu = 1/(4 - 4**(1/(order - 1)))
+            partone = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, order-2)
+            parttwo = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, order-2)
+            return 2*partone + parttwo + 2*partone
         else:
             raise NotImplementedError()
     
-    def _first_order_trotter_circuit(self, hamiltonian, t, trotter_number):
+    def _first_order_trotter_circuit(self, hamiltonian, t):
         """
         This function initialises the circuit for Trotter approximation.
         
@@ -143,12 +151,9 @@ class UtCost(Objective):
             for pauli in pstr:
                 temp = temp * pauli[1](pauli[0])
             #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
-            res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr] / trotter_number))
+            res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
         #Copy the Trotter layer *tnumber times.
-        return trotter_number * res
-    
-    def _init_trotter_circuit(self):
-        self.trotter_circuit = self.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._order, self._tnumber)
+        return res
     
     def _init_batch_wfcts(self):
         """
