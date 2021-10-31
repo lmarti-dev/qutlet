@@ -101,6 +101,20 @@ class UtCost(Objective):
             self.evaluate = self.evaluate_batch
 
     def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order, trotter_number):
+        if(order == 1):
+            return self._first_order_trotter_circuit(hamiltonian, t, trotter_number)
+        elif(order == 2):
+            half = self._first_order_trotter_circuit(hamiltonian, t, trotter_number)
+            return half * inv(half)
+        elif( (order % 2) == 0):
+            nu = 1/(4 - 4**(1/(order - 1))) - 1
+            partone = self.get_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, order-2, trotter_number)
+            parttwo = self.get_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, order-2, trotter_number)
+            return partone + partone + parttwo + partone + partone
+        else:
+            raise NotImplementedError()
+    
+    def _first_order_trotter_circuit(self, hamiltonian, t, trotter_number):
         """
         This function initialises the circuit for Trotter approximation.
         
