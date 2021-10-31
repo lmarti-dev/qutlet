@@ -610,3 +610,63 @@ Test Indices
 Sequential Time: 4.363459587097168
 Parallel Time: 1.920170545578003
 
+===Sun, 31 Oct 2021 16:21:13 +0000===
+Test No Indices 
+
+Sequential Time: 1.6168510913848877
+Parallel Time: 0.6129941940307617
+
+===Sun, 31 Oct 2021 16:21:17 +0000===
+Test Indices 
+
+Sequential Time: 2.7624964714050293
+Parallel Time: 1.7284107208251953
+
+===Sun, 31 Oct 2021 16:21:20 +0000===
+Test Indices 
+
+Sequential Time: 1.6110115051269531
+Parallel Time: 1.1619665622711182
+
+===Sun, 31 Oct 2021 16:21:30 +0000===
+Test Indices 
+
+Sequential Time: 7.240206241607666
+Parallel Time: 2.7867612838745117
+
+===Sun, 31 Oct 2021 16:21:36 +0000===
+Test Indices 
+
+Sequential Time: 4.253249168395996
+Parallel Time: 1.9193456172943115
+
+===Sun, 31 Oct 2021 16:41:37 +0000===
+Test No Indices 
+
+Sequential Time: 1.6515388488769531
+Parallel Time: 0.6120142936706543
+
+===Sun, 31 Oct 2021 16:41:42 +0000===
+Test Indices 
+
+Sequential Time: 2.750255584716797
+Parallel Time: 1.7341101169586182
+
+===Sun, 31 Oct 2021 16:41:44 +0000===
+Test Indices 
+
+Sequential Time: 1.6012980937957764
+Parallel Time: 1.167508602142334
+
+===Sun, 31 Oct 2021 16:41:54 +0000===
+Test Indices 
+
+Sequential Time: 7.31758713722229
+Parallel Time: 2.789665699005127
+
+===Sun, 31 Oct 2021 16:42:01 +0000===
+Test Indices 
+
+Sequential Time: 4.288848638534546
+Parallel Time: 1.9196412563323975
+

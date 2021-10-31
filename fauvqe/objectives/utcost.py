@@ -47,6 +47,7 @@ class UtCost(Objective):
                     model: AbstractModel, 
                     t: Real, 
                     tnumber: np.uint = 0,
+                    order: np.uint = 1,
                     initial_wavefunctions: Optional[np.ndarray] = None,
                     time_steps: List[int] = [1],
                     use_progress_bar: bool = False,
@@ -67,6 +68,7 @@ class UtCost(Objective):
         
         self._initial_wavefunctions = initial_wavefunctions
         self._tnumber = tnumber
+        self._order = order
         self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
         self._time_steps = time_steps
@@ -98,20 +100,27 @@ class UtCost(Objective):
             self._init_batch_wfcts()
             self.evaluate = self.evaluate_batch
 
-    def _init_trotter_circuit(self):
+    def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order, trotter_number):
         """
-        This function initialises the circuit for Trotter approximation and sets self.trotter_circuit
+        This function initialises the circuit for Trotter approximation.
         
         Parameters
         ----------
-        self
+        hamiltonian: cirq.PauliSum
+            System Hamiltonian
+        t: float
+            Total simulation time
+        order: np.uint
+            Order of Approximation
+        trotter_number: np.uint
+            Refinement of time R. t -> ( t/R )^R
         
         Returns
         ---------
-        void
+        res: cirq.Circuit()
+            Circuit describing Trotterized Time Evolution
         """
-        self.trotter_circuit = cirq.Circuit()
-        hamiltonian = self.model.hamiltonian
+        res = cirq.Circuit()
         #Loop through all the addends in the PauliSum Hamiltonian
         for pstr in hamiltonian._linear_dict:
             #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
@@ -120,10 +129,12 @@ class UtCost(Objective):
             for pauli in pstr:
                 temp = temp * pauli[1](pauli[0])
             #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
-            self.trotter_circuit.append(temp**np.real(2/np.pi * self.t * hamiltonian._linear_dict[pstr] / self._tnumber))
+            res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr] / trotter_number))
         #Copy the Trotter layer *tnumber times.
-        #self.trotter_circuit = qsimcirq.QSimCircuit(self._tnumber * self.trotter_circuit)
-        self.trotter_circuit = self._tnumber * self.trotter_circuit
+        return trotter_number * res
+    
+    def _init_trotter_circuit(self):
+        self.trotter_circuit = self.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._order, self._tnumber)
     
     def _init_batch_wfcts(self):
         """
