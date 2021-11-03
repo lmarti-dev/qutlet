@@ -180,7 +180,24 @@ class MockUtCost(UtCost):
 def test_abstract_gradient_optimiser():
     with pytest.raises(NotImplementedError):
         MockUtCost().evaluate()
+
+def test_no_odd_order():
+    t=0.1
+    tnumber=10
+    order=3
+    times=[1]
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    t_new = t - 0.01
+    ex=100
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t_new)
     
+    initial_rands= (np.random.rand(1, 4)).astype(np.complex128)
+    
+    with pytest.raises(NotImplementedError):
+        objective = UtCost(ising, t, tnumber, order, initial_wavefunctions = initial_rands, time_steps=times, use_progress_bar=True, dtype=np.complex64)
+
 """
     Old test of simulating np.complex128 wavefunctions
 @pytest.mark.parametrize(
