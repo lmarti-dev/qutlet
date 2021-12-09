@@ -236,7 +236,7 @@ def set_symbols(self):
                 provide fal in options dict
             - 1qubit and 2qubit gate parametrisation
                 - idea give dict with names
-                - maximally 'a', 'x', 'z', 'theta', 'phi'
+                - maximally 'a', 'x', 'z', 'theta', 'phi', 'lambda'
 
     """
     assert isinstance(self.hea.options["p"], (int, np.int_)), "Error: p needs to be int, received {}".format(type(self.hea.options["p"]))
@@ -255,7 +255,7 @@ def set_symbols(self):
                     temp.append(sympy.Symbol(variable + str(i)))
                 
                 #2qubit cases
-                elif variable in {"phi", "theta"}:
+                elif variable in {"phi", "theta", "lambda"}:
                     #Assuming here that the 2 qubit layer is of circuit depth 4
                     #As one needs two entangling layers in each direction
                     for j in range(4):
@@ -269,7 +269,7 @@ def set_symbols(self):
                     for j in range(np.size(self.qubits)):
                         temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
                 #1qubit cases
-                elif variable in {"phi", "theta"}:
+                elif variable in {"phi", "theta", "lambda"}:
                     #Here: only count number of parameters. 
                     for j in range(np.size(self.j_v) + np.size(self.j_h)):
                         temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
