@@ -222,7 +222,7 @@ class IsingXY(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
-                                "variables": {'a', 'x', 'z', 'phi', 'theta', 'kappa'},
+                                "variables": {'a', 'x', 'z', 'phi', 'theta'},
                                 "1QubitGate": lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a),
                                 "2QubitGate": cirq.FSimGate}
             self.hea.options.update(options)
