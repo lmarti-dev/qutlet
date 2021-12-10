@@ -13,6 +13,7 @@ from fauvqe import models, objectives, optimisers
 from fauvqe.models import (
     AbstractModel,
     Ising,
+    IsingXY,
 )
 from fauvqe.objectives import (
     AbstractExpectationValue,
