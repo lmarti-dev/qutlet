@@ -201,11 +201,11 @@ class SpinModel(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
-                                "1Qvariables": {[*['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in len(self._one_q_gates)]
+                                "1Qvariables": {[['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in len(self._one_q_gates)]
                                 },
-                                "2Qvariables": {[*['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in len(self._two_q_gates)]
+                                "2Qvariables": {[['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in len(self._two_q_gates)]
                                 },
-                                "1QubitGate": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in len(self._one_q_gates)],
+                                "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in len(self._one_q_gates)],
                                 "2QubitGates" : [cirq.FSimGate for g in len(self._two_q_gates)],
                                }
             self.hea.options.update(options)
