@@ -1,0 +1,285 @@
+from __future__ import annotations
+
+import importlib
+from typing import Tuple, Dict, List
+from numbers import Real
+import itertools
+
+import numpy as np
+import cirq
+
+from fauvqe.models.abstractmodel import AbstractModel
+
+
+
+class SpinModel(AbstractModel):
+    """
+    2D SpinModel class inherits AbstractModel
+    is mother of different quantum circuit methods
+    """
+    basics  = importlib.import_module("fauvqe.models.circuits.basics")
+    hea  = importlib.import_module("fauvqe.models.circuits.hea")
+    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
+
+    def __init__(self, 
+                 qubittype, 
+                 n,
+                 j_v,
+                 j_h,
+                 h,
+                 two_q_gates: List[cirq.Gate],
+                 one_q_gates: List[cirq.Gate],
+                 t: Real = 0):
+        """
+        qubittype as defined in AbstractModel
+        n number of qubits
+        j_v vertical j's - same order as two_q_gates
+        j_h horizontal j's - same order as two_q_gates
+        h  strength external fields - same order as one_q_gates
+        two_q_gates: list of 2 Qubit Gates
+        one_q_gates: list of single Qubit Gates
+        t: Simulation Time
+        """
+        # convert all input to np array to be sure
+        super().__init__(qubittype, np.array(n))
+        self.circuit_param = None
+        self.circuit_param_values = np.array([])
+        self._two_q_gates = two_q_gates,
+        self._one_q_gates = one_q_gates,
+        self._set_jh(j_v, j_h, h, two_q_gates, one_q_gates)
+        self._set_hamiltonian()
+        super().set_simulator()
+        self.t = t
+
+    def copy(self) -> Ising:
+        self_copy = Ising( self.qubittype,
+                self.n,
+                self.j_v,
+                self.j_h,
+                self.h,
+                self._two_q_gates = two_q_gates,
+                self._one_q_gates = one_q_gates,
+                self.t )
+        
+        self_copy.circuit = self.circuit.copy()
+        self_copy.circuit_param = self.circuit_param.copy()
+        self_copy.circuit_param_values = self.circuit_param_values.copy()
+        self_copy.hamiltonian = self.hamiltonian.copy()
+
+        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
+        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
+        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
+
+        return self_copy
+
+    def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
+        # convert input to numpy array to be sure
+        j_v = np.array(j_v)
+        # J vertical needs one row/horizontal line less
+        # NEED FOR IMPROVEMENT
+        assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
+            j_v.shape == (len(two_q_gates), *self.n)
+        ).all(), "Error in Ising._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
+        )
+        self.j_v = j_v
+
+        # convert input to numpy array to be sure
+        j_h = np.array(j_h)
+        # J horizontal needs one column/vertical line less#
+        # NEED FOR IMPROVEMENT
+        assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
+            j_h.shape == (len(two_q_gates), *self.n)
+        ).all(), "Error in Ising._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
+        )
+        self.j_h = j_h
+
+        # Set boundaries:
+        self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
+
+        # convert input to numpy array to be sure
+        h = np.array(h)
+        assert (
+            h.shape == (len(one_q_gates), *self.n)
+        ).all(), "Error in Ising._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n)
+        self.h = h
+
+    def _set_hamiltonian(self, reset: bool = True):
+        """
+            Append or Reset Hamiltonian
+
+            Create a cirq.PauliSum object fitting to j_v, j_h, h  
+        """
+        if reset:
+            self.hamiltonian = cirq.PauliSum()
+
+        #Conversion currently necessary as numpy type * cirq.PauliSum fails
+        j_v = self.j_v.tolist()
+        j_h = self.j_h.tolist()
+        h = self.h.tolist()
+        
+        # 1. Sum over inner bounds
+        for g in range(len(self._two_q_gates)):
+            for i in range(self.n[0] - 1):
+                for j in range(self.n[1] - 1):
+                    #print("i: \t{}, j: \t{}".format(i,j))
+                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][j+1])
+        
+        for g in range(len(self._two_q_gates)):
+            for i in range(self.n[0] - 1):
+                j = self.n[1] - 1
+                self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i+1][j])
+        
+        for g in range(len(self._two_q_gates)):
+            for j in range(self.n[1] - 1):
+                i = self.n[0] - 1
+                self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][j+1])
+        
+        #2. Sum periodic boundaries
+        if self.boundaries[1] == 0:
+            for g in range(len(self._two_q_gates)):
+                for i in range(self.n[0]):
+                    j = self.n[1] - 1
+                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][0])
+        
+        if self.boundaries[0] == 0:
+            for g in range(len(self._two_q_gates)):
+                for j in range(self.n[1]):
+                    i = self.n[0] - 1
+                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[0][j])
+        
+        # 3. Add external field
+        for g in range(len(self._one_q_gates)):
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    self.hamiltonian -= h[g][i][j]*self._one_q_gates(self.qubits[i][j])
+
+    def set_circuit(self, qalgorithm, options: dict = {}):
+        """
+        Adds custom circuit to self.circuit (default)
+
+        Args:
+            qalgorithm : quantum algorithm option
+            param:
+                hand over parameter to individual circuit method; e.g. qaoa
+                reset circuit (-> self. circuit = cirq. Circuit())
+
+        Returns/Sets:
+            circuit symp.Symbols array
+            start parameters for circuit_parametrisation values; possibly at random or in call
+
+        -AssertionError if circuit method does not exists
+        -AssertionErrors for wrong parameter hand-over in individual circuit method itself.
+
+        maybe use keyword arguments **parm later
+
+        Need to generalise beta, gamma, beta_values, gamma_values to:
+
+        obj.circuit_param           %these are the sympy.Symbols
+        obj.circuit_param_values    %these are the sympy.Symbols values
+
+        What to do with further circuit parameters like p?
+
+        for qaoa want to call like:
+            qaoa.set_symbols
+            qaoa.set_beta_values etc...
+
+        CHALLENGE: how to load class functions from sub-module?
+        """
+        if qalgorithm == "basics":
+            self.basics.options = { "append": True,
+                                    "start": None,
+                                    "end": None,
+                                    "n_exact" : [1, 2],
+                                    "b_exact" : [0, 0],
+                                    "cc_exact": False}
+            self.basics.options.update(options)
+            self.basics.set_circuit(self)
+        elif qalgorithm == "hea":
+            self.hea.options = {"append": False,
+                                "p": 1,
+                                "parametrisation" : 'joint',
+                                "1Qvariables": {[*['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in len(self._one_q_gates)]
+                                },
+                                "2Qvariables": {[*['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in len(self._two_q_gates)]
+                                },
+                                "1QubitGate": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in len(self._one_q_gates)],
+                                "2QubitGates" : [cirq.FSimGate for g in len(self._two_q_gates)],
+                               }
+            self.hea.options.update(options)
+            self.hea.set_symbols(self)
+            self.hea.set_circuit(self)
+            self.basics.rm_unused_cpv(self)  
+            self.basics.add_missing_cpv(self)
+        elif qalgorithm == "qaoa":
+            # set symbols gets as parameter QAOA repetitions p
+            #This needs some further revisions as some parts are not very general yet
+            self.qaoa.options = {"append": False,
+                                "p": 1,
+                                "H_layer": True,
+                                "i0": 0}
+            self.qaoa.options.update(options)
+            self.qaoa.set_symbols(self)
+            self.qaoa.set_circuit(self)
+        else:
+            assert (
+                False
+            ), "Invalid quantum algorithm, received: '{}', allowed is \n \
+                'basics', 'hea', 'qaoa'".format(
+                qalgorithm
+            )
+
+    def set_circuit_param_values(self, new_values):
+        assert np.size(new_values) == np.size(
+            self.circuit_param
+        ), "np.size(new_values) != np.size(self.circuit_param), {} != {}".format(
+            np.size(new_values), np.size(self.circuit_param)
+        )
+        self.circuit_param_values = new_values
+    
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "qubittype": self.qubittype,
+                "n": self.n,
+                "j_v": self.j_v,
+                "j_h": self.j_h,
+                "h": self.h,
+                "two_q_gates": self._two_q_gates,
+                "one_q_gates": self._one_q_gates,
+                "t": self.t
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst
+
+    def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
+        super().glue_circuit(axis, repetitions)
+
+        #In addition we need to reset j_v, j_h  h and the hamiltonian
+        for g in len(self._two_q_gates):
+            self.j_v[g] = np.tile(self.j_v[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+            self.j_h[g] = np.tile(self.j_h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        for g in len(self._one_q_gates):
+            self.h[g] = np.tile(self.h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        self._set_hamiltonian()
+
+        # As well as erase eig_val, eig_vec and _Ut as those do not make sense anymore:
+        self.eig_val = None
+        self.eig_vec = None
+        self._Ut = None
