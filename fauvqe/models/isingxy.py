@@ -8,7 +8,7 @@ import itertools
 import numpy as np
 import cirq
 
-from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.models.spinModel import SpinModel
 
 
 
