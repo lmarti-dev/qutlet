@@ -79,7 +79,7 @@ class SpinModel(AbstractModel):
         # NEED FOR IMPROVEMENT
         assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
             j_v.shape == (len(two_q_gates), *self.n)
-        ).all(), "Error in Ising._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+        ).all(), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
         self.j_v = j_v
@@ -90,7 +90,7 @@ class SpinModel(AbstractModel):
         # NEED FOR IMPROVEMENT
         assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
             j_h.shape == (len(two_q_gates), *self.n)
-        ).all(), "Error in Ising._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+        ).all(), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
         self.j_h = j_h
@@ -102,7 +102,7 @@ class SpinModel(AbstractModel):
         h = np.array(h)
         assert (
             h.shape == (len(one_q_gates), *self.n)
-        ).all(), "Error in Ising._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n)
+        ).all(), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n)
         self.h = h
 
     def _set_hamiltonian(self, reset: bool = True):
