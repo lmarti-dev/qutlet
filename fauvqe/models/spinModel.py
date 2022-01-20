@@ -57,8 +57,8 @@ class SpinModel(AbstractModel):
                 self.j_v,
                 self.j_h,
                 self.h,
-                self._two_q_gates = two_q_gates,
-                self._one_q_gates = one_q_gates,
+                self._two_q_gates,
+                self._one_q_gates,
                 self.t )
         
         self_copy.circuit = self.circuit.copy()
@@ -102,7 +102,7 @@ class SpinModel(AbstractModel):
         h = np.array(h)
         assert (
             h.shape == (len(one_q_gates), *self.n)
-        ).all(), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n)
+        ).all(), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
         self.h = h
 
     def _set_hamiltonian(self, reset: bool = True):

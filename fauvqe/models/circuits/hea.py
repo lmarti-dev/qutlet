@@ -137,7 +137,7 @@ def _2Qubit_layer(self, i, g):
         gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
         j = 0
         for variable in self.hea.options["2Qvariables"][g]:
-                gate_variables[j] = sympy.Symbol(variable + str(i))
+            gate_variables[j] = sympy.Symbol(variable + str(i))
             j +=1
         
         temp = [gate_variables for i in range(self.n[1])]

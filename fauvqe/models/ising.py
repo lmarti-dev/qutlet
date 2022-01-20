@@ -8,11 +8,10 @@ import itertools
 import numpy as np
 import cirq
 
-from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.models.spinModel import SpinModel
 
 
-
-class Ising(AbstractModel):
+class Ising(SpinModel):
     """
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
