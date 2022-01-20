@@ -51,8 +51,8 @@ class SpinModel(AbstractModel):
         super().set_simulator()
         self.t = t
 
-    def copy(self) -> Ising:
-        self_copy = Ising( self.qubittype,
+    def copy(self) -> SpinModel:
+        self_copy = SpinModel( self.qubittype,
                 self.n,
                 self.j_v,
                 self.j_h,
