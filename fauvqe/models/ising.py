@@ -31,9 +31,9 @@ class Ising(SpinModel):
         """
         # convert all input to np array to be sure
         if(field == "X"):
-            one_q_gate = [cirq.X,]
+            one_q_gate = [cirq.X]
         elif(field == "Z"):
-            one_q_gate = [cirq.Z,]
+            one_q_gate = [cirq.Z]
         else:
             assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
         super().__init__(
@@ -42,13 +42,10 @@ class Ising(SpinModel):
                     [j_v],
                     [j_h],
                     [h],
-                    [cirq.ZZ],
+                    [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
                     one_q_gate,
                     t
                 )
-        self.j_v = j_v
-        self.j_h = j_h
-        self.h = h
         self.field = field
 
     def copy(self) -> Ising:

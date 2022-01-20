@@ -89,7 +89,7 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": lambda a, x, z: cirq.XPowGate(exponent=x), 
+            {"1QubitGate": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
             "variables": {'x'}},
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 1))),
@@ -97,7 +97,7 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": lambda a, x, z: cirq.XPowGate(exponent=x), 
+            {"1QubitGate": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
             "variables": {'x'},
             "p": 2},
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
@@ -122,7 +122,7 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": lambda a, x, z: cirq.H, 
+            {"1QubitGate": [lambda a, x, z: cirq.H], 
             "variables": {},
             "p": 2},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)),
@@ -133,7 +133,7 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"1QubitGate": lambda a, x, z: cirq.ry(rads=x), 
+            {"1QubitGate": [lambda a, x, z: cirq.ry(rads=x)], 
             "variables": {'x'},
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ry(sympy.Symbol('x0_0')).on(cirq.GridQubit(0, 0)),
@@ -190,8 +190,8 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent=theta, 
-                                                             global_shift=phi),
+            {"2QubitGate": [lambda theta, phi: cirq.ZZPowGate(exponent=theta, 
+                                                             global_shift=phi)],
             "variables": {"theta"},
             "parametrisation": "layerwise"},
             cirq.Circuit(cirq.ZZPowGate(exponent=sympy.Symbol('theta0_0')).\
@@ -206,7 +206,7 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"2QubitGate": lambda theta, phi: cirq.ISwapPowGate (exponent=theta),
+            {"2QubitGate": [lambda theta, phi: cirq.ISwapPowGate (exponent=theta)],
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ISwapPowGate (exponent=sympy.Symbol('theta0_0_v0_0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
@@ -285,8 +285,8 @@ def test__2_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 3], 
             [1, 0], 
-            {"1QubitGate": lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z),
-            "2QubitGate": lambda theta, phi: cirq.CZPowGate (exponent=theta),
+            {"1QubitGate": [lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z)],
+            "2QubitGate": [lambda theta, phi: cirq.CZPowGate (exponent=theta)],
             "parametrisation": "layerwise"},
             cirq.Circuit(cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 0)),
                         cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 1)),
@@ -384,8 +384,8 @@ def test_set_circuit(n, boundaries, options, solution):
         (
             [2, 3], 
             [1, 0], 
-            {"1QubitGate": lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z),
-            "2QubitGate": lambda theta, phi: cirq.CZPowGate (exponent=theta),
+            {"1QubitGate": [lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z)],
+            "2QubitGate": [lambda theta, phi: cirq.CZPowGate (exponent=theta)],
             "parametrisation": "layerwise"},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
                         cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(1, 1)), cirq.H.on(cirq.GridQubit(1, 2)),

@@ -27,8 +27,8 @@ class SpinModel(AbstractModel):
                  j_v,
                  j_h,
                  h,
-                 two_q_gates: List[cirq.Gate],
-                 one_q_gates: List[cirq.Gate],
+                 two_q_gates: List[cirq.PauliSum],
+                 one_q_gates: List[cirq.PauliSum],
                  t: Real = 0):
         """
         qubittype as defined in AbstractModel
@@ -44,8 +44,8 @@ class SpinModel(AbstractModel):
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
         self.circuit_param_values = np.array([])
-        self._two_q_gates = two_q_gates,
-        self._one_q_gates = one_q_gates,
+        self._two_q_gates = two_q_gates
+        self._one_q_gates = one_q_gates
         self._set_jh(j_v, j_h, h, two_q_gates, one_q_gates)
         self._set_hamiltonian()
         super().set_simulator()
@@ -77,9 +77,9 @@ class SpinModel(AbstractModel):
         j_v = np.array(j_v)
         # J vertical needs one row/horizontal line less
         # NEED FOR IMPROVEMENT
-        assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
+        assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )) or (
             j_v.shape == (len(two_q_gates), *self.n)
-        ).all(), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+        ), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
         self.j_v = j_v
@@ -88,9 +88,9 @@ class SpinModel(AbstractModel):
         j_h = np.array(j_h)
         # J horizontal needs one column/vertical line less#
         # NEED FOR IMPROVEMENT
-        assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )).all() or (
+        assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((0, 1))) )) or (
             j_h.shape == (len(two_q_gates), *self.n)
-        ).all(), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+        ), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
         self.j_h = j_h
@@ -102,7 +102,7 @@ class SpinModel(AbstractModel):
         h = np.array(h)
         assert (
             h.shape == (len(one_q_gates), *self.n)
-        ).all(), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
+        ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
         self.h = h
 
     def _set_hamiltonian(self, reset: bool = True):
@@ -124,37 +124,37 @@ class SpinModel(AbstractModel):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][j+1])
+                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         for g in range(len(self._two_q_gates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i+1][j])
+                self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
         
         for g in range(len(self._two_q_gates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][j+1])
+                self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for g in range(len(self._two_q_gates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[i][0])
+                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
             for g in range(len(self._two_q_gates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates(self.qubits[i][j], self.qubits[0][j])
+                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[g][i][j]*self._one_q_gates(self.qubits[i][j])
+                    self.hamiltonian -= h[g][i][j]*self._one_q_gates[g](self.qubits[i][j])
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
@@ -201,12 +201,10 @@ class SpinModel(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
-                                "1Qvariables": {[['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in len(self._one_q_gates)]
-                                },
-                                "2Qvariables": {[['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in len(self._two_q_gates)]
-                                },
-                                "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in len(self._one_q_gates)],
-                                "2QubitGates" : [cirq.FSimGate for g in len(self._two_q_gates)],
+                                "1Qvariables": [['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in range(len(self._one_q_gates))],
+                                "2Qvariables": [['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in range(len(self._two_q_gates))],
+                                "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._one_q_gates))],
+                                "2QubitGates" : [cirq.FSimGate for g in range(len(self._two_q_gates))],
                                }
             self.hea.options.update(options)
             self.hea.set_symbols(self)
@@ -272,10 +270,10 @@ class SpinModel(AbstractModel):
         super().glue_circuit(axis, repetitions)
 
         #In addition we need to reset j_v, j_h  h and the hamiltonian
-        for g in len(self._two_q_gates):
+        for g in range(len(self._two_q_gates)):
             self.j_v[g] = np.tile(self.j_v[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
             self.j_h[g] = np.tile(self.j_h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        for g in len(self._one_q_gates):
+        for g in range(len(self._one_q_gates)):
             self.h[g] = np.tile(self.h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
         self._set_hamiltonian()
 

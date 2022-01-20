@@ -230,7 +230,8 @@ def set_symbols(self):
 
     """
     assert isinstance(self.hea.options["p"], (int, np.int_)), "Error: p needs to be int, received {}".format(type(self.hea.options["p"]))
-    temp = []
+    temp1Q = []
+    temp2Q = []
     
     for i in range(self.hea.options["p"]):
         if self.hea.options['parametrisation'] == 'joint':
