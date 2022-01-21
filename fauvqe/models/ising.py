@@ -51,9 +51,9 @@ class Ising(SpinModel):
     def copy(self) -> Ising:
         self_copy = Ising( self.qubittype,
                 self.n,
-                self.j_v,
-                self.j_h,
-                self.h,
+                self.j_v[0],
+                self.j_h[0],
+                self.h[0],
                 self.field,
                 self.t )
 
@@ -113,27 +113,27 @@ class Ising(SpinModel):
         # 1. Sum over inner bounds
         for i in range(self.n[0] - 1):
             for j in range(self.n[1] - 1):
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
+                ZZ_filter += self.j_v[0][i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
+                ZZ_filter += self.j_h[0][i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
 
         for i in range(self.n[0] - 1):
             j = self.n[1] - 1
-            ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
+            ZZ_filter += self.j_v[0][i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
 
         for j in range(self.n[1] - 1):
             i = self.n[0] - 1
-            ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
+            ZZ_filter += self.j_h[0][i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
 
         # 2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for i in range(self.n[0]):
                 j = self.n[1] - 1
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1]]
+                ZZ_filter += self.j_h[0][i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1]]
 
         if self.boundaries[0] == 0:
             for j in range(self.n[1]):
                 i = self.n[0] - 1
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
+                ZZ_filter += self.j_v[0][i, j] * Z[i * self.n[1] + j] * Z[j]
 
         return ZZ_filter, self.h.reshape(n_sites).dot(Z)
 
@@ -212,32 +212,32 @@ class Ising(SpinModel):
         assert self.n[0] * self.n[1] == np.max(
             self.n
         ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
-        assert np.min(self.h) == np.max(
-            self.h
+        assert np.min(self.h[0]) == np.max(
+            self.h[0]
         ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
         
         # Use initial parameter to catch empty array
         assert (
-            np.min(self.j_h, initial=np.finfo(np.float_).max)
-            == np.max(self.j_h, initial=np.finfo(np.float_).min)
+            np.min(self.j_h[0], initial=np.finfo(np.float_).max)
+            == np.max(self.j_h[0], initial=np.finfo(np.float_).min)
         ) or (
-            np.size(self.j_h) == 0
+            np.size(self.j_h[0]) == 0
         ), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
-            self.j_h,
-            np.min(self.j_h, initial=np.finfo(np.float_).max),
-            np.max(self.j_h, initial=np.finfo(np.float_).min),
+            self.j_h[0],
+            np.min(self.j_h[0], initial=np.finfo(np.float_).max),
+            np.max(self.j_h[0], initial=np.finfo(np.float_).min),
         )
 
         # Use initial parameter to catch empty array
         assert (
-            np.min(self.j_v, initial=np.finfo(np.float_).max)
-            == np.max(self.j_v, initial=np.finfo(np.float_).min)
+            np.min(self.j_v[0], initial=np.finfo(np.float_).max)
+            == np.max(self.j_v[0], initial=np.finfo(np.float_).min)
         ) or (
             np.size(self.j_v) == 0
         ), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
-            self.j_v,
-            np.min(self.j_v, initial=np.finfo(np.float_).max),
-            np.max(self.j_v, initial=np.finfo(np.float_).min),
+            self.j_v[0],
+            np.min(self.j_v[0], initial=np.finfo(np.float_).max),
+            np.max(self.j_v[0], initial=np.finfo(np.float_).min),
         )
 
         lambda_k = self._get_lambda_k()
@@ -254,11 +254,11 @@ class Ising(SpinModel):
         )
 
         if self.j_h.size > 0:
-            _j = self.j_h[0][0]
+            _j = self.j_h[0][0][0]
         else:
-            _j = self.j_v[0][0]
+            _j = self.j_v[0][0][0]
 
-        return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k), dtype=np.complex128)
+        return np.sqrt(self.h[0][0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0][0] * np.cos(_k), dtype=np.complex128)
 
     def to_json_dict(self) -> Dict:
         return {

@@ -265,19 +265,3 @@ class SpinModel(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
-
-    def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
-        super().glue_circuit(axis, repetitions)
-
-        #In addition we need to reset j_v, j_h  h and the hamiltonian
-        for g in range(len(self._two_q_gates)):
-            self.j_v[g] = np.tile(self.j_v[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-            self.j_h[g] = np.tile(self.j_h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        for g in range(len(self._one_q_gates)):
-            self.h[g] = np.tile(self.h[g], np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self._set_hamiltonian()
-
-        # As well as erase eig_val, eig_vec and _Ut as those do not make sense anymore:
-        self.eig_val = None
-        self.eig_vec = None
-        self._Ut = None
