@@ -7,7 +7,7 @@ import itertools
 
 # internal imports
 from fauvqe import Ising
-from fauvqe.models.circuits.basics import IsingDummy
+from fauvqe.models.circuits.basics import SpinModelDummy
 from .test_isings import IsingTester
 
 """
@@ -42,7 +42,11 @@ What to test:
 def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
     #Deduce correct function of IsingDummy to correct function of Ising:
     ising= Ising(qubittype, n, j_v, j_h, h, field)
-    ising_dummy= IsingDummy(qubittype, n, j_v, j_h, h, field)
+    if(field == "X"):
+        one_q_gate = [cirq.X]
+    elif(field == "Z"):
+        one_q_gate = [cirq.Z]
+    ising_dummy= SpinModelDummy(qubittype, n, [j_v], [j_h], [h], [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)], one_q_gate)
     #Do these asserts to recognise if Ising() is changed
     assert(ising.n == ising_dummy.n).all()
     assert(ising.j_h == ising_dummy.j_h).all()
@@ -50,7 +54,6 @@ def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
     assert(ising.h == ising_dummy.h).all()
     assert ising.circuit_param == ising_dummy.circuit_param
     assert(ising.circuit_param_values == ising_dummy.circuit_param_values).all()
-    assert ising.field == ising_dummy.field
     assert ising.circuit == ising_dummy.circuit
     assert ising.qubittype == ising_dummy.qubittype
     assert ising.simulator.__class__ == ising_dummy.simulator.__class__

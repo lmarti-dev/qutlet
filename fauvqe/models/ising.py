@@ -16,10 +16,7 @@ class Ising(SpinModel):
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
-    basics  = importlib.import_module("fauvqe.models.circuits.basics")
-    hea  = importlib.import_module("fauvqe.models.circuits.hea")
-    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
-
+    
     def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X", t: Real = 0):
         """
         qubittype as defined in AbstractModel

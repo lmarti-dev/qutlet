@@ -282,12 +282,12 @@ def set_circuit(self):
         self.circuit_param_values = np.zeros(np.size(self.circuit_param))
 
     for i in range(self.p):
-        for g in range(len(self.hea.options["1QubitGates"])):
-            if self.hea.options["1QubitGates"] is not None:
+        if self.hea.options["1QubitGates"] is not None:
+            for g in range(len(self.hea.options["1QubitGates"])):
                 self.circuit.append(cirq.Moment(self.hea._1Qubit_layer(self, i, g)))
                 #self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
-        for g in range(len(self.hea.options["2QubitGates"])):
-            if self.hea.options["2QubitGates"] is not None:
+        if self.hea.options["2QubitGates"] is not None:
+            for g in range(len(self.hea.options["2QubitGates"])):
                 self.circuit.append(self.hea._2Qubit_layer(self, i, g))
     #Erase hea circuit parameters, that are not used
     # e.g. in 1D case

@@ -80,8 +80,12 @@ What to test:
 def test_set_symbols(n, boundaries, options, solution):
     #Note that gates & symbols are different based on boundaries
     ising_obj = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])))
+    options.update({
+                    "1Qvariables": [['a', 'x', 'z']],
+                    "2Qvariables": [['phi', 'theta']],
+    })
     ising_obj.set_circuit("hea", options)
-    assert(ising_obj.circuit_param == solution)
+    assert(set(ising_obj.circuit_param) == set(solution))
 
 @pytest.mark.parametrize(
     "n, boundaries, options, solution",
@@ -89,16 +93,19 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
-            "variables": {'x'}},
+            {"1QubitGates": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
+            "1Qvariables": [['a','x','z']],
+            "2QubitGates": None 
+            },
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 1))),
         ),
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
-            "variables": {'x'},
+            {"1QubitGates": [lambda a, x, z: cirq.XPowGate(exponent=x)], 
+            "2QubitGates": None,
+            "1Qvariables": [['a','x','z']],
             "p": 2},
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 1)),
@@ -108,7 +115,10 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 3], 
             [1, 1], 
-            {},
+            {
+                "1Qvariables": [['a', 'x', 'z']],
+                "2QubitGates": None,
+            },
             cirq.Circuit(cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
                                         z_exponent= sympy.Symbol('z0'), 
                                         axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 0)),
@@ -122,9 +132,11 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGate": [lambda a, x, z: cirq.H], 
-            "variables": {},
-            "p": 2},
+            {"1QubitGates": [lambda a, x, z: cirq.H], 
+            "2QubitGates": None, 
+            "1Qvariables": [['a','x','z']],
+            "p": 2,
+            },
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)),
                         cirq.H.on(cirq.GridQubit(0, 1)),
                         cirq.H.on(cirq.GridQubit(0, 0)),
@@ -133,8 +145,9 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"1QubitGate": [lambda a, x, z: cirq.ry(rads=x)], 
-            "variables": {'x'},
+            {"1QubitGates": [lambda x: cirq.ry(rads=x)], 
+            "2QubitGates": None, 
+            "1Qvariables": [['x']],
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ry(sympy.Symbol('x0_0')).on(cirq.GridQubit(0, 0)),
                         cirq.ry(sympy.Symbol('x0_1')).on(cirq.GridQubit(0, 1)),
@@ -148,7 +161,8 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
     circuit_options = {"2QubitGate": None}
     circuit_options.update(options)
     ising.set_circuit("hea", circuit_options)
-    print(ising.circuit)
+    print('Ising Circuit:\n', ising.circuit)
+    print('Solution:\n', solution)
     assert ising.circuit == solution
 
 @pytest.mark.parametrize(
@@ -206,7 +220,9 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"2QubitGate": [lambda theta, phi: cirq.ISwapPowGate (exponent=theta)],
+            {"2QubitGates": [lambda phi, theta: cirq.ISwapPowGate (exponent=theta)],
+             "2Qvariables": [['phi', 'theta']],
+             "1QubitGates": None,
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ISwapPowGate (exponent=sympy.Symbol('theta0_0_v0_0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
@@ -224,7 +240,8 @@ def test__2_Qubit_layer(n, boundaries, options, solution):
     circuit_options = {"1QubitGate": None}
     circuit_options.update(options)
     ising.set_circuit("hea", circuit_options)
-    print(ising.circuit)
+    print('Ising Circuit:\n', ising.circuit)
+    print('Solution:\n', solution)
     assert ising.circuit == solution
 
 @pytest.mark.parametrize(
