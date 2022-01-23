@@ -80,7 +80,9 @@ def test_adam_multiple_models_and_auto_joblib():
         0.5 * np.ones((2, 1)),
         0.2 * np.ones((2, 2)),
     )
-    ising1.set_circuit("qaoa", {"p": 2})
+    ising1.set_circuit("qaoa", {
+        "p": 2
+    })
     ising1.set_circuit_param_values(0.3 * np.ones(np.size(ising1.circuit_param)))
     ising2 = Ising(
         "GridQubit",

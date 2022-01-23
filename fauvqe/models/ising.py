@@ -262,9 +262,9 @@ class Ising(SpinModel):
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_v": self.j_v,
-                "j_h": self.j_h,
-                "h": self.h,
+                "j_v": self.j_v[0],
+                "j_h": self.j_h[0],
+                "h": self.h[0],
             },
             "params": {
                 "circuit": self.circuit,

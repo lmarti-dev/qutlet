@@ -57,8 +57,10 @@ def test_simulate_op(t, times):
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
         "p": order,
-        "variables": {"x", "theta"},
-        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+        "1Qvariables": [["x"]],
+        "2Qvariables": [["theta"]],
+        "1QubitGates": [lambda x: cirq.PhasedXZGate(x_exponent=x, z_exponent=0, axis_phase_exponent=0)],
+        "2QubitGates": [lambda theta: cirq.ZZPowGate(exponent = theta, global_shift = 0)]
     })
     
     objective = UtCost(ising, t, 0, time_steps=times)
@@ -123,8 +125,10 @@ def test_simulate_batch(t, tnumber, order, times):
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
         "p": ex,
-        "variables": {"x", "theta"},
-        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+        "1Qvariables": [["x"]],
+        "2Qvariables": [["theta"]],
+        "2QubitGates": [lambda theta: cirq.ZZPowGate(exponent = theta, global_shift = 0)],
+        "1QubitGates": [lambda x: cirq.PhasedXZGate(x_exponent=x, z_exponent=0, axis_phase_exponent=0)],
     })
     
     bsize = 1
