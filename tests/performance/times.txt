@@ -892,3 +892,123 @@ Test Indices
 Sequential Time: 12.051898717880249
 Parallel Time: 4.0886101722717285
 
+===Sun, 23 Jan 2022 21:12:11 +0000===
+Test No Indices 
+
+Sequential Time: 2.4976491928100586
+Parallel Time: 0.8731646537780762
+
+===Sun, 23 Jan 2022 21:12:27 +0000===
+Test Indices 
+
+Sequential Time: 11.553286075592041
+Parallel Time: 4.721370220184326
+
+===Sun, 23 Jan 2022 21:12:37 +0000===
+Test Indices 
+
+Sequential Time: 6.197179317474365
+Parallel Time: 3.140711784362793
+
+===Sun, 23 Jan 2022 21:13:06 +0000===
+Test Indices 
+
+Sequential Time: 22.25120997428894
+Parallel Time: 7.0864479541778564
+
+===Sun, 23 Jan 2022 21:13:22 +0000===
+Test Indices 
+
+Sequential Time: 11.67254090309143
+Parallel Time: 4.102227449417114
+
+===Sun, 23 Jan 2022 21:18:56 +0000===
+Test No Indices 
+
+Sequential Time: 2.449350595474243
+Parallel Time: 0.8792543411254883
+
+===Sun, 23 Jan 2022 21:19:12 +0000===
+Test Indices 
+
+Sequential Time: 11.741388082504272
+Parallel Time: 4.741760730743408
+
+===Sun, 23 Jan 2022 21:19:22 +0000===
+Test Indices 
+
+Sequential Time: 6.389012813568115
+Parallel Time: 3.1996700763702393
+
+===Sun, 23 Jan 2022 21:19:52 +0000===
+Test Indices 
+
+Sequential Time: 22.676316738128662
+Parallel Time: 7.171112775802612
+
+===Sun, 23 Jan 2022 21:20:07 +0000===
+Test Indices 
+
+Sequential Time: 11.849793672561646
+Parallel Time: 4.0938849449157715
+
+===Sun, 23 Jan 2022 22:42:50 +0000===
+Test No Indices 
+
+Sequential Time: 2.546358346939087
+Parallel Time: 0.9071283340454102
+
+===Sun, 23 Jan 2022 22:43:07 +0000===
+Test Indices 
+
+Sequential Time: 12.052070379257202
+Parallel Time: 5.014359712600708
+
+===Sun, 23 Jan 2022 22:43:16 +0000===
+Test Indices 
+
+Sequential Time: 6.313020467758179
+Parallel Time: 3.1326632499694824
+
+===Sun, 23 Jan 2022 22:43:46 +0000===
+Test Indices 
+
+Sequential Time: 22.056740760803223
+Parallel Time: 7.153282642364502
+
+===Sun, 23 Jan 2022 22:44:02 +0000===
+Test Indices 
+
+Sequential Time: 11.971513986587524
+Parallel Time: 4.091452360153198
+
+===Sun, 23 Jan 2022 22:48:47 +0000===
+Test No Indices 
+
+Sequential Time: 2.4957427978515625
+Parallel Time: 0.8787357807159424
+
+===Sun, 23 Jan 2022 22:49:03 +0000===
+Test Indices 
+
+Sequential Time: 11.625224351882935
+Parallel Time: 4.691762685775757
+
+===Sun, 23 Jan 2022 22:49:12 +0000===
+Test Indices 
+
+Sequential Time: 6.208207368850708
+Parallel Time: 3.121812105178833
+
+===Sun, 23 Jan 2022 22:49:42 +0000===
+Test Indices 
+
+Sequential Time: 22.241803884506226
+Parallel Time: 7.105164289474487
+
+===Sun, 23 Jan 2022 22:49:58 +0000===
+Test Indices 
+
+Sequential Time: 11.842952728271484
+Parallel Time: 4.082833766937256
+

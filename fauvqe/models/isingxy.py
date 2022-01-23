@@ -3,13 +3,11 @@ from __future__ import annotations
 import importlib
 from typing import Tuple, Dict, Literal
 from numbers import Real
-import itertools
 
 import numpy as np
 import cirq
 
 from fauvqe.models.spinModel import SpinModel
-
 
 
 class IsingXY(SpinModel):
@@ -44,24 +42,20 @@ class IsingXY(SpinModel):
                  [j_y_v, j_z_v],
                  [j_y_h, j_z_h],
                  [h,],
-                 [cirq.YY, cirq.ZZ],
+                 [lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
+                  lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
                  one_q_gate,
                  t
         )
-        self.j_y_v = j_y_v
-        self.j_y_h = j_y_h
-        self.j_z_v = j_z_v
-        self.j_z_h = j_z_h
-        self.h = h
         self.field = field
 
     def copy(self) -> IsingXY:
         self_copy = IsingXY( self.qubittype,
                 self.n,
-                self.j_y_v[0],
-                self.j_y_h[0],
-                self.j_z_v[0],
-                self.j_z_h[0],
+                self.j_v[0],
+                self.j_h[0],
+                self.j_v[1],
+                self.j_h[1],
                 self.h[0],
                 self.field,
                 self.t )
