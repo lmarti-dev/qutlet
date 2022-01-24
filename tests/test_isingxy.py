@@ -258,6 +258,62 @@ def test_json():
     
     assert (model == model2)
 
+@pytest.mark.parametrize(
+    "qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field, glue_axis, sol_circuit, sol_circuit_param",
+    [
+        (
+            "GridQubit",
+            [1, 3],
+            np.ones((0, 3)),
+            np.ones((1, 3)),
+            np.ones((0, 3)),
+            np.ones((1, 3)),
+            np.ones((1, 3)),
+            "X",
+            1,
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
+                        cirq.H.on(cirq.GridQubit(0, 3)), cirq.H.on(cirq.GridQubit(0, 4)), cirq.H.on(cirq.GridQubit(0, 5)),
+                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 0)), (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 1)),
+                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 2)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 3)),
+                        (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 4)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 5)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 4)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 5), cirq.GridQubit(0, 0)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 4), cirq.GridQubit(0, 5)),),
+            [sympy.Symbol('b0_g0'),sympy.Symbol('g0_g0'),sympy.Symbol('b0_g1'),sympy.Symbol('g0_g1')]
+        ),
+    ]
+)
+def test_glues_circuit(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field, glue_axis, sol_circuit, sol_circuit_param):
+    ising = IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field)
+    ising.set_circuit("qaoa")
+    #print(ising.circuit)
+    
+    ising.glue_circuit(axis=glue_axis)
+    #print(ising.circuit)
+
+    ising2 = IsingXY(qubittype, 
+                    [(2-glue_axis)*n[0], (1+glue_axis)*n[1]], 
+                    np.concatenate((j_y_v, j_y_v), axis=glue_axis),
+                    np.concatenate((j_y_h, j_y_h), axis=glue_axis) , 
+                     np.concatenate((j_z_v, j_z_v), axis=glue_axis),
+                    np.concatenate((j_z_h, j_z_h), axis=glue_axis) , 
+                    np.concatenate((h, h), axis=glue_axis) , 
+                    field)
+    ising2.circuit = sol_circuit
+    ising2.circuit_param = sol_circuit_param
+    ising2.circuit_param_values = np.array([0]*len(ising2.circuit_param))
+    #print(sol_circuit)
+
+    #print("ising.circuit == ising2.circuit: \t {}".format(ising.circuit == ising2.circuit))
+    #print("ising.hamiltonian == ising2.hamiltonian: \t {}".format(ising.hamiltonian == ising2.hamiltonian))
+    #print("ising.circuit_param_values: \t{}".format(ising.circuit_param_values))
+    #print("ising2.circuit_param_values: \t{}".format(ising2.circuit_param_values))
+    #assert(ising.circuit == ising2.circuit)
+    assert(ising == ising2)
+
 #############################################################
 #                                                           #
 #                    Assert tests                           #
