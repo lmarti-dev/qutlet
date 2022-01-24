@@ -282,3 +282,17 @@ class Ising(SpinModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
+    
+    def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
+        super().glue_circuit(axis, repetitions)
+
+        #In addition we need to reset j_v, j_h  h and the hamiltonian
+        self.j_v=np.tile(self.j_v, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        self.j_h=np.tile(self.j_h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        self.h =np.tile(self.h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        self._set_hamiltonian()
+
+        # As well as erase eig_val, eig_vec and _Ut as those do not make sense anymore:
+        self.eig_val = None
+        self.eig_vec = None
+        self._Ut = None

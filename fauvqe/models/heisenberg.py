@@ -14,7 +14,7 @@ class Heisenberg(SpinModel):
     """
     2D Heisenberg class inherits SpinModel
     """
-    def __init__(self, qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z, t: Real = 0):
+    def __init__(self, qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x = None, h_y = None, h_z = None, t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -29,11 +29,15 @@ class Heisenberg(SpinModel):
         h_z  strength external field Z
         """
         # convert all input to np array to be sure
+        h = [h_x, h_y, h_z]
+        for i in range(len(h)):
+            if h[i] is None:
+                h[i] = np.zeros((n[0], n[1]))
         super().__init__(qubittype, 
                  np.array(n),
                  [j_x_v, j_y_v, j_z_v],
                  [j_x_h, j_y_h, j_z_h],
-                 [h_x, h_y, h_z],
+                 np.array(h).reshape((3, n[0], n[1])),
                  [lambda q1, q2: cirq.X(q1)*cirq.X(q2),
                   lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
                   lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
