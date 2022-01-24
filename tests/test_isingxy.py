@@ -1,11 +1,3 @@
-"""
-    Test to be added:
-        -test periodic boundaries
-        -1D TFIM analytic result is inconsistent with QAOA energy:
-            E_QAOA < E_analytic seems clearly wrong.
-        -Need better TFIM tests as <Z>_X = <X>_Z = 0; 
-            hence using Z/X eigenstates is generally a bad idea
-"""
 # external imports
 import pytest
 import numpy as np
@@ -257,97 +249,15 @@ def compare_vec_modulo_permutation(A, B, i):
     except AssertionError:
         cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(A[:,(i+1)%2], B[:,i], rtol=1e-14, atol=1e-14)
 
-'''
-# This is potentially a higher effort test:
-@pytest.mark.higheffort
-@pytest.mark.parametrize(
-    "n",
-    [
-        (
-            [2,2]
-        ),
-        (
-            [1,12]
-        ),
-    ]
-)
-def test_set_Ut(n):
-    boundaries = [1, 0]
-    ising = IsingXY(  "GridQubit", 
-                    n, 
-                    np.zeros((n[0]-boundaries[0], n[1])), 
-                    np.zeros((n[0], n[1]-boundaries[1])), 
-                    np.zeros((n[0]-boundaries[0], n[1])), 
-                    np.zeros((n[0], n[1]-boundaries[1])), 
-                    np.ones((n[0], n[1])),
-                    "X",
-                    n[0]*n[1]*np.pi)
-    ising.set_Ut()
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np.identity(2**np.size(ising.qubits)), ising._Ut,rtol=1.1, atol=1e-7)
+def test_json():
+    model = IsingXY("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    
+    json = model.to_json_dict()
+    
+    model2 = IsingXY.from_json_dict(json)
+    
+    assert (model == model2)
 
-
-def hamiltonian(n):
-    N = 2**n
-    Z = np.array([[1, 0],
-                  [0, -1]])
-    X = np.array([[0, 1], 
-                  [1, 0]])
-    Y = np.array([[0, -1j], 
-                  [1j, 0]])
-    ham = np.zeros(shape=(N, N))
-    for k in range(n):
-        tmpx = 1
-        for m in range(n):
-            if(m == k):
-                tmpx = np.kron(tmpx, X)
-            else:
-                tmpx = np.kron(tmpx, np.eye(2))
-        ham = ham + tmpx
-    for k in range(n-1):
-        tmpzz = 1
-        tmpyy = 1
-        for m in range(n):
-            if(m == k or m == k+1):
-                tmpzz = np.kron(tmpzz, Z)
-                tmpyy = np.kron(tmpyy, Y)
-            else:
-                tmpzz = np.kron(tmpzz, np.eye(2))
-                tmpyy = np.kron(tmpyy, np.eye(2))
-        ham = ham + tmpzz
-        ham = ham + tmpyy
-    return -1*ham
-
-@pytest.mark.higheffort
-@pytest.mark.parametrize(
-    "n, use_dense",
-    [
-        (
-            [1,4], True
-        ),
-        (
-            [1,12], False
-        ),
-        (
-            [1,12], True
-        ),
-    ]
-)
-def test_Ut_correctness(n, use_dense):
-    boundaries = [1, 1]
-    t=0.1
-    ising = IsingXY(  "GridQubit", 
-                    n, 
-                    np.ones((n[0]-boundaries[0], n[1])),
-                    np.ones((n[0], n[1]-boundaries[1])),
-                    np.ones((n[0]-boundaries[0], n[1])),
-                    np.ones((n[0], n[1]-boundaries[1])),
-                    np.ones((n[0], n[1])),
-                    "X",
-                    t)
-    ising.set_Ut(use_dense)
-    res = expm(-1j*t*hamiltonian(n[1]))
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(res, ising._Ut,rtol=1.1, atol=1e-7)
-'''
 #############################################################
 #                                                           #
 #                    Assert tests                           #
@@ -442,3 +352,39 @@ def test_Ut_correctness(n, use_dense):
 def test_assert_set_jh(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h):
     with pytest.raises(AssertionError):
         IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h)
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field",
+    [
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((2, 2)) / 5,
+            np.ones((0, 2)) / 2,
+            np.ones((2, 2)) / 7,
+            np.ones((2, 2)),
+            "blub"
+        )]
+)
+def test_assert_field(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field):
+    with pytest.raises(AssertionError):
+        IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field)
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h",
+    [
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((1, 2)) / 2,
+            np.ones((2, 2)) / 5,
+            np.ones((1, 2)) / 2,
+            np.ones((2, 2)) / 7,
+            np.ones((2, 2))
+        )]
+)
+def test_assert_energy(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h):
+    model = IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h)
+    with pytest.raises(NotImplementedError):
+        model.energy()

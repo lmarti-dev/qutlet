@@ -1235,3 +1235,19 @@ def test_assert_energy_pfeuty_sol(qubittype, n, j_v, j_h, h):
     ising_obj = Ising(qubittype, n, j_v, j_h, h)
     with pytest.raises(AssertionError):
         ising_obj.energy_pfeuty_sol()
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_z_v, j_z_h, h, field",
+    [
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((2, 2)) / 7,
+            np.ones((2, 2)),
+            "blub"
+        )]
+)
+def test_assert_field(qubittype, n, j_z_v, j_z_h, h, field):
+    with pytest.raises(AssertionError):
+        Ising(qubittype, n, j_z_v, j_z_h, h, field)

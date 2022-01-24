@@ -51,27 +51,6 @@ class SpinModel(AbstractModel):
         super().set_simulator()
         self.t = t
 
-    def copy(self) -> SpinModel:
-        self_copy = SpinModel( self.qubittype,
-                self.n,
-                self.j_v,
-                self.j_h,
-                self.h,
-                self._two_q_gates,
-                self._one_q_gates,
-                self.t )
-        
-        self_copy.circuit = self.circuit.copy()
-        self_copy.circuit_param = self.circuit_param.copy()
-        self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
-
-        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
-        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
-        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
-
-        return self_copy
-
     def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
         # convert input to numpy array to be sure
         j_v = np.array(j_v)
@@ -236,32 +215,3 @@ class SpinModel(AbstractModel):
             np.size(new_values), np.size(self.circuit_param)
         )
         self.circuit_param_values = new_values
-    
-    def to_json_dict(self) -> Dict:
-        return {
-            "constructor_params": {
-                "qubittype": self.qubittype,
-                "n": self.n,
-                "j_v": self.j_v,
-                "j_h": self.j_h,
-                "h": self.h,
-                "two_q_gates": self._two_q_gates,
-                "one_q_gates": self._one_q_gates,
-                "t": self.t
-            },
-            "params": {
-                "circuit": self.circuit,
-                "circuit_param": self.circuit_param,
-                "circuit_param_values": self.circuit_param_values,
-            },
-        }
-
-    @classmethod
-    def from_json_dict(cls, dct: Dict):
-        inst = cls(**dct["constructor_params"])
-
-        inst.circuit = dct["params"]["circuit"]
-        inst.circuit_param = dct["params"]["circuit_param"]
-        inst.circuit_param_values = dct["params"]["circuit_param_values"]
-
-        return inst
