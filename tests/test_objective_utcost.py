@@ -112,6 +112,7 @@ def test_evaluate_batch(t, avg_size):
         (-0.01, 10, 6, [1, 3, 5])
     ],
 )
+@pytest.mark.higheffort
 def test_simulate_batch(t, tnumber, order, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
