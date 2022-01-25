@@ -4,6 +4,9 @@
 from typing import Literal, Dict, Optional, List
 from numbers import Integral, Real
 
+from joblib import delayed, Parallel
+from multiprocessing import cpu_count
+
 import numpy as np
 
 from fauvqe.objectives.objective import Objective
@@ -25,7 +28,11 @@ class UtCost(Objective):
                     t in U(t)
                 "order"         -> np.uint
                     Trotter approximation order (Exact if 0 or negative)
+
                 "initial_wavefunctions"  -> np.ndarray      if None Use exact UtCost, otherwise batch wavefunctions for random batch cost. Also overwrites evaluate(), the NotImplementedError should never be raised.
+                
+                "time_steps"  -> List[Int]      List of numbers of circuit runs to be considered in UtCost in ascending order
+                
                 "use_progress_bar"  -> bool      Determines whether to use a progress bar while initialising the batch wavefunctions (python module tqdm required)
 
     Methods
@@ -41,7 +48,9 @@ class UtCost(Objective):
                     t: Real, 
                     order: np.uint = 0,
                     initial_wavefunctions: Optional[np.ndarray] = None,
-                    use_progress_bar: bool = False):
+                    time_steps: List[int] = [1],
+                    use_progress_bar: bool = False,
+                    dtype: np.dtype = np.complex128):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -60,6 +69,8 @@ class UtCost(Objective):
         self._order = order
         self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
+        self._time_steps = time_steps
+        self._dtype = dtype
         
         if self._order == 0:
             if t != model.t:
@@ -126,29 +137,46 @@ class UtCost(Objective):
         ---------
         void
         """
+        self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
         if(self._order < 1):
-            self._output_wavefunctions = (self._Ut @ self._initial_wavefunctions.T).T
+            for step in range(len(self._time_steps)):
+                self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
         else:
             pbar = self.create_range(self.batch_size, self._use_progress_bar)
-            self._output_wavefunctions = np.zeros(shape=self._initial_wavefunctions.shape, dtype=np.complex128)
             #Didn't find any cirq function which accepts a batch of initials
-            for k in pbar:
-                self._output_wavefunctions[k] = self.model.simulator.simulate(
-                    self.trotter_circuit,
-                    initial_state=self._initial_wavefunctions[k]
-                    #dtype=np.complex128
-                ).state_vector()
+            for step in range(len(self._time_steps)):
+                if(step != 0):
+                    ini = self._output_wavefunctions[step - 1]
+                    mul = self._time_steps[step] - self._time_steps[step - 1]
+                else:
+                    ini = self._initial_wavefunctions
+                    mul = self._time_steps[step]
+                #Use multiprocessing
+                tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
+                delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in pbar
+                )
+                for k in range(self._initial_wavefunctions.shape[0]):
+                    self._output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
             if(self._use_progress_bar):
                 pbar.close()
-    
+
     def evaluate(self):
         raise NotImplementedError
-    
+            
     def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:
-        return 1 - abs(np.trace(np.matrix.getH(self._Ut) @ wavefunction)) / self._N
+        cost = 0
+        for step in range(len(self._time_steps)):
+            cost = cost + 1 - abs(np.trace( np.linalg.matrix_power( np.matrix.getH(self._Ut), self._time_steps[step]) @ np.linalg.matrix_power(wavefunction, self._time_steps[step]))) / self._N
+        return 1 / len(self._time_steps) * cost
     
     def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
-        return 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction)*self._output_wavefunctions[options['indices']], axis=1)))
+        #assert (options['indices'] is not None), 'Please provide indices for batch'
+        #assert wavefunction.size == (len(self._time_steps) * len(options['indices']) * self._N), 'Please provide one wavefunction for each time step. Expected: {} Received: {}'.\
+        #    format( len(self._time_steps), wavefunction.size / self._N )
+        cost = 0
+        for step in range(len(self._time_steps)):
+            cost += 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*self._output_wavefunctions[step][options['indices']], axis=1)))
+        return 1 / len(self._time_steps) * cost
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -156,8 +184,26 @@ class UtCost(Objective):
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
-            return super().simulate(param_resolver, initial_state)
-
+            output_state = np.empty(shape=(len(self._time_steps), *initial_state.shape), dtype = self._dtype)
+            ini = initial_state
+            mul = self._time_steps[0]
+            wf = self._model.simulator.simulate(
+                    mul * self._model.circuit,
+                    param_resolver=param_resolver,
+                    initial_state=ini,
+                    ).state_vector()
+            output_state[0] = wf/np.linalg.norm(wf)
+            for step in range(1, len(self._time_steps)):
+                ini = output_state[step-1]
+                mul = self._time_steps[step] - self._time_steps[step-1]
+                wf = self._model.simulator.simulate(
+                    mul * self._model.circuit,
+                    param_resolver=param_resolver,
+                    initial_state=ini,
+                    ).state_vector()
+                output_state[step] = wf/np.linalg.norm(wf)
+            return output_state
+            
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {

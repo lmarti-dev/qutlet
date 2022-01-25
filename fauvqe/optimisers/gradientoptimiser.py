@@ -60,6 +60,9 @@ class GradientOptimiser(Optimiser):
                 
                 use_progress_bar: bool
                     Determines whether to use tqdm's progress bar when running the optimisation
+                
+                dtype: np.dtype
+                    data type of wavefunction
         """
 
         super().__init__()
@@ -73,7 +76,8 @@ class GradientOptimiser(Optimiser):
             'batch_size': 0, 
             'symmetric_gradient': True, 
             'plot_run': False, 
-            'use_progress_bar': False
+            'use_progress_bar': False,
+            'dtype': np.complex64
         }
         self.options.update(options)
         if(self.options['symmetric_gradient'] and self.options['batch_size'] == 0):
@@ -101,7 +105,6 @@ class GradientOptimiser(Optimiser):
         ), "Invalid break condition, received: '{}', allowed are {}".format(
             self.options['break_cond'], valid_break_cond
         )
-        
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
         self._circuit_param: np.ndarray = np.array([])
@@ -194,22 +197,25 @@ class GradientOptimiser(Optimiser):
         if self.options['break_cond'] == "iterations":
             #Set progress bar, if wanted
             pbar = self.create_range(self.options['break_param'] - skip_steps, self.options['use_progress_bar'])
+            costs = np.empty(self.options['break_param'] - skip_steps)
+            if(self.options['symmetric_gradient']):
+                tmp_cost = [None for i in range(self.options['break_param'] - skip_steps)]
+            else:
+                tmp_cost = costs.view()
             #Case distinction between sym <-> asym and indices <-> no indices
             if self.options['batch_size'] > 0:
                 indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
-                costs = np.zeros(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
-                    res.add_step(temp_cpv.copy())
+                    res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             else:
-                costs = np.zeros(self.options['break_param'] - skip_steps)
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
-                    res.add_step(temp_cpv.copy())
+                    res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
                 assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
-                plt.plot(range(self._break_param), costs)
+                plt.plot(range(self.options['break_param']), costs)
                 plt.yscale('log')
                 dir_path = os.path.abspath(os.path.dirname(__file__))
                 plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
@@ -273,7 +279,7 @@ class GradientOptimiser(Optimiser):
             + 2 * (0.5 - np.mod(j, 2)) * self.options['eps']
         )
         wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
-        return self._objective.evaluate(wf)
+        return self._objective.evaluate(wf)        
     
     ###############################################################
     #                                                             #
@@ -298,9 +304,12 @@ class GradientOptimiser(Optimiser):
             joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])]
             + 2 * (0.5 - np.mod(j, 2)) * self.options['eps']
         )
-        wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
+        if(hasattr(self._objective, '_time_steps')):
+            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+        else:
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
         for k in range(len(indices)):
-            wf[k] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
+            wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
     
     ###############################################################
@@ -351,9 +360,12 @@ class GradientOptimiser(Optimiser):
         joined_dict[str(self._circuit_param[j-1])] = (
             joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
         )
-        wf = np.zeros(shape=(len(indices), self._objective._N), dtype=np.complex64)
+        if(hasattr(self._objective, '_time_steps')):
+            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+        else:
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
         for k in range(len(indices)):
-            wf[k][:] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
+            wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
         return self._objective.evaluate(wf, options={'indices': indices})
     
     def to_json_dict(self) -> Dict:

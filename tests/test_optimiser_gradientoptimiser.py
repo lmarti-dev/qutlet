@@ -110,6 +110,11 @@ def test_json():
     
     assert mockopt.__eq__(mockopt2)
 
+class MockGradientOptimiser(GradientOptimiser):
+    def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
+        super()._optimise_step(temp_cpv, _n_jobs, step)
+
+        
 #############################################################
 #                                                           #
 #                     Test errors                           #

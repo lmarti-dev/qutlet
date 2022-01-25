@@ -42,12 +42,12 @@ def test_evaluate_op(t):
     assert objective.evaluate(res) < 1e-10
     
 @pytest.mark.parametrize(
-    "t",
+    "t, times",
     [
-        (0.1), (1), (-0.01)
+        (0.1, [1]), (1, [1]), (-0.01, [1]), (0.1, [1, 3, 5]), (1, [1, 3, 5]), (-0.01, [1, 3, 5])
     ],
 )
-def test_simulate_op(t):
+def test_simulate_op(t, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -61,7 +61,7 @@ def test_simulate_op(t):
         "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
     })
     
-    objective = UtCost(ising, t, 0)
+    objective = UtCost(ising, t, 0, time_steps=times)
     params = -(2/np.pi)*t*(np.ones(2*order)/order)
     pdict = {}
     for k in range(order):
@@ -96,15 +96,21 @@ def test_evaluate_batch(t, avg_size):
     outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
     for k in range(len(eval_indices)):
         outputs[k] = res @ initials[eval_indices[k]]
-    assert objective.evaluate(outputs, options={'indices': eval_indices}) < 1e-10
+    assert objective.evaluate(np.array([outputs]), options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
-    "t,order",
+    "t,order, times",
     [
-        (0.1, 0), (1, 0), (-0.01, 0), (0.1, 100), (1, 100), (-0.01, 100)
+        (0.1, 0, [1]), 
+        (1, 0, [1, 3, 5]), 
+        (-0.01, 0, [1, 3, 5]), 
+        (0.1, 100, [1, 3, 5]), 
+        (1, 100, [1]), 
+        (-0.01, 100, [1, 3, 5])
     ],
 )
-def test_simulate_batch(t, order):
+@pytest.mark.higheffort
+def test_simulate_batch(t, order, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -126,14 +132,14 @@ def test_simulate_batch(t, order):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials, use_progress_bar=True)
+    objective = UtCost(ising, t, order, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
     print(objective)
     
     op = objective.simulate(
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
-    assert (objective.evaluate([op], options={'indices': [0]}) < 1e-3)
+    assert (objective.evaluate(np.array(op), options={'indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
     "t, order",

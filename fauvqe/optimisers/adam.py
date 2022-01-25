@@ -92,6 +92,9 @@ class ADAM(GradientOptimiser):
                 
                 use_progress_bar: bool
                     Determines whether to use tqdm's progress bar when running the optimisation
+                
+                dtype: np.dtype
+                    data type of wavefunction
         """
         self.options = {
             'eps_2': 1e-8,

@@ -21,7 +21,7 @@ class GradientDescent(GradientOptimiser):
     """GradientDescent implementation as a GradientOptimiser.
 
     Arguments
-    -----------
+    -----------    
     optimiser_options: dict
             Dictionary containing additional options to individualise the optimisation routine. Contains:
                 eps : Real default 0.001
@@ -47,6 +47,9 @@ class GradientDescent(GradientOptimiser):
                 
                 use_progress_bar: bool
                     Determines whether to use tqdm's progress bar when running the optimisation
+                
+                dtype: np.dtype
+                    data type of wavefunction
     """
 
     def __init__(
