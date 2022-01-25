@@ -760,3 +760,33 @@ Test Indices
 Sequential Time: 4.2702648639678955
 Parallel Time: 1.9366540908813477
 
+===Tue, 25 Jan 2022 09:38:51 +0000===
+Test No Indices 
+
+Sequential Time: 2.485227346420288
+Parallel Time: 0.7862105369567871
+
+===Tue, 25 Jan 2022 09:38:57 +0000===
+Test Indices 
+
+Sequential Time: 3.8072521686553955
+Parallel Time: 1.5965523719787598
+
+===Tue, 25 Jan 2022 09:39:00 +0000===
+Test Indices 
+
+Sequential Time: 2.20737624168396
+Parallel Time: 1.1192705631256104
+
+===Tue, 25 Jan 2022 09:39:10 +0000===
+Test Indices 
+
+Sequential Time: 7.4037699699401855
+Parallel Time: 2.5606069564819336
+
+===Tue, 25 Jan 2022 09:39:16 +0000===
+Test Indices 
+
+Sequential Time: 4.269287824630737
+Parallel Time: 1.754338264465332
+
