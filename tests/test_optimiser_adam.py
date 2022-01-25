@@ -162,6 +162,7 @@ def test_optimise_no_simulator_change(sym):
     res = adam.optimise(expval_z, n_jobs=-1)
     assert(ising.simulator == adam._objective.model.simulator)
 
+@pytest.mark.higheffort
 def test__get_single_energy():
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
@@ -238,6 +239,7 @@ def test_optimise_batch(sym, n_jobs, sim):
     assert var_cost/10 < trotter_cost
 
 @pytest.mark.skipif(cpu_count() < 4, reason="No speed-up expected for single core machine")
+@pytest.mark.higheffort
 def test_times():
     start = time()
     test_optimise()
@@ -270,6 +272,7 @@ def test_times():
         (False, 'cirq')
     ],
 )
+@pytest.mark.higheffort
 def test_times_batch(sym, sim):
     start = time()
     test_optimise_batch(sym, 1, sim)
