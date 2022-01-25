@@ -26,8 +26,10 @@ class UtCost(Objective):
     model: AbstractModel, The linked model
     options:    "t"         -> Float
                     t in U(t)
-                "tnumber"         -> np.uint
+                "m"         -> np.uint
                     Trotter number (Exact if 0 or negative)
+                "q"         -> np.uint
+                    Trotter-Suzuki order (Exact if 0 or negative)
 
                 "initial_wavefunctions"  -> np.ndarray      if None Use exact UtCost, otherwise batch wavefunctions for random batch cost. Also overwrites evaluate(), the NotImplementedError should never be raised.
                 
@@ -46,8 +48,8 @@ class UtCost(Objective):
     def __init__(   self,
                     model: AbstractModel, 
                     t: Real, 
-                    tnumber: np.uint = 0,
-                    order: np.uint = 1,
+                    m: np.uint = 0,
+                    q: np.uint = 1,
                     initial_wavefunctions: Optional[np.ndarray] = None,
                     time_steps: List[int] = [1],
                     use_progress_bar: bool = False,
@@ -67,14 +69,14 @@ class UtCost(Objective):
         super().__init__(model)
         
         self._initial_wavefunctions = initial_wavefunctions
-        self._tnumber = tnumber
-        self._order = order
+        self._m = m
+        self._q = q
         self._use_progress_bar = use_progress_bar
         self._N = 2**np.size(model.qubits)
         self._time_steps = time_steps
         self._dtype = dtype
         
-        if self._tnumber == 0:
+        if self._m == 0 or self._q == 0:
             if t != model.t:
                 model.t = t
                 model.set_Ut()
@@ -101,23 +103,23 @@ class UtCost(Objective):
             self.evaluate = self.evaluate_batch
 
     def _init_trotter_circuit(self):
-        self.trotter_circuit = self.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._order, self._tnumber)
+        self.trotter_circuit = self.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._q, self._m)
     
-    def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order, trotter_number):
-        return trotter_number * self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, t/trotter_number, order)
+    def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q, m):
+        return m * self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, t/m, q)
     
-    def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t, order):
-        if(order == 1):
+    def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q):
+        if(q == 1):
             return self._first_order_trotter_circuit(hamiltonian, t)
-        elif(order == 2):
+        elif(q == 2):
             half = self._first_order_trotter_circuit(hamiltonian, 0.5*t)
             for k in range(len(half)-1, -1, -1):
                 half.append(half[k])
             return half
-        elif( (order % 2) == 0):
-            nu = 1/(4 - 4**(1/(order - 1)))
-            partone = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, order-2)
-            parttwo = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, order-2)
+        elif( (q % 2) == 0):
+            nu = 1/(4 - 4**(1/(q - 1)))
+            partone = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, q-2)
+            parttwo = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, q-2)
             return 2*partone + parttwo + 2*partone
         else:
             raise NotImplementedError()
@@ -132,9 +134,9 @@ class UtCost(Objective):
             System Hamiltonian
         t: float
             Total simulation time
-        order: np.uint
+        q: np.uint
             Order of Approximation
-        trotter_number: np.uint
+        m: np.uint
             Refinement of time R. t -> ( t/R )^R
         
         Returns
@@ -152,7 +154,7 @@ class UtCost(Objective):
                 temp = temp * pauli[1](pauli[0])
             #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
             res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
-        #Copy the Trotter layer *tnumber times.
+        #Copy the Trotter layer *m times.
         return res
     
     def _init_batch_wfcts(self):
@@ -168,7 +170,7 @@ class UtCost(Objective):
         void
         """
         self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
-        if(self._tnumber < 1):
+        if(self._m < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
         else:
@@ -239,7 +241,7 @@ class UtCost(Objective):
             "constructor_params": {
                 "model": self._model,
                 "t": self.t, 
-                "tnumber": self._tnumber,
+                "m": self._m,
                 "initial_wavefunctions": self._initial_wavefunctions
             },
         }
