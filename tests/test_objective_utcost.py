@@ -99,18 +99,21 @@ def test_evaluate_batch(t, avg_size):
     assert objective.evaluate(np.array([outputs]), options={'indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
-    "t,order, times",
+    "t, m, q, times",
     [
-        (0.1, 0, [1]), 
-        (1, 0, [1, 3, 5]), 
-        (-0.01, 0, [1, 3, 5]), 
-        (0.1, 100, [1, 3, 5]), 
-        (1, 100, [1]), 
-        (-0.01, 100, [1, 3, 5])
+        (0.1, 0, 1, [1]), 
+        (1, 0, 1, [1, 3, 5]), 
+        (-0.01, 0, 1, [1, 3, 5]), 
+        (0.1, 100, 1, [1, 3, 5]), 
+        (1, 100, 1, [1]), 
+        (-0.01, 100, 1, [1, 3, 5]),
+        (0.1, 100, 2, [1, 3, 5]), 
+        (1, 10, 4, [1]), 
+        (-0.01, 10, 6, [1, 3, 5])
     ],
 )
 @pytest.mark.higheffort
-def test_simulate_batch(t, order, times):
+def test_simulate_batch(t, m, q, times):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -132,7 +135,7 @@ def test_simulate_batch(t, order, times):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
-    objective = UtCost(ising, t, order, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
+    objective = UtCost(ising, t, m, q, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
     print(objective)
     
     op = objective.simulate(
@@ -142,12 +145,12 @@ def test_simulate_batch(t, order, times):
     assert (objective.evaluate(np.array(op), options={'indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
-    "t, order",
+    "t, m",
     [
         (0.1, 25)
     ],
 )
-def test_json(t, order):
+def test_json(t, m):
     j_v = np.ones((0, 2))
     j_h = np.ones((1, 1))
     h = np.ones((1, 2))
@@ -157,7 +160,7 @@ def test_json(t, order):
     initials = np.zeros(initial_rands.shape, dtype=np.complex64)
     for k in range(bsize):
         initials[k, :] = initial_rands[k, :] / np.linalg.norm(initial_rands[k, :])
-    objective = UtCost(ising, t, order, initial_wavefunctions=initials)
+    objective = UtCost(ising, t, m, initial_wavefunctions=initials)
     
     json = objective.to_json_dict()
     
@@ -178,7 +181,24 @@ class MockUtCost(UtCost):
 def test_abstract_gradient_optimiser():
     with pytest.raises(NotImplementedError):
         MockUtCost().evaluate()
+
+def test_no_odd_order():
+    t=0.1
+    m=10
+    q=3
+    times=[1]
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    t_new = t - 0.01
+    ex=100
+    ising = Ising("GridQubit", [1, 2], j_v, j_h, h, "X", t_new)
     
+    initial_rands= (np.random.rand(1, 4)).astype(np.complex128)
+    
+    with pytest.raises(NotImplementedError):
+        objective = UtCost(ising, t, m, q, initial_wavefunctions = initial_rands, time_steps=times, use_progress_bar=True, dtype=np.complex64)
+
 """
     Old test of simulating np.complex128 wavefunctions
 @pytest.mark.parametrize(
