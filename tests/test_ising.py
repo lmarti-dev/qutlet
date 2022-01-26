@@ -43,7 +43,7 @@ def test__eq__():
             [1, 2],
             np.ones((0, 2)) / 2,
             np.ones((1, 2)) / 5,
-            np.zeros((1, 2)) / 10,
+            None,
             "Z",
         ),
         (
