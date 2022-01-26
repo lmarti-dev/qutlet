@@ -47,11 +47,11 @@ class IsingXY(SpinModel):
     def copy(self) -> IsingXY:
         self_copy = IsingXY( self.qubittype,
                 self.n,
-                self.j_v[0],
-                self.j_h[0],
-                self.j_v[1],
-                self.j_h[1],
-                self.h[0],
+                self.j_v[:,:,0],
+                self.j_h[:,:,0],
+                self.j_v[:,:,1],
+                self.j_h[:,:,1],
+                self.h[:,:,0],
                 self.field,
                 self.t )
 
@@ -74,11 +74,11 @@ class IsingXY(SpinModel):
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_y_v": self.j_v[0],
-                "j_y_h": self.j_h[0],
-                "j_z_v": self.j_v[1],
-                "j_z_h": self.j_h[1],
-                "h": self.h[0],
+                "j_y_v": self.j_v[:,:,0],
+                "j_y_h": self.j_h[:,:,0],
+                "j_z_v": self.j_v[:,:,1],
+                "j_z_h": self.j_h[:,:,1],
+                "h": self.h[:,:,0],
             },
             "params": {
                 "circuit": self.circuit,

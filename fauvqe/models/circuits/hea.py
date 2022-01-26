@@ -262,7 +262,7 @@ def set_symbols(self):
             for variable in sorted(sum(self.hea.options["2Qvariables"], [])):
                 #2qubit cases
                 #Here: only count number of parameters. 
-                for j in range(np.size(self.j_v[0]) + np.size(self.j_h[0])):
+                for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
                     temp2Q.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \

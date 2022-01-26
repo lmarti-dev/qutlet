@@ -46,17 +46,18 @@ class Heisenberg(SpinModel):
         )
     
     def copy(self) -> Heisenberg:
+        print(self.j_v)
         self_copy = Heisenberg( self.qubittype,
                 self.n,
-                self.j_v[0],
-                self.j_h[0],
-                self.j_v[1],
-                self.j_h[1],
-                self.j_v[2],
-                self.j_h[2],
-                self.h[0],
-                self.h[1],
-                self.h[2],
+                self.j_v[:,:,0],
+                self.j_h[:,:,0],
+                self.j_v[:,:,1],
+                self.j_h[:,:,1],
+                self.j_v[:,:,2],
+                self.j_h[:,:,2],
+                self.h[:,:,0],
+                self.h[:,:,1],
+                self.h[:,:,2],
                 self.t )
         
         self_copy.circuit = self.circuit.copy()
@@ -78,15 +79,15 @@ class Heisenberg(SpinModel):
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_x_v": self.j_v[0],
-                "j_x_h": self.j_h[0],
-                "j_y_v": self.j_v[1],
-                "j_y_h": self.j_h[1],
-                "j_z_v": self.j_v[2],
-                "j_z_h": self.j_h[2],
-                "h_x": self.h[0],
-                "h_y": self.h[1],
-                "h_z": self.h[2],
+                "j_x_v": self.j_v[:,:,0],
+                "j_x_h": self.j_h[:,:,0],
+                "j_y_v": self.j_v[:,:,1],
+                "j_y_h": self.j_h[:,:,1],
+                "j_z_v": self.j_v[:,:,2],
+                "j_z_h": self.j_h[:,:,2],
+                "h_x": self.h[:,:,0],
+                "h_y": self.h[:,:,1],
+                "h_z": self.h[:,:,2],
                 "t": self.t
             },
             "params": {

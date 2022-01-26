@@ -61,8 +61,8 @@ class SpinModel(AbstractModel):
         ), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_v = j_v
-
+        self.j_v = np.transpose(j_v, (1, 2, 0))
+        
         # convert input to numpy array to be sure
         j_h = np.array(j_h)
         # J horizontal needs one column/vertical line less#
@@ -72,7 +72,7 @@ class SpinModel(AbstractModel):
         ), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_h = j_h
+        self.j_h = np.transpose(j_h, (1, 2, 0))
 
         # Set boundaries:
         self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
@@ -82,7 +82,7 @@ class SpinModel(AbstractModel):
         assert (
             h.shape == (len(one_q_gates), *self.n)
         ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
-        self.h = h
+        self.h = np.transpose(h, (1, 2, 0))
 
     def _set_hamiltonian(self, reset: bool = True):
         """
@@ -103,37 +103,37 @@ class SpinModel(AbstractModel):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         for g in range(len(self._two_q_gates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
         
         for g in range(len(self._two_q_gates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for g in range(len(self._two_q_gates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
             for g in range(len(self._two_q_gates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[g][i][j]*self._one_q_gates[g](self.qubits[i][j])
+                    self.hamiltonian -= h[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
@@ -220,9 +220,9 @@ class SpinModel(AbstractModel):
         super().glue_circuit(axis, repetitions)
 
         #In addition we need to reset j_v, j_h  h and the hamiltonian
-        self.j_v=np.tile(self.j_v, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self.j_h=np.tile(self.j_h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self.h =np.tile(self.h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
+        self.j_v=np.transpose(np.tile(np.transpose(self.j_v, (2,0,1)), np.add((1, 1) , (repetitions-1) *(1-axis,axis))), (1,2,0))
+        self.j_h=np.transpose(np.tile(np.transpose(self.j_h, (2,0,1)), np.add((1, 1) , (repetitions-1) *(1-axis,axis))), (1,2,0))
+        self.h = np.transpose(np.tile(np.transpose(self.h, (2,0,1)), np.add((1, 1) , (repetitions-1) *(1-axis,axis))), (1,2,0))
         self._set_hamiltonian()
 
         # As well as erase eig_val, eig_vec and _Ut as those do not make sense anymore:

@@ -1521,3 +1521,117 @@ Test Indices
 Sequential Time: 11.62606406211853
 Parallel Time: 4.0591137409210205
 
+===Wed, 26 Jan 2022 12:58:23 +0000===
+Test Indices 
+
+Sequential Time: 11.708935260772705
+Parallel Time: 4.644241094589233
+
+===Wed, 26 Jan 2022 12:58:32 +0000===
+Test Indices 
+
+Sequential Time: 6.220389366149902
+Parallel Time: 3.1199302673339844
+
+===Wed, 26 Jan 2022 12:59:01 +0000===
+Test Indices 
+
+Sequential Time: 22.22585678100586
+Parallel Time: 6.982657432556152
+
+===Wed, 26 Jan 2022 12:59:17 +0000===
+Test Indices 
+
+Sequential Time: 11.63672661781311
+Parallel Time: 4.174269199371338
+
+===Wed, 26 Jan 2022 23:56:38 +0000===
+Test No Indices 
+
+Sequential Time: 2.495420217514038
+Parallel Time: 0.8704626560211182
+
+===Wed, 26 Jan 2022 23:56:55 +0000===
+Test Indices 
+
+Sequential Time: 11.623008966445923
+Parallel Time: 4.680139780044556
+
+===Wed, 26 Jan 2022 23:57:04 +0000===
+Test Indices 
+
+Sequential Time: 6.228691101074219
+Parallel Time: 3.117894172668457
+
+===Wed, 26 Jan 2022 23:57:33 +0000===
+Test Indices 
+
+Sequential Time: 21.80106019973755
+Parallel Time: 7.110134840011597
+
+===Wed, 26 Jan 2022 23:57:48 +0000===
+Test Indices 
+
+Sequential Time: 11.524389743804932
+Parallel Time: 4.07719612121582
+
+===Thu, 27 Jan 2022 00:22:34 +0000===
+Test No Indices 
+
+Sequential Time: 2.487279176712036
+Parallel Time: 0.8737800121307373
+
+===Thu, 27 Jan 2022 00:22:50 +0000===
+Test Indices 
+
+Sequential Time: 11.63265323638916
+Parallel Time: 4.693603515625
+
+===Thu, 27 Jan 2022 00:22:59 +0000===
+Test Indices 
+
+Sequential Time: 6.322325229644775
+Parallel Time: 3.1269657611846924
+
+===Thu, 27 Jan 2022 00:23:28 +0000===
+Test Indices 
+
+Sequential Time: 21.651384115219116
+Parallel Time: 7.129594087600708
+
+===Thu, 27 Jan 2022 00:23:44 +0000===
+Test Indices 
+
+Sequential Time: 11.845384359359741
+Parallel Time: 4.072284460067749
+
+===Thu, 27 Jan 2022 00:35:12 +0000===
+Test No Indices 
+
+Sequential Time: 2.4292571544647217
+Parallel Time: 0.9468626976013184
+
+===Thu, 27 Jan 2022 00:35:28 +0000===
+Test Indices 
+
+Sequential Time: 11.816338062286377
+Parallel Time: 4.682435512542725
+
+===Thu, 27 Jan 2022 00:35:37 +0000===
+Test Indices 
+
+Sequential Time: 6.228778123855591
+Parallel Time: 3.14788818359375
+
+===Thu, 27 Jan 2022 00:36:06 +0000===
+Test Indices 
+
+Sequential Time: 21.643502473831177
+Parallel Time: 7.142983436584473
+
+===Thu, 27 Jan 2022 00:36:22 +0000===
+Test Indices 
+
+Sequential Time: 11.866344213485718
+Parallel Time: 4.04976749420166
+

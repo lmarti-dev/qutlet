@@ -92,12 +92,12 @@ def _exact_layer(self):
                 one_q_gate = [cirq.Z]
             temp_model = SpinModelDummy("GridQubit",
                                 n_exact,
-                                [self.j_v[0][  i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
-                                            j*n_exact[1]: (j+1)*n_exact[1]]],
-                                [self.j_h[0][ i*n_exact[0]:(i+1)*n_exact[0],
-                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1]]],
-                                [self.h[0][i*n_exact[0]:(i+1)*n_exact[0],
-                                       j*n_exact[1]: (j+1)*n_exact[1]]],
+                                [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
+                                            j*n_exact[1]: (j+1)*n_exact[1], 0]],
+                                [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
+                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], 0]],
+                                [self.h[i*n_exact[0]:(i+1)*n_exact[0],
+                                       j*n_exact[1]: (j+1)*n_exact[1],0]],
                                 [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
                                 one_q_gate)
             temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
@@ -149,30 +149,30 @@ def __get_mf_angle(self, qubit):
     J_mean = 0
     n_J = 0
     
-    if (self.j_v.shape[1] * self.j_v.shape[2]) > 0:
+    if (self.j_v.shape[0] * self.j_v.shape[1]) > 0:
         # (1)
         if qubit._row > 0:
             for g in range(len(self._two_q_gates)):
-                J_mean += self.j_v[g][qubit._row - 1,  qubit._col]
+                J_mean += self.j_v[qubit._row - 1,  qubit._col][g]
                 n_J += 1
         
         # (4)
-        if qubit._col <  self.j_v.shape[2] and qubit._row <  self.j_v.shape[1]:
+        if qubit._col <  self.j_v.shape[1] and qubit._row <  self.j_v.shape[0]:
             for g in range(len(self._two_q_gates)):
-                J_mean += self.j_v[g][qubit._row, qubit._col]
+                J_mean += self.j_v[qubit._row, qubit._col][g]
                 n_J += 1
     
-    if (self.j_h.shape[1] * self.j_h.shape[2]) > 0: 
+    if (self.j_h.shape[0] * self.j_h.shape[1]) > 0: 
         # (2)
         if qubit._col > 0:
             for g in range(len(self._two_q_gates)):
-                J_mean += self.j_h[g][qubit._row, qubit._col -1]
+                J_mean += self.j_h[qubit._row, qubit._col -1][g]
                 n_J += 1
 
         # (3)
-        if qubit._col <  self.j_h.shape[2] and qubit._row <  self.j_h.shape[1]:
+        if qubit._col <  self.j_h.shape[1] and qubit._row <  self.j_h.shape[0]:
             for g in range(len(self._two_q_gates)):
-                J_mean += self.j_h[g][qubit._row, qubit._col]
+                J_mean += self.j_h[qubit._row, qubit._col][g]
                 n_J += 1
 
     # Get and return theta via
@@ -186,11 +186,11 @@ def __get_mf_angle(self, qubit):
     #print("self.j_v.shape \t {}".format(self.j_v.shape))
     #print("self.j_h.shape \t {}".format(self.j_h.shape))
 
-    if abs(self.h[0][qubit._row, qubit._col]) > abs(J_mean):
+    if abs(self.h[qubit._row, qubit._col]) > abs(J_mean):
         return np.pi/2
     else:
         return (-1)**(qubit._col+qubit._row)*\
-            np.arccos(np.sqrt(1-(self.h[0][qubit._row, qubit._col]/J_mean)**2))
+            np.arccos(np.sqrt(1-(self.h[qubit._row, qubit._col]/J_mean)**2))
 
 def add_missing_cpv(self):
     _add_vec = []
@@ -295,8 +295,8 @@ class SpinModelDummy(AbstractModel):
         ), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_v = j_v
-
+        self.j_v = np.transpose(j_v, (1, 2, 0))
+        
         # convert input to numpy array to be sure
         j_h = np.array(j_h)
         # J horizontal needs one column/vertical line less#
@@ -306,7 +306,7 @@ class SpinModelDummy(AbstractModel):
         ), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
             j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_h = j_h
+        self.j_h = np.transpose(j_h, (1, 2, 0))
 
         # Set boundaries:
         self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
@@ -316,7 +316,7 @@ class SpinModelDummy(AbstractModel):
         assert (
             h.shape == (len(one_q_gates), *self.n)
         ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
-        self.h = h
+        self.h = np.transpose(h, (1, 2, 0))
 
     def _set_hamiltonian(self, reset: bool = True):
         """
@@ -337,37 +337,37 @@ class SpinModelDummy(AbstractModel):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         for g in range(len(self._two_q_gates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
         
         for g in range(len(self._two_q_gates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for g in range(len(self._two_q_gates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
             for g in range(len(self._two_q_gates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[g][i][j]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[g][i][j]*self._one_q_gates[g](self.qubits[i][j])
+                    self.hamiltonian -= h[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
 
     def copy(self): pass
     def energy(self): pass 

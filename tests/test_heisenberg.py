@@ -110,7 +110,7 @@ def test_copy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, 
     assert( model is not model2 )
 
 def test_json():
-    model = Heisenberg("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)),np.ones((0, 2)), np.ones((1, 1)), np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), np.ones((1, 2)), np.ones((1, 2)))
+    model = Heisenberg("GridQubit", [1, 2], np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.ones((1, 2)), np.ones((1, 2)), np.ones((1, 2)))
     
     json = model.to_json_dict()
     
