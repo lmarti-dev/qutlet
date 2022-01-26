@@ -14,15 +14,15 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import TwoLevel, ExpectationValue
+from fauvqe import Ising, ExpectationValue
 from tests.test_isings import IsingTester
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]
-    model = TwoLevel("GridQubit", n, np.ones((n[0], n[1])))
+    model = Ising("GridQubit", n, h=np.ones((n[0], n[1])))
     model.set_circuit("qaoa")
     
-    model2 = TwoLevel("GridQubit", n, np.ones((n[0], n[1])))
+    model2 = Ising("GridQubit", n, h=np.ones((n[0], n[1])))
     model2.set_circuit("qaoa")
     
     assert (model == model2)
@@ -53,7 +53,7 @@ def test__eq__():
     ],
 )
 def test_copy(qubittype, n, h):
-    model = TwoLevel(qubittype, n, h)
+    model = Ising(qubittype, n, h=h)
     model.set_circuit("qaoa")
     model2 = model.copy()
 
@@ -67,18 +67,18 @@ def test_copy(qubittype, n, h):
 @pytest.mark.parametrize(
     "n, h, index, sol",
     [
-        ([1, 2],np.ones((1, 2)), 0, 1),
-        ([1, 2],np.ones((1, 2)), 1, 0),
-        ([1, 2],np.ones((1, 2)), 3, -1),
+        ([1, 2], np.ones((1, 2)), 0, 1),
+        ([1, 2], np.ones((1, 2)), 1, 0),
+        ([1, 2], np.ones((1, 2)), 3, -1),
         ([2, 2], np.ones((2, 2)), 0, 1),
         ([2, 2], np.ones((2, 2)), 12, 0),
         ([2, 2], np.ones((2, 2)), 11, -0.5),
     ],
 )
 def test_energy(n, h, index, sol):
-    model = TwoLevel("GridQubit", n, h)
+    model = Ising("GridQubit", n, h=h, field="Z")
     energy_obs = ExpectationValue(model)
     
-    wf = np.zeros(2**(n[0]*n[1]))
+    wf = np.zeros(2**(n[0]*n[1])).astype(np.complex64)
     wf[index] = 1
-    assert( abs( sol - energy_obs.evaluate(wf) ) < 1e-13)
+    assert( abs( sol - energy_obs.evaluate(wf) ) < 1e-7)

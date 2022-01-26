@@ -17,7 +17,7 @@ class Ising(SpinModel):
     is mother of different quantum circuit methods
     """
     
-    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X", t: Real = 0):
+    def __init__(self, qubittype, n, j_v = None, j_h = None, h = None, field: Literal["Z", "X"] = "X", t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -27,6 +27,12 @@ class Ising(SpinModel):
         field: basis of external field X or Z
         """
         # convert all input to np array to be sure
+        if j_v is None:
+            j_v = np.zeros((n[0], n[1]))
+        if j_h is None:
+            j_h = np.zeros((n[0], n[1]))
+        if h is None:
+            h = np.zeros((n[0], n[1]))
         if(field == "X"):
             one_q_gate = [cirq.X]
         elif(field == "Z"):
