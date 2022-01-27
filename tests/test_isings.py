@@ -109,3 +109,15 @@ class IsingTester:
             ), "Ising, value map test failed: for element {}, expected: {}, received: {}".format(
                 element, vm_exp[element], value_map[element]
             )
+    
+    def compare_val_modulo_permutation(A, B, i):
+        try:
+            np.testing.assert_allclose(A[i], B[i], rtol=1e-14, atol=1e-14)
+        except AssertionError:
+            np.testing.assert_allclose(A[(i+1)%2], B[i], rtol=1e-14, atol=1e-14)
+
+    def compare_vec_modulo_permutation(A, B, i):
+        try:
+            cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(A[:,i], B[:,i], rtol=1e-14, atol=1e-14)
+        except AssertionError:
+            cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(A[:,(i+1)%2], B[:,i], rtol=1e-14, atol=1e-14)

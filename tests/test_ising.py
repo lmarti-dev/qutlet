@@ -1020,9 +1020,10 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
     sparse_scipy_sol.diagonalise()
 
     # Test whether found eigenvalues are all close up to tolerance
-    np.testing.assert_allclose(scipy_sol.eig_val    , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
-    np.testing.assert_allclose(np_sol.eig_val [0:2]  , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
-    np.testing.assert_allclose(val_exp          , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
+    for i in range(2):
+        IsingTester.compare_val_modulo_permutation(scipy_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(np_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(val_exp, sparse_scipy_sol.eig_val, i)
 
     # Test whether found eigenvectors are all close up to tolerance and global phase
     # Note that different eigen vectors can have a different global phase; hence we assert them one by one
@@ -1031,10 +1032,9 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
     for i in range(2):
         if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val [1]) > 1e-14:
             #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
-            cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(scipy_sol.eig_vec[:,i] , sparse_scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
-        
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
+            IsingTester.compare_vec_modulo_permutation(scipy_sol.eig_vec , sparse_scipy_sol.eig_vec, i)
+        IsingTester.compare_vec_modulo_permutation(np_sol.eig_vec, scipy_sol.eig_vec, i)
+        IsingTester.compare_vec_modulo_permutation(vec_exp, scipy_sol.eig_vec, i) 
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, field, glue_axis, sol_circuit, sol_circuit_param",

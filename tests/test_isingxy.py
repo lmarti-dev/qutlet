@@ -7,6 +7,7 @@ import sympy
 
 # internal imports
 from fauvqe import IsingXY
+from tests.test_isings import IsingTester
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]
@@ -221,9 +222,9 @@ def test_diagonalise(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field, val_exp
     
     # Test whether found eigenvalues are all close up to tolerance
     for i in range(2):
-        compare_val_modulo_permutation(scipy_sol.eig_val, sparse_scipy_sol.eig_val, i)
-        compare_val_modulo_permutation(np_sol.eig_val, sparse_scipy_sol.eig_val, i)
-        compare_val_modulo_permutation(val_exp, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(scipy_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(np_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(val_exp, sparse_scipy_sol.eig_val, i)
     
     # Test whether found eigenvectors are all close up to tolerance and global phase
     # Note that different eigen vectors can have a different global phase; hence we assert them one by one
@@ -232,22 +233,10 @@ def test_diagonalise(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field, val_exp
     for i in range(2):
         if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val [1]) > 1e-14:
             #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
-            compare_vec_modulo_permutation(scipy_sol.eig_vec , sparse_scipy_sol.eig_vec, i)
+            IsingTester.compare_vec_modulo_permutation(scipy_sol.eig_vec , sparse_scipy_sol.eig_vec, i)
         
-        compare_vec_modulo_permutation(np_sol.eig_vec, scipy_sol.eig_vec, i)
-        compare_vec_modulo_permutation(vec_exp, scipy_sol.eig_vec, i)
-
-def compare_val_modulo_permutation(A, B, i):
-    try:
-        np.testing.assert_allclose(A[i], B[i], rtol=1e-14, atol=1e-14)
-    except AssertionError:
-        np.testing.assert_allclose(A[(i+1)%2], B[i], rtol=1e-14, atol=1e-14)
-
-def compare_vec_modulo_permutation(A, B, i):
-    try:
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(A[:,i], B[:,i], rtol=1e-14, atol=1e-14)
-    except AssertionError:
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(A[:,(i+1)%2], B[:,i], rtol=1e-14, atol=1e-14)
+        IsingTester.compare_vec_modulo_permutation(np_sol.eig_vec, scipy_sol.eig_vec, i)
+        IsingTester.compare_vec_modulo_permutation(vec_exp, scipy_sol.eig_vec, i)
 
 def test_json():
     model = IsingXY("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
