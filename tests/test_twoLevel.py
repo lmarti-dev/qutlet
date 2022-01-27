@@ -67,12 +67,12 @@ def test_copy(qubittype, n, h):
 @pytest.mark.parametrize(
     "n, h, index, sol",
     [
-        ([1, 2], np.ones((1, 2)), 0, 1),
+        ([1, 2], np.ones((1, 2)), 0, -1),
         ([1, 2], np.ones((1, 2)), 1, 0),
-        ([1, 2], np.ones((1, 2)), 3, -1),
-        ([2, 2], np.ones((2, 2)), 0, 1),
+        ([1, 2], np.ones((1, 2)), 3, +1),
+        ([2, 2], np.ones((2, 2)), 0, -1),
         ([2, 2], np.ones((2, 2)), 12, 0),
-        ([2, 2], np.ones((2, 2)), 11, -0.5),
+        ([2, 2], np.ones((2, 2)), 11, +0.5),
     ],
 )
 def test_energy(n, h, index, sol):

@@ -50,7 +50,7 @@ class ExpectationValue(AbstractExpectationValue):
         
         # field must be "Z"
         return (
-            np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] + self.__energies[1]))
+            np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] - self.__energies[1]))
             / self.__n_qubits
         )
 

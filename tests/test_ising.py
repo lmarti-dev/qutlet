@@ -436,7 +436,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             cirq.X ** 2,
             -0.25,
         ),
-        # Normalised energy; hence expect -j_v/2 - 2h/2= -0.2:
+        # Normalised energy; hence expect -j_v + 2h/2= 0:
         (
             "GridQubit",
             [1, 2],
@@ -444,9 +444,9 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X,
-            -0.2,
+            0,
         ),
-        # Normalised energy; hence expect -j_v/2 + 2h/2 = 0
+        # Normalised energy; hence expect -j_v - 2h/2 = -0.2
         (
             "GridQubit",
             [1, 2],
@@ -454,17 +454,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X ** 2,
-            0,
-        ),
-        # Normalised energy; hence expect (-j_h-2h)/2 = -0.35
-        (
-            "GridQubit",
-            [2, 1],
-            np.ones((1, 1)) / 2,
-            np.ones((2, 0)) / 5,
-            np.ones((2, 1)) / 10,
-            cirq.X,
-            -0.35,
+            -0.2,
         ),
         # Normalised energy; hence expect (-j_h+2h)/2 = -0.15
         (
@@ -473,13 +463,23 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 2,
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
-            cirq.X ** 2,
+            cirq.X,
             -0.15,
+        ),
+        # Normalised energy; hence expect (-j_h-2h)/2 = -0.35
+        (
+            "GridQubit",
+            [2, 1],
+            np.ones((1, 1)) / 2,
+            np.ones((2, 0)) / 5,
+            np.ones((2, 1)) / 10,
+            cirq.X ** 2,
+            -0.35,
         ),
         #############################################################
         #                   4 qubit tests                           #
         #############################################################
-        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
+        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.25
         (
             "GridQubit",
             [2, 2],
@@ -487,7 +487,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 10,
             cirq.X,
-            -0.45,
+            -0.25,
         ),
         # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
         (
@@ -497,7 +497,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 10,
             cirq.X ** 2,
-            -0.25,
+            -0.45,
         ),
     ],
 )
@@ -554,7 +554,7 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             cirq.X ** 2,
             -0.5,
         ),
-        # Normalised energy; hence expect -j_v - h= -0.3:
+        # Normalised energy; hence expect -j_v + h= -0.1:
         (
             "GridQubit",
             [1, 2],
@@ -562,19 +562,19 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((1, 2)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X,
-            -0.3,
-        ),
-        # Normalised energy; hence expect -j_v + h = -0.1
-        (
-            "GridQubit",
-            [1, 2],
-            np.ones((0, 2)) / 2,
-            np.ones((1, 2)) / 5,
-            np.ones((1, 2)) / 10,
-            cirq.X ** 2,
             -0.1,
         ),
-        # Normalised energy; hence expect -j_h-h = -0.6
+        # Normalised energy; hence expect -j_v - h = -0.3
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((1, 2)) / 5,
+            np.ones((1, 2)) / 10,
+            cirq.X ** 2,
+            -0.3,
+        ),
+        # Normalised energy; hence expect -j_h+h = -0.4
         (
             "GridQubit",
             [2, 1],
@@ -582,9 +582,9 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
             cirq.X,
-            -0.6,
+            -0.4,
         ),
-        # Normalised energy; hence expect (-j_h+h) = -0.4
+        # Normalised energy; hence expect (-j_h-h) = -0.6
         (
             "GridQubit",
             [2, 1],
@@ -592,21 +592,11 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
             cirq.X ** 2,
-            -0.4,
+            -0.6,
         ),
         #############################################################
         #                   4 qubit tests                           #
         #############################################################
-        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
-        (
-            "GridQubit",
-            [2, 2],
-            np.ones((2, 2)) / 2,
-            np.ones((2, 2)) / 5,
-            np.ones((2, 2)) / 10,
-            cirq.X,
-            -0.8,
-        ),
         # Normalised energy; hence expect (-2j_h-2j_v+4h)/4 = -0.6
         (
             "GridQubit",
@@ -614,8 +604,18 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 2)) / 2,
             np.ones((2, 2)) / 5,
             np.ones((2, 2)) / 10,
-            cirq.X ** 2,
+            cirq.X,
             -0.6,
+        ),
+        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.8
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((2, 2)) / 2,
+            np.ones((2, 2)) / 5,
+            np.ones((2, 2)) / 10,
+            cirq.X ** 2,
+            -0.8,
         ),
     ],
 )

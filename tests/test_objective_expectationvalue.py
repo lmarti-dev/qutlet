@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
+from timeit import default_timer
 
-from fauvqe import ExpectationValue, Ising
+from fauvqe import AbstractExpectationValue ,ExpectationValue, Ising
 
 
 @pytest.mark.parametrize(
@@ -44,3 +45,70 @@ def test_json():
     objective2 = ExpectationValue.from_json_dict(json)
     
     assert (objective == objective2)
+
+
+@pytest.mark.parametrize(
+    "n, b, field, rtol",
+    [
+        ([3,3], [1,1], "X", 1e-6),
+        ([3,3], [0,1], "X", 1e-6),
+        ([3,3], [1,0], "X", 1e-6),
+        ([3,3], [0,0], "X", 1e-6),
+        ([3,3], [1,1], "Z", 1e-6),
+        ([3,3], [0,1], "Z", 1e-6),
+        ([3,3], [1,0], "Z", 2e-6),
+        ([3,3], [0,0], "Z", 2e-6),
+    ],
+)
+def test_consistency(n, b, field, rtol):
+    #Get random state
+    wf = np.random.rand(2**(n[0]*n[1]))
+    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
+    wf = wf/np.linalg.norm(wf)
+    #Create ising object
+    ising = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+
+    EV_obj =ExpectationValue(ising)
+    AEV_obj =AbstractExpectationValue(ising)
+
+    print("n: {}\tExpectationValue: {}\tAbstractExpectationValue/n: {}\trel. difference: {}"\
+    .format(n, EV_obj.evaluate(wf), AEV_obj.evaluate(wf, atol=1e-16)/(n[0]*n[1]), \
+        abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1]))/abs(EV_obj.evaluate(wf))))
+    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1]))/abs(EV_obj.evaluate(wf))< rtol
+
+# This works when executed in main
+# but somehoe not with pytest
+"""
+def test_speed_up():
+    n = [3,3]; b = [0,0]; field = "X"; min_speed_up = 120; reps = 100
+    #Get random state
+    wf = np.random.rand(2**(n[0]*n[1]))
+    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
+    wf = wf/np.linalg.norm(wf)
+    #Create ising object
+    ising = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+
+    EV_obj =ExpectationValue(ising)
+    AEV_obj =AbstractExpectationValue(ising)
+
+    t0 = default_timer()
+    for i in range(reps):
+        tmp = EV_obj.evaluate(wf)
+    t1 = default_timer()
+    for i in range(reps):
+        tmp = AEV_obj.evaluate(wf)
+    t2 = default_timer()
+    print("ExpectationValue: {}s\tAbstractExpectationValue: {}s\nCustom speed-up: {}".format(t1-t0, t2 -t1, (t2-t1)/(t1-t0)) )
+
+    assert (t2-t1)/(t1-t0) > min_speed_up
+"""
