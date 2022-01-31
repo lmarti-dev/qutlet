@@ -3,7 +3,7 @@
 """
 import abc
 from numbers import Real
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 import cirq
@@ -104,19 +104,35 @@ class Objective(Restorable):
         numpy.ndarray
             Rotated wavefunction of the same size as the input wavefunction
         """
-        # Construct rotation circuit for each qubit
+        return self._rotate(wavefunction, ["X" for k in range(self._model.n[0] * self._model.n[1])])
+    
+    def _rotate_y(self, wavefunction: np.ndarray) -> np.ndarray:
+        return self._rotate(wavefunction, ["Y" for k in range(self._model.n[0] * self._model.n[1])])
+    
+    def _rotate(self, wavefunction: np.ndarray, bases: List[str]) -> np.ndarray:
+        assert len(wavefunction) == 2**(len(bases)), "List of bases does not fit dimension of wavefunction"
         rotation_circuit = cirq.Circuit()
+        x_basis = lambda q: cirq.H(q)
+        y_basis = lambda q: cirq.Z**(3/2).on(q) *cirq.H(q)
+        i=0
         for row in self._model.qubits:
             for qubit in row:
-                # Hadamard gate corresponds to x rotation
-                rotation_circuit.append(cirq.H(qubit))
+                if(bases[i] == "X"):
+                    rotation_circuit.append(x_basis(qubit))
+                elif(bases[i] == "Y"):
+                    rotation_circuit.append(y_basis(qubit))
+                elif(bases[i] == "Z"):
+                    pass
+                else:
+                    raise NotImplementedError()
+                i += 1
 
         return self._model.simulator.simulate(
             rotation_circuit,
             # Start off at the given wavefunction
             initial_state=wavefunction,
         ).state_vector()
-
+    
     @abc.abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()  # pragma: no cover

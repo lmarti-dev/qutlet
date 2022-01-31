@@ -234,16 +234,34 @@ class SpinModel(AbstractModel):
         raise NotImplementedError()
     
     def copy(self) -> SpinModel:
-        raise NotImplementedError()
+        self_copy = SpinModel( self.qubittype,
+                self.n,
+                np.transpose(self.j_v, (2, 0, 1)),
+                np.transpose(self.j_h, (2, 0, 1)),
+                np.transpose(self.h, (2, 0, 1)),
+                self._two_q_gates,
+                self._one_q_gates,
+                self.t )
+
+        self_copy.circuit = self.circuit.copy()
+        self_copy.circuit_param = self.circuit_param.copy()
+        self_copy.circuit_param_values = self.circuit_param_values.copy()
+        self_copy.hamiltonian = self.hamiltonian.copy()
+
+        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
+        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
+        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
+
+        return self_copy
     
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_v": self.j_v,
-                "j_h": self.j_h,
-                "h": self.h,
+                "j_v": np.transpose(self.j_v, (2, 0, 1)),
+                "j_h": np.transpose(self.j_h, (2, 0, 1)),
+                "h": np.transpose(self.h, (2, 0, 1)),
                 "two_q_gates": self._two_q_gates,
                 "one_q_gates": self._one_q_gates,
                 "t": self.t

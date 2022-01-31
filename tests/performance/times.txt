@@ -1759,3 +1759,63 @@ Test Indices
 Sequential Time: 0.9171059131622314
 Parallel Time: 1.0396039485931396
 
+===Mon, 31 Jan 2022 22:15:48 +0000===
+Test No Indices 
+
+Sequential Time: 2.448917865753174
+Parallel Time: 0.8556935787200928
+
+===Mon, 31 Jan 2022 22:15:51 +0000===
+Test Indices 
+
+Sequential Time: 1.4563875198364258
+Parallel Time: 1.2968926429748535
+
+===Mon, 31 Jan 2022 22:15:53 +0000===
+Test Indices 
+
+Sequential Time: 0.9114997386932373
+Parallel Time: 0.975804328918457
+
+===Mon, 31 Jan 2022 22:15:56 +0000===
+Test Indices 
+
+Sequential Time: 1.3960702419281006
+Parallel Time: 1.339163064956665
+
+===Mon, 31 Jan 2022 22:15:58 +0000===
+Test Indices 
+
+Sequential Time: 0.9464101791381836
+Parallel Time: 1.0263028144836426
+
+===Tue, 01 Feb 2022 00:10:17 +0000===
+Test No Indices 
+
+Sequential Time: 2.4656991958618164
+Parallel Time: 0.9250760078430176
+
+===Tue, 01 Feb 2022 00:10:20 +0000===
+Test Indices 
+
+Sequential Time: 1.357478380203247
+Parallel Time: 1.2645957469940186
+
+===Tue, 01 Feb 2022 00:10:22 +0000===
+Test Indices 
+
+Sequential Time: 0.9087636470794678
+Parallel Time: 0.9689962863922119
+
+===Tue, 01 Feb 2022 00:10:24 +0000===
+Test Indices 
+
+Sequential Time: 1.397503137588501
+Parallel Time: 1.3196423053741455
+
+===Tue, 01 Feb 2022 00:10:26 +0000===
+Test Indices 
+
+Sequential Time: 0.9277615547180176
+Parallel Time: 1.0188114643096924
+
