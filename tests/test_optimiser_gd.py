@@ -19,16 +19,17 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising, GradientDescent, ExpectationValue, UtCost
+from fauvqe import Ising, IsingXY, GradientDescent, ExpectationValue, UtCost
 
 
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    #ising_obj = IsingXY("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", {"p": 1})
     gd = GradientDescent()
     obj = ExpectationValue(ising_obj)
     gd.optimise(obj)
-
+    
 
 # This is potentially a higher effort test:
 @pytest.mark.higheffort
@@ -64,8 +65,9 @@ def test_optimise_batch():
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
         "p": 3,
-        "variables": {"x", "theta"},
-        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+        "2Qvariables": [["x", "theta"]],
+        "2QubitGate": [lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)],
+        "1QubitGate": None
     })
     ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
     
