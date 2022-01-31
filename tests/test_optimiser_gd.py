@@ -19,15 +19,25 @@ import numpy as np
 import cirq
 
 # internal imports
-from fauvqe import Ising, IsingXY, GradientDescent, ExpectationValue, UtCost
+from fauvqe import Ising, GradientDescent, ExpectationValue, UtCost
+from fauvqe import IsingXY, AbstractExpectationValue, SpinModel
 
 
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    #ising_obj = IsingXY("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    #ising_obj = SpinModel(
+    #    "GridQubit", 
+    #    [1, 2], 
+    #    [np.ones((0, 2))], 
+    #    [np.ones((1, 1))], 
+    #    [np.ones((1, 2))], 
+    #    [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)], 
+    #    [cirq.X]
+    #)
     ising_obj.set_circuit("qaoa", {"p": 1})
     gd = GradientDescent()
     obj = ExpectationValue(ising_obj)
+    #obj = AbstractExpectationValue(ising_obj)
     gd.optimise(obj)
     
 

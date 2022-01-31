@@ -229,3 +229,38 @@ class SpinModel(AbstractModel):
         self.eig_val = None
         self.eig_vec = None
         self._Ut = None
+    
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError()
+    
+    def copy(self) -> SpinModel:
+        raise NotImplementedError()
+    
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "qubittype": self.qubittype,
+                "n": self.n,
+                "j_v": self.j_v,
+                "j_h": self.j_h,
+                "h": self.h,
+                "two_q_gates": self._two_q_gates,
+                "one_q_gates": self._one_q_gates,
+                "t": self.t
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst
