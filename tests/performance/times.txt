@@ -1695,6 +1695,8 @@ Test Indices
 Sequential Time: 12.154640197753906
 Parallel Time: 4.129461050033569
 
+###Cirq-0.10.0###
+
 ===Thu, 27 Jan 2022 14:09:58 +0000===
 Test No Indices 
 
@@ -1724,4 +1726,36 @@ Test Indices
 
 Sequential Time: 12.298465251922607
 Parallel Time: 4.190085172653198
+
+
+###Cirq-0.14.0###
+===Mon, 31 Jan 2022 21:33:44 +0000===
+Test No Indices 
+
+Sequential Time: 2.449108123779297
+Parallel Time: 0.9349050521850586
+
+===Mon, 31 Jan 2022 21:33:47 +0000===
+Test Indices 
+
+Sequential Time: 1.3530309200286865
+Parallel Time: 1.2788996696472168
+
+===Mon, 31 Jan 2022 21:33:49 +0000===
+Test Indices 
+
+Sequential Time: 0.9155573844909668
+Parallel Time: 0.9857325553894043
+
+===Mon, 31 Jan 2022 21:33:51 +0000===
+Test Indices 
+
+Sequential Time: 1.4078361988067627
+Parallel Time: 1.3400077819824219
+
+===Mon, 31 Jan 2022 21:33:53 +0000===
+Test Indices 
+
+Sequential Time: 0.9171059131622314
+Parallel Time: 1.0396039485931396
 
