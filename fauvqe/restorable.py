@@ -5,8 +5,16 @@ import numpy as np
 from sys import stdout
 from typing import Dict
 
+try:
+    from PyTrilinos import Epetra
+    PyTrilinos_supported = True
+except:
+    PyTrilinos_supported = False
 
 class Restorable(abc.ABC):
+    def __init__(self):
+        self.PyTrilinos_Support =  PyTrilinos_supported
+
     @abc.abstractmethod
     def to_json_dict(self) -> Dict:
         raise NotImplementedError()  # pragma: no cover
@@ -15,14 +23,7 @@ class Restorable(abc.ABC):
     @abc.abstractmethod
     def from_json_dict(cls, params: Dict):
         raise NotImplementedError()  # pragma: no cover
-    
-    def create_range(self, max_index: int, use_progress_bar: bool = False):
-        if(use_progress_bar):
-            self._tqdm = importlib.import_module("tqdm").tqdm
-            return self._tqdm(range(max_index), file=stdout)
-        else:
-            return range(max_index)
-    
+   
     def __eq__(self, other): 
         if not isinstance(other, self.__class__):
             # don't attempt to compare against unrelated types
@@ -50,3 +51,21 @@ class Restorable(abc.ABC):
                     temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
         #print(temp_bools)
         return all(temp_bools)
+    
+    def create_range(self, max_index: int, use_progress_bar: bool = False):
+        if(use_progress_bar):
+            self._tqdm = importlib.import_module("tqdm").tqdm
+            return self._tqdm(range(max_index), file=stdout)
+        else:
+            return range(max_index)
+
+    def Epetra_CrsMatrix2Numpy(crsmatrix: Epetra.CrsMatrix):
+        N = crsmatrix.NumGlobalCols()
+        np_array = np.zeros((N,N))
+        map = crsmatrix.Map()
+        for i in map.MyGlobalElements():
+            Values, Indices = crsmatrix.ExtractGlobalRowCopy(i)
+            for j in range(len(Indices)):
+                #print("{}\t{}\t{}".format(i, Indices[j], Values[j]))
+                np_array[i, int(Indices[j])] = Values[j]
+        return np_array

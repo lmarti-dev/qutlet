@@ -52,6 +52,7 @@ class AbstractModel(Restorable):
             ######
             later intial state?
         """
+        super().__init__()
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
