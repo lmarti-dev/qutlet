@@ -202,8 +202,9 @@ def test_optimise_batch(sym, n_jobs, sim):
     ising.set_circuit("hea", {
         "parametrisation": "joint", #"layerwise",
         "p": 3,
-        "variables": {"x", "theta"},
-        "2QubitGate": lambda theta, phi: cirq.ZZPowGate(exponent = theta, global_shift = phi)
+        "2Qvariables": [["theta"]],
+        "2QubitGates": [lambda theta: cirq.ZZPowGate(exponent = theta, global_shift = 0)],
+        "1QubitGates": None
     })
     ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
     ising.set_simulator(sim)
