@@ -59,7 +59,7 @@ class Restorable(abc.ABC):
         else:
             return range(max_index)
 
-    def Epetra_CrsMatrix2Numpy(crsmatrix: Epetra.CrsMatrix):
+    def Epetra_CrsMatrix2Numpy(self, crsmatrix: Epetra.CrsMatrix):
         N = crsmatrix.NumGlobalCols()
         np_array = np.zeros((N,N))
         map = crsmatrix.Map()
@@ -69,3 +69,37 @@ class Restorable(abc.ABC):
                 #print("{}\t{}\t{}".format(i, Indices[j], Values[j]))
                 np_array[i, int(Indices[j])] = Values[j]
         return np_array
+
+    def Numpy2Epetra_CrsMatrix(self, np_matrix: np.ndarray):
+        assert(np.sum(np.iscomplex(np_matrix)) == 0), "Epetra only supports real valued matrices"
+        
+        # This implementation is probably bad
+        # Mostly not clear how to use Epetra.MPIComm 
+        Comm  = Epetra.PyComm()
+        NumGlobalRows = np_matrix.shape[0]
+        Map   = Epetra.Map(NumGlobalRows, 0, Comm)
+        non_zero_counts = np.count_nonzero(np_matrix, axis=0)
+        maxEntriesperRow = np.amax(non_zero_counts)
+        minEntriesperRow = np.amin(non_zero_counts)
+        #print("maxEntriesperRow: {}\tminEntriesperRow: {}".format(maxEntriesperRow, minEntriesperRow))
+        if maxEntriesperRow - minEntriesperRow < 2:
+            crsmatrix     = Epetra.CrsMatrix(Epetra.Copy, Map, maxEntriesperRow, True)
+        else:
+            crsmatrix     = Epetra.CrsMatrix(Epetra.Copy, Map, 0)
+        NumMyRows = Map.NumMyElements()
+
+        for ii in range(NumMyRows):
+            # `i' is the global ID of local ID `ii'
+            i = Map.GID(ii)
+
+            Indices = np.ndarray.astype(np.flatnonzero(np_matrix[i]), np.int32)
+            Values  = np_matrix[i, Indices]
+            crsmatrix.InsertGlobalValues(i, Values.astype(np.float64), Indices)
+        # transform the matrix into local representation -- no entries
+        # can be added after this point. However, existing entries can be
+        # modified.
+        ierr = crsmatrix.FillComplete()
+        # synchronize processors
+        Comm.Barrier()
+
+        return crsmatrix
