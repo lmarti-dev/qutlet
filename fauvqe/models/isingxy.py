@@ -28,8 +28,10 @@ class IsingXY(SpinModel):
         # convert all input to np array to be sure
         if(field == "X"):
             one_q_gate = [cirq.X,]
+            self.energy_fields = ["Y", "Z", "X"]
         elif(field == "Z"):
             one_q_gate = [cirq.Z,]
+            self.energy_fields = ["Y", "Z"]
         else:
             assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
         super().__init__(qubittype, 
@@ -67,7 +69,13 @@ class IsingXY(SpinModel):
         return self_copy
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError()
+        if(self.field == "X"):
+            return [super().energy( self.j_v[:,:,0], self.j_h[:,:,0], np.zeros(self.h.shape)), 
+                    super().energy( self.j_v[:,:,1], self.j_h[:,:,1], np.zeros(self.h.shape)), 
+                    super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h[:,:,0])]
+        else:
+            return [super().energy( self.j_v[:,:,0], self.j_h[:,:,0], self.h[:,:,0]), 
+                    super().energy( self.j_v[:,:,1], self.j_h[:,:,1], np.zeros(self.h.shape))]
 
     def to_json_dict(self) -> Dict:
         return {

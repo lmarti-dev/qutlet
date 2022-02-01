@@ -230,8 +230,40 @@ class SpinModel(AbstractModel):
         self.eig_vec = None
         self._Ut = None
     
-    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError()
+    def energy(self, j_v, j_h, h) -> Tuple[np.ndarray, np.ndarray]:
+        n_sites = self.n[0] * self.n[1]
+        Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
+        
+        ZZ_filter = np.zeros(
+            2 ** (n_sites), dtype=np.float64
+        )
+        
+        # 1. Sum over inner bounds
+        for i in range(self.n[0] - 1):
+            for j in range(self.n[1] - 1):
+                ZZ_filter += j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
+                ZZ_filter += j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
+
+        for i in range(self.n[0] - 1):
+            j = self.n[1] - 1
+            ZZ_filter += j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
+
+        for j in range(self.n[1] - 1):
+            i = self.n[0] - 1
+            ZZ_filter += j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
+
+        # 2. Sum periodic boundaries
+        if self.boundaries[1] == 0:
+            for i in range(self.n[0]):
+                j = self.n[1] - 1
+                ZZ_filter += j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1]]
+
+        if self.boundaries[0] == 0:
+            for j in range(self.n[1]):
+                i = self.n[0] - 1
+                ZZ_filter += j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
+        
+        return ZZ_filter, h.reshape(n_sites).dot(Z)
     
     def copy(self) -> SpinModel:
         self_copy = SpinModel( self.qubittype,

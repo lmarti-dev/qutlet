@@ -48,19 +48,19 @@ def test_json():
 
 
 @pytest.mark.parametrize(
-    "n, b, field, rtol",
+    "n, b, field",
     [
-        ([3,3], [1,1], "X", 1e-6),
-        ([3,3], [0,1], "X", 1e-6),
-        ([3,3], [1,0], "X", 1e-6),
-        ([3,3], [0,0], "X", 1e-6),
-        ([3,3], [1,1], "Z", 1e-6),
-        ([3,3], [0,1], "Z", 1e-6),
-        ([3,3], [1,0], "Z", 2e-6),
-        ([3,3], [0,0], "Z", 2e-6),
+        ([3,3], [1,1], "X"),
+        ([3,3], [0,1], "X"),
+        ([3,3], [1,0], "X"),
+        ([3,3], [0,0], "X"),
+        ([3,3], [1,1], "Z"),
+        ([3,3], [0,1], "Z"),
+        ([3,3], [1,0], "Z"),
+        ([3,3], [0,0], "Z"),
     ],
 )
-def test_consistency(n, b, field, rtol):
+def test_consistency(n, b, field):
     #Get random state
     wf = np.random.rand(2**(n[0]*n[1]))
     wf = wf.astype(np.complex64)/np.linalg.norm(wf)
@@ -79,7 +79,7 @@ def test_consistency(n, b, field, rtol):
     print("n: {}\tExpectationValue: {}\tAbstractExpectationValue/n: {}\trel. difference: {}"\
     .format(n, EV_obj.evaluate(wf), AEV_obj.evaluate(wf, atol=1e-16)/(n[0]*n[1]), \
         abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1]))/abs(EV_obj.evaluate(wf))))
-    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1]))/abs(EV_obj.evaluate(wf))< rtol
+    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1])) < 1e-6
 
 # This works when executed in main
 # but somehoe not with pytest

@@ -35,8 +35,10 @@ class Ising(SpinModel):
             h = np.zeros((n[0], n[1]))
         if(field == "X"):
             one_q_gate = [cirq.X]
+            self.energy_fields = ["Z", "X"]
         elif(field == "Z"):
             one_q_gate = [cirq.Z]
+            self.energy_fields = ["Z"]
         else:
             assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
         super().__init__(
@@ -72,73 +74,7 @@ class Ising(SpinModel):
         return self_copy
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        # maybe fuse with energy_JZZ_hZ partially somehow
-        """
-        Energy for JZZ_hX Transverse field Ising model (TFIM) or JZZ-HZ Ising model
-
-        Computes the energy-per-site of the Ising Model directly from the
-        a given wavefunction.
-        Returns:
-            energy: Float equal to the expectation value of the energy per site
-
-        Z is an array of shape (n_sites, 2**n_sites). Each row consists of the
-        2**n_sites non-zero entries in the operator that is the Pauli-Z matrix on
-        one of the qubits times the identites on the other qubits. The
-        (i*n_cols + j)th row corresponds to qubit (i,j).
-        """
-        n_sites = self.n[0] * self.n[1]
-        # assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
-
-        Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
-
-        # Create the operator corresponding to the interaction energy summed over all
-        # nearest-neighbor pairs of qubits
-        # print(self.n, n_sites) # Todo: fix this:
-        ZZ_filter = np.zeros(
-            2 ** (n_sites), dtype=np.float64
-        )  # np.zeros_like(wf, dtype=np.float64)
-
-        # Looping for soo many unnecessary ifs is bad.....
-        # NEED FOR IMPROVEMENT - > avoid blank python for loops!!
-        # 1. Sum over inner bounds
-        # 2. Add possible periodic boundary terms
-        # Do this to avoid if's with the loop
-        # Previously:
-        # for i in range(self.n[0]):
-        #    for j in range(self.n[1]):
-        #        if i < self.n[0]-self.boundaries[0]:
-        #            ZZ_filter += self.j_v[i,j]*Z[i*self.n[1] + j]*Z[np.mod(i+1, self.n[0])*self.n[1] + j]
-        # ZZ_filter += self.j_v[i,j]*Z[i*self.n[1] + j]*Z[(i+1)*self.n[1] + j]
-        #        if j < self.n[1]-self.boundaries[1]:
-        #            ZZ_filter += self.j_h[i,j]*Z[i*self.n[1] + j]*Z[i*self.n[1] + np.mod(j+1, self.n[1])]
-        # ZZ_filter += self.j_h[i,j]*Z[i*self.n[1] + j]*Z[i*self.n[1] + (j+1)]
-
-        # 1. Sum over inner bounds
-        for i in range(self.n[0] - 1):
-            for j in range(self.n[1] - 1):
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
-
-        for i in range(self.n[0] - 1):
-            j = self.n[1] - 1
-            ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
-
-        for j in range(self.n[1] - 1):
-            i = self.n[0] - 1
-            ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
-
-        # 2. Sum periodic boundaries
-        if self.boundaries[1] == 0:
-            for i in range(self.n[0]):
-                j = self.n[1] - 1
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1]]
-
-        if self.boundaries[0] == 0:
-            for j in range(self.n[1]):
-                i = self.n[0] - 1
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
-
-        return ZZ_filter, self.h.reshape(n_sites).dot(Z)
+        return super().energy( self.j_v, self.j_h, self.h)
 
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"

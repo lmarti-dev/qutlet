@@ -44,6 +44,7 @@ class Heisenberg(SpinModel):
                  [cirq.X, cirq.Y, cirq.Z],
                  t
         )
+        self.energy_fields = ["X", "Y", "Z"]
     
     def copy(self) -> Heisenberg:
         print(self.j_v)
@@ -72,7 +73,9 @@ class Heisenberg(SpinModel):
         return self_copy
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError()
+        return [super().energy( self.j_v[:,:,0], self.j_h[:,:,0], self.h[:,:,0]), 
+                super().energy( self.j_v[:,:,1], self.j_h[:,:,1], self.h[:,:,1]), 
+                super().energy( self.j_v[:,:,2], self.j_h[:,:,2], self.h[:,:,2])]
 
     def to_json_dict(self) -> Dict:
         return {
