@@ -112,15 +112,16 @@ class Objective(Restorable):
     def _rotate(self, wavefunction: np.ndarray, bases: List[str]) -> np.ndarray:
         assert len(wavefunction) == 2**(len(bases)), "List of bases does not fit dimension of wavefunction"
         rotation_circuit = cirq.Circuit()
-        x_basis = lambda q: cirq.H(q)
-        y_basis = lambda q: cirq.Z**(3/2).on(q) *cirq.H(q)
+        hadamard = lambda q: cirq.H(q)
+        s_dagger = lambda q: cirq.Z(q)**(3/2)
         i=0
         for row in self._model.qubits:
             for qubit in row:
                 if(bases[i] == "X"):
-                    rotation_circuit.append(x_basis(qubit))
+                    rotation_circuit.append(hadamard(qubit))
                 elif(bases[i] == "Y"):
-                    rotation_circuit.append(y_basis(qubit))
+                    rotation_circuit.append(s_dagger(qubit))
+                    rotation_circuit.append(hadamard(qubit))
                 elif(bases[i] == "Z"):
                     pass
                 else:

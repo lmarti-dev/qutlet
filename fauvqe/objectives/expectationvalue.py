@@ -27,15 +27,35 @@ class ExpectationValue(AbstractExpectationValue):
         Returns
         ---------
         str:
-            <ExpectationValue field=self.field>
+            <ExpectationValue Energy fields=self.__energy_fields>
     """
 
     def __init__(self, model: AbstractModel):
         super().__init__(model)
-        self.__field: Literal["Z", "X"] = model.field
+        self.__energy_fields: List[Literal["X", "Y", "Z"]] = model.energy_fields
         self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
     
+    def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
+        assert len(self.__energy_fields) == len(self.__energies), "Length of Pauli types and energy masks do not match"
+        i=0
+        res=0
+        for field in self.__energy_fields:
+            if(field == "X"):
+                rot_wf = self._rotate_x(wavefunction)
+            elif(field == "Y"):
+                rot_wf = self._rotate_y(wavefunction)
+            elif(field == "Z"):
+                rot_wf = wavefunction
+            else:
+                raise NotImplementedError()
+            
+            res += np.sum( np.abs(rot_wf) ** 2 * (-self.__energies[i]) ) / self.__n_qubits
+            i+=1
+        return res
+    
+    #Old Version
+    """
     def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
         if self.__field == "X":
             wf_x = self._rotate_x(wavefunction)
@@ -53,6 +73,7 @@ class ExpectationValue(AbstractExpectationValue):
             np.sum(np.abs(wavefunction) ** 2 * (-self.__energies[0] - self.__energies[1]))
             / self.__n_qubits
         )
+    """
 
     def to_json_dict(self) -> Dict:
         return {
@@ -66,7 +87,7 @@ class ExpectationValue(AbstractExpectationValue):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<ExpectationValue field={}>".format(self.__field)
+        return "<ExpectationValue Energy field={}>".format(self.__energy_fields)
 
     def __eq__(self, other): 
         '''Temporary solution'''

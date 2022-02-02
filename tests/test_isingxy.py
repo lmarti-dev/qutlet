@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import IsingXY
+from fauvqe import IsingXY, ExpectationValue
 from tests.test_isings import IsingTester
 
 def test__eq__():
@@ -422,14 +422,16 @@ def test_assert_field(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field):
         (
             "GridQubit",
             [2, 2],
-            np.ones((1, 2)) / 2,
-            np.ones((2, 2)) / 5,
-            np.ones((1, 2)) / 2,
-            np.ones((2, 2)) / 7,
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
             np.ones((2, 2))
         )]
 )
-def test_assert_energy(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h):
+def test_energy(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h):
     model = IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h)
-    with pytest.raises(NotImplementedError):
-        model.energy()
+    obj = ExpectationValue(model)
+    ini = np.zeros(16).astype(np.complex64)
+    ini[0] = 1
+    assert abs( obj.evaluate(ini) + 2) < 1e-13

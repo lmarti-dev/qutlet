@@ -230,7 +230,7 @@ class SpinModel(AbstractModel):
         self.eig_vec = None
         self._Ut = None
     
-    def energy(self, j_v, j_h, h) -> Tuple[np.ndarray, np.ndarray]:
+    def energy_2q(self, j_v, j_h) -> np.ndarray:
         n_sites = self.n[0] * self.n[1]
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
         
@@ -263,7 +263,16 @@ class SpinModel(AbstractModel):
                 i = self.n[0] - 1
                 ZZ_filter += j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
         
-        return ZZ_filter, h.reshape(n_sites).dot(Z)
+        return ZZ_filter
+    
+    def energy_1q(self, h) -> np.ndarray:
+        n_sites = self.n[0] * self.n[1]
+        Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
+        
+        return h.reshape(n_sites).dot(Z)
+    
+    def energy(self, j_v, j_h, h) -> np.ndarray:
+        return self.energy_1q(h) + self.energy_2q(j_v, j_h)
     
     def copy(self) -> SpinModel:
         self_copy = SpinModel( self.qubittype,

@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import Heisenberg
+from fauvqe import Heisenberg, ExpectationValue
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]
@@ -175,18 +175,20 @@ def test_glues_circuit(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h
         (
             "GridQubit",
             [2, 2],
-            np.ones((1, 2)) / 2,
-            np.ones((2, 2)) / 5,
-            np.ones((1, 2)) / 2,
-            np.ones((2, 2)) / 5,
-            np.ones((1, 2)) / 2,
-            np.ones((2, 2)) / 7,
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
             np.ones((2, 2)),
             np.ones((2, 2)),
             np.ones((2, 2))
         )]
 )
-def test_assert_energy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z):
+def test_energy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z):
     model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z)
-    with pytest.raises(NotImplementedError):
-        model.energy()
+    obj = ExpectationValue(model)
+    ini = np.zeros(16).astype(np.complex64)
+    ini[0] = 1
+    assert abs(obj.evaluate(ini) + 3) < 1e-13

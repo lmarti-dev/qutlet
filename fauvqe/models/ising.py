@@ -74,7 +74,11 @@ class Ising(SpinModel):
         return self_copy
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        return super().energy( self.j_v, self.j_h, self.h)
+        if(self.field == "X"):
+            return [super().energy( self.j_v, self.j_h, np.zeros(self.h.shape)), 
+                    super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h)]
+        else:
+            return [super().energy( self.j_v, self.j_h, self.h)]
 
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from timeit import default_timer
 
-from fauvqe import AbstractExpectationValue ,ExpectationValue, Ising
+from fauvqe import AbstractExpectationValue, ExpectationValue, Ising, IsingXY, Heisenberg
 
 
 @pytest.mark.parametrize(
@@ -46,6 +46,20 @@ def test_json():
     
     assert (objective == objective2)
 
+def consistency_check(model):
+    #Get random state
+    wf = np.random.rand(2**(model.n[0]*model.n[1]))
+    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
+    wf = wf/np.linalg.norm(wf)
+    #Create ising object
+    
+    EV_obj =ExpectationValue(model)
+    AEV_obj =AbstractExpectationValue(model)
+
+    print("n: {}\tExpectationValue: {}\tAbstractExpectationValue/n: {}\trel. difference: {}"\
+    .format(model.n, EV_obj.evaluate(wf), AEV_obj.evaluate(wf, atol=1e-16)/(model.n[0]*model.n[1]), \
+        abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1]))/abs(EV_obj.evaluate(wf))))
+    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1])) < 1e-6
 
 @pytest.mark.parametrize(
     "n, b, field",
@@ -60,26 +74,59 @@ def test_json():
         ([3,3], [0,0], "Z"),
     ],
 )
-def test_consistency(n, b, field):
-    #Get random state
-    wf = np.random.rand(2**(n[0]*n[1]))
-    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
-    wf = wf/np.linalg.norm(wf)
+def test_consistency_Ising(n, b, field):
     #Create ising object
-    ising = Ising(  "GridQubit", 
+    model = Ising(  "GridQubit", 
                     n, 
                     2*(np.random.rand(n[0]-b[0],n[1])-0.5),
                     2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
                     2*(np.random.rand(*n)-0.5),
                     field)
 
-    EV_obj =ExpectationValue(ising)
-    AEV_obj =AbstractExpectationValue(ising)
+    consistency_check(model)
 
-    print("n: {}\tExpectationValue: {}\tAbstractExpectationValue/n: {}\trel. difference: {}"\
-    .format(n, EV_obj.evaluate(wf), AEV_obj.evaluate(wf, atol=1e-16)/(n[0]*n[1]), \
-        abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1]))/abs(EV_obj.evaluate(wf))))
-    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(n[0]*n[1])) < 1e-6
+@pytest.mark.parametrize(
+    "n, b, field",
+    [
+        ([3,3], [1,1], "X"),
+        ([3,3], [1,1], "Z"),
+    ],
+)
+def test_consistency_IsingXY(n, b, field):
+    #Create IsingXY object
+    model = IsingXY(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+    
+    consistency_check(model)
+
+@pytest.mark.parametrize(
+    "n, b",
+    [
+        ([3,3], [1,1]),
+    ],
+)
+def test_consistency_Heisenberg(n, b):
+    #Create Heisenberg object
+    model = Heisenberg(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    2*(np.random.rand(*n)-0.5),
+                    2*(np.random.rand(*n)-0.5),
+                )
+    
+    consistency_check(model)
 
 # This works when executed in main
 # but somehoe not with pytest
