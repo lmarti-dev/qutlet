@@ -128,6 +128,33 @@ def test_consistency_Heisenberg(n, b):
     
     consistency_check(model)
 
+def test_notimplemented_evaluate():
+    n = [2, 2]
+    b = [1, 1]
+    model = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5))
+    model.energy_fields = ["blub", "blub"]
+    obj = ExpectationValue(model)
+    with pytest.raises(NotImplementedError):
+        obj.evaluate(np.random.rand(16))
+
+def test_notimplemented_rotate():
+    n = [2, 2]
+    b = [1, 1]
+    model = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5))
+    obj = ExpectationValue(model)
+    with pytest.raises(NotImplementedError):
+        bases = ["blub" for k in range(4)]
+        bases[0] = "Z"
+        obj._rotate(np.random.rand(16), bases)
+
 # This works when executed in main
 # but somehoe not with pytest
 """
