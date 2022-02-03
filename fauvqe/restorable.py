@@ -1,13 +1,19 @@
 from __future__ import annotations
 import abc
+from cirq import PauliSum as cirq_PauliSum
+from cirq import PauliString as cirq_PauliString
+from cirq import X as cirq_X
+from cirq import Z as cirq_Z
 import importlib
 import numpy as np
+from PyTrilinos import Epetra; PyTrilinos_supported = True
 from sys import stdout
+from scipy.sparse import csr_matrix as scipy_csr_matrix
 from typing import Dict
 
 #try:
-from PyTrilinos import Epetra
-PyTrilinos_supported = True
+#    from PyTrilinos import Epetra
+#    PyTrilinos_supported = True
 #except:
 #    PyTrilinos_supported = False
 
@@ -103,3 +109,80 @@ class Restorable(abc.ABC):
         Comm.Barrier()
 
         return crsmatrix
+
+    def cirq_paulisum2scipy_crsmatrix(self, paulisum: cirq_PauliSum, dtype=np.complex128 ):
+        #Ensure that qubit ordering is the same 
+        _n=len(paulisum.qubits)
+        _N = 2**_n
+        _qubit_map = {paulisum.qubits[k]: int(k) for k in range(_n)}
+        
+        x_sparse = scipy_csr_matrix((_N, _N))
+        ham_x = cirq_PauliSum()
+        __has_x = False
+        
+        zz_sparse = scipy_csr_matrix((_N, _N))
+        ham_z = cirq_PauliSum()
+        __has_z = False
+
+        #First seperate PauliSum in X and Z part and raise error if not of ZZ-X-Z form
+        for vec, coeff in paulisum._linear_dict.items():
+            if type(*set(dict(vec).values())) == type(cirq_X):
+                ham_x += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
+                __has_x = True
+            elif type(*set(dict(vec).values())) == type(cirq_Z):
+                ham_z += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
+                __has_z = True
+            else:
+                assert False, "Hamiltonian not of ZZ-Z-X form"
+        
+        if __has_x:
+            x_sparse = self._x2scipy_crsmatrix(ham_x, _qubit_map, dtype)
+        if __has_z:
+            zz_sparse = self._zz2scipy_crsmatrix(ham_z, _qubit_map, dtype)
+        
+        return zz_sparse + x_sparse
+
+    def _zz2scipy_crsmatrix(self, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+        # Note that for ZZ only need to calc half as other half is symmetric
+        # This way this method can be improved...
+        # This method seems to be the bottle neck
+        # Solution: calculate exp for bitstring direcctly from cirq.PauliSum
+        #       need function that Converts to numpy function or so
+        _N = 2**len(paulisum.qubits)
+        data = np.zeros(_N, dtype=np.complex64)
+        _wf = np.zeros(_N, dtype=np.complex64)
+
+        for i in range(_N):
+            _wf[i] = 1;
+            _wf[i-1] = 0
+            data[i] = paulisum.expectation_from_state_vector(_wf.view(), _qubit_map)/2
+        
+        non_zeros = np.nonzero(data)
+        return scipy_csr_matrix((data[non_zeros].astype(dtype), (*non_zeros, *non_zeros)), shape=(_N, _N))
+
+    def _x2scipy_crsmatrix(self, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+        _n = len(paulisum.qubits)
+        _N = 2**_n
+
+        # Need to get _n dim coefficent array according to the qubit map 
+        # tp be copied _N times
+        _coeffs = np.empty(_n, dtype=dtype) 
+        for vec, coeff in paulisum._linear_dict.items():
+            tmp= list(dict(vec).keys())[0]
+            if np.iscomplexobj(dtype(0)):
+                _coeffs[_qubit_map[tmp]] = dtype(coeff) 
+            else:
+                _coeffs[_qubit_map[tmp]] = dtype(coeff.real) 
+        
+        # Only need to calc column position 
+        # express i binary and the need to exchage on the jth position 0 <-> 1
+        col = np.empty(_N*_n, dtype=int) 
+        for i in range(_N):
+            for j in range(_n):
+                _binary = list(np.binary_repr(i, width=_n))
+                _binary[j] = str((int(_binary[j])+1)%2)
+                col[j+i*_n]= int(''.join(_binary),2)
+
+        #np.repeat([1,2],2) ->[1,1,2,2]
+        #np.tile([1,2],2)   ->[1,2,1,2]
+        return scipy_csr_matrix((np.tile(_coeffs, _N), (np.repeat(np.arange(_N), _n).astype(int), col)), shape=(_N, _N))
