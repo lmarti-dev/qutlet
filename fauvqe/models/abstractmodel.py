@@ -316,13 +316,13 @@ class AbstractModel(Restorable):
         #General function to glue arbitrary GridQubit circuits 
         # given that they periodic boundary gates
         assert(repetitions > 1),\
-            "AbstractModelError in glue_circuit: repetitions need to > 1, received {}".format(repetitions)
+            "AbstractModelError in glue_circuit: repetitions need to be > 1, received {}".format(repetitions)
         if self.qubittype != "GridQubit":
             raise NotImplementedError()
 
         ###########################################################################
         #1.Find 2-qubit gates along the given axis
-        # Through error if there are none
+        # Throw error if there are none
         # Use 2D list, [Moment][Operation]
 
         glueing_gates = [[] for _ in range(np.size(self.circuit.moments))]
