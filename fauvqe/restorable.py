@@ -147,7 +147,8 @@ class Restorable(abc.ABC):
         # This way this method can be improved...
         # This method seems to be the bottle neck
         # Solution: calculate exp for bitstring direcctly from cirq.PauliSum
-        #       need function that Converts to numpy function or so
+        #       need function that Converts to numpy binary function
+        #       input number 0 - _N-1 -> conversion to binary -> return energy
         _N = 2**len(paulisum.qubits)
         data = np.zeros(_N, dtype=np.complex64)
         _wf = np.zeros(_N, dtype=np.complex64)
@@ -173,15 +174,24 @@ class Restorable(abc.ABC):
                 _coeffs[_qubit_map[tmp]] = dtype(coeff) 
             else:
                 _coeffs[_qubit_map[tmp]] = dtype(coeff.real) 
-        
+        #print(_coeffs)
+
         # Only need to calc column position 
         # express i binary and the need to exchage on the jth position 0 <-> 1
-        col = np.empty(_N*_n, dtype=int) 
-        for i in range(_N):
-            for j in range(_n):
-                _binary = list(np.binary_repr(i, width=_n))
-                _binary[j] = str((int(_binary[j])+1)%2)
-                col[j+i*_n]= int(''.join(_binary),2)
+        # Make this parallel via joblib
+        #col = np.empty(_N*_n, dtype=int) 
+        #for i in range(_N):
+        #    for j in range(_n):
+                # maybe better to use np.bitwise (i, 2**j)
+                #_binary = list(np.binary_repr(i, width=_n))
+                #_binary[j] = str((int(_binary[j])+1)%2)
+                #col[j+i*_n]= int(''.join(_binary),2)
+                
+                # This is approx 30 % faster:
+        #        col[j+i*_n] = np.bitwise_xor(i, 2**(_n-j-1))
+        
+        # This is incomparably faster (10^3ish):
+        col = np.bitwise_xor(np.repeat(np.arange(_N), _n), np.tile(2**(_n-np.arange(_n)-1), _N), dtype=int) 
 
         #np.repeat([1,2],2) ->[1,1,2,2]
         #np.tile([1,2],2)   ->[1,2,1,2]
