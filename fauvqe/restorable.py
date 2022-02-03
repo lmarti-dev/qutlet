@@ -5,11 +5,11 @@ import numpy as np
 from sys import stdout
 from typing import Dict
 
-try:
-    from PyTrilinos import Epetra
-    PyTrilinos_supported = True
-except:
-    PyTrilinos_supported = False
+#try:
+from PyTrilinos import Epetra
+PyTrilinos_supported = True
+#except:
+#    PyTrilinos_supported = False
 
 class Restorable(abc.ABC):
     def __init__(self):
@@ -59,7 +59,7 @@ class Restorable(abc.ABC):
         else:
             return range(max_index)
 
-    def Epetra_CrsMatrix2Numpy(self, crsmatrix: Epetra.CrsMatrix):
+    def epetra_crsmatrix2numpy(self, crsmatrix: Epetra.CrsMatrix):
         N = crsmatrix.NumGlobalCols()
         np_array = np.zeros((N,N))
         map = crsmatrix.Map()
@@ -70,7 +70,7 @@ class Restorable(abc.ABC):
                 np_array[i, int(Indices[j])] = Values[j]
         return np_array
 
-    def Numpy2Epetra_CrsMatrix(self, np_matrix: np.ndarray):
+    def numpy2epetra_crsmatrix(self, np_matrix: np.ndarray):
         assert(np.sum(np.iscomplex(np_matrix)) == 0), "Epetra only supports real valued matrices"
         
         # This implementation is probably bad
