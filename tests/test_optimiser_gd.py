@@ -21,13 +21,17 @@ import cirq
 # internal imports
 from fauvqe import Ising, GradientDescent, ExpectationValue, UtCost
 
-
+#This test misses a real assert
+@pytest.mark.higheffort
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising_obj.set_circuit("qaoa", {"p": 1})
     gd = GradientDescent()
     obj = ExpectationValue(ising_obj)
     gd.optimise(obj)
+
+    #Add pro forma assert:
+    assert True
 
 
 # This is potentially a higher effort test:
