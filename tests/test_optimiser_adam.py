@@ -220,7 +220,7 @@ def test_optimise_batch(sym, n_jobs, sim):
         param_resolver=ising.get_param_resolver(ising.circuit_param_values), initial_state=initials[0]
     )
     trotter_cost = ( objective.evaluate(np.array([wavefunction]), options={'indices': [0]}) )
-    print(trotter_cost)
+    #print(trotter_cost)
     adam = ADAM({
         'break_param': 100,
         'batch_size': 1, 
@@ -229,14 +229,14 @@ def test_optimise_batch(sym, n_jobs, sim):
         'symmetric_gradient': sym, 
         'use_progress_bar': True
     })
-    print(objective.model.circuit_param_values.view())
+    #print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective, n_jobs=n_jobs)
-    print(res.get_latest_step().params)
+    #print(res.get_latest_step().params)
     wavefunction = objective.simulate(
         param_resolver=ising.get_param_resolver(res.get_latest_step().params), initial_state=initials[0]
     )
     var_cost = (objective.evaluate(np.array([wavefunction]), options={'indices': [0]}))
-    print(var_cost)
+    #print(var_cost)
     assert var_cost/10 < trotter_cost
 
 @pytest.mark.skipif(cpu_count() < 4, reason="No speed-up expected for single core machine")
@@ -290,6 +290,56 @@ def test_times_batch(sym, sim):
     textfile = open("./tests/performance/times.txt", "a")
     textfile.write('==='+ str(strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())) +'===\n')
     textfile.write('Test Indices \n\n')
+    textfile.write('Sequential Time: ' + str(time_seq) +'\n')
+    textfile.write('Parallel Time: ' + str(time_par) +'\n\n')
+    textfile.close()
+    
+    assert time_par < time_seq, 'No speedup through parallelisation'
+
+@pytest.mark.skipif(cpu_count() < 4, reason="No speed-up expected for single core machine")
+@pytest.mark.parametrize(
+    "sym, sim",
+    [
+        (True, 'qsim'),
+        (False, 'qsim'),
+        (True, 'cirq'),
+        (False, 'cirq')
+    ],
+)
+@pytest.mark.higheffort
+def test_times_adam_ExpVal(sym, sim):
+    ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X")
+    ising.set_circuit("hea", {"p": 3})
+    ising.set_circuit_param_values(-(2/np.pi)/3 *np.ones(np.size(ising.circuit_param)))
+    print("np.size(ising.circuit_param): {}".format(np.size(ising.circuit_param)))
+    ising.set_simulator(sim)
+    objective = ExpectationValue(ising)
+    adam = ADAM({
+        'break_param': 100,
+        'eps': 1e-5, 
+        'eta': 1e-2,
+        'symmetric_gradient': sym, 
+        'use_progress_bar': False
+    })
+    
+
+    start = time()
+    res = adam.optimise(objective, n_jobs=1)
+    end = time()
+    time_seq = end - start
+    
+    #reset
+    ising.set_circuit_param_values(-(2/np.pi)/3 *np.ones(np.size(ising.circuit_param)))
+    objective = ExpectationValue(ising)
+    start = time()
+    res = adam.optimise(objective, n_jobs=-1)
+    end = time()
+    
+    time_par = end - start
+    
+    textfile = open("./tests/performance/times.txt", "a")
+    textfile.write('==='+ str(strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())) +'===\n')
+    textfile.write('Test Adam + ExpectationValue \n\n')
     textfile.write('Sequential Time: ' + str(time_seq) +'\n')
     textfile.write('Parallel Time: ' + str(time_par) +'\n\n')
     textfile.close()
