@@ -17,9 +17,9 @@ class SpinModelFC(AbstractModel):
     2D SpinModel class for fully connected interaction graphs inherits AbstractModel
     is mother of different quantum circuit methods
     """
-    #basics  = importlib.import_module("fauvqe.models.circuits.basics")
-    #hea  = importlib.import_module("fauvqe.models.circuits.hea")
-    #qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
+    basics  = importlib.import_module("fauvqe.models.circuits.basics")
+    hea  = importlib.import_module("fauvqe.models.circuits.hea")
+    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
     def __init__(self, 
                  qubittype, 
@@ -45,7 +45,6 @@ class SpinModelFC(AbstractModel):
         self._two_q_gates = two_q_gates
         self._one_q_gates = one_q_gates
         self._set_jh(j, h, two_q_gates, one_q_gates)
-        #TODO
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
@@ -92,10 +91,13 @@ class SpinModelFC(AbstractModel):
         for g in range(len(self._two_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    for k in range(self.n[0]):
+                    #k==i, l>j
+                    for l in range(j+1, self.n[1], 1):
+                        self.hamiltonian -= j[i,j,i,l,g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[i][l])
+                    #k>i
+                    for k in range(i+1, self.n[0], 1):
                         for l in range(self.n[1]):
-                            if ( (i<k) or (i==k and j<=l) ):
-                                self.hamiltonian -= j[i,j,k,l,g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
+                            self.hamiltonian -= j[i,j,k,l,g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
                     
         # 2. Add external field
         for g in range(len(self._one_q_gates)):
@@ -108,6 +110,7 @@ class SpinModelFC(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
+                                "fully_connected" : True,
                                 "1Qvariables": [['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in range(len(self._one_q_gates))],
                                 "2Qvariables": [['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in range(len(self._two_q_gates))],
                                 "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._one_q_gates))],
@@ -124,7 +127,9 @@ class SpinModelFC(AbstractModel):
             self.qaoa.options = {"append": False,
                                 "p": 1,
                                 "H_layer": True,
-                                "i0": 0}
+                                "i0": 0,
+                                "fully_connected" : True,
+                                }
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
             self.qaoa.set_circuit(self)
@@ -154,7 +159,11 @@ class SpinModelFC(AbstractModel):
         
         for i in range(self.n[0]):
             for j in range(self.n[1]):
-                for k in range(self.n[0]):
+                #k==i, l>j
+                for l in range(j+1, self.n[1], 1):
+                    ZZ_filter += j[i, j, i, l] * Z[i * self.n[1] + j] * Z[i * self.n[1] + l]
+                #k>i
+                for k in range(i+1, self.n[0], 1):
                     for l in range(self.n[1]):
                         if ( (i<k) or (i==k and j<=l) ):
                             ZZ_filter += j[i, j, k, l] * Z[i * self.n[1] + j] * Z[k * self.n[1] + l]

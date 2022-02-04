@@ -144,24 +144,31 @@ def _UC_layer(self, gamma):
             #elif self.field =="X":
             #    yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
     """
-    for k in range(2):
-        if self.n[0] > 1:
-            for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
-                #Bulk terms
-                for i in np.arange(int(k), self.n[0]-1, 2, dtype=int):
-                    yield cirq.ZZ(self.qubits[i][j], self.qubits[i+1][j]) ** (gamma * self.j_v[i, j][0])
-                #Boundary terms
-                if self.boundaries[0] == 0 and self.n[0]%2 == int(1-k):
-                    yield cirq.ZZ(self.qubits[self.n[0]-1][j], self.qubits[0][j])** (gamma * self.j_v[self.n[0]-1, j][0])
+    if(self.qaoa.options["fully_connected"]):
+        for pstr in self.hamiltonian._linear_dict:
+            temp = 1
+            for pauli in pstr:
+                temp = temp * pauli[1](pauli[0])
+            yield temp**np.real(gamma * hamiltonian._linear_dict[pstr])
+    else:
+        for k in range(2):
+            if self.n[0] > 1:
+                for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
+                    #Bulk terms
+                    for i in np.arange(int(k), self.n[0]-1, 2, dtype=int):
+                        yield cirq.ZZ(self.qubits[i][j], self.qubits[i+1][j]) ** (gamma * self.j_v[i, j][0])
+                    #Boundary terms
+                    if self.boundaries[0] == 0 and self.n[0]%2 == int(1-k):
+                        yield cirq.ZZ(self.qubits[self.n[0]-1][j], self.qubits[0][j])** (gamma * self.j_v[self.n[0]-1, j][0])
 
-        if self.n[1] > 1:
-            for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
-                #Bulk terms
-                for j in np.arange(k, self.n[1]-1, 2, dtype=int):
-                    yield  cirq.ZZ(self.qubits[i][j], self.qubits[i][j+1])** (gamma * self.j_h[i, j][0])
-                #Boundary terms
-                if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
-                    yield cirq.ZZ(self.qubits[i][self.n[1]-1], self.qubits[i][0])** (gamma * self.j_h[i, self.n[1]-1][0])
+            if self.n[1] > 1:
+                for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
+                    #Bulk terms
+                    for j in np.arange(k, self.n[1]-1, 2, dtype=int):
+                        yield  cirq.ZZ(self.qubits[i][j], self.qubits[i][j+1])** (gamma * self.j_h[i, j][0])
+                    #Boundary terms
+                    if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
+                        yield cirq.ZZ(self.qubits[i][self.n[1]-1], self.qubits[i][0])** (gamma * self.j_h[i, self.n[1]-1][0])
 
 def _Z_layer(self, gamma):
     for i in range(self.n[0]):

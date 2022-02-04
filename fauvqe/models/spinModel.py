@@ -50,7 +50,7 @@ class SpinModel(AbstractModel):
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
-
+        
     def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
         # convert input to numpy array to be sure
         j_v = np.array(j_v)
@@ -180,6 +180,7 @@ class SpinModel(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
+                                "fully_connected" : False,
                                 "1Qvariables": [['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in range(len(self._one_q_gates))],
                                 "2Qvariables": [['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in range(len(self._two_q_gates))],
                                 "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._one_q_gates))],
