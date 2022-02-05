@@ -1,3 +1,5 @@
+from fauvqe.models.cooling1a import Cooling1A
+from fauvqe.models.coolingna import CoolingNA
 from fauvqe.models.ising import Ising
 from fauvqe.models.isingxy import IsingXY
 from fauvqe.models.heisenberg import Heisenberg

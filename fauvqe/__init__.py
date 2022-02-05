@@ -12,6 +12,8 @@ from fauvqe import models, objectives, optimisers
 # Flattened sub-modules
 from fauvqe.models import (
     AbstractModel,
+    Cooling1A,
+    CoolingNA,
     Ising,
     IsingXY,
     Heisenberg,
