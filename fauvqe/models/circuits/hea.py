@@ -316,8 +316,7 @@ def set_symbols(self):
                 else:
                     for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
                         temp2Q.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
-                    print(temp2Q)
-                    assert False
+                    #print(temp2Q)
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )

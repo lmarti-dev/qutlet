@@ -68,9 +68,9 @@ class Cooling1A(SpinModelFC):
             np.array(n),
             j,
             h,
-            two_q_gates: List[cirq.PauliSum],
-            one_q_gates: List[cirq.PauliSum],
-            t: Real = 0
+            two_q_gates,
+            one_q_gates,
+            t
             )
     
     def _combine_jh(m_sys, m_anc, j_int):

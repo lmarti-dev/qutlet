@@ -197,6 +197,7 @@ class SpinModel(AbstractModel):
             self.qaoa.options = {"append": False,
                                 "p": 1,
                                 "H_layer": True,
+                                "fully_connected" : False,
                                 "i0": 0}
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
