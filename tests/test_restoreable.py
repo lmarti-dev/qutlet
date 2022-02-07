@@ -2,6 +2,7 @@ import pytest
 
 from PyTrilinos import Epetra
 import numpy as np
+import cirq
 
 from fauvqe.restorable import Restorable
 
@@ -106,6 +107,66 @@ def test_numpy2epetra_crsmatrix(np_matrix):
 
     np.testing.assert_allclose(np_matrix2, np_matrix, rtol=1e-14, atol=0)
 
+@pytest.mark.parametrize(
+    "paulisum",
+    [
+        (
+            cirq.PauliSum.from_pauli_strings(-cirq.Z(cirq.LineQubit(0))*cirq.Z(cirq.LineQubit(1)))
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(2)])
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([-(i+1)*cirq.Z(cirq.LineQubit(i)) for i in range(5)])
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(2)])
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(5)])
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([-np.pi*cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(6)]) +
+            cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i)) for i in range(6)]) + 
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i))/(i+1) for i in range(6)])
+        ),
+    ]
+)
+def test_cirq_paulisum2scipy_crsmatrix(paulisum):
+    restoreable_obj = DummyRestorable()
+    scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
+
+    print("Paulisum: {}".format(paulisum))
+
+    np.testing.assert_allclose(paulisum.matrix(), scipy_crsmatrix.toarray(), rtol=1e-14, atol=0)
+    
+    #print(paulisum.matrix().diagonal())
+    #assert False
+
+@pytest.mark.higheffort
+@pytest.mark.parametrize(
+    "paulisum",
+    [
+        (
+             cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(11)]) +
+                 cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i)) for i in range(11)]) +
+                 cirq.PauliSum.from_pauli_strings([-(i+1)*cirq.X(cirq.LineQubit(i)) for i in range(11)])
+        ),
+    ]
+)
+def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum):
+    restoreable_obj = DummyRestorable()
+    scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=np.float64)
+
+    print("Paulisum: {}".format(paulisum))
+
+    np.testing.assert_allclose(paulisum.matrix(), scipy_crsmatrix.toarray(), rtol=1e-14, atol=0)
+    
+#############################################################
+#                                                           #
+#                    Assert tests                           #
+#                                                           #
+#############################################################
 def test_assert_numpy2epetra_crsmatrix():
     restoreable_obj = DummyRestorable()
 
@@ -115,3 +176,11 @@ def test_assert_numpy2epetra_crsmatrix():
     with pytest.raises(AssertionError):
         tmp = restoreable_obj.epetra_crsmatrix2numpy(
                     restoreable_obj.numpy2epetra_crsmatrix(np_matrix))
+
+def test_cirq_paulisum2scipy_crsmatrix_assert():
+    restoreable_obj = DummyRestorable()
+
+    paulisum = cirq.PauliSum.from_pauli_strings([-cirq.Y(cirq.LineQubit(i)) for i in range(2)])
+
+    with pytest.raises(AssertionError):
+        scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum)

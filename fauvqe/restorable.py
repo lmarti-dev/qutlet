@@ -116,7 +116,8 @@ class Restorable(abc.ABC):
         _n=len(paulisum.qubits)
         _N = 2**_n
         _qubit_map = {paulisum.qubits[k]: int(k) for k in range(_n)}
-        
+        #print(_qubit_map)
+
         x_sparse = scipy_csr_matrix((_N, _N))
         ham_x = cirq_PauliSum()
         __has_x = False
@@ -137,16 +138,14 @@ class Restorable(abc.ABC):
                 assert False, "Hamiltonian not of ZZ-Z-X form"
         
         if __has_x:
-            x_sparse = self._x2scipy_crsmatrix(ham_x, _qubit_map, dtype)
+            x_sparse = self._x2scipy_crsmatrix(_n, ham_x, _qubit_map, dtype)
         if __has_z:
-            zz_sparse = self._zz2scipy_crsmatrix(ham_z, _qubit_map, dtype)
+            zz_sparse = self._zz2scipy_crsmatrix(_n, ham_z, _qubit_map, dtype)
         
         return zz_sparse + x_sparse
 
-
-
-    def _x2scipy_crsmatrix(self, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
-        _n = len(paulisum.qubits)
+    def _x2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+        #Potentially add joblib extention fo _n > 20 ish
         _N = 2**_n
 
         # Need to get _n dim coefficent array according to the qubit map 
@@ -181,10 +180,8 @@ class Restorable(abc.ABC):
         #np.tile([1,2],2)   ->[1,2,1,2]
         return scipy_csr_matrix((np.tile(_coeffs, _N), (np.repeat(np.arange(_N), _n).astype(int), col)), shape=(_N, _N))
 
-    def _zz2binary_fct(self, paulisum: cirq.PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
-        _n = len(paulisum.qubits)
+    def _zz2binary_fct(self, _n, paulisum: cirq.PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
         _N = 2**_n
-        _qubit_map = {paulisum.qubits[k]: int(k) for k in range(_n)}
 
         _coeffs = []
         _indices_coeffs = []
@@ -207,12 +204,11 @@ class Restorable(abc.ABC):
             return _tmp
         return _zz_binary_fct
 
-    def _zz2scipy_crsmatrix(self, paulisum: cirq.PauliSum, _qubit_map, dtype=np.complex128 ):
-        _n = len(paulisum.qubits)
+    def _zz2scipy_crsmatrix(self, _n, paulisum: cirq.PauliSum, _qubit_map, dtype=np.complex128 ):
         _N = 2**_n
 
         #Get binary function
-        _binary_fct = self._zz2binary_fct( paulisum, _qubit_map, dtype)
+        _binary_fct = self._zz2binary_fct(_n, paulisum, _qubit_map, dtype)
         
         if _n < 11:
             _binary_fct_vec = np.vectorize(_binary_fct)
