@@ -56,14 +56,13 @@ class CoolingNA(SpinModelFC):
         two_q_gates = [*m_sys._two_q_gates, *m_anc._two_q_gates, *int_gates]
         one_q_gates = [*m_sys._one_q_gates, *m_anc._one_q_gates]
         
-        j, h = _combine_jh(m_sys, m_anc, j_int)
+        j, h = self._combine_jh(m_sys, m_anc, j_int)
         
         self.m_sys = m_sys
         self.m_anc = m_anc
         self.j_int = j_int
         
-        super().__init__(
-            self, 
+        super().__init__( 
             m_sys.qubittype,
             np.array(n),
             j,
@@ -73,7 +72,7 @@ class CoolingNA(SpinModelFC):
             t
             )
     
-    def _combine_jh(m_sys, m_anc, j_int):
+    def _combine_jh(self, m_sys, m_anc, j_int):
         n = [m_sys.n[0], 2*m_sys.n[1]]
         
         js = np.zeros(shape=(self.nbr_2Q, *n, *n))
@@ -84,98 +83,101 @@ class CoolingNA(SpinModelFC):
                     for i in range(m_sys.n[0]):
                         for j in range(m_sys.n[1]):
                             for l in range(j+1, m_sys.n[1], 1):
-                                js[g, i, 2*j, i, 2*l] = m_sys.j[g, i, j, i, l]
+                                js[g, i, 2*j, i, 2*l] = m_sys.j[i, j, i, l, g]
                             for k in range(i+1, m_sys.n[0], 1):
                                 for l in range(m_sys.n[1]):
-                                    js[g, i, 2*j, k, 2*l] = m_sys.j[g, i, j, k, l]
+                                    js[g, i, 2*j, k, 2*l] = m_sys.j[i, j, k, l, g]
                 else:
                     for i in range(m_sys.n[0]-1):
                         for j in range(m_sys.n[1]-1):
-                            js[g, i, 2*j, i+1, 2*j] = m_sys.j_v[g, i, j]
-                            js[g, i, 2*j, i, 2*(j+1)] = m_sys.j_h[g, i, j]
-                            js[g, i+1, 2*j, i, 2*j] = m_sys.j_v[g, i, j]
-                            js[g, i, 2*(j+1), i, 2*j] = m_sys.j_h[g, i, j]
+                            js[g, i, 2*j, i+1, 2*j] = m_sys.j_v[i, j, g]
+                            js[g, i, 2*j, i, 2*(j+1)] = m_sys.j_h[i, j, g]
+                            js[g, i+1, 2*j, i, 2*j] = m_sys.j_v[i, j, g]
+                            js[g, i, 2*(j+1), i, 2*j] = m_sys.j_h[i, j, g]
                     for i in range(m_sys.n[0] - 1):
                         j = m_sys.n[1] - 1
-                        js[g, i, 2*j, i+1, 2*j] = m_sys.j_v[g, i, j]
-                        js[g, i+1, 2*j, i, 2*j] = m_sys.j_v[g, i, j]
+                        js[g, i, 2*j, i+1, 2*j] = m_sys.j_v[i, j, g]
+                        js[g, i+1, 2*j, i, 2*j] = m_sys.j_v[i, j, g]
                     for j in range(m_sys.n[1] - 1):
                         i = m_sys.n[0] - 1
-                        js[g, i, 2*j, i, 2*(j+1)] = m_sys.j_h[g, i, j]
-                        js[g, i, 2*(j+1), i, 2*j] = m_sys.j_h[g, i, j]
+                        js[g, i, 2*j, i, 2*(j+1)] = m_sys.j_h[i, j, g]
+                        js[g, i, 2*(j+1), i, 2*j] = m_sys.j_h[i, j, g]
                     if m_sys.boundaries[1] == 0:
                         for i in range(m_sys.n[0]):
                             j = m_sys.n[1] - 1
-                            js[g, i, 2*j, i, 0] = m_sys.j_h[g, i, j]
-                            js[g, i, 0, i, 2*j] = m_sys.j_h[g, i, j]
+                            js[g, i, 2*j, i, 0] = m_sys.j_h[i, j, g]
+                            js[g, i, 0, i, 2*j] = m_sys.j_h[i, j, g]
                     if m_sys.boundaries[0] == 0:
                         for j in range(m_sys.n[1]):
                             i = m_sys.n[0] - 1
-                            js[g, i, 2*j, 0, 2*j] = m_sys.j_v[g, i, j]
-                            js[g, 0, 2*j, i, 2*j] = m_sys.j_v[g, i, j]
+                            js[g, i, 2*j, 0, 2*j] = m_sys.j_v[i, j, g]
+                            js[g, 0, 2*j, i, 2*j] = m_sys.j_v[i, j, g]
             
             elif(g<self.nbr_2Q_sys + self.nbr_2Q_anc):
+                g_anc = g - self.nbr_2Q_sys
                 #Ancilla js
                 if(self.anc_fc):
                     for i in range(m_anc.n[0]):
                         for j in range(m_anc.n[1]):
                             for l in range(j+1, m_anc.n[1], 1):
-                                js[g, i, 2*j+1, i, 2*l+1] = m_anc.j[g, i, j, i, l]
+                                js[g, i, 2*j+1, i, 2*l+1] = m_anc.j[i, j, i, l, g_anc]
                             for k in range(i+1, m_anc.n[0], 1):
                                 for l in range(m_anc.n[1]):
-                                    js[g, i, 2*j+1, k, 2*l+1] = m_anc.j[g, i, j, k, l]
+                                    js[g, i, 2*j+1, k, 2*l+1] = m_anc.j[i, j, k, l, g_anc]
                 else:
                     for i in range(m_anc.n[0]-1):
                         for j in range(m_anc.n[1]-1):
-                            js[g, i, 2*j+1, i+1, 2*j+1] = m_anc.j_v[g, i, j]
-                            js[g, i, 2*j+1, i, 2*(j+1)+1] = m_anc.j_h[g, i, j]
-                            js[g, i+1, 2*j+1, i, 2*j+1] = m_anc.j_v[g, i, j]
-                            js[g, i, 2*(j+1)+1, i, 2*j+1] = m_anc.j_h[g, i, j]
+                            js[g, i, 2*j+1, i+1, 2*j+1] = m_anc.j_v[i, j, g_anc]
+                            js[g, i, 2*j+1, i, 2*(j+1)+1] = m_anc.j_h[i, j, g_anc]
+                            js[g, i+1, 2*j+1, i, 2*j+1] = m_anc.j_v[i, j, g_anc]
+                            js[g, i, 2*(j+1)+1, i, 2*j+1] = m_anc.j_h[i, j, g_anc]
                     for i in range(m_anc.n[0] - 1):
                         j = m_anc.n[1] - 1
-                        js[g, i, 2*j+1, i+1, 2*j+1] = m_anc.j_v[g, i, j]
-                        js[g, i+1, 2*j+1, i, 2*j+1] = m_anc.j_v[g, i, j]
+                        js[g, i, 2*j+1, i+1, 2*j+1] = m_anc.j_v[i, j, g_anc]
+                        js[g, i+1, 2*j+1, i, 2*j+1] = m_anc.j_v[i, j, g_anc]
                     for j in range(m_anc.n[1] - 1):
                         i = m_anc.n[0] - 1
-                        js[g, i, 2*j+1, i, 2*(j+1)+1] = m_anc.j_h[g, i, j]
-                        js[g, i, 2*(j+1)+1, i, 2*j+1] = m_anc.j_h[g, i, j]
+                        js[g, i, 2*j+1, i, 2*(j+1)+1] = m_anc.j_h[i, j, g_anc]
+                        js[g, i, 2*(j+1)+1, i, 2*j+1] = m_anc.j_h[i, j, g_anc]
                     if m_anc.boundaries[1] == 0:
                         for i in range(m_anc.n[0]):
                             j = m_anc.n[1] - 1
-                            js[g, i, 2*j+1, i, 1] = m_anc.j_h[g, i, j]
-                            js[g, i, 1, i, 2*j+1] = m_anc.j_h[g, i, j]
+                            js[g, i, 2*j+1, i, 1] = m_anc.j_h[i, j, g_anc]
+                            js[g, i, 1, i, 2*j+1] = m_anc.j_h[i, j, g_anc]
                     if m_anc.boundaries[0] == 0:
                         for j in range(m_anc.n[1]):
                             i = m_anc.n[0] - 1
-                            js[g, i, 2*j+1, 0, 2*j+1] = m_anc.j_v[g, i, j]
-                            js[g, 0, 2*j+1, i, 2*j+1] = m_anc.j_v[g, i, j]
+                            js[g, i, 2*j+1, 0, 2*j+1] = m_anc.j_v[i, j, g_anc]
+                            js[g, 0, 2*j+1, i, 2*j+1] = m_anc.j_v[i, j, g_anc]
             else:
+                g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, 2*j, i, 2*j+1] = j_int[g, i, j]
-                        js[g, i, 2*j+1, i, 2*j] = j_int[g, i, j]
+                        js[g, i, 2*j, i, 2*j+1] = j_int[g_int, i, j]
+                        js[g, i, 2*j+1, i, 2*j] = j_int[g_int, i, j]
         
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
-            if(g<self.nbr_2Q_sys):
+            if(g<self.nbr_1Q_sys):
                 #System hs
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        h[g, i, 2*j] = m_sys.h[g, i, j]
+                        h[g, i, 2*j] = m_sys.h[i, j, g]
             else:
+                g_anc = g - self.nbr_1Q_sys
                 #Ancilla hs
                 for i in range(m_anc.n[0]):
                     for j in range(m_anc.n[1]):
-                        h[g, i, 2*j+1] = m_anc.h[g, i, j]
+                        h[g, i, 2*j+1] = m_anc.h[i, j, g_anc]
         
         return js, h
     
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
     
-    def copy(self) -> Cooling1A:
-        self_copy = Cooling1A( 
+    def copy(self) -> CoolingNA:
+        self_copy = CoolingNA( 
                 self.m_sys,
                 self.m_anc,
                 self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
