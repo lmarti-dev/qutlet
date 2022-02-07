@@ -124,7 +124,7 @@ def _partial_2Qubit_layer_fc(self, v, g):
     gate = self.hea.options["2QubitGates"][g]
     for i in range(self.n[0]):
         for j in range(self.n[1]):
-            for l in range(j, self.n[1], 1):
+            for l in range(j+1, self.n[1], 1):
                 yield gate(*v[:][i][j][i][l]).on(self.qubits[i][j], self.qubits[i][l])
             for k in range(i+1, self.n[0], 1):
                 for l in range(self.n[1]):

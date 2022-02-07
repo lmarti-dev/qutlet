@@ -56,7 +56,7 @@ class Cooling1A(SpinModelFC):
         two_q_gates = [*m_sys._two_q_gates, *m_anc._two_q_gates, *int_gates]
         one_q_gates = [*m_sys._one_q_gates, *m_anc._one_q_gates]
         
-        j, h = _combine_jh(m_sys, m_anc, j_int)
+        j, h = self._combine_jh(m_sys, m_anc, j_int)
         
         self.m_sys = m_sys
         self.m_anc = m_anc
@@ -73,10 +73,10 @@ class Cooling1A(SpinModelFC):
             t
             )
     
-    def _combine_jh(m_sys, m_anc, j_int):
+    def _combine_jh(self, m_sys, m_anc, j_int):
         n = [m_sys.n[0], m_sys.n[1] + 1]
         
-        js = np.zeros(shape=(self.nbr_2Q, *n, *n))
+        js = np.zeros(shape=(*n, *n, self.nbr_2Q))
         for g in range(self.nbr_2Q):
             if(g<self.nbr_2Q_sys):
                 #System js
@@ -84,23 +84,24 @@ class Cooling1A(SpinModelFC):
                     for i in range(m_sys.n[0]):
                         for j in range(m_sys.n[1]):
                             for l in range(j+1, m_sys.n[1], 1):
-                                js[g, i, j, i, l] = m_sys.j[g, i, j, i, l]
+                                js[i, j, i, l, g] = m_sys.j[i, j, i, l, g]
                             for k in range(i+1, m_sys.n[0], 1):
                                 for l in range(m_sys.n[1]):
-                                    js[g, i, j, k, l] = m_sys.j[g, i, j, k, l]
+                                    js[i, j, k, l, g] = m_sys.j[i, j, k, l, g]
                 else:
                     for i in range(m_sys.n[0]-1):
                         for j in range(m_sys.n[1]-1):
-                            js[g, i, j, i+1, j] = m_sys.j_v[g, i, j]
-                            js[g, i, j, i, j+1] = m_sys.j_h[g, i, j]
-                            js[g, i+1, j, i, j] = m_sys.j_v[g, i, j]
-                            js[g, i, j+1, i, j] = m_sys.j_h[g, i, j]
+                            js[i, j, i+1, j, g] = m_sys.j_v[i, j, g]
+                            js[i, j, i, j+1, g] = m_sys.j_h[i, j, g]
+                            js[i+1, j, i, j, g] = m_sys.j_v[i, j, g]
+                            js[i, j+1, i, j, g] = m_sys.j_h[i, j, g]
                     for i in range(m_sys.n[0] - 1):
                         j = m_sys.n[1] - 1
                         js[g, i, j, i+1, j] = m_sys.j_v[g, i, j]
                         js[g, i+1, j, i, j] = m_sys.j_v[g, i, j]
                     for j in range(m_sys.n[1] - 1):
                         i = m_sys.n[0] - 1
+                        print(m_sys.j_h.shape)
                         js[g, i, j, i, j+1] = m_sys.j_h[g, i, j]
                         js[g, i, j+1, i, j] = m_sys.j_h[g, i, j]
                     if m_sys.boundaries[1] == 0:

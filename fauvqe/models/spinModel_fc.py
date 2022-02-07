@@ -49,8 +49,8 @@ class SpinModelFC(AbstractModel):
         super().set_simulator()
         self.t = t
 
-    def __check_symmetric(j):
-        return numpy.allclose(
+    def _check_symmetric(self, j):
+        return np.allclose(
             j, 
             np.transpose(j, (0, 3, 4, 1, 2)),
             atol=1e-13
@@ -64,7 +64,7 @@ class SpinModelFC(AbstractModel):
         ), "Error in SpinModel._set_jh(): j.shape != (len(two_q_gates), n, n ), {} != {}".format(
             j.shape, (len(two_q_gates), *(self.n), *(self.n))
         )
-        assert __check_symmetric(j), "Interaction graph is not symmetric: " + str(j)
+        assert self._check_symmetric(j), "Interaction graph is not symmetric: " + str(j)
         self.j = np.transpose(j, (1, 2, 3, 4, 0))
         
         # convert input to numpy array to be sure
@@ -84,8 +84,8 @@ class SpinModelFC(AbstractModel):
             self.hamiltonian = cirq.PauliSum()
 
         #Conversion currently necessary as numpy type * cirq.PauliSum fails
-        j = self.j.tolist()
-        h = self.h.tolist()
+        js = self.j.tolist()
+        hs = self.h.tolist()
         
         # 1. Sum over 2QGates
         for g in range(len(self._two_q_gates)):
@@ -93,17 +93,17 @@ class SpinModelFC(AbstractModel):
                 for j in range(self.n[1]):
                     #k==i, l>j
                     for l in range(j+1, self.n[1], 1):
-                        self.hamiltonian -= j[i,j,i,l,g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[i][l])
+                        self.hamiltonian -= js[i][j][i][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[i][l])
                     #k>i
                     for k in range(i+1, self.n[0], 1):
                         for l in range(self.n[1]):
-                            self.hamiltonian -= j[i,j,k,l,g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
+                            self.hamiltonian -= js[i][j][k][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
                     
         # 2. Add external field
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
+                    self.hamiltonian -= hs[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         if qalgorithm == "hea":
@@ -129,6 +129,8 @@ class SpinModelFC(AbstractModel):
                                 "H_layer": True,
                                 "i0": 0,
                                 "fully_connected" : True,
+                                "1QubitGates": [ lambda q, theta: cirq.Z(q)**(theta) for g in range(len(self._one_q_gates))],
+                                "2QubitGates" : [lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta) for g in range(len(self._two_q_gates))],
                                 }
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
@@ -179,8 +181,8 @@ class SpinModelFC(AbstractModel):
     def energy(self, j, h) -> np.ndarray:
         return self.energy_1q(h) + self.energy_2q(j)
     
-    def copy(self) -> SpinModel:
-        self_copy = SpinModel( self.qubittype,
+    def copy(self) -> SpinModelFC:
+        self_copy = SpinModelFC( self.qubittype,
                 self.n,
                 np.transpose(self.j, (4, 0, 1, 2, 3)),
                 np.transpose(self.h, (2, 0, 1)),

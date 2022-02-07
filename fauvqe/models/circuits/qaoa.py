@@ -145,11 +145,22 @@ def _UC_layer(self, gamma):
             #    yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
     """
     if(self.qaoa.options["fully_connected"]):
-        for pstr in self.hamiltonian._linear_dict:
-            temp = 1
-            for pauli in pstr:
-                temp = temp * pauli[1](pauli[0])
-            yield temp**np.real(gamma * hamiltonian._linear_dict[pstr])
+        #2-qubit gates
+        for g in range(len(self.qaoa.options["2QubitGates"])):
+            gate = self.qaoa.options["2QubitGates"][g]
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    for l in range(j+1, self.n[1], 1):
+                        yield gate(self.qubits[i][j], self.qubits[i][l], gamma * self.j[i][j][i][l][g])
+                    for k in range(i+1, self.n[0], 1):
+                        for l in range(self.n[1]):
+                            yield gate(self.qubits[i][j], self.qubits[k][l], gamma * self.j[i][j][k][l][g])
+        #Single qubit gates
+        for g in range(len(self.qaoa.options["1QubitGates"])):
+            gate = self.qaoa.options["1QubitGates"][g]
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
     else:
         for k in range(2):
             if self.n[0] > 1:
