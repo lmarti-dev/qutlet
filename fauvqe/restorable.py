@@ -5,6 +5,7 @@ from cirq import PauliString as cirq_PauliString
 from cirq import X as cirq_X
 from cirq import Z as cirq_Z
 import importlib
+import joblib
 import numpy as np
 from PyTrilinos import Epetra; PyTrilinos_supported = True
 from sys import stdout
@@ -142,24 +143,7 @@ class Restorable(abc.ABC):
         
         return zz_sparse + x_sparse
 
-    def _zz2scipy_crsmatrix(self, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
-        # Note that for ZZ only need to calc half as other half is symmetric
-        # This way this method can be improved...
-        # This method seems to be the bottle neck
-        # Solution: calculate exp for bitstring direcctly from cirq.PauliSum
-        #       need function that Converts to numpy binary function
-        #       input number 0 - _N-1 -> conversion to binary -> return energy
-        _N = 2**len(paulisum.qubits)
-        data = np.zeros(_N, dtype=np.complex64)
-        _wf = np.zeros(_N, dtype=np.complex64)
 
-        for i in range(_N):
-            _wf[i] = 1;
-            _wf[i-1] = 0
-            data[i] = paulisum.expectation_from_state_vector(_wf.view(), _qubit_map)/2
-        
-        non_zeros = np.nonzero(data)
-        return scipy_csr_matrix((data[non_zeros].astype(dtype), (*non_zeros, *non_zeros)), shape=(_N, _N))
 
     def _x2scipy_crsmatrix(self, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
         _n = len(paulisum.qubits)
@@ -167,7 +151,7 @@ class Restorable(abc.ABC):
 
         # Need to get _n dim coefficent array according to the qubit map 
         # tp be copied _N times
-        _coeffs = np.empty(_n, dtype=dtype) 
+        _coeffs = np.zeros(_n, dtype=dtype) 
         for vec, coeff in paulisum._linear_dict.items():
             tmp= list(dict(vec).keys())[0]
             if np.iscomplexobj(dtype(0)):
@@ -196,3 +180,48 @@ class Restorable(abc.ABC):
         #np.repeat([1,2],2) ->[1,1,2,2]
         #np.tile([1,2],2)   ->[1,2,1,2]
         return scipy_csr_matrix((np.tile(_coeffs, _N), (np.repeat(np.arange(_N), _n).astype(int), col)), shape=(_N, _N))
+
+    def _zz2binary_fct(self, paulisum: cirq.PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
+        _n = len(paulisum.qubits)
+        _N = 2**_n
+        _qubit_map = {paulisum.qubits[k]: int(k) for k in range(_n)}
+
+        _coeffs = []
+        _indices_coeffs = []
+        for vec, coeff in paulisum._linear_dict.items():
+            tmp= list(dict(vec).keys())
+            _indices_coeffs.append([_qubit_map[tmp[i]] for i in range(len(vec))])
+
+            if np.iscomplexobj(dtype(0)):
+                _coeffs.append(dtype(coeff))
+            else:
+                _coeffs.append(dtype(coeff.real))
+
+        def _zz_binary_fct(int_in, _n):
+            #assume 0, +1 input
+            #potentially speed that up via np routine
+            binary_vec = np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])
+            _tmp = 0
+            for i in range(len(_coeffs)):
+                _tmp += _coeffs[i] * np.prod(-2*binary_vec[_indices_coeffs[i]]+1)
+            return _tmp
+        return _zz_binary_fct
+
+    def _zz2scipy_crsmatrix(self, paulisum: cirq.PauliSum, _qubit_map, dtype=np.complex128 ):
+        _n = len(paulisum.qubits)
+        _N = 2**_n
+
+        #Get binary function
+        _binary_fct = self._zz2binary_fct( paulisum, _qubit_map, dtype)
+        
+        if _n < 11:
+            _binary_fct_vec = np.vectorize(_binary_fct)
+            _data = _binary_fct_vec(np.arange(_N), _n)
+        else:
+            _data= np.array(joblib.Parallel(n_jobs=8, backend="loky")(
+                joblib.delayed(_binary_fct)(j, _n)
+                for j in range(_N)), dtype=dtype)
+        
+        #Remove zeros
+        non_zeros = np.nonzero(_data)
+        return scipy_csr_matrix((_data[non_zeros], (*non_zeros, *non_zeros)), shape=(_N, _N))
