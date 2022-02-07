@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import Ising, Cooling1A, ExpectationValue
+from fauvqe import Ising, CoolingNA, ExpectationValue
 
 def test_copy():
     n = [1,3]; boundaries = [1, 0]

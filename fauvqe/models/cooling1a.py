@@ -62,8 +62,7 @@ class Cooling1A(SpinModelFC):
         self.m_anc = m_anc
         self.j_int = j_int
         
-        super().__init__(
-            self, 
+        super().__init__( 
             m_sys.qubittype,
             np.array(n),
             j,
@@ -75,8 +74,8 @@ class Cooling1A(SpinModelFC):
     
     def _combine_jh(self, m_sys, m_anc, j_int):
         n = [m_sys.n[0], m_sys.n[1] + 1]
-        
-        js = np.zeros(shape=(*n, *n, self.nbr_2Q))
+        g_int = 0
+        js = np.zeros(shape=(self.nbr_2Q, *n, *n))
         for g in range(self.nbr_2Q):
             if(g<self.nbr_2Q_sys):
                 #System js
@@ -84,73 +83,75 @@ class Cooling1A(SpinModelFC):
                     for i in range(m_sys.n[0]):
                         for j in range(m_sys.n[1]):
                             for l in range(j+1, m_sys.n[1], 1):
-                                js[i, j, i, l, g] = m_sys.j[i, j, i, l, g]
+                                js[g, i, j, i, l] = m_sys.j[i, j, i, l, g]
                             for k in range(i+1, m_sys.n[0], 1):
                                 for l in range(m_sys.n[1]):
-                                    js[i, j, k, l, g] = m_sys.j[i, j, k, l, g]
+                                    js[g, i, j, k, l] = m_sys.j[i, j, k, l, g]
                 else:
                     for i in range(m_sys.n[0]-1):
                         for j in range(m_sys.n[1]-1):
-                            js[i, j, i+1, j, g] = m_sys.j_v[i, j, g]
-                            js[i, j, i, j+1, g] = m_sys.j_h[i, j, g]
-                            js[i+1, j, i, j, g] = m_sys.j_v[i, j, g]
-                            js[i, j+1, i, j, g] = m_sys.j_h[i, j, g]
+                            js[g, i, j, i+1, j] = m_sys.j_v[i, j, g]
+                            js[g, i, j, i, j+1] = m_sys.j_h[i, j, g]
+                            js[g, i+1, j, i, j] = m_sys.j_v[i, j, g]
+                            js[g, i, j+1, i, j] = m_sys.j_h[i, j, g]
                     for i in range(m_sys.n[0] - 1):
                         j = m_sys.n[1] - 1
-                        js[g, i, j, i+1, j] = m_sys.j_v[g, i, j]
-                        js[g, i+1, j, i, j] = m_sys.j_v[g, i, j]
+                        js[g, i, j, i+1, j] = m_sys.j_v[i, j, g]
+                        js[g, i+1, j, i, j] = m_sys.j_v[i, j, g]
                     for j in range(m_sys.n[1] - 1):
                         i = m_sys.n[0] - 1
-                        print(m_sys.j_h.shape)
-                        js[g, i, j, i, j+1] = m_sys.j_h[g, i, j]
-                        js[g, i, j+1, i, j] = m_sys.j_h[g, i, j]
+                        js[g, i, j, i, j+1] = m_sys.j_h[i, j, g]
+                        js[g, i, j+1, i, j] = m_sys.j_h[i, j, g]
                     if m_sys.boundaries[1] == 0:
                         for i in range(m_sys.n[0]):
                             j = m_sys.n[1] - 1
-                            js[g, i, j, i, 0] = m_sys.j_h[g, i, j]
-                            js[g, i, 0, i, j] = m_sys.j_h[g, i, j]
+                            js[g, i, j, i, 0] = m_sys.j_h[i, j, g]
+                            js[g, i, 0, i, j] = m_sys.j_h[i, j, g]
                     if m_sys.boundaries[0] == 0:
                         for j in range(m_sys.n[1]):
                             i = m_sys.n[0] - 1
-                            js[g, i, j, 0, j] = m_sys.j_v[g, i, j]
-                            js[g, 0, j, i, j] = m_sys.j_v[g, i, j]
+                            js[g, i, j, 0, j] = m_sys.j_v[i, j, g]
+                            js[g, 0, j, i, j] = m_sys.j_v[i, j, g]
             
             elif(g<self.nbr_2Q_sys + self.nbr_2Q_anc):
+                g_anc = g - self.nbr_2Q_sys
                 #Ancilla js
                 if(self.anc_fc):
                     for i in range(m_anc.n[0]):
                         for j in range(m_anc.n[1]):
                             for l in range(j+1, m_anc.n[1], 1):
-                                js[g, i, m_sys.n[1] + j, i, m_sys.n[1] + l] = m_anc.j[g, i, j, i, l]
+                                js[g, i, m_sys.n[1] + j, i, m_sys.n[1] + l] = m_anc.j[i, j, i, l, g_anc]
                             for k in range(i+1, m_anc.n[0], 1):
                                 for l in range(m_anc.n[1]):
-                                    js[g, i, m_sys.n[1] + j, k, m_sys.n[0] + l] = m_anc.j[g, i, j, k, l]
+                                    js[g, i, m_sys.n[1] + j, k, m_sys.n[0] + l] = m_anc.j[i, j, k, l, g_anc]
                 else:
                     for i in range(m_anc.n[0] - 1):
-                        js[g, i, m_sys.n[1], i+1, m_sys.n[1]] = m_anc.j_v[g, i, 0]
-                        js[g, i + 1, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[g, i, 0]
+                        js[g, i, m_sys.n[1], i+1, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
+                        js[g, i + 1, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
                     if(m_anc.boundaries[0] == 0):
                         i = m_anc.n[0] - 1
-                        js[g, i, m_sys.n[1], 0, m_sys.n[1]] = m_anc.j_v[g, i, 0]
-                        js[g, 0, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[g, i, 0]
+                        js[g, i, m_sys.n[1], 0, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
+                        js[g, 0, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
             else:
+                g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, j, i, m_sys.n[1]] = j_int[g, i]
-                        js[g, i, m_sys.n[1], i, j] = j_int[g, i]
-        
+                        js[g, i, j, i, m_sys.n[1]] = j_int[g_int, i]
+                        js[g, i, m_sys.n[1], i, j] = j_int[g_int, i]
+                
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
-            if(g<self.nbr_2Q_sys):
+            if(g<self.nbr_1Q_sys):
                 #System hs
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        h[g, i, j] = m_sys.h[g, i, j]
+                        h[g, i, j] = m_sys.h[i, j, g]
             else:
+                g_anc = g - self.nbr_1Q_sys
                 #Ancilla hs
                 for i in range(m_anc.n[0]):
-                    h[g, i, m_sys.n[1]] = m_anc.h[g, i, 0]
+                    h[g, i, m_sys.n[1]] = m_anc.h[i, 0, g_anc]
         
         return js, h
     
