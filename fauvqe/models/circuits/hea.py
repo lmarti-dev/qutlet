@@ -125,10 +125,10 @@ def _partial_2Qubit_layer_fc(self, v, g):
     for i in range(self.n[0]):
         for j in range(self.n[1]):
             for l in range(j+1, self.n[1], 1):
-                yield gate(*v[:][i][j][i][l]).on(self.qubits[i][j], self.qubits[i][l])
+                yield gate(*v[i][j][i][l][:]).on(self.qubits[i][j], self.qubits[i][l])
             for k in range(i+1, self.n[0], 1):
                 for l in range(self.n[1]):
-                    yield gate(*v[:][i][j][k][l]).on(self.qubits[i][j], self.qubits[k][l])
+                    yield gate(*v[i][j][k][l][:]).on(self.qubits[i][j], self.qubits[k][l])
             
 def _2Qubit_layer(self, i, g):
     """
@@ -155,7 +155,6 @@ def _2Qubit_layer(self, i, g):
             temp = [temp for i in range(self.n[0])]
             temp = [temp for i in range(self.n[1])]
             v = [temp for i in range(self.n[0])]
-            
             yield self.hea._partial_2Qubit_layer_fc(self, v, g)
         else:
             temp = [gate_variables for i in range(self.n[1])]
@@ -187,28 +186,17 @@ def _2Qubit_layer(self, i, g):
 
     elif self.hea.options["parametrisation"] == "individual":
         if(self.hea.options["fully_connected"]):
-            gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
-            j = 0
-            for variable in self.hea.options["2Qvariables"][g]:
-                gate_variables[j] = sympy.Symbol(variable + str(i))
-                j +=1
+            gate = self.hea.options["2QubitGates"][g]
             
-            v = np.zeros(shape=(len(gate_variables), self.n[0], self.n[1], self.n[0], self.n[1]))
             for n0 in range(self.n[0]):
                 for n1 in range(self.n[1]):
                     for l in range(n1+1, self.n[1], 1):
-                        v[:][n0][n1][n0][l] = [
-                            sympy.Symbol(gate_variable + "_" + str(n0*self.n[0] + n1) + "_" + str(n0*self.n[0] + l)) for gate_variable in gate_variables
-                        ]
+                        symb = [sympy.Symbol(self.hea.options["2Qvariables"][g][var] + str(i) + "_" + str(n0*self.n[1] + n1) + "_" + str(n0*self.n[1] + l)) for var in range(len(self.hea.options["2Qvariables"][g]))]
+                        yield gate(*symb).on(self.qubits[n0][n1], self.qubits[n0][l])
                     for k in range(n0+1, self.n[0], 1):
                         for l in range(self.n[1]):
-                            v[:][n0][n1][k][l] = [
-                                sympy.Symbol(gate_variable + "_" + str(n0*self.n[0] + n1) + "_" + str(k*self.n[0] + l)) for gate_variable in gate_variables
-                                        ]
-                #print("temp:\n {}".format(temp))
-                v.append(temp)
-            
-            yield self.hea._partial_2Qubit_layer_fc(self, v, g)
+                            symb = [sympy.Symbol(self.hea.options["2Qvariables"][g][var] + str(i) + "_" + str(n0*self.n[1] + n1) + "_" + str(k*self.n[1] + l)) for var in range(len(self.hea.options["2Qvariables"][g]))]
+                            yield gate(*symb).on(self.qubits[n0][n1], self.qubits[k][l])
         else:
             for i_p in range(4):
                 gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
