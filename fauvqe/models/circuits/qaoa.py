@@ -151,16 +151,19 @@ def _UC_layer(self, gamma):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     for l in range(j+1, self.n[1], 1):
-                        yield gate(self.qubits[i][j], self.qubits[i][l], gamma * self.j[i][j][i][l][g])
+                        if(self.j[i][j][i][l][g] != 0):
+                            yield gate(self.qubits[i][j], self.qubits[i][l], gamma * self.j[i][j][i][l][g])
                     for k in range(i+1, self.n[0], 1):
                         for l in range(self.n[1]):
-                            yield gate(self.qubits[i][j], self.qubits[k][l], gamma * self.j[i][j][k][l][g])
+                            if(self.j[i][j][k][l][g] != 0):
+                                yield gate(self.qubits[i][j], self.qubits[k][l], gamma * self.j[i][j][k][l][g])
         #Single qubit gates
         for g in range(len(self.qaoa.options["1QubitGates"])):
             gate = self.qaoa.options["1QubitGates"][g]
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
+                    if(self.h[i][j][g] != 0):
+                        yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
     else:
         for k in range(2):
             if self.n[0] > 1:
