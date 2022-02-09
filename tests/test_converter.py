@@ -1,38 +1,36 @@
 import pytest
 
-from PyTrilinos import Epetra
-import numpy as np
 import cirq
+import numpy as np
 
-from fauvqe.restorable import Restorable
+try:
+    from PyTrilinos import Epetra
+    PyTrilinos_supported = True
+
+    def create_crsmatrix(Nelements):
+        Comm              = Epetra.PyComm()
+        Map               = Epetra.Map(Nelements, 0, Comm)
+        crsmatrix         = Epetra.CrsMatrix(Epetra.Copy, Map, 0)
+
+        # can still be modified.
+        for i in Map.MyGlobalElements():
+            if i > 0:
+                crsmatrix[i, i - 1] = i-0.3
+            if i < Nelements - 1:
+                crsmatrix[i, i + 1] = i+0.4
+            crsmatrix[i, i] = i+1.0
+        
+        crsmatrix.FillComplete()
+        Comm.Barrier()
+        
+        return crsmatrix
+except:
+    PyTrilinos_supported = False
+
+from fauvqe import Converter
 
 
-class DummyRestorable(Restorable):
-    def to_json_dict(self):
-        pass
-
-    def from_json_dict(self, params):
-        pass
-
-def create_crsmatrix(Nelements):
-    Comm              = Epetra.PyComm()
-    Map               = Epetra.Map(Nelements, 0, Comm)
-    crsmatrix         = Epetra.CrsMatrix(Epetra.Copy, Map, 0)
-
-    # can still be modified.
-    for i in Map.MyGlobalElements():
-        if i > 0:
-            crsmatrix[i, i - 1] = i-0.3
-        if i < Nelements - 1:
-            crsmatrix[i, i + 1] = i+0.4
-        crsmatrix[i, i] = i+1.0
-    
-    crsmatrix.FillComplete()
-    Comm.Barrier()
-    
-    return crsmatrix
   
-
 @pytest.mark.parametrize(
     "N_crsmatrix, np_matrix",
     [
@@ -56,11 +54,12 @@ def create_crsmatrix(Nelements):
         ),
     ]
 )
+@pytest.mark.skipif(not PyTrilinos_supported, reason="Unable to load pyTrilinos")
 def test_epetra_crsmatrix2numpy(N_crsmatrix, np_matrix):
-    restoreable_obj = DummyRestorable()
+    converter_obj = Converter()
 
     crsmatrix = create_crsmatrix(N_crsmatrix)
-    np_matrix_from_crsmatrix = restoreable_obj.epetra_crsmatrix2numpy(crsmatrix)
+    np_matrix_from_crsmatrix = converter_obj.epetra_crsmatrix2numpy(crsmatrix)
 
     np.testing.assert_allclose(np_matrix_from_crsmatrix, np_matrix, rtol=1e-14, atol=0)
 
@@ -98,12 +97,13 @@ def test_epetra_crsmatrix2numpy(N_crsmatrix, np_matrix):
         ),
     ]
 )
+@pytest.mark.skipif(not PyTrilinos_supported, reason="Unable to load pyTrilinos")
 def test_numpy2epetra_crsmatrix(np_matrix):
     # This uses that we already tested epetra_crsmatrix2numpy()
-    restoreable_obj = DummyRestorable()
+    converter_obj = Converter()
 
-    np_matrix2 = restoreable_obj.epetra_crsmatrix2numpy(
-                    restoreable_obj.numpy2epetra_crsmatrix(np_matrix))
+    np_matrix2 = converter_obj.epetra_crsmatrix2numpy(
+                    converter_obj.numpy2epetra_crsmatrix(np_matrix))
 
     np.testing.assert_allclose(np_matrix2, np_matrix, rtol=1e-14, atol=0)
 
@@ -133,8 +133,8 @@ def test_numpy2epetra_crsmatrix(np_matrix):
     ]
 )
 def test_cirq_paulisum2scipy_crsmatrix(paulisum):
-    restoreable_obj = DummyRestorable()
-    scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
+    converter_obj = Converter()
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
 
     print("Paulisum: {}".format(paulisum))
 
@@ -155,8 +155,8 @@ def test_cirq_paulisum2scipy_crsmatrix(paulisum):
     ]
 )
 def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum):
-    restoreable_obj = DummyRestorable()
-    scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=np.float64)
+    converter_obj = Converter()
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=np.float64)
 
     print("Paulisum: {}".format(paulisum))
 
@@ -167,20 +167,21 @@ def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum):
 #                    Assert tests                           #
 #                                                           #
 #############################################################
+@pytest.mark.skipif(not PyTrilinos_supported, reason="Unable to load pyTrilinos")
 def test_assert_numpy2epetra_crsmatrix():
-    restoreable_obj = DummyRestorable()
+    converter_obj = Converter()
 
     np_matrix = np.array([  [1j,     0.4], 
                         [0.7,   2]], np.complex128)
 
     with pytest.raises(AssertionError):
-        tmp = restoreable_obj.epetra_crsmatrix2numpy(
-                    restoreable_obj.numpy2epetra_crsmatrix(np_matrix))
+        tmp = converter_obj.epetra_crsmatrix2numpy(
+                    converter_obj.numpy2epetra_crsmatrix(np_matrix))
 
 def test_cirq_paulisum2scipy_crsmatrix_assert():
-    restoreable_obj = DummyRestorable()
+    converter_obj = Converter()
 
     paulisum = cirq.PauliSum.from_pauli_strings([-cirq.Y(cirq.LineQubit(i)) for i in range(2)])
 
     with pytest.raises(AssertionError):
-        scipy_crsmatrix = restoreable_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
+        scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
