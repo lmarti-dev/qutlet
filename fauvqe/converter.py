@@ -201,25 +201,23 @@ class Converter:
     def _zz2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
         _N = 2**_n
 
-        _coeffs = []
-        _indices_coeffs = []
+        _coeffs = np.empty(len(paulisum), dtype = dtype)
+        _indices_coeffs = np.empty((len(paulisum),2), dtype=np.uint32)
+        _i = 0
         for vec, coeff in paulisum._linear_dict.items():
             tmp= list(dict(vec).keys())
-            _indices_coeffs.append([_qubit_map[tmp[i]] for i in range(len(vec))])
+            _indices_coeffs[_i]=[_qubit_map[tmp[i]] for i in range(len(vec))]
 
             if np.iscomplexobj(dtype(0)):
-                _coeffs.append(dtype(coeff))
+                _coeffs[_i]=dtype(coeff)
             else:
-                _coeffs.append(dtype(coeff.real))
+                _coeffs[_i]=dtype(coeff.real)
+            _i += 1
 
         def _zz_binary_fct(int_in, _n):
             #assume 0, +1 input
-            #potentially speed that up via np routine
-            binary_vec = np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])
-            _tmp = 0
-            for i in range(len(_coeffs)):
-                _tmp += _coeffs[i] * np.prod(-2*binary_vec[_indices_coeffs[i]]+1)
-            return _tmp
+            return np.sum(_coeffs    * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs[:,0]]+1)
+                                    * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs[:,1]]+1))
         return _zz_binary_fct
 
     def _zz2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
@@ -228,14 +226,17 @@ class Converter:
         #Get binary function
         _binary_fct = self._zz2binary_fct(_n, paulisum, _qubit_map, dtype)
         
-        if _n < 11:
+        if _n < 15:
             _binary_fct_vec = np.vectorize(_binary_fct)
-            _data = _binary_fct_vec(np.arange(_N), _n)
+            _data = _binary_fct_vec(np.arange(int(_N/2)), _n)
         else:
             _data= np.array(joblib.Parallel(n_jobs=8, backend="loky")(
                 joblib.delayed(_binary_fct)(j, _n)
-                for j in range(_N)), dtype=dtype)
+                for j in range(int(_N/2))), dtype=dtype)
         
         #Remove zeros
         non_zeros = np.nonzero(_data)
-        return scipy_csr_matrix((_data[non_zeros], (*non_zeros, *non_zeros)), shape=(_N, _N))
+        return scipy_csr_matrix((np.hstack([_data[non_zeros], np.flip(_data[non_zeros])]), 
+                                (   np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]), 
+                                    np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]))), shape=(_N, _N))
+    

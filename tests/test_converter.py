@@ -154,12 +154,12 @@ def test_cirq_paulisum2scipy_crsmatrix(paulisum, dtype):
     "paulisum, true_diagonal",
     [
         (
-             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(2*i))*cirq.Z(cirq.LineQubit(2*i+1)) for i in range(6)]) ,
+             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(2*i))*cirq.Z(cirq.LineQubit(2*i+1)) for i in range(8)]) ,
              -np.array([np.sum(
                         np.prod(
-                            (-2*np.array([int(i) for i in bin(int_in)[2:].zfill((2*6))])+1).reshape(int((2*6)/2), 2), 
+                            (-2*np.array([int(i) for i in bin(int_in)[2:].zfill((2*8))])+1).reshape(int((2*8)/2), 2), 
                             axis=1)
-                            ) for int_in in np.arange(2**(2*6))],
+                            ) for int_in in np.arange(2**(2*8))],
                             dtype = np.int32)
         ),
        (
@@ -172,9 +172,7 @@ def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum, true_diagonal):
     converter_obj = Converter()
     scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=int)
 
-    #print(paulisum)
-    #print(scipy_crsmatrix.diagonal())
-    #This is to slow 
+    #To avoid slow down use diagonal matrixes/diagonal vectors for testing
     np.testing.assert_allclose(true_diagonal, scipy_crsmatrix.diagonal(), rtol=1e-14, atol=0)
 
 
