@@ -3,6 +3,7 @@ from cirq import PauliString as cirq_PauliString
 from cirq import X as cirq_X
 from cirq import Z as cirq_Z
 import joblib
+from numbers import Number
 import numpy as np
 #from PyTrilinos import Epetra; PyTrilinos_supported = True
 from sys import stdout
@@ -77,7 +78,13 @@ class Converter:
             self.epetra_crsmatrix2numpy = epetra_crsmatrix2numpy
             self.numpy2epetra_crsmatrix = numpy2epetra_crsmatrix
     
-    def cirq_paulisum2scipy_crsmatrix(self, paulisum: cirq_PauliSum, dtype=np.complex128 ):
+    def cirq_paulisum2scipy_crsmatrix(  self, 
+                                        paulisum: cirq_PauliSum, 
+                                        dtype=np.complex128,
+                                        n_jobs: int = 0  ):
+        if n_jobs == 0:
+            n_jobs = 8
+        
         #Ensure that qubit ordering is the same 
         _n=len(paulisum.qubits)
         _N = 2**_n
@@ -115,13 +122,17 @@ class Converter:
         if __has_x:
             x_sparse = self._x2scipy_crsmatrix(_n, ham_x, _qubit_map, dtype)
         if __has_z:
-            z_sparse = self._z2scipy_crsmatrix(_n, ham_z, _qubit_map, dtype)
+            z_sparse = self._z2scipy_crsmatrix(_n, ham_z, _qubit_map, dtype, n_jobs)
         if __has_zz:
-            zz_sparse = self._zz2scipy_crsmatrix(_n, ham_zz, _qubit_map, dtype)
+            zz_sparse = self._zz2scipy_crsmatrix(_n, ham_zz, _qubit_map, dtype, n_jobs)
         
         return zz_sparse + z_sparse + x_sparse
 
-    def _x2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+    def _x2scipy_crsmatrix( self, 
+                            _n: int, 
+                            paulisum: cirq_PauliSum, 
+                            _qubit_map: dict(), 
+                            dtype=np.complex128 ):
         #Potentially add joblib extention fo _n > 20 ish
         _N = 2**_n
 
@@ -157,7 +168,11 @@ class Converter:
         #np.tile([1,2],2)   ->[1,2,1,2]
         return scipy_csr_matrix((np.tile(_coeffs, _N), (np.repeat(np.arange(_N), _n).astype(int), col)), shape=(_N, _N))
 
-    def _z2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
+    def _z2binary_fct( self, 
+                        _n: int, 
+                        paulisum: cirq_PauliSum, 
+                        _qubit_map: dict(), 
+                        dtype=np.complex128 ):
         _N = 2**_n
 
         _coeffs = np.empty(len(paulisum), dtype = dtype)
@@ -177,7 +192,12 @@ class Converter:
             return np.sum(_coeffs * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs]+1))
         return _z_binary_fct
 
-    def _z2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+    def _z2scipy_crsmatrix( self, 
+                            _n: int, 
+                            paulisum: cirq_PauliSum, 
+                            _qubit_map: dict(), 
+                            dtype: type(Number),
+                            n_jobs: int):
         #Potentially improve this further by recursion
         # C1 = (c1, -c1) -> C2 = (C1+c2, C1-c2) ...
         # Issue/Challenge if some cs are zero/do not exist
@@ -185,8 +205,12 @@ class Converter:
 
         #Get binary function
         _binary_fct = self._z2binary_fct(_n, paulisum, _qubit_map, dtype)
-        
-        if _n < 15:
+
+        # Resulting behaviour:
+        # in no n_jobs is handed on the tested optimised behaviour happens: _n < 15 no joblib execution  
+        # if n_jobs > 0 is handed over joblib is run with n_jobs = n_jobs (input)
+        # if n_jobs < 0 the numpy vektorized version is run  
+        if (_n < 15 and n_jobs == 8) or n_jobs < 0:
             _binary_fct_vec = np.vectorize(_binary_fct)
             _data = _binary_fct_vec(np.arange(int(_N/2)), _n)
         else:
@@ -200,7 +224,11 @@ class Converter:
                                 (   np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]), 
                                     np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]))), shape=(_N, _N))
 
-    def _zz2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
+    def _zz2binary_fct( self, 
+                        _n: int, 
+                        paulisum: cirq_PauliSum, 
+                        _qubit_map: dict(), 
+                        dtype=np.complex128 ):
         _N = 2**_n
 
         _coeffs = np.empty(len(paulisum), dtype = dtype)
@@ -222,13 +250,22 @@ class Converter:
                                     * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs[:,1]]+1))
         return _zz_binary_fct
 
-    def _zz2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+    def _zz2scipy_crsmatrix( self, 
+                            _n: int, 
+                            paulisum: cirq_PauliSum, 
+                            _qubit_map: dict(), 
+                             dtype: type(Number),
+                            n_jobs: int):
         _N = 2**_n
 
         #Get binary function
         _binary_fct = self._zz2binary_fct(_n, paulisum, _qubit_map, dtype)
         
-        if _n < 15:
+        # Resulting behaviour:
+        # in no n_jobs is handed on the tested optimised behaviour happens: _n < 15 no joblib execution  
+        # if n_jobs > 0 is handed over joblib is run with n_jobs = n_jobs (input)
+        # if n_jobs < 0 the numpy vektorized version is run  
+        if (_n < 15 and n_jobs == 8) or n_jobs < 0:
             _binary_fct_vec = np.vectorize(_binary_fct)
             _data = _binary_fct_vec(np.arange(int(_N/2)), _n)
         else:
