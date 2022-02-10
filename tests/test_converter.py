@@ -108,33 +108,39 @@ def test_numpy2epetra_crsmatrix(np_matrix):
     np.testing.assert_allclose(np_matrix2, np_matrix, rtol=1e-14, atol=0)
 
 @pytest.mark.parametrize(
-    "paulisum",
+    "paulisum, dtype",
     [
         (
-            cirq.PauliSum.from_pauli_strings(-cirq.Z(cirq.LineQubit(0))*cirq.Z(cirq.LineQubit(1)))
+            cirq.PauliSum.from_pauli_strings(-cirq.Z(cirq.LineQubit(0))*cirq.Z(cirq.LineQubit(1))),
+            np.complex128
         ),
         (
-            cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(2)])
+            cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(2)]),
+            int
         ),
         (
-            cirq.PauliSum.from_pauli_strings([-(i+1)*cirq.Z(cirq.LineQubit(i)) for i in range(5)])
+            cirq.PauliSum.from_pauli_strings([-(i+1)*cirq.Z(cirq.LineQubit(i)) for i in range(5)]),
+            np.complex128
         ),
         (
-            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(2)])
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(2)]),
+            np.complex128
         ),
         (
-            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(5)])
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i)) for i in range(5)]),
+            np.complex128
         ),
         (
             cirq.PauliSum.from_pauli_strings([-np.pi*cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(6)]) +
             cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i)) for i in range(6)]) + 
-            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i))/(i+1) for i in range(6)])
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i))/(i+1) for i in range(6)]),
+            np.float64
         ),
     ]
 )
-def test_cirq_paulisum2scipy_crsmatrix(paulisum):
+def test_cirq_paulisum2scipy_crsmatrix(paulisum, dtype):
     converter_obj = Converter()
-    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=dtype)
 
     print("Paulisum: {}".format(paulisum))
 
@@ -145,23 +151,33 @@ def test_cirq_paulisum2scipy_crsmatrix(paulisum):
 
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
-    "paulisum",
+    "paulisum, true_diagonal",
     [
         (
-             cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(11)]) +
-                 cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i)) for i in range(11)]) +
-                 cirq.PauliSum.from_pauli_strings([-(i+1)*cirq.X(cirq.LineQubit(i)) for i in range(11)])
+             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.LineQubit(2*i))*cirq.Z(cirq.LineQubit(2*i+1)) for i in range(6)]) ,
+             -np.array([np.sum(
+                        np.prod(
+                            (-2*np.array([int(i) for i in bin(int_in)[2:].zfill((2*6))])+1).reshape(int((2*6)/2), 2), 
+                            axis=1)
+                            ) for int_in in np.arange(2**(2*6))],
+                            dtype = np.int32)
         ),
+       (
+            cirq.PauliSum.from_pauli_strings([cirq.Z(cirq.LineQubit(i)) for i in range(15)]),
+            np.array([ np.sum( (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(15)])+1)) for int_in in np.arange(2**15)],dtype = np.int32)
+       ),
     ]
 )
-def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum):
+def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum, true_diagonal):
     converter_obj = Converter()
-    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=np.float64)
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum, dtype=int)
 
-    print("Paulisum: {}".format(paulisum))
+    #print(paulisum)
+    #print(scipy_crsmatrix.diagonal())
+    #This is to slow 
+    np.testing.assert_allclose(true_diagonal, scipy_crsmatrix.diagonal(), rtol=1e-14, atol=0)
 
-    np.testing.assert_allclose(paulisum.matrix(), scipy_crsmatrix.toarray(), rtol=1e-14, atol=0)
-    
+
 #############################################################
 #                                                           #
 #                    Assert tests                           #
@@ -178,10 +194,19 @@ def test_assert_numpy2epetra_crsmatrix():
         tmp = converter_obj.epetra_crsmatrix2numpy(
                     converter_obj.numpy2epetra_crsmatrix(np_matrix))
 
-def test_cirq_paulisum2scipy_crsmatrix_assert():
+@pytest.mark.parametrize(
+    "paulisum",
+    [
+        (
+               cirq.PauliSum.from_pauli_strings([-cirq.Y(cirq.LineQubit(i)) for i in range(2)])     
+        ),
+        (
+               cirq.PauliSum.from_pauli_strings(-cirq.Z(cirq.LineQubit(0))*cirq.Z(cirq.LineQubit(1))*cirq.Z(cirq.LineQubit(2)))    
+        ),
+    ]
+)
+def test_cirq_paulisum2scipy_crsmatrix_assert(paulisum):
     converter_obj = Converter()
-
-    paulisum = cirq.PauliSum.from_pauli_strings([-cirq.Y(cirq.LineQubit(i)) for i in range(2)])
 
     with pytest.raises(AssertionError):
         scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(paulisum)

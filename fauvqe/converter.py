@@ -82,33 +82,44 @@ class Converter:
         _n=len(paulisum.qubits)
         _N = 2**_n
         _qubit_map = {paulisum.qubits[k]: int(k) for k in range(_n)}
-        #print(_qubit_map)
 
         x_sparse = scipy_csr_matrix((_N, _N))
         ham_x = cirq_PauliSum()
         __has_x = False
-        
-        zz_sparse = scipy_csr_matrix((_N, _N))
+
+        z_sparse = scipy_csr_matrix((_N, _N))
         ham_z = cirq_PauliSum()
         __has_z = False
+        
+        zz_sparse = scipy_csr_matrix((_N, _N))
+        ham_zz = cirq_PauliSum()
+        __has_zz = False
 
         #First seperate PauliSum in X and Z part and raise error if not of ZZ-X-Z form
         for vec, coeff in paulisum._linear_dict.items():
-            if type(*set(dict(vec).values())) == type(cirq_X):
+            if type(*set(dict(vec).values())) == type(cirq_X) and len(dict(vec)) == 1:
                 ham_x += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
                 __has_x = True
             elif type(*set(dict(vec).values())) == type(cirq_Z):
-                ham_z += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
-                __has_z = True
+                if len(dict(vec)) == 1:
+                    ham_z += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
+                    __has_z = True
+                elif len(dict(vec)) == 2:
+                    ham_zz += coeff*cirq_PauliString(qubit_pauli_map=dict(vec))
+                    __has_zz = True
+                else:
+                    assert False, "Hamiltonian not of ZZ-Z-X form" 
             else:
                 assert False, "Hamiltonian not of ZZ-Z-X form"
-        
+
         if __has_x:
             x_sparse = self._x2scipy_crsmatrix(_n, ham_x, _qubit_map, dtype)
         if __has_z:
-            zz_sparse = self._zz2scipy_crsmatrix(_n, ham_z, _qubit_map, dtype)
+            z_sparse = self._z2scipy_crsmatrix(_n, ham_z, _qubit_map, dtype)
+        if __has_zz:
+            zz_sparse = self._zz2scipy_crsmatrix(_n, ham_zz, _qubit_map, dtype)
         
-        return zz_sparse + x_sparse
+        return zz_sparse + z_sparse + x_sparse
 
     def _x2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
         #Potentially add joblib extention fo _n > 20 ish
@@ -145,6 +156,47 @@ class Converter:
         #np.repeat([1,2],2) ->[1,1,2,2]
         #np.tile([1,2],2)   ->[1,2,1,2]
         return scipy_csr_matrix((np.tile(_coeffs, _N), (np.repeat(np.arange(_N), _n).astype(int), col)), shape=(_N, _N))
+
+    def _z2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
+        _N = 2**_n
+
+        _coeffs = []
+        _indices_coeffs = []
+        for vec, coeff in paulisum._linear_dict.items():
+            tmp= list(dict(vec).keys())
+            _indices_coeffs.append(_qubit_map[tmp[0]])
+
+            if np.iscomplexobj(dtype(0)):
+                _coeffs.append(dtype(coeff))
+            else:
+                _coeffs.append(dtype(coeff.real))
+
+        def _z_binary_fct(int_in, _n):
+            return np.sum(_coeffs * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs]+1))
+        return _z_binary_fct
+
+    def _z2scipy_crsmatrix(self, _n, paulisum: cirq_PauliSum, _qubit_map, dtype=np.complex128 ):
+        #Potentially improve this further by recursion
+        # C1 = (c1, -c1) -> C2 = (C1+c2, C1-c2) ...
+        # Issue/Challenge if some cs are zero/do not exist
+        _N = 2**_n
+
+        #Get binary function
+        _binary_fct = self._z2binary_fct(_n, paulisum, _qubit_map, dtype)
+        
+        if _n < 15:
+            _binary_fct_vec = np.vectorize(_binary_fct)
+            _data = _binary_fct_vec(np.arange(int(_N/2)), _n)
+        else:
+            _data= np.array(joblib.Parallel(n_jobs=8, backend="loky")(
+                joblib.delayed(_binary_fct)(j, _n)
+                for j in range(int(_N/2))), dtype=dtype)
+        
+        #Remove zeros
+        non_zeros = np.nonzero(_data)
+        return scipy_csr_matrix((np.hstack([_data[non_zeros], -np.flip(_data[non_zeros])]), 
+                                (   np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]), 
+                                    np.hstack([non_zeros[0], np.flip(_N-non_zeros[0]-1)]))), shape=(_N, _N))
 
     def _zz2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
         _N = 2**_n
