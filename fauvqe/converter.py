@@ -160,16 +160,18 @@ class Converter:
     def _z2binary_fct(self, _n, paulisum: cirq_PauliSum, _qubit_map = dict(), dtype=np.complex128 ):
         _N = 2**_n
 
-        _coeffs = []
-        _indices_coeffs = []
+        _coeffs = np.empty(len(paulisum), dtype = dtype)
+        _indices_coeffs = np.empty(len(paulisum), dtype=np.uint16)
+        _i = 0
         for vec, coeff in paulisum._linear_dict.items():
             tmp= list(dict(vec).keys())
-            _indices_coeffs.append(_qubit_map[tmp[0]])
+            _indices_coeffs[_i]=_qubit_map[tmp[0]]
 
             if np.iscomplexobj(dtype(0)):
-                _coeffs.append(dtype(coeff))
+                _coeffs[_i]=dtype(coeff)
             else:
-                _coeffs.append(dtype(coeff.real))
+                _coeffs[_i]=dtype(coeff.real)
+            _i += 1
 
         def _z_binary_fct(int_in, _n):
             return np.sum(_coeffs * (-2*np.array([int(i) for i in bin(int_in)[2:].zfill(_n)])[_indices_coeffs]+1))
