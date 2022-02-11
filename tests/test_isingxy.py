@@ -277,7 +277,9 @@ def test_json():
 )
 def test_glues_circuit(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field, glue_axis, sol_circuit, sol_circuit_param):
     ising = IsingXY(qubittype, n, j_y_v, j_y_h, j_z_v, j_z_h, h, field)
-    ising.set_circuit("qaoa")
+    ising.set_circuit("qaoa", {
+    "1QubitGates": []
+    })
     #print(ising.circuit)
     
     ising.glue_circuit(axis=glue_axis)

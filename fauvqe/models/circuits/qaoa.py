@@ -11,6 +11,7 @@ import cirq
 import sympy
 import itertools
 
+from fauvqe.models.ising import Ising
 
 def set_p(self, p):
     if self.qaoa.options["p"] != p:
@@ -164,7 +165,7 @@ def _UC_layer(self, gamma):
                 for j in range(self.n[1]):
                     if(self.h[i][j][g] != 0):
                         yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
-    else:
+    elif(isinstance(self, Ising)):
         for k in range(2):
             if self.n[0] > 1:
                 for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
@@ -183,7 +184,36 @@ def _UC_layer(self, gamma):
                     #Boundary terms
                     if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
                         yield cirq.ZZ(self.qubits[i][self.n[1]-1], self.qubits[i][0])** (gamma * self.j_h[i, self.n[1]-1][0])
-
+    
+    else:
+        #2-qubit gates
+        for g in range(len(self.qaoa.options["2QubitGates"])):
+            gate = self.qaoa.options["2QubitGates"][g]
+            for k in range(2):
+                if self.n[0] > 1:
+                    for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
+                        #Bulk terms
+                        for i in np.arange(int(k), self.n[0]-1, 2, dtype=int):
+                            yield gate(self.qubits[i][j], self.qubits[i+1][j], gamma * self.j_v[i,j][g])
+                        #Boundary terms
+                        if self.boundaries[0] == 0 and self.n[0]%2 == int(1-k):
+                            yield gate(self.qubits[self.n[0]-1][j], self.qubits[0][j], gamma * self.j_v[self.n[0] - 1,j][g])
+                if self.n[1] > 1:
+                    for i in np.arange(0, self.n[0]-1+0.1, 1, dtype=int):
+                        #Bulk terms
+                        for j in np.arange(k, self.n[1]-1, 2, dtype=int):
+                            yield gate(self.qubits[i][j], self.qubits[i][j+1], gamma * self.j_h[i,j][g])
+                        #Boundary terms
+                        if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
+                            yield gate(self.qubits[i][self.n[1]-1], self.qubits[i][0], gamma * self.j_h[i,self.n[1]-1][g])
+        #Single qubit gates
+        for g in range(len(self.qaoa.options["1QubitGates"])):
+            gate = self.qaoa.options["1QubitGates"][g]
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    if(self.h[i][j][g] != 0):
+                        yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
+    
 def _Z_layer(self, gamma):
     for i in range(self.n[0]):
         for j in range(self.n[1]):

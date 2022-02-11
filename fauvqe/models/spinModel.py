@@ -198,7 +198,10 @@ class SpinModel(AbstractModel):
                                 "p": 1,
                                 "H_layer": True,
                                 "fully_connected" : False,
-                                "i0": 0}
+                                "i0": 0,
+                                "1QubitGates": [ lambda q, theta: cirq.Z(q)**(theta)],
+                                "2QubitGates" : [lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]
+                                }
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
             self.qaoa.set_circuit(self)
