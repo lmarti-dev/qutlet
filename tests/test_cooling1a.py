@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import Ising, Cooling1A, ExpectationValue
+from fauvqe import Ising, Cooling1A, ExpectationValue, HeisenbergFC
 
 @pytest.mark.parametrize(
     "n, boundaries",
@@ -20,7 +20,7 @@ from fauvqe import Ising, Cooling1A, ExpectationValue
 )
 def test_copy(n, boundaries):
     m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
-    m_anc = Ising("GridQubit", [1,1], np.zeros((0,1)), np.zeros((1,1)), np.ones((1,1)))
+    m_anc = Ising("GridQubit", [n[0],1], np.zeros((n[0],1)), np.zeros((n[0],1)), np.ones((n[0],1)))
     j_int = np.ones((1, n[0]))
     
     model = Cooling1A(
@@ -43,7 +43,7 @@ def test_copy(n, boundaries):
 )
 def test_copy_fc(n):
     m_sys = HeisenbergFC("GridQubit", n, np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])))
-    m_anc = HeisenbergFC("GridQubit", n, np.zeros((n[0], n[1], n[0], n[1])), np.zeros((n[0], n[1], n[0], n[1])), np.zeros((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1])))
+    m_anc = HeisenbergFC("GridQubit", [n[0], 1], np.zeros((n[0], 1, n[0], 1)), np.zeros((n[0], 1, n[0], 1)), np.zeros((n[0], 1, n[0], 1)), np.ones((n[0], 1)))
     j_int = np.ones((1, n[0]))
     
     model = Cooling1A(

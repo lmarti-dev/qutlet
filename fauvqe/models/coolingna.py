@@ -123,9 +123,11 @@ class CoolingNA(SpinModelFC):
                         for j in range(m_anc.n[1]):
                             for l in range(j+1, m_anc.n[1], 1):
                                 js[g, i, 2*j+1, i, 2*l+1] = m_anc.j[i, j, i, l, g_anc]
+                                js[g, i, 2*l+1, i, 2*j+1] = m_anc.j[i, j, i, l, g_anc]
                             for k in range(i+1, m_anc.n[0], 1):
                                 for l in range(m_anc.n[1]):
                                     js[g, i, 2*j+1, k, 2*l+1] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, k, 2*l+1, i, 2*j+1] = m_anc.j[i, j, k, l, g_anc]
                 else:
                     for i in range(m_anc.n[0]-1):
                         for j in range(m_anc.n[1]-1):
