@@ -2179,3 +2179,93 @@ Test Indices
 Sequential Time: 0.9147114753723145
 Parallel Time: 1.0337908267974854
 
+===Fri, 11 Feb 2022 15:16:04 +0000===
+Test No Indices 
+
+Sequential Time: 2.4768571853637695
+Parallel Time: 0.8661074638366699
+
+===Fri, 11 Feb 2022 15:16:07 +0000===
+Test Indices 
+
+Sequential Time: 1.5636229515075684
+Parallel Time: 1.331324577331543
+
+===Fri, 11 Feb 2022 15:16:09 +0000===
+Test Indices 
+
+Sequential Time: 0.9413919448852539
+Parallel Time: 0.9684534072875977
+
+===Fri, 11 Feb 2022 15:16:12 +0000===
+Test Indices 
+
+Sequential Time: 1.4051127433776855
+Parallel Time: 1.3383090496063232
+
+===Fri, 11 Feb 2022 15:16:14 +0000===
+Test Indices 
+
+Sequential Time: 0.9857363700866699
+Parallel Time: 1.1951212882995605
+
+===Fri, 11 Feb 2022 16:31:57 +0000===
+Test No Indices 
+
+Sequential Time: 2.5277183055877686
+Parallel Time: 0.8537726402282715
+
+===Fri, 11 Feb 2022 16:32:00 +0000===
+Test Indices 
+
+Sequential Time: 1.3648529052734375
+Parallel Time: 1.289205551147461
+
+===Fri, 11 Feb 2022 16:32:02 +0000===
+Test Indices 
+
+Sequential Time: 0.9193692207336426
+Parallel Time: 0.9790594577789307
+
+===Fri, 11 Feb 2022 16:32:05 +0000===
+Test Indices 
+
+Sequential Time: 1.4149391651153564
+Parallel Time: 1.3332281112670898
+
+===Fri, 11 Feb 2022 16:32:07 +0000===
+Test Indices 
+
+Sequential Time: 0.953571081161499
+Parallel Time: 1.023191213607788
+
+===Fri, 11 Feb 2022 16:49:28 +0000===
+Test No Indices 
+
+Sequential Time: 2.4503629207611084
+Parallel Time: 0.9231181144714355
+
+===Fri, 11 Feb 2022 16:49:30 +0000===
+Test Indices 
+
+Sequential Time: 1.3751895427703857
+Parallel Time: 1.283689260482788
+
+===Fri, 11 Feb 2022 16:49:32 +0000===
+Test Indices 
+
+Sequential Time: 0.9030699729919434
+Parallel Time: 0.9783270359039307
+
+===Fri, 11 Feb 2022 16:49:35 +0000===
+Test Indices 
+
+Sequential Time: 1.3897085189819336
+Parallel Time: 1.3476848602294922
+
+===Fri, 11 Feb 2022 16:49:37 +0000===
+Test Indices 
+
+Sequential Time: 0.9313647747039795
+Parallel Time: 1.0372767448425293
+

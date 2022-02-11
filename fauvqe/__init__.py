@@ -17,6 +17,7 @@ from fauvqe.models import (
     Ising,
     IsingXY,
     Heisenberg,
+    HeisenbergFC,
     SpinModel,
     SpinModelFC
 )

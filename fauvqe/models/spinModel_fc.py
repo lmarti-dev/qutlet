@@ -151,7 +151,7 @@ class SpinModelFC(AbstractModel):
         )
         self.circuit_param_values = new_values
     
-    def energy_2q(self, j) -> np.ndarray:
+    def energy_2q(self, js) -> np.ndarray:
         n_sites = self.n[0] * self.n[1]
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
         
@@ -163,12 +163,12 @@ class SpinModelFC(AbstractModel):
             for j in range(self.n[1]):
                 #k==i, l>j
                 for l in range(j+1, self.n[1], 1):
-                    ZZ_filter += j[i, j, i, l] * Z[i * self.n[1] + j] * Z[i * self.n[1] + l]
+                    ZZ_filter += js[i, j, i, l] * Z[i * self.n[1] + j] * Z[i * self.n[1] + l]
                 #k>i
                 for k in range(i+1, self.n[0], 1):
                     for l in range(self.n[1]):
                         if ( (i<k) or (i==k and j<=l) ):
-                            ZZ_filter += j[i, j, k, l] * Z[i * self.n[1] + j] * Z[k * self.n[1] + l]
+                            ZZ_filter += js[i, j, k, l] * Z[i * self.n[1] + j] * Z[k * self.n[1] + l]
 
         return ZZ_filter
     
