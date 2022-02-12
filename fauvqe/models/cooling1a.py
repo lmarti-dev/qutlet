@@ -121,15 +121,10 @@ class Cooling1A(SpinModelFC):
                 if(self.anc_fc):
                     for i in range(m_anc.n[0]):
                         for j in range(m_anc.n[1]):
-                            for l in range(j+1, m_anc.n[1], 1):
-                                js[g, i, m_sys.n[1] + j, i, m_sys.n[1] + l] = m_anc.j[i, j, i, l, g_anc]
-                                js[g, i, m_sys.n[1] + l, i, m_sys.n[1] + j] = m_anc.j[i, j, i, l, g_anc]
                             for k in range(i+1, m_anc.n[0], 1):
                                 for l in range(m_anc.n[1]):
-                                    print(js.shape)
-                                    print(i, j, k, l, g)
-                                    js[g, i, m_sys.n[1] + j, k, m_sys.n[0] + l] = m_anc.j[i, j, k, l, g_anc]
-                                    js[g, k, m_sys.n[1] + l, i, m_sys.n[0] + j] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, i, m_sys.n[1] + j, k, m_sys.n[1] + l] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, k, m_sys.n[1] + l, i, m_sys.n[1] + j] = m_anc.j[i, j, k, l, g_anc]
                 else:
                     for i in range(m_anc.n[0] - 1):
                         js[g, i, m_sys.n[1], i+1, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]

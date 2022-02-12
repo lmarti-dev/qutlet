@@ -157,6 +157,49 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 1], 
             [1, 1], 
+            {
+                "2Qvariables": [['theta', 'phi'], ['kappa', 'psi'], ['mu', 'nu']],
+            },
+            cirq.Circuit(cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                            on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
+                         cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 0)),
+                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                            on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)))
+        ),
+        (
+            [2, 1], 
+            [1, 1], 
             {"2QubitGates": [lambda phi, theta: cirq.ISwapPowGate (exponent=theta), 
                              lambda psi, kappa: cirq.ISwapPowGate (exponent=kappa)],
             "2Qvariables": [['phi', 'theta'], ['psi', 'kappa']],
@@ -280,3 +323,18 @@ def test_set_circuit(n, boundaries, options, solution):
     model.set_circuit("hea", options)
     #print(ising.circuit)
     assert model.circuit == solution
+
+def test_assert_layerwise():
+    n=[1, 2];boundaries=[1, 0]
+    m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1])), np.zeros((n[0], n[1])), field="X")
+    m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.zeros((n[0], n[1])))
+    j_int = np.ones((1, n[0], n[1]))
+    
+    model = CoolingNA(
+                    m_sys,
+                    m_anc,
+                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
+                    j_int
+    )
+    with pytest.raises(NotImplementedError):
+        model.set_circuit("hea", {'parametrisation': "layerwise"})
