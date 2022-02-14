@@ -1110,6 +1110,7 @@ def test_glues_circuit(qubittype, n, j_v, j_h, h, field, glue_axis, sol_circuit,
     assert(ising == ising2)
         
 # This is potentially a higher effort test:
+@pytest.mark.ultrahigheffort
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n",
@@ -1162,6 +1163,7 @@ def hamiltonian(n):
         ham = ham + tmpzz
     return -1*ham
 
+@pytest.mark.ultrahigheffort
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, use_dense",

@@ -2857,3 +2857,147 @@ Test Adam + ExpectationValue
 Sequential Time: 12.69548511505127
 Parallel Time: 4.321556091308594
 
+===Mo, 14 Feb 2022 16:34:19 +0000===
+Test No Indices 
+
+Sequential Time: 2.6065990924835205
+Parallel Time: 0.8963260650634766
+
+===Mo, 14 Feb 2022 16:34:22 +0000===
+Test Indices 
+
+Sequential Time: 1.4961466789245605
+Parallel Time: 1.4013726711273193
+
+===Mo, 14 Feb 2022 16:34:24 +0000===
+Test Indices 
+
+Sequential Time: 0.9887995719909668
+Parallel Time: 1.0823376178741455
+
+===Mo, 14 Feb 2022 16:34:27 +0000===
+Test Indices 
+
+Sequential Time: 1.499751091003418
+Parallel Time: 1.52116060256958
+
+===Mo, 14 Feb 2022 16:34:29 +0000===
+Test Indices 
+
+Sequential Time: 0.9855878353118896
+Parallel Time: 1.1121973991394043
+
+===Mo, 14 Feb 2022 16:34:48 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.261810302734375
+Parallel Time: 4.693556308746338
+
+===Mo, 14 Feb 2022 16:34:59 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.732923269271851
+Parallel Time: 3.0273094177246094
+
+===Mo, 14 Feb 2022 16:35:31 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.634572982788086
+Parallel Time: 7.6728739738464355
+
+===Mo, 14 Feb 2022 16:35:48 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.738026142120361
+Parallel Time: 4.313734769821167
+
+===Mo, 14 Feb 2022 17:06:14 +0000===
+Test No Indices 
+
+Sequential Time: 2.821430206298828
+Parallel Time: 0.9198453426361084
+
+===Mo, 14 Feb 2022 17:06:17 +0000===
+Test Indices 
+
+Sequential Time: 1.510453701019287
+Parallel Time: 1.404808521270752
+
+===Mo, 14 Feb 2022 17:06:19 +0000===
+Test Indices 
+
+Sequential Time: 0.985262393951416
+Parallel Time: 1.0594561100006104
+
+===Mo, 14 Feb 2022 17:06:22 +0000===
+Test Indices 
+
+Sequential Time: 1.4543256759643555
+Parallel Time: 1.5407309532165527
+
+===Mo, 14 Feb 2022 17:06:25 +0000===
+Test Indices 
+
+Sequential Time: 1.041494607925415
+Parallel Time: 1.1452696323394775
+
+===Mo, 14 Feb 2022 17:06:44 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.76616621017456
+Parallel Time: 4.947059154510498
+
+===Mo, 14 Feb 2022 17:10:05 +0000===
+Test No Indices 
+
+Sequential Time: 2.6569130420684814
+Parallel Time: 0.8989863395690918
+
+===Mo, 14 Feb 2022 17:10:08 +0000===
+Test Indices 
+
+Sequential Time: 1.4928085803985596
+Parallel Time: 1.4051728248596191
+
+===Mo, 14 Feb 2022 17:10:10 +0000===
+Test Indices 
+
+Sequential Time: 0.9774110317230225
+Parallel Time: 1.058286428451538
+
+===Mo, 14 Feb 2022 17:10:13 +0000===
+Test Indices 
+
+Sequential Time: 1.4859459400177002
+Parallel Time: 1.4548568725585938
+
+===Mo, 14 Feb 2022 17:10:15 +0000===
+Test Indices 
+
+Sequential Time: 0.9977421760559082
+Parallel Time: 1.1174719333648682
+
+===Mo, 14 Feb 2022 17:10:35 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.425888061523438
+Parallel Time: 4.697783946990967
+
+===Mo, 14 Feb 2022 17:10:46 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.620802164077759
+Parallel Time: 3.029794692993164
+
+===Mo, 14 Feb 2022 17:11:17 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.356204748153687
+Parallel Time: 7.61199426651001
+
+===Mo, 14 Feb 2022 17:11:33 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.257519960403442
+Parallel Time: 4.414668560028076
+

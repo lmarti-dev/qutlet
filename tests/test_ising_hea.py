@@ -471,10 +471,11 @@ def test_erros():
                 "X")
 
     with pytest.raises(AssertionError):
-        ising.set_circuit("hea", {"parametrisation": "test"})
+        ising.set_circuit("hea", {'parametrisation': "test"})
 
     ising.set_circuit("hea")
-    ising.hea.options.update({"parametrisation": "test"})
+    ising.hea.options.update({'parametrisation': "test"})
+
     with pytest.raises(AssertionError):
         ising.hea.set_circuit(ising)
 
