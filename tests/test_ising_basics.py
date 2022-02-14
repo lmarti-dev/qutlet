@@ -65,30 +65,36 @@ def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, field, n_exact, location",
     [
-        ("GridQubit",
+        (
+            "GridQubit",
             [2, 2],
             np.ones((1, 2)) / 2,
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 3,
             "X",
             [2, 2],
-            "start"),
-        ("GridQubit",
+            "start"
+        ),
+        (
+            "GridQubit",
             [2, 2],
             np.ones((1, 2)) / 2,
             np.zeros((2, 1)) / 5,
             np.ones((2, 2)) / 3,
             "X",
             [2, 1],
-            "start"),
-        ("GridQubit",
+            "start"
+            ),
+        (
+            "GridQubit",
             [3, 2],
             np.ones((3, 2)) / 2,
             np.zeros((3, 1)) / 5,
             np.ones((3, 2)) / 3,
             "Z",
             [3, 1],
-            "end")
+            "end"
+        ),
     ]
 )
 def test__exact_layer(qubittype, n, j_v, j_h, h, field, n_exact, location):
@@ -106,6 +112,52 @@ def test__exact_layer(qubittype, n, j_v, j_h, h, field, n_exact, location):
     #print(np.shape(ising.eig_vec[:,0]))
     #print("wf: \n {}\nising.eig_vec[:,0]: \n {}".format(wf, np.round(ising.eig_vec[:,0], decimals=6)))
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, ising.eig_vec[:,0], rtol=1e-7, atol=1e-8)
+
+@pytest.mark.parametrize(
+    "n",
+    [
+        (
+            [1, 2] 
+        ),
+        (
+            [2, 1]  
+        ),
+        (
+            [2, 2]  
+        ),
+        (
+            [1, 3]   
+        ),
+    ]
+)
+def test__exact_layer_cc(n):
+    print(n)
+    j_v = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h = 2*(np.random.rand(n[0],n[1])- 0.5)
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+
+    ising.set_simulator("cirq")
+    ising.set_circuit("basics",{    "start": "exact", 
+                                    "n_exact": n,
+                                    "cc_exact": True})
+
+    #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
+    #Should end up in the nth Z-Eigenstate
+    wf0 = np.zeros(2**(n[0]*n[1]))
+
+    for i in range(2**(n[0]*n[1])):
+        wf = ising.simulator.simulate(  initial_state=ising.eig_vec[:,i],
+                                        program=ising.circuit).state_vector()
+        wf = wf/np.linalg.norm(wf)
+
+        wf0[i]=1
+        wf0[i-1]=0
+
+        print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=5e-8)
+
 
 def test__hadamard_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
