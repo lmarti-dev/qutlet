@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import importlib
-from typing import Tuple, Dict, List
-from numbers import Real
-import itertools
-
-import numpy as np
+# External imports
 import cirq
+from collections.abc import Iterable
+import importlib
+import itertools
+from numbers import Real
+import numpy as np
+from typing import Tuple, Dict, List
 
+# Internal import
 from fauvqe.models.abstractmodel import AbstractModel
 
 
@@ -177,14 +179,34 @@ class SpinModel(AbstractModel):
             self.basics.options.update(options)
             self.basics.set_circuit(self)
         elif qalgorithm == "hea":
+            # Defaults for 1 and 2 qubit gates
+            if len(self._one_q_gates) < 2:
+                _1Qvariables = [['a' , 'x', 'z']]
+            else:
+                _1Qvariables = [['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in range(len(self._one_q_gates))]
+
+            if len(self._two_q_gates) < 2:
+                _2Qvariables = [['phi', 'theta']]
+            else:
+                _2Qvariables = [['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in range(len(self._two_q_gates))]
+
+
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
-                                "1Qvariables": [['a' + str(g) + '_', 'x'+ str(g) + '_', 'z' + str(g) + '_'] for g in range(len(self._one_q_gates))],
-                                "2Qvariables": [['phi' + str(g) + '_', 'theta' + str(g) + '_'] for g in range(len(self._two_q_gates))],
+                                "1Qvariables": _1Qvariables,
+                                "2Qvariables": _2Qvariables,
                                 "1QubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._one_q_gates))],
-                                "2QubitGates" : [cirq.FSimGate for g in range(len(self._two_q_gates))],
+                                "2QubitGates" : [lambda phi, theta: cirq.FSimGate(phi=phi, theta=theta)  for g in range(len(self._two_q_gates))],
                                }
+            
+            # Convert options input to correct format
+            for key, nested_level in [  ["1Qvariables", 2], 
+                                        ["2Qvariables", 2],
+                                        ["1QubitGates", 1],
+                                        ["2QubitGates", 1]]:
+                options = self._update2nestedlist(options, key, nested_level)
+
             self.hea.options.update(options)
             self.hea.set_symbols(self)
             self.hea.set_circuit(self)
@@ -323,3 +345,25 @@ class SpinModel(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
+
+    def _update2nestedlist(self, options: dict(), key, new_nested_level: int = 1):
+        if options.get(key) is not None:
+            if isinstance(options.get(key), Iterable):
+                _tmp = list(options.get(key))
+                Is_nested_level = self._nest_level(_tmp) - 1
+            else:
+                _tmp = [options.get(key) ]
+                Is_nested_level=0
+
+            for i in range(1, new_nested_level-Is_nested_level):
+                _tmp = [_tmp]
+            options.update({key: _tmp})
+
+        return options
+
+    def _nest_level(self, lst):
+        if not isinstance(lst, list):
+            return 0
+        if not lst:
+            return 1
+        return max(self._nest_level(item) for item in lst) + 1
