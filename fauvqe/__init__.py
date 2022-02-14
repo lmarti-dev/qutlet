@@ -16,6 +16,9 @@ from fauvqe import models, objectives, optimisers
 from fauvqe.models import (
     AbstractModel,
     Ising,
+    IsingXY,
+    Heisenberg,
+    SpinModel
 )
 from fauvqe.objectives import (
     AbstractExpectationValue,

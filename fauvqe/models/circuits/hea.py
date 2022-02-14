@@ -35,32 +35,30 @@ import sympy
 from numbers import Number
 
 
-def _1Qubit_layer(self, i):
+def _1Qubit_layer(self, i, g):
     """
         Generator for general 1Qubit layer
 
         a, x, z are possibly defined in 
         if not set 0 
     """
-    gate = self.hea.options["1QubitGate"]
-
+    
+    gate = self.hea.options["1QubitGates"][g]
     if self.hea.options["parametrisation"] in {"joint", "layerwise"}:
-        variables = [0, 0, 0]
+        variables = [0 for dummy in self.hea.options["1Qvariables"][g]]
         j = 0
-        for variable in ["a", "x", "z"]:
-            if variable in self.hea.options["variables"]:
-                variables[j] = sympy.Symbol(variable + str(i))
+        for variable in self.hea.options["1Qvariables"][g]:
+            variables[j] = sympy.Symbol(variable + str(i))
             j +=1
-
+        
         for row in self.qubits:
             for qubit in row:
                 yield gate(*variables).on(qubit)
     elif self.hea.options["parametrisation"] == "individual":
-        v_mask = [0, 0, 0]
+        v_mask = [0 for dummy in self.hea.options["1Qvariables"][g]]
         j = 0
-        for variable in ["a", "x", "z"]:
-            if variable in self.hea.options["variables"]:
-                v_mask[j] = variable
+        for variable in self.hea.options["1Qvariables"][g]:
+            v_mask[j] = variable
             j +=1
         
         #print(v_mask)
@@ -69,22 +67,18 @@ def _1Qubit_layer(self, i):
         #sympy.Symbol(variable + str(i) + "_" + str(j))
         for row in self.qubits:
             for qubit in row:
-                variables = [0, 0, 0]
-                for k in range(3):
+                variables = [0 for dummy in self.hea.options["1Qvariables"][g]]
+                for k in range(len(self.hea.options["1Qvariables"][g])):
                     variables[k] = self.hea.__get_sympy_Symbol(self, v_mask[k],i,j)
                 yield gate(*variables).on(qubit)
                 #print(variables)
-                #yield cirq.PhasedXZGate(x_exponent=self.hea.__get_sympy_Symbol(self, v_mask[1],i,j), 
-                #                        z_exponent=self.hea.__get_sympy_Symbol(self, v_mask[2],i,j), 
-                #                        axis_phase_exponent=self.hea.__get_sympy_Symbol(self, v_mask[0],i,j)).on(qubit)
                 j +=1
     else:
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
 
 
-
-def _partial_2Qubit_layer(self, i_p, v_v, v_h):
+def _partial_2Qubit_layer(self, i_p, v_v, v_h, g):
     """
     Generator for hardware efficent 2 qubit layer
 
@@ -95,8 +89,8 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
       
       variables array of sympy symbols that parametrieses circuit
     """
-    gate = self.hea.options["2QubitGate"]
-
+    gate = self.hea.options["2QubitGates"][g]
+    
     # if i_p 0 or 2
     #less specific: i_p%2 == 0
     if i_p in [0,2]:
@@ -126,7 +120,7 @@ def _partial_2Qubit_layer(self, i_p, v_v, v_h):
                 if self.boundaries[1] == 0 and self.n[1]%2 == int(1-(i_p-1)/2):
                     yield gate(*v_h[:][:][i][self.n[1]-1]).on(self.qubits[i][self.n[1]-1], self.qubits[i][0])
             
-def _2Qubit_layer(self, i):
+def _2Qubit_layer(self, i, g):
     """
     Generator for hardware efficent 2 qubit layer
 
@@ -139,14 +133,14 @@ def _2Qubit_layer(self, i):
         1. Generate array variables dependent on boundary conditions
         2. Call _partial_2Qubit_layer(), hand over variables array
     """
+    print(self.hea.options["parametrisation"])
     if self.hea.options["parametrisation"] == "joint":
-        gate_variables = [0, 0]
+        gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
         j = 0
-        for variable in ["theta", "phi"]:
-            if variable in self.hea.options["variables"]:
-                gate_variables[j] = sympy.Symbol(variable + str(i))
+        for variable in self.hea.options["2Qvariables"][g]:
+            gate_variables[j] = sympy.Symbol(variable + str(i))
             j +=1
-
+        
         temp = [gate_variables for i in range(self.n[1])]
         v_v = [temp for i in range(self.n[0]-self.boundaries[0])]
         
@@ -154,43 +148,40 @@ def _2Qubit_layer(self, i):
         v_h = [temp for i in range(self.n[0])]
 
         for i_p in range(4):
-            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
+            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h, g)
 
     elif self.hea.options["parametrisation"] == "layerwise":
         for i_p in range(4):
-            gate_variables = [0, 0]
+            gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
             j = 0
-            for variable in ["theta", "phi"]:
-                if variable in self.hea.options["variables"]:
-                    gate_variables[j] = sympy.Symbol(variable + str(i) + "_" + str(i_p))
+            for variable in self.hea.options["2Qvariables"][g]:
+                gate_variables[j] = sympy.Symbol(variable + str(i) + "_" + str(i_p))
                 j +=1
-
+            
             temp = [gate_variables for i in range(self.n[1])]
             v_v = [temp for i in range(self.n[0]-self.boundaries[0])]
         
             temp = [gate_variables for i in range(self.n[1]-self.boundaries[1])]
             v_h = [temp for i in range(self.n[0])]
 
-            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
+            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h, g)
 
     elif self.hea.options["parametrisation"] == "individual":
         for i_p in range(4):
-            gate_variables = [0, 0]
+            gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
             j = 0
-            for variable in ["theta", "phi"]:
-                if variable in self.hea.options["variables"]:
-                    gate_variables[j] = sympy.Symbol(variable + str(i) + "_" + str(i_p))
+            for variable in self.hea.options["2Qvariables"][g]:
+                gate_variables[j] = sympy.Symbol(variable + str(i) + "_" + str(i_p))
                 j +=1
-
-            v_mask = [0, 0]
-            h_mask = [0, 0]
+            
+            v_mask = [0 for dummy in self.hea.options["2Qvariables"][g]]
+            h_mask = [0 for dummy in self.hea.options["2Qvariables"][g]]
             j = 0
-            for variable in ["theta", "phi"]:
-                if variable in self.hea.options["variables"]:
-                    v_mask[j] = variable + str(i) + "_" + str(i_p) + "_v"
-                    h_mask[j] = variable + str(i) + "_" + str(i_p) + "_h"
+            for variable in self.hea.options["2Qvariables"][g]:
+                v_mask[j] = variable + str(i) + "_" + str(i_p) + "_v"
+                h_mask[j] = variable + str(i) + "_" + str(i_p) + "_h"
                 j +=1
-
+            
             v_v = []
             for l in range(self.n[0]-self.boundaries[0]):
                 temp = []
@@ -213,7 +204,7 @@ def _2Qubit_layer(self, i):
             #temp = [gate_variables for i in range(self.n[1]-self.boundaries[1])]
             #v_h = [temp for i in range(self.n[0])]
 
-            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h)
+            yield self.hea._partial_2Qubit_layer(self, i_p, v_v, v_h, g)
     else:
         assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
             'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
@@ -240,46 +231,49 @@ def set_symbols(self):
 
     """
     assert isinstance(self.hea.options["p"], (int, np.int_)), "Error: p needs to be int, received {}".format(type(self.hea.options["p"]))
-    temp = []
+    temp1Q = []
+    temp2Q = []
     
     for i in range(self.hea.options["p"]):
         if self.hea.options['parametrisation'] == 'joint':
             #enforce alphabetic order
-            for variable in sorted(self.hea.options["variables"]):
-                temp.append(sympy.Symbol(variable + str(i)))
+            for variable in sorted(sum(self.hea.options["1Qvariables"], [])):
+                temp1Q.append(sympy.Symbol(variable + str(i)))
+                
+            for variable in sorted(sum(self.hea.options["2Qvariables"], [])):
+                temp2Q.append(sympy.Symbol(variable + str(i)))
         
         elif self.hea.options['parametrisation'] == 'layerwise':
-            for variable in sorted(self.hea.options["variables"]):
+            for variable in sorted(sum(self.hea.options["1Qvariables"], [])):
                 #1qubit cases
-                if variable in {"a", "x", "z"}:
-                    temp.append(sympy.Symbol(variable + str(i)))
+                temp1Q.append(sympy.Symbol(variable + str(i)))
                 
+            for variable in sorted(sum(self.hea.options["2Qvariables"], [])):
                 #2qubit cases
-                elif variable in {"phi", "theta"}:
-                    #Assuming here that the 2 qubit layer is of circuit depth 4
-                    #As one needs two entangling layers in each direction
-                    for j in range(4):
-                        temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
+                for j in range(4):
+                    temp2Q.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
 
         elif self.hea.options['parametrisation'] == 'individual':
             #enforce alphabetic order
-            for variable in sorted(self.hea.options["variables"]):
+            for variable in sorted(sum(self.hea.options["1Qvariables"], [])):
                 #1qubit cases
-                if variable in {"a", "x", "z"}:
-                    for j in range(np.size(self.qubits)):
-                        temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
-                #1qubit cases
-                elif variable in {"phi", "theta"}:
-                    #Here: only count number of parameters. 
-                    for j in range(np.size(self.j_v) + np.size(self.j_h)):
-                        temp.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
+                for j in range(np.size(self.qubits)):
+                    temp1Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                        #sympy.Symbol(variable + str(i) + "_" + str(j)))
+            
+            for variable in sorted(sum(self.hea.options["2Qvariables"], [])):
+                #2qubit cases
+                #Here: only count number of parameters. 
+                for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
+                    temp2Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                        #sympy.Symbol(variable + str(i) + "_" + str(j)))
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )
     if not self.hea.options['append'] or self.circuit_param is None:
-        self.circuit_param = temp
+        self.circuit_param = temp1Q + temp2Q
     else:
-        self.circuit_param.extend(temp)
+        self.circuit_param.extend(temp1Q + temp2Q)
     self.p = self.hea.options["p"]
 
 def set_circuit(self):
@@ -291,12 +285,13 @@ def set_circuit(self):
         self.circuit_param_values = np.zeros(np.size(self.circuit_param))
 
     for i in range(self.p):
-        if self.hea.options["1QubitGate"] is not None:
-            self.circuit.append(cirq.Moment(self.hea._1Qubit_layer(self, i)))
-            #self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
-        if self.hea.options["2QubitGate"] is not None:
-            self.circuit.append(self.hea._2Qubit_layer(self, i))
-
+        if self.hea.options["1QubitGates"] is not None:
+            for g in range(len(self.hea.options["1QubitGates"])):
+                self.circuit.append(cirq.Moment(self.hea._1Qubit_layer(self, i, g)))
+                #self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
+        if self.hea.options["2QubitGates"] is not None:
+            for g in range(len(self.hea.options["2QubitGates"])):
+                self.circuit.append(self.hea._2Qubit_layer(self, i, g))
     #Erase hea circuit parameters, that are not used
     # e.g. in 1D case
     # Can should be more general/basic function

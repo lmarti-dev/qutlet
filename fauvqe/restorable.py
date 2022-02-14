@@ -27,14 +27,14 @@ class Restorable(abc.ABC):
             if isinstance(getattr(self, key), np.ndarray):
                 if isinstance(getattr(other, key), np.ndarray):
                     if len(getattr(self, key)) != 0 and len(getattr(other, key)) != 0:
-                        #print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
+                        print("key: \t{}\n(getattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                         temp_bools.append((getattr(self, key) == getattr(other, key)).all())
                     else:
                         temp_bools.append(len(getattr(self, key)) == len(getattr(other, key))) 
                 else:
                     return False
             else:
-                exceptions = ['simulator', '_get_gradients', '_get_single_cost', 'evaluate', '_optimise_step']
+                exceptions = ['simulator', '_get_gradients', '_get_single_cost', 'evaluate', '_optimise_step', '_two_q_gates']
                 if key not in exceptions:
                     #print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                     temp_bools.append(getattr(self, key) == getattr(other, key))

@@ -8,20 +8,16 @@ import itertools
 import numpy as np
 import cirq
 
-from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.models.spinModel import SpinModel
 
 
-
-class Ising(AbstractModel):
+class Ising(SpinModel):
     """
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
-    basics  = importlib.import_module("fauvqe.models.circuits.basics")
-    hea  = importlib.import_module("fauvqe.models.circuits.hea")
-    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
-
-    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X", t: Real = 0):
+    
+    def __init__(self, qubittype, n, j_v = None, j_h = None, h = None, field: Literal["Z", "X"] = "X", t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -31,21 +27,38 @@ class Ising(AbstractModel):
         field: basis of external field X or Z
         """
         # convert all input to np array to be sure
-        super().__init__(qubittype, np.array(n))
-        self.circuit_param = None
-        self.circuit_param_values = np.array([])
-        self._set_jh(j_v, j_h, h)
+        if j_v is None:
+            j_v = np.zeros((n[0], n[1]))
+        if j_h is None:
+            j_h = np.zeros((n[0], n[1]))
+        if h is None:
+            h = np.zeros((n[0], n[1]))
+        if(field == "X"):
+            one_q_gate = [cirq.X]
+            self.energy_fields = ["Z", "X"]
+        elif(field == "Z"):
+            one_q_gate = [cirq.Z]
+            self.energy_fields = ["Z"]
+        else:
+            assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
+        super().__init__(
+                    qubittype, 
+                    np.array(n),
+                    [j_v],
+                    [j_h],
+                    [h],
+                    [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
+                    one_q_gate,
+                    t
+                )
         self.field = field
-        self._set_hamiltonian()
-        super().set_simulator()
-        self.t = t
 
     def copy(self) -> Ising:
         self_copy = Ising( self.qubittype,
                 self.n,
-                self.j_v,
-                self.j_h,
-                self.h,
+                self.j_v[:,:,0],
+                self.j_h[:,:,0],
+                self.h[:,:,0],
                 self.field,
                 self.t )
 
@@ -60,240 +73,12 @@ class Ising(AbstractModel):
 
         return self_copy
 
-    def _set_jh(self, j_v, j_h, h):
-        # convert input to numpy array to be sure
-        j_v = np.array(j_v)
-        # J vertical needs one row/horizontal line less
-        # NEED FOR IMPROVEMENT
-        assert (j_v.shape == (self.n - np.array((1, 0)))).all() or (
-            j_v.shape == self.n
-        ).all(), "Error in Ising._set_jh(): j_v.shape != n - {{ (1,0), (0,0)}}, {} != {}".format(
-            j_v.shape, (self.n - np.array((1, 0)))
-        )
-        self.j_v = j_v
-
-        # convert input to numpy array to be sure
-        j_h = np.array(j_h)
-        # J horizontal needs one column/vertical line less#
-        # NEED FOR IMPROVEMENT
-        assert (j_h.shape == (self.n - np.array((0, 1)))).all() or (
-            j_h.shape == self.n
-        ).all(), "Error in Ising._set_jh(): j_h.shape != n - {{ (0,1), (0,0)}}, {} != {}".format(
-            j_h.shape, (self.n - np.array((0, 1)))
-        )
-        self.j_h = j_h
-
-        # Set boundaries:
-        self.boundaries = np.array((self.n[0] - j_v.shape[0], self.n[1] - j_h.shape[1]))
-
-        # convert input to numpy array to be sure
-        h = np.array(h)
-        assert (
-            h.shape == self.n
-        ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
-        self.h = h
-
-    def _set_hamiltonian(self, reset: bool = True):
-        """
-            Append or Reset Hamiltonian
-
-            Create a cirq.PauliSum object fitting to j_v, j_h, h  
-        """
-        if reset:
-            self.hamiltonian = cirq.PauliSum()
-
-        #Conversion currently necessary as numpy type * cirq.PauliSum fails
-        j_v = self.j_v.tolist()
-        j_h = self.j_h.tolist()
-        h = self.h.tolist()
-        
-        #print(self.n)
-        # 1. Sum over inner bounds
-        for i in range(self.n[0] - 1):
-            for j in range(self.n[1] - 1):
-                #print("i: \t{}, j: \t{}".format(i,j))
-                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
-                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
-
-        for i in range(self.n[0] - 1):
-            j = self.n[1] - 1
-            self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
-
-        for j in range(self.n[1] - 1):
-            i = self.n[0] - 1
-            self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
- 
-        
-        #2. Sum periodic boundaries
-        if self.boundaries[1] == 0:
-            for i in range(self.n[0]):
-                j = self.n[1] - 1
-                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][0])
-
-        if self.boundaries[0] == 0:
-            for j in range(self.n[1]):
-                i = self.n[0] - 1
-                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[0][j])
-        
-        # 3. Add external field
-        if self.field == "X":
-            field_gate = cirq.X
-        elif self.field == "Z":
-            field_gate = cirq.Z
-
-        for i in range(self.n[0]):
-            for j in range(self.n[1]):
-                self.hamiltonian -= h[i][j]*field_gate(self.qubits[i][j])
-
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        # maybe fuse with energy_JZZ_hZ partially somehow
-        """
-        Energy for JZZ_hX Transverse field Ising model (TFIM) or JZZ-HZ Ising model
-
-        Computes the energy-per-site of the Ising Model directly from the
-        a given wavefunction.
-        Returns:
-            energy: Float equal to the expectation value of the energy per site
-
-        Z is an array of shape (n_sites, 2**n_sites). Each row consists of the
-        2**n_sites non-zero entries in the operator that is the Pauli-Z matrix on
-        one of the qubits times the identites on the other qubits. The
-        (i*n_cols + j)th row corresponds to qubit (i,j).
-        """
-        n_sites = self.n[0] * self.n[1]
-        # assert 2 ** n_sites == np.size(wf), "Error 2**n_sites != np.size(wf)"
-
-        Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
-
-        # Create the operator corresponding to the interaction energy summed over all
-        # nearest-neighbor pairs of qubits
-        # print(self.n, n_sites) # Todo: fix this:
-        ZZ_filter = np.zeros(
-            2 ** (n_sites), dtype=np.float64
-        )  # np.zeros_like(wf, dtype=np.float64)
-
-        # Looping for soo many unnecessary ifs is bad.....
-        # NEED FOR IMPROVEMENT - > avoid blank python for loops!!
-        # 1. Sum over inner bounds
-        # 2. Add possible periodic boundary terms
-        # Do this to avoid if's with the loop
-        # Previously:
-        # for i in range(self.n[0]):
-        #    for j in range(self.n[1]):
-        #        if i < self.n[0]-self.boundaries[0]:
-        #            ZZ_filter += self.j_v[i,j]*Z[i*self.n[1] + j]*Z[np.mod(i+1, self.n[0])*self.n[1] + j]
-        # ZZ_filter += self.j_v[i,j]*Z[i*self.n[1] + j]*Z[(i+1)*self.n[1] + j]
-        #        if j < self.n[1]-self.boundaries[1]:
-        #            ZZ_filter += self.j_h[i,j]*Z[i*self.n[1] + j]*Z[i*self.n[1] + np.mod(j+1, self.n[1])]
-        # ZZ_filter += self.j_h[i,j]*Z[i*self.n[1] + j]*Z[i*self.n[1] + (j+1)]
-
-        # 1. Sum over inner bounds
-        for i in range(self.n[0] - 1):
-            for j in range(self.n[1] - 1):
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
-
-        for i in range(self.n[0] - 1):
-            j = self.n[1] - 1
-            ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[(i + 1) * self.n[1] + j]
-
-        for j in range(self.n[1] - 1):
-            i = self.n[0] - 1
-            ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1] + (j + 1)]
-
-        # 2. Sum periodic boundaries
-        if self.boundaries[1] == 0:
-            for i in range(self.n[0]):
-                j = self.n[1] - 1
-                ZZ_filter += self.j_h[i, j] * Z[i * self.n[1] + j] * Z[i * self.n[1]]
-
-        if self.boundaries[0] == 0:
-            for j in range(self.n[1]):
-                i = self.n[0] - 1
-                ZZ_filter += self.j_v[i, j] * Z[i * self.n[1] + j] * Z[j]
-
-        return ZZ_filter, self.h.reshape(n_sites).dot(Z)
-
-    def set_circuit(self, qalgorithm, options: dict = {}):
-        """
-        Adds custom circuit to self.circuit (default)
-
-        Args:
-            qalgorithm : quantum algorithm option
-            param:
-                hand over parameter to individual circuit method; e.g. qaoa
-                reset circuit (-> self. circuit = cirq. Circuit())
-
-        Returns/Sets:
-            circuit symp.Symbols array
-            start parameters for circuit_parametrisation values; possibly at random or in call
-
-        -AssertionError if circuit method does not exists
-        -AssertionErrors for wrong parameter hand-over in individual circuit method itself.
-
-        maybe use keyword arguments **parm later
-
-        Need to generalise beta, gamma, beta_values, gamma_values to:
-
-        obj.circuit_param           %these are the sympy.Symbols
-        obj.circuit_param_values    %these are the sympy.Symbols values
-
-        What to do with further circuit parameters like p?
-
-        for qaoa want to call like:
-            qaoa.set_symbols
-            qaoa.set_beta_values etc...
-
-        CHALLENGE: how to load class functions from sub-module?
-        """
-        if qalgorithm == "basics":
-            self.basics.options = { "append": True,
-                                    "start": None,
-                                    "end": None,
-                                    "n_exact" : [1, 2],
-                                    "b_exact" : [0, 0],
-                                    "cc_exact": False}
-            self.basics.options.update(options)
-            self.basics.set_circuit(self)
-        elif qalgorithm == "hea":
-            self.hea.options = {"append": False,
-                                "p": 1,
-                                "parametrisation" : 'joint',
-                                "variables": {'a', 'x', 'z', 'phi', 'theta'},
-                                "1QubitGate": lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, 
-                                                                                z_exponent=z, 
-                                                                                axis_phase_exponent=a),
-                                "2QubitGate" : cirq.FSimGate}
-            self.hea.options.update(options)
-            self.hea.set_symbols(self)
-            self.hea.set_circuit(self)
-            self.basics.rm_unused_cpv(self)  
-            self.basics.add_missing_cpv(self)
-        elif qalgorithm == "qaoa":
-            # set symbols gets as parameter QAOA repetitions p
-            #This needs some further revisions as some parts are not very general yet
-            self.qaoa.options = {"append": False,
-                                "p": 1,
-                                "H_layer": True,
-                                "i0": 0}
-            self.qaoa.options.update(options)
-            self.qaoa.set_symbols(self)
-            self.qaoa.set_circuit(self)
+        if(self.field == "X"):
+            return [super().energy( self.j_v, self.j_h, np.zeros(self.h.shape)), 
+                    super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h)]
         else:
-            assert (
-                False
-            ), "Invalid quantum algorithm, received: '{}', allowed is \n \
-                'basics', 'hea', 'qaoa'".format(
-                qalgorithm
-            )
-
-    def set_circuit_param_values(self, new_values):
-        assert np.size(new_values) == np.size(
-            self.circuit_param
-        ), "np.size(new_values) != np.size(self.circuit_param), {} != {}".format(
-            np.size(new_values), np.size(self.circuit_param)
-        )
-        self.circuit_param_values = new_values
+            return [super().energy( self.j_v, self.j_h, self.h)]
 
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"
@@ -416,16 +201,16 @@ class Ising(AbstractModel):
         else:
             _j = self.j_v[0][0]
 
-        return np.sqrt(self.h[0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0] * np.cos(_k), dtype=np.complex128)
+        return np.sqrt(self.h[0][0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0][0] * np.cos(_k), dtype=np.complex128)
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_v": self.j_v,
-                "j_h": self.j_h,
-                "h": self.h,
+                "j_v": self.j_v[:,:,0],
+                "j_h": self.j_h[:,:,0],
+                "h": self.h[:,:,0],
             },
             "params": {
                 "circuit": self.circuit,
@@ -441,19 +226,5 @@ class Ising(AbstractModel):
         inst.circuit = dct["params"]["circuit"]
         inst.circuit_param = dct["params"]["circuit_param"]
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
-
+        
         return inst
-
-    def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
-        super().glue_circuit(axis, repetitions)
-
-        #In addition we need to reset j_v, j_h  h and the hamiltonian
-        self.j_v=np.tile(self.j_v, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self.j_h=np.tile(self.j_h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self.h =np.tile(self.h, np.add((1, 1) , (repetitions-1) *(1-axis,axis)))
-        self._set_hamiltonian()
-
-        # As well as erase eig_val, eig_vec and _Ut as those do not make sense anymore:
-        self.eig_val = None
-        self.eig_vec = None
-        self._Ut = None

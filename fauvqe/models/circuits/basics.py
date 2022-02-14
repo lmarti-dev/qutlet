@@ -14,7 +14,7 @@ import sympy
 import warnings
 import itertools 
 
-from typing import Literal
+from typing import Literal, List
 from numbers import Real
 
 def set_circuit(self):
@@ -86,16 +86,21 @@ def _exact_layer(self):
 
             #maybe can write all in 1 loop by min(.., self.n[0]-self.boundaries[0] )
             #-> works already
-            temp_ising = IsingDummy("GridQubit",
+            if(self.field == "X"):
+                one_q_gate = [cirq.X]
+            elif(self.field == "Z"):
+                one_q_gate = [cirq.Z]
+            temp_model = SpinModelDummy("GridQubit",
                                 n_exact,
-                                self.j_v[  i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
-                                            j*n_exact[1]: (j+1)*n_exact[1]],
-                                self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
-                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1]],
-                                self.h[i*n_exact[0]:(i+1)*n_exact[0],
-                                       j*n_exact[1]: (j+1)*n_exact[1]],
-                                self.field)
-            temp_ising.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
+                                [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
+                                            j*n_exact[1]: (j+1)*n_exact[1], 0]],
+                                [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
+                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], 0]],
+                                [self.h[i*n_exact[0]:(i+1)*n_exact[0],
+                                       j*n_exact[1]: (j+1)*n_exact[1],0]],
+                                [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
+                                one_q_gate)
+            temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
             
             #This would be nicer in 1 line, but 2D list sclicing in python 
             #Resulted in wrong result. compare lab book 2 page 109
@@ -106,12 +111,12 @@ def _exact_layer(self):
             #print("temp_qubits: \t {}".format(temp_qubits))
 
             if self.basics.options["cc_exact"]:
-                yield cirq.MatrixGate(np.matrix.getH(temp_ising.eig_vec)).on(*temp_qubits)
+                yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
             else:
-                yield cirq.MatrixGate(temp_ising.eig_vec).on(*temp_qubits)
+                yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
     if (self.n == n_exact).all() :
-        self.eig_val = temp_ising.eig_val
-        self.eig_vec = temp_ising.eig_vec
+        self.eig_val = temp_model.eig_val
+        self.eig_vec = temp_model.eig_vec
 
 def _hadamard_layer(self):
     for row in self.qubits:
@@ -147,24 +152,28 @@ def __get_mf_angle(self, qubit):
     if (self.j_v.shape[0] * self.j_v.shape[1]) > 0:
         # (1)
         if qubit._row > 0:
-            J_mean += self.j_v[qubit._row - 1,  qubit._col]
-            n_J += 1
+            for g in range(len(self._two_q_gates)):
+                J_mean += self.j_v[qubit._row - 1,  qubit._col][g]
+                n_J += 1
         
         # (4)
         if qubit._col <  self.j_v.shape[1] and qubit._row <  self.j_v.shape[0]:
-            J_mean += self.j_v[qubit._row, qubit._col]
-            n_J += 1
+            for g in range(len(self._two_q_gates)):
+                J_mean += self.j_v[qubit._row, qubit._col][g]
+                n_J += 1
     
     if (self.j_h.shape[0] * self.j_h.shape[1]) > 0: 
         # (2)
         if qubit._col > 0:
-            J_mean += self.j_h[qubit._row, qubit._col -1]
-            n_J += 1
+            for g in range(len(self._two_q_gates)):
+                J_mean += self.j_h[qubit._row, qubit._col -1][g]
+                n_J += 1
 
         # (3)
         if qubit._col <  self.j_h.shape[1] and qubit._row <  self.j_h.shape[0]:
-            J_mean += self.j_h[qubit._row, qubit._col]
-            n_J += 1
+            for g in range(len(self._two_q_gates)):
+                J_mean += self.j_h[qubit._row, qubit._col][g]
+                n_J += 1
 
     # Get and return theta via
     #sin theta = h_x/J_mean for spins
@@ -235,68 +244,79 @@ def rm_unused_cpv(self):
         del self.circuit_param[index]
     self.circuit_param_values = np.delete(self.circuit_param_values, _erase_ind, None)
 
-class IsingDummy(AbstractModel):
+class SpinModelDummy(AbstractModel):
     """
     2D Ising Dummy class in order to be able to use it in 
     Ising submodules basics, hea, qaoa
 
     Better structure might be:
 
-                    IsingAbstract(AbstractModel)
+                    SpinModelAbstract(AbstractModel)
                         |               |
-        Ising(IsingAbstract)        IsingDummy(IsingAbstract)
+        SpinModel(IsingAbstract)        SpinModelDummy(IsingAbstract)
     """
-    def __init__(self, qubittype, n, j_v, j_h, h, field: Literal["Z", "X"] = "X", t: Real = 0):
+    def __init__(self, 
+                 qubittype, 
+                 n,
+                 j_v,
+                 j_h,
+                 h,
+                 two_q_gates: List[cirq.PauliSum],
+                 one_q_gates: List[cirq.PauliSum],
+                 t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
-        j_v vertical j's
-        j_h horizontal j's
-        h  strength external field
-        field: basis of external field X or Z
+        j_v vertical j's - same order as two_q_gates
+        j_h horizontal j's - same order as two_q_gates
+        h  strength external fields - same order as one_q_gates
+        two_q_gates: list of 2 Qubit Gates
+        one_q_gates: list of single Qubit Gates
+        t: Simulation Time
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
         self.circuit_param_values = np.array([])
-        self._set_jh(j_v, j_h, h)
-        self.field = field
+        self._two_q_gates = two_q_gates
+        self._one_q_gates = one_q_gates
+        self._set_jh(j_v, j_h, h, two_q_gates, one_q_gates)
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
 
-    def _set_jh(self, j_v, j_h, h):
+    def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
         # convert input to numpy array to be sure
         j_v = np.array(j_v)
         # J vertical needs one row/horizontal line less
         # NEED FOR IMPROVEMENT
-        assert (j_v.shape == (self.n - np.array((1, 0)))).all() or (
-            j_v.shape == self.n
-        ).all(), "Error in Ising._set_jh(): j_v.shape != n - {{ (1,0), (0,0)}}, {} != {}".format(
-            j_v.shape, (self.n - np.array((1, 0)))
+        assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )) or (
+            j_v.shape == (len(two_q_gates), *self.n)
+        ), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_v = j_v
-
+        self.j_v = np.transpose(j_v, (1, 2, 0))
+        
         # convert input to numpy array to be sure
         j_h = np.array(j_h)
         # J horizontal needs one column/vertical line less#
         # NEED FOR IMPROVEMENT
-        assert (j_h.shape == (self.n - np.array((0, 1)))).all() or (
-            j_h.shape == self.n
-        ).all(), "Error in Ising._set_jh(): j_h.shape != n - {{ (0,1), (0,0)}}, {} != {}".format(
-            j_h.shape, (self.n - np.array((0, 1)))
+        assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((0, 1))) )) or (
+            j_h.shape == (len(two_q_gates), *self.n)
+        ), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
         )
-        self.j_h = j_h
+        self.j_h = np.transpose(j_h, (1, 2, 0))
 
         # Set boundaries:
-        self.boundaries = np.array((self.n[0] - j_v.shape[0], self.n[1] - j_h.shape[1]))
+        self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
 
         # convert input to numpy array to be sure
         h = np.array(h)
         assert (
-            h.shape == self.n
-        ).all(), "Error in Ising._set_jh():: h.shape != n, {} != {}".format(h.shape, self.n)
-        self.h = h
+            h.shape == (len(one_q_gates), *self.n)
+        ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
+        self.h = np.transpose(h, (1, 2, 0))
 
     def _set_hamiltonian(self, reset: bool = True):
         """
@@ -312,43 +332,42 @@ class IsingDummy(AbstractModel):
         j_h = self.j_h.tolist()
         h = self.h.tolist()
         
-        #print(self.n)
         # 1. Sum over inner bounds
-        for i in range(self.n[0] - 1):
+        for g in range(len(self._two_q_gates)):
+            for i in range(self.n[0] - 1):
+                for j in range(self.n[1] - 1):
+                    #print("i: \t{}, j: \t{}".format(i,j))
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+        
+        for g in range(len(self._two_q_gates)):
+            for i in range(self.n[0] - 1):
+                j = self.n[1] - 1
+                self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+        
+        for g in range(len(self._two_q_gates)):
             for j in range(self.n[1] - 1):
-                #print("i: \t{}, j: \t{}".format(i,j))
-                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
-                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
-
-        for i in range(self.n[0] - 1):
-            j = self.n[1] - 1
-            self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i+1][j])
-
-        for j in range(self.n[1] - 1):
-            i = self.n[0] - 1
-            self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][j+1])
- 
+                i = self.n[0] - 1
+                self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
-            for i in range(self.n[0]):
-                j = self.n[1] - 1
-                self.hamiltonian -= j_h[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[i][0])
-
+            for g in range(len(self._two_q_gates)):
+                for i in range(self.n[0]):
+                    j = self.n[1] - 1
+                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
+        
         if self.boundaries[0] == 0:
-            for j in range(self.n[1]):
-                i = self.n[0] - 1
-                self.hamiltonian -= j_v[i][j]*cirq.Z(self.qubits[i][j])*cirq.Z(self.qubits[0][j])
+            for g in range(len(self._two_q_gates)):
+                for j in range(self.n[1]):
+                    i = self.n[0] - 1
+                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
-        if self.field == "X":
-            field_gate = cirq.X
-        elif self.field == "Z":
-            field_gate = cirq.Z
-
-        for i in range(self.n[0]):
-            for j in range(self.n[1]):
-                self.hamiltonian -= h[i][j]*field_gate(self.qubits[i][j])
+        for g in range(len(self._one_q_gates)):
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    self.hamiltonian -= h[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
 
     def copy(self): pass
     def energy(self): pass 

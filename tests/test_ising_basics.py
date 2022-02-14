@@ -7,7 +7,7 @@ import itertools
 
 # internal imports
 from fauvqe import Ising
-from fauvqe.models.circuits.basics import IsingDummy
+from fauvqe.models.circuits.basics import SpinModelDummy
 from .test_isings import IsingTester
 
 """
@@ -42,7 +42,11 @@ What to test:
 def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
     #Deduce correct function of IsingDummy to correct function of Ising:
     ising= Ising(qubittype, n, j_v, j_h, h, field)
-    ising_dummy= IsingDummy(qubittype, n, j_v, j_h, h, field)
+    if(field == "X"):
+        one_q_gate = [cirq.X]
+    elif(field == "Z"):
+        one_q_gate = [cirq.Z]
+    ising_dummy= SpinModelDummy(qubittype, n, [j_v], [j_h], [h], [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)], one_q_gate)
     #Do these asserts to recognise if Ising() is changed
     assert(ising.n == ising_dummy.n).all()
     assert(ising.j_h == ising_dummy.j_h).all()
@@ -50,7 +54,6 @@ def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
     assert(ising.h == ising_dummy.h).all()
     assert ising.circuit_param == ising_dummy.circuit_param
     assert(ising.circuit_param_values == ising_dummy.circuit_param_values).all()
-    assert ising.field == ising_dummy.field
     assert ising.circuit == ising_dummy.circuit
     assert ising.qubittype == ising_dummy.qubittype
     assert ising.simulator.__class__ == ising_dummy.simulator.__class__
@@ -62,30 +65,36 @@ def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, field, n_exact, location",
     [
-        ("GridQubit",
+        (
+            "GridQubit",
             [2, 2],
             np.ones((1, 2)) / 2,
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 3,
             "X",
             [2, 2],
-            "start"),
-        ("GridQubit",
+            "start"
+        ),
+        (
+            "GridQubit",
             [2, 2],
             np.ones((1, 2)) / 2,
             np.zeros((2, 1)) / 5,
             np.ones((2, 2)) / 3,
             "X",
             [2, 1],
-            "start"),
-        ("GridQubit",
+            "start"
+            ),
+        (
+            "GridQubit",
             [3, 2],
             np.ones((3, 2)) / 2,
             np.zeros((3, 1)) / 5,
             np.ones((3, 2)) / 3,
             "Z",
             [3, 1],
-            "end")
+            "end"
+        ),
     ]
 )
 def test__exact_layer(qubittype, n, j_v, j_h, h, field, n_exact, location):
@@ -103,6 +112,52 @@ def test__exact_layer(qubittype, n, j_v, j_h, h, field, n_exact, location):
     #print(np.shape(ising.eig_vec[:,0]))
     #print("wf: \n {}\nising.eig_vec[:,0]: \n {}".format(wf, np.round(ising.eig_vec[:,0], decimals=6)))
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, ising.eig_vec[:,0], rtol=1e-7, atol=1e-8)
+
+@pytest.mark.parametrize(
+    "n",
+    [
+        (
+            [1, 2] 
+        ),
+        (
+            [2, 1]  
+        ),
+        (
+            [2, 2]  
+        ),
+        (
+            [1, 3]   
+        ),
+    ]
+)
+def test__exact_layer_cc(n):
+    print(n)
+    j_v = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h = 2*(np.random.rand(n[0],n[1])- 0.5)
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+
+    ising.set_simulator("cirq")
+    ising.set_circuit("basics",{    "start": "exact", 
+                                    "n_exact": n,
+                                    "cc_exact": True})
+
+    #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
+    #Should end up in the nth Z-Eigenstate
+    wf0 = np.zeros(2**(n[0]*n[1]))
+
+    for i in range(2**(n[0]*n[1])):
+        wf = ising.simulator.simulate(  initial_state=ising.eig_vec[:,i],
+                                        program=ising.circuit).state_vector()
+        wf = wf/np.linalg.norm(wf)
+
+        wf0[i]=1
+        wf0[i-1]=0
+
+        print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=5e-8)
+
 
 def test__hadamard_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))

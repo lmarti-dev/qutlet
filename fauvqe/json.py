@@ -131,7 +131,7 @@ class JSONEncoder(json.JSONEncoder):
             return restore_type.from_json_dict(dct[JSONEncoder.RESTORABLE_DATA])
 
         # Attempt to create instance directly
-        return restore_type(**dct[JSONEncoder.RESTORABLE_DATA]["constructor_params"])
+        return restore_type(**dct[JSONEncoder.RESTORABLE_DATA]["constructor_params"]) # pragma: no cover as no use case
 
     @staticmethod
     def encode_numpy_array(obj: np.ndarray) -> Dict:

@@ -43,7 +43,7 @@ def test__eq__():
             [1, 2],
             np.ones((0, 2)) / 2,
             np.ones((1, 2)) / 5,
-            np.zeros((1, 2)) / 10,
+            None,
             "Z",
         ),
         (
@@ -436,7 +436,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             cirq.X ** 2,
             -0.25,
         ),
-        # Normalised energy; hence expect -j_v/2 - 2h/2= -0.2:
+        # Normalised energy; hence expect -j_v + 2h/2= 0:
         (
             "GridQubit",
             [1, 2],
@@ -444,9 +444,9 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X,
-            -0.2,
+            0,
         ),
-        # Normalised energy; hence expect -j_v/2 + 2h/2 = 0
+        # Normalised energy; hence expect -j_v - 2h/2 = -0.2
         (
             "GridQubit",
             [1, 2],
@@ -454,17 +454,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X ** 2,
-            0,
-        ),
-        # Normalised energy; hence expect (-j_h-2h)/2 = -0.35
-        (
-            "GridQubit",
-            [2, 1],
-            np.ones((1, 1)) / 2,
-            np.ones((2, 0)) / 5,
-            np.ones((2, 1)) / 10,
-            cirq.X,
-            -0.35,
+            -0.2,
         ),
         # Normalised energy; hence expect (-j_h+2h)/2 = -0.15
         (
@@ -473,13 +463,23 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((1, 1)) / 2,
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
-            cirq.X ** 2,
+            cirq.X,
             -0.15,
+        ),
+        # Normalised energy; hence expect (-j_h-2h)/2 = -0.35
+        (
+            "GridQubit",
+            [2, 1],
+            np.ones((1, 1)) / 2,
+            np.ones((2, 0)) / 5,
+            np.ones((2, 1)) / 10,
+            cirq.X ** 2,
+            -0.35,
         ),
         #############################################################
         #                   4 qubit tests                           #
         #############################################################
-        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
+        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.25
         (
             "GridQubit",
             [2, 2],
@@ -487,7 +487,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 10,
             cirq.X,
-            -0.45,
+            -0.25,
         ),
         # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
         (
@@ -497,7 +497,7 @@ def test_energy_JZZ_hX_p_boundary(qubittype, n, j_v, j_h, h, test_gate, E_exp, b
             np.ones((2, 1)) / 5,
             np.ones((2, 2)) / 10,
             cirq.X ** 2,
-            -0.25,
+            -0.45,
         ),
     ],
 )
@@ -554,7 +554,7 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             cirq.X ** 2,
             -0.5,
         ),
-        # Normalised energy; hence expect -j_v - h= -0.3:
+        # Normalised energy; hence expect -j_v + h= -0.1:
         (
             "GridQubit",
             [1, 2],
@@ -562,19 +562,19 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((1, 2)) / 5,
             np.ones((1, 2)) / 10,
             cirq.X,
-            -0.3,
-        ),
-        # Normalised energy; hence expect -j_v + h = -0.1
-        (
-            "GridQubit",
-            [1, 2],
-            np.ones((0, 2)) / 2,
-            np.ones((1, 2)) / 5,
-            np.ones((1, 2)) / 10,
-            cirq.X ** 2,
             -0.1,
         ),
-        # Normalised energy; hence expect -j_h-h = -0.6
+        # Normalised energy; hence expect -j_v - h = -0.3
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((1, 2)) / 5,
+            np.ones((1, 2)) / 10,
+            cirq.X ** 2,
+            -0.3,
+        ),
+        # Normalised energy; hence expect -j_h+h = -0.4
         (
             "GridQubit",
             [2, 1],
@@ -582,9 +582,9 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
             cirq.X,
-            -0.6,
+            -0.4,
         ),
-        # Normalised energy; hence expect (-j_h+h) = -0.4
+        # Normalised energy; hence expect (-j_h-h) = -0.6
         (
             "GridQubit",
             [2, 1],
@@ -592,21 +592,11 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 0)) / 5,
             np.ones((2, 1)) / 10,
             cirq.X ** 2,
-            -0.4,
+            -0.6,
         ),
         #############################################################
         #                   4 qubit tests                           #
         #############################################################
-        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.45
-        (
-            "GridQubit",
-            [2, 2],
-            np.ones((2, 2)) / 2,
-            np.ones((2, 2)) / 5,
-            np.ones((2, 2)) / 10,
-            cirq.X,
-            -0.8,
-        ),
         # Normalised energy; hence expect (-2j_h-2j_v+4h)/4 = -0.6
         (
             "GridQubit",
@@ -614,8 +604,18 @@ def test_energy_JZZ_hZ(qubittype, n, j_v, j_h, h, test_gate, E_exp):
             np.ones((2, 2)) / 2,
             np.ones((2, 2)) / 5,
             np.ones((2, 2)) / 10,
-            cirq.X ** 2,
+            cirq.X,
             -0.6,
+        ),
+        # Normalised energy; hence expect (-2j_h-2j_v-4h)/4 = -0.8
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((2, 2)) / 2,
+            np.ones((2, 2)) / 5,
+            np.ones((2, 2)) / 10,
+            cirq.X ** 2,
+            -0.8,
         ),
     ],
 )
@@ -1020,9 +1020,10 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
     sparse_scipy_sol.diagonalise()
 
     # Test whether found eigenvalues are all close up to tolerance
-    np.testing.assert_allclose(scipy_sol.eig_val    , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
-    np.testing.assert_allclose(np_sol.eig_val [0:2]  , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
-    np.testing.assert_allclose(val_exp          , sparse_scipy_sol.eig_val , rtol=1e-14, atol=1e-14)
+    for i in range(2):
+        IsingTester.compare_val_modulo_permutation(scipy_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(np_sol.eig_val, sparse_scipy_sol.eig_val, i)
+        IsingTester.compare_val_modulo_permutation(val_exp, sparse_scipy_sol.eig_val, i)
 
     # Test whether found eigenvectors are all close up to tolerance and global phase
     # Note that different eigen vectors can have a different global phase; hence we assert them one by one
@@ -1031,10 +1032,9 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
     for i in range(2):
         if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val [1]) > 1e-14:
             #assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
-            cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(scipy_sol.eig_vec[:,i] , sparse_scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
-        
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
-        cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-14)
+            IsingTester.compare_vec_modulo_permutation(scipy_sol.eig_vec , sparse_scipy_sol.eig_vec, i)
+        IsingTester.compare_vec_modulo_permutation(np_sol.eig_vec, scipy_sol.eig_vec, i)
+        IsingTester.compare_vec_modulo_permutation(vec_exp, scipy_sol.eig_vec, i) 
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, field, glue_axis, sol_circuit, sol_circuit_param",
@@ -1063,7 +1063,7 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
         (
             "GridQubit",
             [1, 3],
-            np.ones((1, 3)),
+            np.ones((0, 3)),
             np.ones((1, 3)),
             np.ones((1, 3)),
             "X",
@@ -1108,12 +1108,9 @@ def test_glues_circuit(qubittype, n, j_v, j_h, h, field, glue_axis, sol_circuit,
     #print("ising2.circuit_param_values: \t{}".format(ising2.circuit_param_values))
     #assert(ising.circuit == ising2.circuit)
     assert(ising == ising2)
-
-    #ising.set_circuit("basics", {"start": "mf")
-    #ising.set_circuit("qaoa", {"p": 1, "append": True})
-
-
+        
 # This is potentially a higher effort test:
+@pytest.mark.ultrahigheffort
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n",
@@ -1166,6 +1163,7 @@ def hamiltonian(n):
         ham = ham + tmpzz
     return -1*ham
 
+@pytest.mark.ultrahigheffort
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, use_dense",
@@ -1311,3 +1309,19 @@ def test_assert_energy_pfeuty_sol(qubittype, n, j_v, j_h, h):
     ising_obj = Ising(qubittype, n, j_v, j_h, h)
     with pytest.raises(AssertionError):
         ising_obj.energy_pfeuty_sol()
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_z_v, j_z_h, h, field",
+    [
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((0, 2)) / 2,
+            np.ones((2, 2)) / 7,
+            np.ones((2, 2)),
+            "blub"
+        )]
+)
+def test_assert_field(qubittype, n, j_z_v, j_z_h, h, field):
+    with pytest.raises(AssertionError):
+        Ising(qubittype, n, j_z_v, j_z_h, h, field)

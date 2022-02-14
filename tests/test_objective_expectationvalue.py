@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
+from timeit import default_timer
 
-from fauvqe import ExpectationValue, Ising
+from fauvqe import AbstractExpectationValue, ExpectationValue, Ising, IsingXY, Heisenberg
 
 
 @pytest.mark.parametrize(
@@ -44,3 +45,144 @@ def test_json():
     objective2 = ExpectationValue.from_json_dict(json)
     
     assert (objective == objective2)
+
+def consistency_check(model):
+    #Get random state
+    wf = np.random.rand(2**(model.n[0]*model.n[1]))
+    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
+    wf = wf/np.linalg.norm(wf)
+    #Create ising object
+    
+    EV_obj =ExpectationValue(model)
+    AEV_obj =AbstractExpectationValue(model)
+
+    print("n: {}\tExpectationValue: {}\tAbstractExpectationValue/n: {}\trel. difference: {}"\
+    .format(model.n, EV_obj.evaluate(wf), AEV_obj.evaluate(wf, atol=1e-16)/(model.n[0]*model.n[1]), \
+        abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1]))/abs(EV_obj.evaluate(wf))))
+    assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1])) < 1e-6
+
+@pytest.mark.parametrize(
+    "n, b, field",
+    [
+        ([3,3], [1,1], "X"),
+        ([3,3], [0,1], "X"),
+        ([3,3], [1,0], "X"),
+        ([3,3], [0,0], "X"),
+        ([3,3], [1,1], "Z"),
+        ([3,3], [0,1], "Z"),
+        ([3,3], [1,0], "Z"),
+        ([3,3], [0,0], "Z"),
+    ],
+)
+def test_consistency_Ising(n, b, field):
+    #Create ising object
+    model = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+
+    consistency_check(model)
+
+@pytest.mark.parametrize(
+    "n, b, field",
+    [
+        ([3,3], [1,1], "X"),
+        ([3,3], [1,1], "Z"),
+    ],
+)
+def test_consistency_IsingXY(n, b, field):
+    #Create IsingXY object
+    model = IsingXY(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+    
+    consistency_check(model)
+
+@pytest.mark.parametrize(
+    "n, b",
+    [
+        ([3,3], [1,1]),
+    ],
+)
+def test_consistency_Heisenberg(n, b):
+    #Create Heisenberg object
+    model = Heisenberg(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    2*(np.random.rand(*n)-0.5),
+                    2*(np.random.rand(*n)-0.5),
+                )
+    
+    consistency_check(model)
+
+def test_notimplemented_evaluate():
+    n = [2, 2]
+    b = [1, 1]
+    model = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5))
+    model.energy_fields = ["blub", "blub"]
+    obj = ExpectationValue(model)
+    with pytest.raises(NotImplementedError):
+        obj.evaluate(np.random.rand(16))
+
+def test_notimplemented_rotate():
+    n = [2, 2]
+    b = [1, 1]
+    model = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5))
+    obj = ExpectationValue(model)
+    with pytest.raises(NotImplementedError):
+        bases = ["blub" for k in range(4)]
+        bases[0] = "Z"
+        obj._rotate(np.random.rand(16), bases)
+
+# This works when executed in main
+# but somehoe not with pytest
+"""
+def test_speed_up():
+    n = [3,3]; b = [0,0]; field = "X"; min_speed_up = 120; reps = 100
+    #Get random state
+    wf = np.random.rand(2**(n[0]*n[1]))
+    wf = wf.astype(np.complex64)/np.linalg.norm(wf)
+    wf = wf/np.linalg.norm(wf)
+    #Create ising object
+    ising = Ising(  "GridQubit", 
+                    n, 
+                    2*(np.random.rand(n[0]-b[0],n[1])-0.5),
+                    2*(np.random.rand(n[0],n[1]-b[1])-0.5), 
+                    2*(np.random.rand(*n)-0.5),
+                    field)
+
+    EV_obj =ExpectationValue(ising)
+    AEV_obj =AbstractExpectationValue(ising)
+
+    t0 = default_timer()
+    for i in range(reps):
+        tmp = EV_obj.evaluate(wf)
+    t1 = default_timer()
+    for i in range(reps):
+        tmp = AEV_obj.evaluate(wf)
+    t2 = default_timer()
+    print("ExpectationValue: {}s\tAbstractExpectationValue: {}s\nCustom speed-up: {}".format(t1-t0, t2 -t1, (t2-t1)/(t1-t0)) )
+
+    assert (t2-t1)/(t1-t0) > min_speed_up
+"""
