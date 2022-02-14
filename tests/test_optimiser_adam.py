@@ -309,6 +309,7 @@ def test_times_batch(sym, sim):
         (False, 'cirq')
     ],
 )
+@pytest.mark.ultrahigheffort
 @pytest.mark.higheffort
 def test_times_adam_ExpVal(sym, sim):
     ising = Ising("GridQubit", [1, 4], np.ones((0, 4)), np.ones((1, 4)), np.ones((1,4)), "X")
