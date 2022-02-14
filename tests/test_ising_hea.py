@@ -460,6 +460,32 @@ def test_set_circuit_param_values(key, values, solution):
     ising.hea.set_circuit_param_values(ising, key, values)
     assert(ising.circuit_param_values == solution).all()
 
+@pytest.mark.parametrize(
+    "options, solution",
+    [
+        (
+            {"parametrisation": "individual",
+             "1QubitGates": [lambda x: cirq.XPowGate(exponent=x)], 
+             "1Qvariables": [1],
+            "2QubitGates": None
+            },
+            cirq.Circuit((cirq.X.on(cirq.GridQubit(0, 0))),
+                        (cirq.X.on(cirq.GridQubit(0, 1)))),
+        )
+    ]
+)
+def test_numbers(options, solution):
+    n=[1, 2]
+    boundaries=[1, 1]
+    
+    ising = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])))
+    circuit_options = {"2QubitGate": None}
+    circuit_options.update(options)
+    ising.set_circuit("hea", circuit_options)
+    print('Ising Circuit:\n', ising.circuit)
+    print('Solution:\n', solution)
+    assert ising.circuit == solution
+
 def test_erros():
     n0 = 1;n1 = 3
     b0 = 1; b1 = 1
@@ -478,7 +504,8 @@ def test_erros():
 
     with pytest.raises(AssertionError):
         ising.hea.set_circuit(ising)
-
-    ising.hea.options.update({"1QubitGate": None})
+    
+    ising.hea.options.update({"1QubitGates": None})
     with pytest.raises(AssertionError):
         ising.hea.set_circuit(ising)
+    
