@@ -24,14 +24,17 @@ from multiprocessing import cpu_count
 # internal imports
 from fauvqe import Ising, ADAM, ExpectationValue, UtCost
 
-
+#This test misses a real assert
+@pytest.mark.higheffort
 def test_set_optimiser():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_circuit("qaoa", {"p": 1})
     adam = ADAM()
     objective = ExpectationValue(ising)
     adam.optimise(objective, n_jobs=1)
-
+    
+    #Add pro forma assert:
+    assert True
 
 # This is potentially a higher effort test:
 #############################################################
@@ -143,6 +146,7 @@ def test_optimise_joblib():
         (True),(False)
     ],
 )
+@pytest.mark.higheffort
 def test_optimise_no_simulator_change(sym):
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
@@ -158,7 +162,6 @@ def test_optimise_no_simulator_change(sym):
     })
     expval_z = ExpectationValue(ising)
     #assert(ising.simulator == 0)
-
     res = adam.optimise(expval_z, n_jobs=-1)
     assert(ising.simulator == adam._objective.model.simulator)
 

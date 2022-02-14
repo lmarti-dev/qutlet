@@ -22,7 +22,8 @@ import cirq
 from fauvqe import Ising, GradientDescent, ExpectationValue, UtCost
 from fauvqe import IsingXY, AbstractExpectationValue, SpinModel
 
-
+#This test misses a real assert
+@pytest.mark.higheffort
 def test_set_optimiser():
     ising_obj = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     #ising_obj = SpinModel(
@@ -39,7 +40,10 @@ def test_set_optimiser():
     obj = ExpectationValue(ising_obj)
     #obj = AbstractExpectationValue(ising_obj)
     gd.optimise(obj)
-    
+
+    #Add pro forma assert:
+    assert True
+
 
 # This is potentially a higher effort test:
 @pytest.mark.higheffort

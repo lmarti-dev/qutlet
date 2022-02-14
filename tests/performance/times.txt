@@ -2161,3 +2161,483 @@ Test Adam + ExpectationValue
 Sequential Time: 9.426128387451172
 Parallel Time: 3.3785386085510254
 
+===Fr, 28 Jan 2022 16:14:47 +0000===
+Test No Indices 
+
+Sequential Time: 2.8322596549987793
+Parallel Time: 0.9722552299499512
+
+===Fr, 28 Jan 2022 16:14:57 +0000===
+Test Indices 
+
+Sequential Time: 6.69977879524231
+Parallel Time: 2.828646421432495
+
+===Fr, 28 Jan 2022 16:15:02 +0000===
+Test Indices 
+
+Sequential Time: 3.9334874153137207
+Parallel Time: 1.935805082321167
+
+===Fr, 28 Jan 2022 16:15:14 +0000===
+Test Indices 
+
+Sequential Time: 8.38988709449768
+Parallel Time: 3.3423478603363037
+
+===Fr, 28 Jan 2022 16:15:21 +0000===
+Test Indices 
+
+Sequential Time: 4.87906551361084
+Parallel Time: 2.3001816272735596
+
+===Do, 03 Feb 2022 10:09:39 +0000===
+Test No Indices 
+
+Sequential Time: 2.869886636734009
+Parallel Time: 0.913104772567749
+
+===Do, 03 Feb 2022 10:09:49 +0000===
+Test Indices 
+
+Sequential Time: 6.952016830444336
+Parallel Time: 2.67598557472229
+
+===Do, 03 Feb 2022 10:09:55 +0000===
+Test Indices 
+
+Sequential Time: 4.046672821044922
+Parallel Time: 1.8364899158477783
+
+===Do, 03 Feb 2022 10:10:06 +0000===
+Test Indices 
+
+Sequential Time: 8.449496746063232
+Parallel Time: 3.1602845191955566
+
+===Do, 03 Feb 2022 10:10:14 +0000===
+Test Indices 
+
+Sequential Time: 4.986138582229614
+Parallel Time: 2.16143798828125
+
+===Do, 03 Feb 2022 10:27:30 +0000===
+Test No Indices 
+
+Sequential Time: 2.8581418991088867
+Parallel Time: 0.9201431274414062
+
+===Do, 03 Feb 2022 10:27:40 +0000===
+Test Indices 
+
+Sequential Time: 6.831489086151123
+Parallel Time: 2.691831350326538
+
+===Do, 03 Feb 2022 10:27:46 +0000===
+Test Indices 
+
+Sequential Time: 3.9983322620391846
+Parallel Time: 1.8492870330810547
+
+===Do, 03 Feb 2022 10:27:57 +0000===
+Test Indices 
+
+Sequential Time: 8.37434196472168
+Parallel Time: 3.165436029434204
+
+===Do, 03 Feb 2022 10:28:04 +0000===
+Test Indices 
+
+Sequential Time: 4.888172626495361
+Parallel Time: 2.1884241104125977
+
+===Mo, 07 Feb 2022 18:11:57 +0000===
+Test No Indices 
+
+Sequential Time: 2.63370418548584
+Parallel Time: 0.8392088413238525
+
+===Mo, 07 Feb 2022 18:12:03 +0000===
+Test Indices 
+
+Sequential Time: 4.059131622314453
+Parallel Time: 1.8564422130584717
+
+===Mo, 07 Feb 2022 18:12:06 +0000===
+Test Indices 
+
+Sequential Time: 2.4133219718933105
+Parallel Time: 1.2832520008087158
+
+===Mo, 07 Feb 2022 18:12:15 +0000===
+Test Indices 
+
+Sequential Time: 6.152294158935547
+Parallel Time: 2.5520503520965576
+
+===Mo, 07 Feb 2022 18:12:20 +0000===
+Test Indices 
+
+Sequential Time: 3.5473358631134033
+Parallel Time: 1.744588851928711
+
+===Mo, 07 Feb 2022 18:21:15 +0000===
+Test No Indices 
+
+Sequential Time: 2.6191282272338867
+Parallel Time: 0.8300466537475586
+
+===Mo, 07 Feb 2022 18:21:20 +0000===
+Test Indices 
+
+Sequential Time: 4.026336908340454
+Parallel Time: 1.8576087951660156
+
+===Mo, 07 Feb 2022 18:21:24 +0000===
+Test Indices 
+
+Sequential Time: 2.3633341789245605
+Parallel Time: 1.2982447147369385
+
+===Mo, 07 Feb 2022 18:21:33 +0000===
+Test Indices 
+
+Sequential Time: 6.019809007644653
+Parallel Time: 2.5408661365509033
+
+===Mo, 07 Feb 2022 18:21:38 +0000===
+Test Indices 
+
+Sequential Time: 3.533543109893799
+Parallel Time: 1.7339050769805908
+
+===Mo, 07 Feb 2022 18:27:52 +0000===
+Test No Indices 
+
+Sequential Time: 2.6592936515808105
+Parallel Time: 0.8428897857666016
+
+===Mo, 07 Feb 2022 18:27:58 +0000===
+Test Indices 
+
+Sequential Time: 4.141217470169067
+Parallel Time: 1.9353547096252441
+
+===Mo, 07 Feb 2022 18:28:02 +0000===
+Test Indices 
+
+Sequential Time: 2.3824009895324707
+Parallel Time: 1.2944016456604004
+
+===Mo, 07 Feb 2022 18:28:10 +0000===
+Test Indices 
+
+Sequential Time: 6.002478122711182
+Parallel Time: 2.5340492725372314
+
+===Mo, 07 Feb 2022 18:28:15 +0000===
+Test Indices 
+
+Sequential Time: 3.525254726409912
+Parallel Time: 1.7464380264282227
+
+===Mo, 07 Feb 2022 18:36:08 +0000===
+Test No Indices 
+
+Sequential Time: 2.6383092403411865
+Parallel Time: 0.8400540351867676
+
+===Mo, 07 Feb 2022 18:36:14 +0000===
+Test Indices 
+
+Sequential Time: 4.096054315567017
+Parallel Time: 1.9046690464019775
+
+===Mo, 07 Feb 2022 18:36:18 +0000===
+Test Indices 
+
+Sequential Time: 2.41101336479187
+Parallel Time: 1.285794734954834
+
+===Mo, 07 Feb 2022 18:36:27 +0000===
+Test Indices 
+
+Sequential Time: 6.048823833465576
+Parallel Time: 2.5271377563476562
+
+===Mo, 07 Feb 2022 18:36:32 +0000===
+Test Indices 
+
+Sequential Time: 3.556385040283203
+Parallel Time: 1.7380633354187012
+
+===Mo, 07 Feb 2022 18:49:56 +0000===
+Test No Indices 
+
+Sequential Time: 2.638998031616211
+Parallel Time: 0.8397130966186523
+
+===Mo, 07 Feb 2022 18:50:02 +0000===
+Test Indices 
+
+Sequential Time: 4.038827657699585
+Parallel Time: 1.8609364032745361
+
+===Mo, 07 Feb 2022 18:50:05 +0000===
+Test Indices 
+
+Sequential Time: 2.3685734272003174
+Parallel Time: 1.2988507747650146
+
+===Mo, 07 Feb 2022 18:50:14 +0000===
+Test Indices 
+
+Sequential Time: 5.988016128540039
+Parallel Time: 2.5455939769744873
+
+===Mo, 07 Feb 2022 18:50:19 +0000===
+Test Indices 
+
+Sequential Time: 3.536837339401245
+Parallel Time: 1.7356793880462646
+
+===Mo, 07 Feb 2022 19:26:22 +0000===
+Test No Indices 
+
+Sequential Time: 2.782712459564209
+Parallel Time: 0.8823120594024658
+
+===Mo, 07 Feb 2022 19:26:28 +0000===
+Test Indices 
+
+Sequential Time: 4.205193758010864
+Parallel Time: 1.9398949146270752
+
+===Mo, 07 Feb 2022 19:26:32 +0000===
+Test Indices 
+
+Sequential Time: 2.543189287185669
+Parallel Time: 1.3513555526733398
+
+===Mo, 07 Feb 2022 19:26:41 +0000===
+Test Indices 
+
+Sequential Time: 6.204466104507446
+Parallel Time: 2.617640972137451
+
+===Mo, 07 Feb 2022 19:26:46 +0000===
+Test Indices 
+
+Sequential Time: 3.678800106048584
+Parallel Time: 1.8000011444091797
+
+===Mi, 09 Feb 2022 15:42:33 +0000===
+Test No Indices 
+
+Sequential Time: 2.643831968307495
+Parallel Time: 0.8611886501312256
+
+===Mi, 09 Feb 2022 15:42:39 +0000===
+Test Indices 
+
+Sequential Time: 4.1002867221832275
+Parallel Time: 1.8718969821929932
+
+===Mi, 09 Feb 2022 15:42:42 +0000===
+Test Indices 
+
+Sequential Time: 2.4159185886383057
+Parallel Time: 1.352304458618164
+
+===Mi, 09 Feb 2022 15:42:51 +0000===
+Test Indices 
+
+Sequential Time: 6.063299655914307
+Parallel Time: 2.5213725566864014
+
+===Mi, 09 Feb 2022 15:42:56 +0000===
+Test Indices 
+
+Sequential Time: 3.569751262664795
+Parallel Time: 1.7548775672912598
+
+===Wed, 09 Feb 2022 20:34:44 +0000===
+Test No Indices 
+
+Sequential Time: 7.64518928527832
+Parallel Time: 11.95924997329712
+
+===Wed, 09 Feb 2022 20:34:47 +0000===
+Test Indices 
+
+Sequential Time: 12.721848011016846
+Parallel Time: 6.320512533187866
+
+===Wed, 09 Feb 2022 20:35:01 +0000===
+Test Indices 
+
+Sequential Time: 11.064517736434937
+Parallel Time: 6.573045253753662
+
+===Wed, 09 Feb 2022 20:35:19 +0000===
+Test Indices 
+
+Sequential Time: 30.222740650177002
+Parallel Time: 13.43998384475708
+
+===Wed, 09 Feb 2022 20:35:19 +0000===
+Test Indices 
+
+Sequential Time: 22.884571075439453
+Parallel Time: 11.969202518463135
+
+===Wed, 09 Feb 2022 20:40:53 +0000===
+Test No Indices 
+
+Sequential Time: 7.216615200042725
+Parallel Time: 16.260136127471924
+
+===Wed, 09 Feb 2022 20:41:00 +0000===
+Test Indices 
+
+Sequential Time: 12.133310556411743
+Parallel Time: 22.667052030563354
+
+===Wed, 09 Feb 2022 20:41:14 +0000===
+Test Indices 
+
+Sequential Time: 26.71880531311035
+Parallel Time: 14.55104398727417
+
+===Wed, 09 Feb 2022 20:41:16 +0000===
+Test Indices 
+
+Sequential Time: 14.552978277206421
+Parallel Time: 7.350070476531982
+
+===Wed, 09 Feb 2022 20:41:22 +0000===
+Test Indices 
+
+Sequential Time: 12.244568586349487
+Parallel Time: 5.67696738243103
+
+===Mi, 09 Feb 2022 20:52:11 +0000===
+Test No Indices 
+
+Sequential Time: 2.6210031509399414
+Parallel Time: 0.827566385269165
+
+===Mi, 09 Feb 2022 20:52:17 +0000===
+Test Indices 
+
+Sequential Time: 3.9847447872161865
+Parallel Time: 1.8650083541870117
+
+===Mi, 09 Feb 2022 20:52:20 +0000===
+Test Indices 
+
+Sequential Time: 2.3512887954711914
+Parallel Time: 1.2573833465576172
+
+===Mi, 09 Feb 2022 20:52:29 +0000===
+Test Indices 
+
+Sequential Time: 5.929449558258057
+Parallel Time: 2.5039169788360596
+
+===Mi, 09 Feb 2022 20:52:34 +0000===
+Test Indices 
+
+Sequential Time: 3.478057861328125
+Parallel Time: 1.716477632522583
+
+===Do, 10 Feb 2022 12:46:11 +0000===
+Test No Indices 
+
+Sequential Time: 2.5956032276153564
+Parallel Time: 0.8610796928405762
+
+===Do, 10 Feb 2022 12:46:17 +0000===
+Test Indices 
+
+Sequential Time: 4.133145332336426
+Parallel Time: 1.8870291709899902
+
+===Do, 10 Feb 2022 12:46:21 +0000===
+Test Indices 
+
+Sequential Time: 2.3686394691467285
+Parallel Time: 1.2894713878631592
+
+===Do, 10 Feb 2022 12:46:30 +0000===
+Test Indices 
+
+Sequential Time: 6.145057201385498
+Parallel Time: 2.5587706565856934
+
+===Do, 10 Feb 2022 12:46:35 +0000===
+Test Indices 
+
+Sequential Time: 3.536959409713745
+Parallel Time: 1.7380948066711426
+
+===Do, 10 Feb 2022 16:38:56 +0000===
+Test No Indices 
+
+Sequential Time: 2.5494542121887207
+Parallel Time: 0.8245649337768555
+
+===Do, 10 Feb 2022 16:39:02 +0000===
+Test Indices 
+
+Sequential Time: 4.112423658370972
+Parallel Time: 1.8512144088745117
+
+===Do, 10 Feb 2022 16:39:06 +0000===
+Test Indices 
+
+Sequential Time: 2.380342960357666
+Parallel Time: 1.2842166423797607
+
+===Do, 10 Feb 2022 16:39:15 +0000===
+Test Indices 
+
+Sequential Time: 5.977761745452881
+Parallel Time: 2.5074710845947266
+
+===Do, 10 Feb 2022 16:39:20 +0000===
+Test Indices 
+
+Sequential Time: 3.4874930381774902
+Parallel Time: 1.7152926921844482
+
+===Mo, 14 Feb 2022 09:00:34 +0000===
+Test No Indices 
+
+Sequential Time: 2.6191844940185547
+Parallel Time: 0.8355326652526855
+
+===Mo, 14 Feb 2022 09:00:40 +0000===
+Test Indices 
+
+Sequential Time: 4.100219488143921
+Parallel Time: 1.8396549224853516
+
+===Mo, 14 Feb 2022 09:00:44 +0000===
+Test Indices 
+
+Sequential Time: 2.4687042236328125
+Parallel Time: 1.2612981796264648
+
+===Mo, 14 Feb 2022 09:00:52 +0000===
+Test Indices 
+
+Sequential Time: 6.06909966468811
+Parallel Time: 2.5146780014038086
+
+===Mo, 14 Feb 2022 09:00:58 +0000===
+Test Indices 
+
+Sequential Time: 3.54665470123291
+Parallel Time: 1.7130458354949951
+

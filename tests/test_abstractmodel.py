@@ -7,14 +7,14 @@ Test parent class AbstractModel;
 """
 # external import
 import cirq
-from cirq.circuits import circuit
 import qsimcirq
 import pytest
 import numpy as np
 import sympy
+from timeit import default_timer
 
 # internal import
-from fauvqe import AbstractModel
+from fauvqe import AbstractModel, Converter
 
 
 class MockAbstractModel(AbstractModel):
@@ -227,6 +227,41 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
         
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(vec_exp[:,i]       , scipy_sol.eig_vec[:,i], rtol=1e-15, atol=1e-15)
+
+@pytest.mark.parametrize(
+    "paulisum",
+    [
+        (
+            cirq.PauliSum.from_pauli_strings([-np.pi*cirq.Z(cirq.LineQubit(i))*cirq.Z(cirq.LineQubit(i+1)) for i in range(8)]) +
+            cirq.PauliSum.from_pauli_strings([-i*cirq.Z(cirq.LineQubit(i)) for i in range(8)]) + 
+            cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.LineQubit(i))/(i+1) for i in range(8)])
+        ),
+    ]
+)
+def test_diagonalise_dense_sparse_speedup(paulisum):
+    np_sol = MockAbstractModel("LineQubit", 2)
+    sparse_scipy_sol = MockAbstractModel("LineQubit", 2)
+
+    convert_obj = Converter()
+    scipy_sparse_matrix = convert_obj.cirq_paulisum2scipy_crsmatrix(paulisum)
+
+    t0 = default_timer()
+    np_sol.diagonalise(solver = 'numpy', matrix = paulisum.matrix())
+    t1 = default_timer()
+    sparse_scipy_sol.diagonalise(matrix = scipy_sparse_matrix) 
+    t2 = default_timer()
+    print("Numpy dense: {}\tScipy Sparse: {}\tSpeed-up: {}".format(t1-t0, t2-t1, (t1-t0)/(t2-t1)))
+
+    #Test speed up
+    assert((t1-t0)/(t2-t1) > 25)
+
+    # Test whether found eigenvalues are all close up to tolerance
+    np.testing.assert_allclose(np_sol.eig_val[0:2]  , sparse_scipy_sol.eig_val, rtol=1e-13, atol=1e-14)
+
+    # Test whether found eigenvectors are all close up to tolerance and global phase
+    for i in range(2):
+        if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val[1]) > 1e-14:
+            cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(np_sol.eig_vec[:,i]    , sparse_scipy_sol.eig_vec[:,i], rtol=1e-14, atol=1e-13)
 
 @pytest.mark.parametrize(
     "n, circuit, options, solution_circuit",
