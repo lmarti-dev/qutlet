@@ -31,15 +31,15 @@ class Cooling1A(SpinModelFC):
         assert m_sys.qubittype == m_anc.qubittype, "Incompatible Qubittypes, System: {}, Ancilla: {}".format(
             m_sys.qubittype, m_anc.qubittype
         )
-        assert m_anc.n[0] == m_sys.n[0] and m_anc.n[1] == 1, "Could not instantiate single row ancilla cooling with ancilla model of size {}".format(
+        assert m_anc.n[0] == 1 and m_anc.n[1] == m_sys.n[1], "Could not instantiate single row ancilla cooling with ancilla model of size {}".format(
             m_anc.n
         )
         j_int = np.array(j_int)
-        assert j_int.shape == (len(int_gates), m_anc.n[0]), "Wrong shape of j_int, received: {} expected: {}".format(
-            j_int.shape, (len(int_gates), m_anc.n[0])
+        assert j_int.shape == (len(int_gates), m_anc.n[1]), "Wrong shape of j_int, received: {} expected: {}".format(
+            j_int.shape, (len(int_gates), m_anc.n[1])
         )
         
-        n = [m_sys.n[0], m_sys.n[1] + 1]
+        n = [m_sys.n[0] + 1, m_sys.n[1]]
         
         self.nbr_2Q_sys = len(m_sys._two_q_gates)
         self.nbr_2Q_anc = len(m_anc._two_q_gates)
@@ -70,10 +70,10 @@ class Cooling1A(SpinModelFC):
             two_q_gates,
             one_q_gates,
             t
-            )
+        )
     
     def _combine_jh(self, m_sys, m_anc, j_int):
-        n = [m_sys.n[0], m_sys.n[1] + 1]
+        n = [m_sys.n[0] + 1, m_sys.n[1]]
         g_int = 0
         js = np.zeros(shape=(self.nbr_2Q, *n, *n))
         for g in range(self.nbr_2Q):
@@ -123,23 +123,23 @@ class Cooling1A(SpinModelFC):
                         for j in range(m_anc.n[1]):
                             for k in range(i+1, m_anc.n[0], 1):
                                 for l in range(m_anc.n[1]):
-                                    js[g, i, m_sys.n[1] + j, k, m_sys.n[1] + l] = m_anc.j[i, j, k, l, g_anc]
-                                    js[g, k, m_sys.n[1] + l, i, m_sys.n[1] + j] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, m_sys.n[0] + i, j, m_sys.n[0] + k, l] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, m_sys.n[0] + k, l, m_sys.n[0] + i, j] = m_anc.j[i, j, k, l, g_anc]
                 else:
-                    for i in range(m_anc.n[0] - 1):
-                        js[g, i, m_sys.n[1], i+1, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
-                        js[g, i + 1, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
+                    for i in range(m_anc.n[1] - 1):
+                        js[g, m_sys.n[0], i, m_sys.n[0], i+1] = m_anc.j_h[0, i, g_anc]
+                        js[g, m_sys.n[0], i + 1, m_sys.n[0], i] = m_anc.j_h[0, i, g_anc]
                     if(m_anc.boundaries[0] == 0):
-                        i = m_anc.n[0] - 1
-                        js[g, i, m_sys.n[1], 0, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
-                        js[g, 0, m_sys.n[1], i, m_sys.n[1]] = m_anc.j_v[i, 0, g_anc]
+                        i = m_anc.n[1] - 1
+                        js[g, m_sys.n[0], i, m_sys.n[0], 0] = m_anc.j_h[0, i, g_anc]
+                        js[g, m_sys.n[0], 0, m_sys.n[0], i] = m_anc.j_h[0, i, g_anc]
             else:
                 g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, j, i, m_sys.n[1]] = j_int[g_int, i]
-                        js[g, i, m_sys.n[1], i, j] = j_int[g_int, i]
+                        js[g, i, j, m_sys.n[0], j] = j_int[g_int, j]
+                        js[g, m_sys.n[0], j, i, j] = j_int[g_int, j]
                 
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
@@ -151,8 +151,8 @@ class Cooling1A(SpinModelFC):
             else:
                 g_anc = g - self.nbr_1Q_sys
                 #Ancilla hs
-                for i in range(m_anc.n[0]):
-                    h[g, i, m_sys.n[1]] = m_anc.h[i, 0, g_anc]
+                for i in range(m_anc.n[1]):
+                    h[g, m_sys.n[0], i] = m_anc.h[0, i, g_anc]
         
         return js, h
     

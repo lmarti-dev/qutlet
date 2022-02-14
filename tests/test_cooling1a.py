@@ -20,8 +20,8 @@ from fauvqe import Ising, Cooling1A, ExpectationValue, HeisenbergFC
 )
 def test_copy(n, boundaries):
     m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
-    m_anc = Ising("GridQubit", [n[0],1], np.zeros((n[0],1)), np.zeros((n[0],1)), np.ones((n[0],1)))
-    j_int = np.ones((1, n[0]))
+    m_anc = Ising("GridQubit", [1,n[1]], np.zeros((1,n[1])), np.zeros((1,n[1])), np.ones((1,n[1])))
+    j_int = np.ones((1, n[1]))
     
     model = Cooling1A(
                     m_sys,
@@ -43,8 +43,8 @@ def test_copy(n, boundaries):
 )
 def test_copy_fc(n):
     m_sys = HeisenbergFC("GridQubit", n, np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])))
-    m_anc = HeisenbergFC("GridQubit", [n[0], 1], np.zeros((n[0], 1, n[0], 1)), np.zeros((n[0], 1, n[0], 1)), np.zeros((n[0], 1, n[0], 1)), np.ones((n[0], 1)))
-    j_int = np.ones((1, n[0]))
+    m_anc = HeisenbergFC("GridQubit", [1,n[1]], np.zeros((1,n[1], 1,n[1])), np.zeros((1,n[1], 1,n[1])), np.zeros((1,n[1], 1,n[1])), np.ones((1,n[1])))
+    j_int = np.ones((1, n[1]))
     
     model = Cooling1A(
                     m_sys,
@@ -57,7 +57,7 @@ def test_copy_fc(n):
     assert (model == model2)
     
 def test_json():
-    n = [1,2]; boundaries = [1, 0]
+    n = [2,1]; boundaries = [0,1]
     m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
     m_anc = Ising("GridQubit", [1,1], np.zeros((0,1)), np.zeros((1,1)), np.ones((1,1)))
     j_int = np.ones((1, 1))
@@ -76,7 +76,7 @@ def test_json():
     assert (model == model2)
 
 def test_energy_notimplemented():
-    n = [1,2]; boundaries = [1, 0]
+    n = [2,1]; boundaries = [0, 1]
     m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
     m_anc = Ising("GridQubit", [1,1], np.zeros((0,1)), np.zeros((1,1)), np.ones((1,1)))
     j_int = np.ones((1, 1))
