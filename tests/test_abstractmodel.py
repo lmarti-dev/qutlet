@@ -6,9 +6,7 @@ Test parent class AbstractModel;
     -try to check test coverage?
 """
 # external import
-from lib2to3.pytree import convert
 import cirq
-from cirq.circuits import circuit
 import qsimcirq
 import pytest
 import numpy as np

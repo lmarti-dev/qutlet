@@ -1330,3 +1330,33 @@ Test Indices
 Sequential Time: 3.4874930381774902
 Parallel Time: 1.7152926921844482
 
+===Mo, 14 Feb 2022 09:00:34 +0000===
+Test No Indices 
+
+Sequential Time: 2.6191844940185547
+Parallel Time: 0.8355326652526855
+
+===Mo, 14 Feb 2022 09:00:40 +0000===
+Test Indices 
+
+Sequential Time: 4.100219488143921
+Parallel Time: 1.8396549224853516
+
+===Mo, 14 Feb 2022 09:00:44 +0000===
+Test Indices 
+
+Sequential Time: 2.4687042236328125
+Parallel Time: 1.2612981796264648
+
+===Mo, 14 Feb 2022 09:00:52 +0000===
+Test Indices 
+
+Sequential Time: 6.06909966468811
+Parallel Time: 2.5146780014038086
+
+===Mo, 14 Feb 2022 09:00:58 +0000===
+Test Indices 
+
+Sequential Time: 3.54665470123291
+Parallel Time: 1.7130458354949951
+
