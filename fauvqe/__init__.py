@@ -5,6 +5,9 @@
 # https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
 
 # imports within package
+from fauvqe.converter import (
+    Converter
+)
 
 # subpackages
 from fauvqe import models, objectives, optimisers

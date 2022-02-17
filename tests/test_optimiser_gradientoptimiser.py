@@ -18,7 +18,8 @@ class MockGradientOptimiser(GradientOptimiser):
         (True),(False)
     ],
 )
-def test__get_single_energy(sym):
+@pytest.mark.higheffort
+def test_get_single_energy(sym):
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
@@ -57,6 +58,7 @@ def test__get_single_energy(sym):
         (True),(False)
     ],
 )
+@pytest.mark.higheffort
 def test__get_single_energy_batch(sym):
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))

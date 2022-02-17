@@ -143,6 +143,7 @@ def _2Qubit_layer(self, i, g):
         1. Generate array variables dependent on boundary conditions
         2. Call _partial_2Qubit_layer(), hand over variables array
     """
+    print(self.hea.options["parametrisation"])
     if self.hea.options["parametrisation"] == "joint":
         gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
         j = 0
@@ -291,7 +292,8 @@ def set_symbols(self):
             for variable in sorted(sum(self.hea.options["1Qvariables"], [])):
                 #1qubit cases
                 for j in range(np.size(self.qubits)):
-                    temp1Q.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
+                    temp1Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                        #sympy.Symbol(variable + str(i) + "_" + str(j)))
             
             for variable in sorted(sum(self.hea.options["2Qvariables"], [])):
                 #2qubit cases
@@ -303,8 +305,8 @@ def set_symbols(self):
                                 temp2Q.append(sympy.Symbol(variable + str(i) + "_" + str(j) + "_" + str(k)))
                 else:
                     for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
-                        temp2Q.append(sympy.Symbol(variable + str(i) + "_" + str(j)))
-                    #print(temp2Q)
+                        temp2Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                        #print(temp2Q)
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )

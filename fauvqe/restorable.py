@@ -5,7 +5,6 @@ import numpy as np
 from sys import stdout
 from typing import Dict
 
-
 class Restorable(abc.ABC):
     @abc.abstractmethod
     def to_json_dict(self) -> Dict:
@@ -15,14 +14,7 @@ class Restorable(abc.ABC):
     @abc.abstractmethod
     def from_json_dict(cls, params: Dict):
         raise NotImplementedError()  # pragma: no cover
-    
-    def create_range(self, max_index: int, use_progress_bar: bool = False):
-        if(use_progress_bar):
-            self._tqdm = importlib.import_module("tqdm").tqdm
-            return self._tqdm(range(max_index), file=stdout)
-        else:
-            return range(max_index)
-    
+   
     def __eq__(self, other): 
         if not isinstance(other, self.__class__):
             # don't attempt to compare against unrelated types
@@ -49,4 +41,12 @@ class Restorable(abc.ABC):
                     temp_bools.append(getattr(self, key) == getattr(other, key))
                 else:
                     temp_bools.append(getattr(self, key).__class__ == getattr(other, key).__class__)
+        #print(temp_bools)
         return all(temp_bools)
+    
+    def create_range(self, max_index: int, use_progress_bar: bool = False):
+        if(use_progress_bar):
+            self._tqdm = importlib.import_module("tqdm").tqdm
+            return self._tqdm(range(max_index), file=stdout)
+        else:
+            return range(max_index)

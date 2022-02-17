@@ -52,6 +52,7 @@ class AbstractModel(Restorable):
             ######
             later intial state?
         """
+        super().__init__()
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
@@ -216,7 +217,7 @@ class AbstractModel(Restorable):
     def _set_hamiltonian(self, reset: bool = True):
         raise NotImplementedError()  # pragma: no cover
 
-    def diagonalise(self, solver = "scipy.sparse", solver_options: dict = {}):
+    def diagonalise(self, solver = "scipy.sparse", solver_options: dict = {}, matrix: np.ndarray = None):
         """
             Implementation of an exact solver for an AbstractModel object.
 
@@ -243,9 +244,12 @@ class AbstractModel(Restorable):
                 implement as dict
                 e.g. k = 2
         """
+        if matrix is None:
+            matrix = self.hamiltonian.matrix()
+
         __n = np.size(self.qubits)
         if solver == "numpy":
-            self.eig_val, self.eig_vec =  np.linalg.eigh(self.hamiltonian.matrix())
+            self.eig_val, self.eig_vec =  np.linalg.eigh(matrix)
             # Normalise eigenvalues
             self.eig_val /= __n   
             # Normalise eigenvectors ?      
@@ -254,7 +258,7 @@ class AbstractModel(Restorable):
                                     "subset_by_index": [0, 1]}
             self.solver_options.update(solver_options)           
             self.eig_val, self.eig_vec = scipy_solver(
-                self.hamiltonian.matrix(), 
+                matrix, 
                 **self.solver_options,
                 )
             # Normalise eigenvalues
@@ -265,7 +269,7 @@ class AbstractModel(Restorable):
                                     "which": 'SA'}
             self.solver_options.update(solver_options)
             self.eig_val, self.eig_vec = scipy_sparse_solver(
-                self.hamiltonian.matrix(), 
+                matrix, 
                 **self.solver_options,
                 )
             # Normalise eigenvalues

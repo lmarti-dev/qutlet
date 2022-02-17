@@ -30,7 +30,7 @@ def get_simple_result(break_param0=25, a0 = 4 * 10 ** -2):
 
     return adam.optimise(objective, n_jobs=8)
 
-
+@pytest.mark.higheffort
 def test_store_and_restore_ising():
     res = get_simple_result()
     temp_path = os.path.dirname(os.path.abspath(__file__)) + "fauvqe-pytest.json"
@@ -48,7 +48,7 @@ def test_store_and_restore_ising():
 
     #temp_path.unlink()
 
-
+@pytest.mark.higheffort
 def test_no_overwrite():
     temp_path = pathlib.Path(tempfile.gettempdir()) / "fauvqe-pytest.json"
     temp_path.touch()
@@ -176,6 +176,7 @@ def test_continue_at():
         ),
     ]
 )
+@pytest.mark.higheffort
 def test_storetxt(additional_objective, n_objectives,header_string):
     res = get_simple_result()
     temp_path = os.path.dirname(os.path.abspath(__file__)) + "/fauvqe-pytest.txt"
@@ -203,6 +204,7 @@ def test_storetxt(additional_objective, n_objectives,header_string):
             print(res.get_objectives()/temp_data[:,i])
             np.testing.assert_allclose(res.get_objectives(), temp_data[:,i], rtol=1e-15, atol=1e-15)
 
+@pytest.mark.higheffort
 def test_get_wf_from_i():
     res = get_simple_result(1, a0 = 1e-100)
 

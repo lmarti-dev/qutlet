@@ -136,31 +136,31 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
             [1, 4], 
             [1, 0], 
             {
-                "2Qvariables": [['theta', 'phi'], ['kappa', 'psi'], ['mu', 'nu']],
+                "2Qvariables": [['phi', 'theta'], ['kappa', 'psi'], ['mu', 'nu']],
             },
-            cirq.Circuit(cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+            cirq.Circuit(cirq.FSimGate(theta=sympy.Symbol('theta0'), phi=sympy.Symbol('phi0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                        cirq.FSimGate(theta=sympy.Symbol('theta0'), phi=sympy.Symbol('phi0')).\
                             on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
-                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                        cirq.FSimGate(theta=sympy.Symbol('theta0'), phi=sympy.Symbol('phi0')).\
                             on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                        cirq.FSimGate(theta=sympy.Symbol('theta0'), phi=sympy.Symbol('phi0')).\
                             on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 0)),
-                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('kappa0'), theta=sympy.Symbol('psi0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('kappa0'), theta=sympy.Symbol('psi0')).\
                             on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
-                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('kappa0'), theta=sympy.Symbol('psi0')).\
                             on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        cirq.FSimGate(sympy.Symbol('kappa0'), sympy.Symbol('psi0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('kappa0'), theta=sympy.Symbol('psi0')).\
                             on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 0)),
-                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('mu0'), theta=sympy.Symbol('nu0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('mu0'), theta=sympy.Symbol('nu0')).\
                             on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
-                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('mu0'), theta=sympy.Symbol('nu0')).\
                             on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        cirq.FSimGate(sympy.Symbol('mu0'), sympy.Symbol('nu0')).\
+                        cirq.FSimGate(phi=sympy.Symbol('mu0'), theta=sympy.Symbol('nu0')).\
                             on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 0))),
         ),
         (
