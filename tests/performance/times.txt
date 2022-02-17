@@ -1,0 +1,162 @@
+===Thu, 17 Feb 2022 13:10:05 +0000===
+Test No Indices 
+
+Sequential Time: 2.45355486869812
+Parallel Time: 0.8540589809417725
+
+===Thu, 17 Feb 2022 13:10:08 +0000===
+Test Indices 
+
+Sequential Time: 1.4553687572479248
+Parallel Time: 1.2939386367797852
+
+===Thu, 17 Feb 2022 13:10:10 +0000===
+Test Indices 
+
+Sequential Time: 0.9110555648803711
+Parallel Time: 0.9896156787872314
+
+===Thu, 17 Feb 2022 13:10:12 +0000===
+Test Indices 
+
+Sequential Time: 1.3810694217681885
+Parallel Time: 1.3299872875213623
+
+===Thu, 17 Feb 2022 13:10:14 +0000===
+Test Indices 
+
+Sequential Time: 0.9405620098114014
+Parallel Time: 1.0120880603790283
+
+===Thu, 17 Feb 2022 13:10:32 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.38105034828186
+Parallel Time: 4.339362144470215
+
+===Thu, 17 Feb 2022 13:10:43 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.163157939910889
+Parallel Time: 2.8804171085357666
+
+===Thu, 17 Feb 2022 13:11:12 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 22.607163429260254
+Parallel Time: 7.100316047668457
+
+===Thu, 17 Feb 2022 13:11:29 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.094808340072632
+Parallel Time: 4.2079150676727295
+
+===Thu, 17 Feb 2022 13:16:04 +0000===
+Test No Indices 
+
+Sequential Time: 2.5628087520599365
+Parallel Time: 0.8485915660858154
+
+===Thu, 17 Feb 2022 13:16:06 +0000===
+Test Indices 
+
+Sequential Time: 1.3533196449279785
+Parallel Time: 1.2763028144836426
+
+===Thu, 17 Feb 2022 13:16:08 +0000===
+Test Indices 
+
+Sequential Time: 0.9929578304290771
+Parallel Time: 0.9724440574645996
+
+===Thu, 17 Feb 2022 13:16:11 +0000===
+Test Indices 
+
+Sequential Time: 1.424377679824829
+Parallel Time: 1.3319556713104248
+
+===Thu, 17 Feb 2022 13:16:13 +0000===
+Test Indices 
+
+Sequential Time: 0.9274260997772217
+Parallel Time: 1.02608060836792
+
+===Thu, 17 Feb 2022 13:16:31 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.338940620422363
+Parallel Time: 4.346314191818237
+
+===Thu, 17 Feb 2022 13:16:41 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.24636435508728
+Parallel Time: 2.875858783721924
+
+===Thu, 17 Feb 2022 13:17:11 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 22.27109932899475
+Parallel Time: 7.131801128387451
+
+===Thu, 17 Feb 2022 13:17:27 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.03313660621643
+Parallel Time: 4.072490692138672
+
+===Thu, 17 Feb 2022 13:24:25 +0000===
+Test No Indices 
+
+Sequential Time: 2.569380521774292
+Parallel Time: 0.8514993190765381
+
+===Thu, 17 Feb 2022 13:24:28 +0000===
+Test Indices 
+
+Sequential Time: 1.35335111618042
+Parallel Time: 1.2805721759796143
+
+===Thu, 17 Feb 2022 13:24:30 +0000===
+Test Indices 
+
+Sequential Time: 0.914372444152832
+Parallel Time: 0.9804718494415283
+
+===Thu, 17 Feb 2022 13:24:32 +0000===
+Test Indices 
+
+Sequential Time: 1.394944190979004
+Parallel Time: 1.3354439735412598
+
+===Thu, 17 Feb 2022 13:24:34 +0000===
+Test Indices 
+
+Sequential Time: 0.9390480518341064
+Parallel Time: 1.0270564556121826
+
+===Thu, 17 Feb 2022 13:24:52 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.302995204925537
+Parallel Time: 4.340244293212891
+
+===Thu, 17 Feb 2022 13:25:02 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.167868614196777
+Parallel Time: 2.8938534259796143
+
+===Thu, 17 Feb 2022 13:25:32 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 22.69212508201599
+Parallel Time: 7.1446616649627686
+
+===Thu, 17 Feb 2022 13:25:48 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 11.823400020599365
+Parallel Time: 4.075140953063965
+

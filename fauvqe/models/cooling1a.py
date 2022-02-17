@@ -35,8 +35,8 @@ class Cooling1A(SpinModelFC):
             m_anc.n
         )
         j_int = np.array(j_int)
-        assert j_int.shape == (len(int_gates), m_anc.n[1]), "Wrong shape of j_int, received: {} expected: {}".format(
-            j_int.shape, (len(int_gates), m_anc.n[1])
+        assert j_int.shape == (len(int_gates), m_sys.n[0], m_sys.n[1]), "Wrong shape of j_int, received: {} expected: {}".format(
+            j_int.shape, (len(int_gates), m_sys.n[0], m_sys.n[1])
         )
         
         n = [m_sys.n[0] + 1, m_sys.n[1]]
@@ -138,8 +138,8 @@ class Cooling1A(SpinModelFC):
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, j, m_sys.n[0], j] = j_int[g_int, j]
-                        js[g, m_sys.n[0], j, i, j] = j_int[g_int, j]
+                        js[g, i, j, m_sys.n[0], j] = j_int[g_int, i, j]
+                        js[g, m_sys.n[0], j, i, j] = j_int[g_int, i, j]
                 
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
