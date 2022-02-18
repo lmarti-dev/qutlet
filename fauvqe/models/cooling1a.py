@@ -114,17 +114,15 @@ class Cooling1A(SpinModelFC):
                             i = m_sys.n[0] - 1
                             js[g, i, j, 0, j] = m_sys.j_v[i, j, g]
                             js[g, 0, j, i, j] = m_sys.j_v[i, j, g]
-            
             elif(g<self.nbr_2Q_sys + self.nbr_2Q_anc):
                 g_anc = g - self.nbr_2Q_sys
                 #Ancilla js
                 if(self.anc_fc):
                     for i in range(m_anc.n[0]):
                         for j in range(m_anc.n[1]):
-                            for k in range(i+1, m_anc.n[0], 1):
-                                for l in range(m_anc.n[1]):
-                                    js[g, m_sys.n[0] + i, j, m_sys.n[0] + k, l] = m_anc.j[i, j, k, l, g_anc]
-                                    js[g, m_sys.n[0] + k, l, m_sys.n[0] + i, j] = m_anc.j[i, j, k, l, g_anc]
+                            for l in range(j+1, m_anc.n[1], 1):
+                                js[g, m_sys.n[0] + i, j, m_sys.n[0] + i, l] = m_anc.j[i, j, i, l, g_anc]
+                                js[g, m_sys.n[0] + i, l, m_sys.n[0] + i, j] = m_anc.j[i, j, i, l, g_anc]
                 else:
                     for i in range(m_anc.n[1] - 1):
                         js[g, m_sys.n[0], i, m_sys.n[0], i+1] = m_anc.j_h[0, i, g_anc]

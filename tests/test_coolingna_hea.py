@@ -338,3 +338,10 @@ def test_assert_layerwise():
     )
     with pytest.raises(NotImplementedError):
         model.set_circuit("hea", {'parametrisation': "layerwise"})
+    
+    model.set_circuit("hea")
+    model.hea.options.update({"1QubitGates": None})
+    model.hea.options.update({"parametrisation": "layerwise"})
+    
+    with pytest.raises(NotImplementedError):
+        model.hea.set_circuit(model)
