@@ -193,6 +193,9 @@ class AbstractModel(Restorable):
         elif simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator(dtype=dtype)
+        elif simulator_name == "dm":
+            self.simulator_options = {}
+            self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
         else:
             assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
                 simulator_name

@@ -129,7 +129,7 @@ def _partial_2Qubit_layer_fc(self, v, g):
             for k in range(i+1, self.n[0], 1):
                 for l in range(self.n[1]):
                     yield gate(*v[i][j][k][l][:]).on(self.qubits[i][j], self.qubits[k][l])
-            
+
 def _2Qubit_layer(self, i, g):
     """
     Generator for hardware efficent 2 qubit layer
@@ -143,7 +143,6 @@ def _2Qubit_layer(self, i, g):
         1. Generate array variables dependent on boundary conditions
         2. Call _partial_2Qubit_layer(), hand over variables array
     """
-    print(self.hea.options["parametrisation"])
     if self.hea.options["parametrisation"] == "joint":
         gate_variables = [0 for dummy in self.hea.options["2Qvariables"][g]]
         j = 0
