@@ -77,10 +77,10 @@ def _exact_layer(self):
     else:
         TwoQubitGates = self.basics.options.get("TwoQubitGates")
 
-    if self.basics.options.get("subsystem_qubits") is None:
-        print("test2")
+    #To Do: Generalise further by allowing to provide split Hamiltonian
+    b_exact = self.basics.options["b_exact"]
+    if self.basics.options.get("subsystem_qubits") is None and self.basics.options.get("subsystem_hamiltonians") is None:
         n_exact = self.basics.options["n_exact"]
-        b_exact = self.basics.options["b_exact"]
         #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
         if np.sum(self.n%n_exact) != 0:
             warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
@@ -131,13 +131,45 @@ def _exact_layer(self):
         # if subsystem_j_v, subsystem_j_h or subsystem_h are not given use self.j_v, self.j_h or self.h accordingly
         
         #Check whether set of qubits match and non is there twice
-        print("test")
         subsystem_qubits = self.basics.options["subsystem_qubits"]
         assert ( set(self.basics.flatten(self.qubits)) == set(self.basics.flatten(subsystem_qubits)) 
-            ), "Subsystem qubits do not match system qubits; provided system qubits are: {}\nprovided sub system qubits are: {}\n".format(
+            ), "Subsystem qubits do not match system qubits;\nProvided system qubits are:\n{}\nProvided sub system qubits are:\n{}\n".format(
             set(self.basics.flatten(self.qubits)), 
             set(self.basics.flatten(subsystem_qubits))
             )
+        
+        #apply b_exact accordingly
+        if self.basics.options.get("subsystem_h") is None:
+            subsystem_h =self.h,
+        else:
+            subsystem_h = self.basics.options.get("subsystem_h")
+
+        if self.basics.options.get("subsystem_j_h") is None:
+            subsystem_j_h =self.j_h,
+        else:
+            subsystem_j_h = self.basics.options.get("subsystem_j_h")
+
+        if self.basics.options.get("subsystem_j_v") is None:
+            subsystem_j_v =self.j_v,
+        else:
+            subsystem_j_v = self.basics.options.get("subsystem_j_v")
+
+        for i in range(len(subsystem_qubits)):
+            #Need to calculate n_exact from subsystem_qubits
+            n_exact = max(subsystem_qubits[i])- min(subsystem_qubits[i]) + (1,1)
+            temp_model = SpinModelDummy("GridQubit",
+                                    n_exact,
+                                    subsystem_j_v[i],
+                                    subsystem_j_h[i],
+                                    subsystem_h[i],
+                                    *TwoQubitGates,
+                                    *SingleQubitGates)
+            temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
+
+            if self.basics.options["cc_exact"]:
+                yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
+            else:
+                yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
 
 def _hadamard_layer(self):
     for row in self.qubits:
