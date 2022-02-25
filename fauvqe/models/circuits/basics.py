@@ -140,28 +140,45 @@ def _exact_layer(self):
         
         #apply b_exact accordingly
         if self.basics.options.get("subsystem_h") is None:
-            subsystem_h =self.h,
+            subsystem_h = []
+            for i in range(len(subsystem_qubits)):
+                subsystem_h.append(self.h[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1,
+                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
         else:
             subsystem_h = self.basics.options.get("subsystem_h")
 
         if self.basics.options.get("subsystem_j_h") is None:
-            subsystem_j_h =self.j_h,
+            subsystem_j_h = []
+            for i in range(len(subsystem_qubits)):
+                subsystem_j_h.append(self.j_h[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1,
+                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1-b_exact[1], :])
         else:
             subsystem_j_h = self.basics.options.get("subsystem_j_h")
 
         if self.basics.options.get("subsystem_j_v") is None:
-            subsystem_j_v =self.j_v,
+            subsystem_j_v = []
+            for i in range(len(subsystem_qubits)):
+                subsystem_j_v.append(self.j_v[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1-b_exact[0],
+                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
         else:
             subsystem_j_v = self.basics.options.get("subsystem_j_v")
 
+        print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))
+        print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))
+        print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))
         for i in range(len(subsystem_qubits)):
             #Need to calculate n_exact from subsystem_qubits
-            n_exact = max(subsystem_qubits[i])- min(subsystem_qubits[i]) + (1,1)
+            n_exact = [ max(subsystem_qubits[i])._row- min(subsystem_qubits[i])._row + 1,
+                        max(subsystem_qubits[i])._col- min(subsystem_qubits[i])._col + 1]
+            print("n_exact: {}".format(n_exact))
             temp_model = SpinModelDummy("GridQubit",
                                     n_exact,
-                                    subsystem_j_v[i],
-                                    subsystem_j_h[i],
-                                    subsystem_h[i],
+                                    np.transpose(subsystem_j_v[i], (2, 0,1)),
+                                    np.transpose(subsystem_j_h[i], (2, 0,1)),
+                                    np.transpose(subsystem_h[i], (2, 0,1)),
+                                    #subsystem_j_v[i],
+                                    #subsystem_j_h[i],
+                                    #subsystem_h[i],
                                     *TwoQubitGates,
                                     *SingleQubitGates)
             temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
