@@ -5,23 +5,24 @@
 
     self.circuit.moments[1]._operations[0]._gate.__dict__
 """
-from fauvqe.models.abstractmodel import AbstractModel
-
 # external import
-import numpy as np
 import cirq
-import sympy
-import warnings
-import itertools 
-
-from typing import Literal, List
 from numbers import Real
+import numpy as np
+import inspect
+import itertools 
+import sympy
+from typing import Literal, List
+import warnings
+
+#Internal import
+from fauvqe.models.abstractmodel import AbstractModel
 
 def set_circuit(self):
     if not self.basics.options['append']:
         self.circuit = cirq.Circuit()
 
-    if self.basics.options["start"] == None:
+    if self.basics.options.get("start") == None:
         pass
     elif self.basics.options["start"] == "exact":
         self.circuit.insert(0,self.basics._exact_layer(self))
@@ -37,7 +38,7 @@ def set_circuit(self):
 
     if self.basics.options["end"] == None:
         pass
-    elif self.basics.options["end"] == "exact":
+    elif self.basics.options.get("end") == "exact":
         self.circuit.append(self.basics._exact_layer(self))
     elif self.basics.options["end"] == "hadamard":
         self.circuit.append(self.basics._hadamard_layer(self))
@@ -63,60 +64,80 @@ def _exact_layer(self):
     #
     #   hard to tell what's best => further flag
     #Further have to include boundary condition of large system for i = n_exact[0] or j = n_exact[1]
-
-
     if self.qubittype != "GridQubit":
         raise NotImplementedError()
-    
-    n_exact = self.basics.options["n_exact"]
-    b_exact = self.basics.options["b_exact"]
-    #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
-    if np.sum(self.n%n_exact) != 0:
-        warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
-    
-    n_rep=self.n//n_exact
-    #print("n_rep: \t {}".format(n_rep))
 
-    #Poentially paralise this:
-    for i in range(n_rep[0]):
-        for j in range(n_rep[1]):
-            # 1. Create Ising object for subsystem
-            # 2. then use diagonalise()
-            # 3. Add cirq.MatrixGate to self.circuit
+    if self.basics.options.get("SingleQubitGates") is None:
+        SingleQubitGates = self._SingleQubitGates,
+    else:
+        SingleQubitGates = self.basics.options.get("SingleQubitGates")
 
-            #maybe can write all in 1 loop by min(.., self.n[0]-self.boundaries[0] )
-            #-> works already
-            if(self.field == "X"):
-                one_q_gate = [cirq.X]
-            elif(self.field == "Z"):
-                one_q_gate = [cirq.Z]
-            temp_model = SpinModelDummy("GridQubit",
-                                n_exact,
-                                [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
-                                            j*n_exact[1]: (j+1)*n_exact[1], 0]],
-                                [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
-                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], 0]],
-                                [self.h[i*n_exact[0]:(i+1)*n_exact[0],
-                                       j*n_exact[1]: (j+1)*n_exact[1],0]],
-                                [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-                                one_q_gate)
-            temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
-            
-            #This would be nicer in 1 line, but 2D list sclicing in python 
-            #Resulted in wrong result. compare lab book 2 page 109
-            temp_qubits = []
-            for k in range(n_exact[0]):
-                for l in range(n_exact[1]):
-                    temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
-            #print("temp_qubits: \t {}".format(temp_qubits))
+    if self.basics.options.get("TwoQubitGates") is None:
+        TwoQubitGates =self._TwoQubitGates,
+    else:
+        TwoQubitGates = self.basics.options.get("TwoQubitGates")
 
-            if self.basics.options["cc_exact"]:
-                yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
-            else:
-                yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
-    if (self.n == n_exact).all() :
-        self.eig_val = temp_model.eig_val
-        self.eig_vec = temp_model.eig_vec
+    if self.basics.options.get("subsystem_qubits") is None:
+        print("test2")
+        n_exact = self.basics.options["n_exact"]
+        b_exact = self.basics.options["b_exact"]
+        #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
+        if np.sum(self.n%n_exact) != 0:
+            warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
+        
+        n_rep=self.n//n_exact
+        #print("n_rep: \t {}".format(n_rep))
+
+        #Poentially paralise this:
+        for i in range(n_rep[0]):
+            for j in range(n_rep[1]):
+                # 1. Create Ising object for subsystem
+                # 2. then use diagonalise()
+                # 3. Add cirq.MatrixGate to self.circuit
+
+                #maybe can write all in 1 loop by min(.., self.n[0]-self.boundaries[0] )
+                #-> works already
+                temp_model = SpinModelDummy("GridQubit",
+                                    n_exact,
+                                    [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
+                                                j*n_exact[1]: (j+1)*n_exact[1], 0]],
+                                    [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
+                                                j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], 0]],
+                                    [self.h[i*n_exact[0]:(i+1)*n_exact[0],
+                                        j*n_exact[1]: (j+1)*n_exact[1],0]],
+                                    *TwoQubitGates,
+                                    *SingleQubitGates)
+                temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
+                
+                #This would be nicer in 1 line, but 2D list sclicing in python 
+                #Resulted in wrong result. compare lab book 2 page 109
+                temp_qubits = []
+                for k in range(n_exact[0]):
+                    for l in range(n_exact[1]):
+                        temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
+                #print("temp_qubits: \t {}".format(temp_qubits))
+
+                if self.basics.options["cc_exact"]:
+                    yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
+                else:
+                    yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
+        if (self.n == n_exact).all() :
+            self.eig_val = temp_model.eig_val
+            self.eig_vec = temp_model.eig_vec
+    else:
+        #More flexible option
+        #give lists of GridQubits to devide the system
+        #allow to adapt J and h of subsystem to prevent overcounting by multiple coverage
+        # if subsystem_j_v, subsystem_j_h or subsystem_h are not given use self.j_v, self.j_h or self.h accordingly
+        
+        #Check whether set of qubits match and non is there twice
+        print("test")
+        subsystem_qubits = self.basics.options["subsystem_qubits"]
+        assert ( set(self.basics.flatten(self.qubits)) == set(self.basics.flatten(subsystem_qubits)) 
+            ), "Subsystem qubits do not match system qubits; provided system qubits are: {}\nprovided sub system qubits are: {}\n".format(
+            set(self.basics.flatten(self.qubits)), 
+            set(self.basics.flatten(subsystem_qubits))
+            )
 
 def _hadamard_layer(self):
     for row in self.qubits:
@@ -152,26 +173,26 @@ def __get_mf_angle(self, qubit):
     if (self.j_v.shape[0] * self.j_v.shape[1]) > 0:
         # (1)
         if qubit._row > 0:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 J_mean += self.j_v[qubit._row - 1,  qubit._col][g]
                 n_J += 1
         
         # (4)
         if qubit._col <  self.j_v.shape[1] and qubit._row <  self.j_v.shape[0]:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 J_mean += self.j_v[qubit._row, qubit._col][g]
                 n_J += 1
     
     if (self.j_h.shape[0] * self.j_h.shape[1]) > 0: 
         # (2)
         if qubit._col > 0:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 J_mean += self.j_h[qubit._row, qubit._col -1][g]
                 n_J += 1
 
         # (3)
         if qubit._col <  self.j_h.shape[1] and qubit._row <  self.j_h.shape[0]:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 J_mean += self.j_h[qubit._row, qubit._col][g]
                 n_J += 1
 
@@ -244,6 +265,9 @@ def rm_unused_cpv(self):
         del self.circuit_param[index]
     self.circuit_param_values = np.delete(self.circuit_param_values, _erase_ind, None)
 
+def flatten(nested_list):
+    return [item for sublist in nested_list for item in sublist]
+
 class SpinModelDummy(AbstractModel):
     """
     2D Ising Dummy class in order to be able to use it in 
@@ -261,39 +285,39 @@ class SpinModelDummy(AbstractModel):
                  j_v,
                  j_h,
                  h,
-                 two_q_gates: List[cirq.PauliSum],
-                 one_q_gates: List[cirq.PauliSum],
+                 TwoQubitGates: List[cirq.PauliSum],
+                 SingleQubitGates: List[cirq.PauliSum],
                  t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
-        j_v vertical j's - same order as two_q_gates
-        j_h horizontal j's - same order as two_q_gates
-        h  strength external fields - same order as one_q_gates
-        two_q_gates: list of 2 Qubit Gates
-        one_q_gates: list of single Qubit Gates
+        j_v vertical j's - same order as TwoQubitGates
+        j_h horizontal j's - same order as TwoQubitGates
+        h  strength external fields - same order as SingleQubitGates
+        TwoQubitGates: list of 2 Qubit Gates
+        SingleQubitGates: list of single Qubit Gates
         t: Simulation Time
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
         self.circuit_param = None
         self.circuit_param_values = np.array([])
-        self._two_q_gates = two_q_gates
-        self._one_q_gates = one_q_gates
-        self._set_jh(j_v, j_h, h, two_q_gates, one_q_gates)
+        self._TwoQubitGates = TwoQubitGates
+        self._SingleQubitGates = SingleQubitGates
+        self._set_jh(j_v, j_h, h, TwoQubitGates, SingleQubitGates)
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
 
-    def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
+    def _set_jh(self, j_v, j_h, h, TwoQubitGates, SingleQubitGates):
         # convert input to numpy array to be sure
         j_v = np.array(j_v)
         # J vertical needs one row/horizontal line less
         # NEED FOR IMPROVEMENT
-        assert (j_v.shape == (len(two_q_gates), *(self.n - np.array((1, 0))) )) or (
-            j_v.shape == (len(two_q_gates), *self.n)
-        ), "Error in SpinModel._set_jh(): j_v.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
-            j_v.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
+        assert (j_v.shape == (len(TwoQubitGates), *(self.n - np.array((1, 0))) )) or (
+            j_v.shape == (len(TwoQubitGates), *self.n)
+        ), "Error in SpinModel._set_jh(): j_v.shape != (len(TwoQubitGates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_v.shape, (len(TwoQubitGates), *(self.n - np.array((1, 0))))
         )
         self.j_v = np.transpose(j_v, (1, 2, 0))
         
@@ -301,10 +325,10 @@ class SpinModelDummy(AbstractModel):
         j_h = np.array(j_h)
         # J horizontal needs one column/vertical line less#
         # NEED FOR IMPROVEMENT
-        assert (j_h.shape == (len(two_q_gates), *(self.n - np.array((0, 1))) )) or (
-            j_h.shape == (len(two_q_gates), *self.n)
-        ), "Error in SpinModel._set_jh(): j_h.shape != (len(two_q_gates), n - {{ (1,0), (0,0)}}), {} != {}".format(
-            j_h.shape, (len(two_q_gates), *(self.n - np.array((1, 0))))
+        assert (j_h.shape == (len(TwoQubitGates), *(self.n - np.array((0, 1))) )) or (
+            j_h.shape == (len(TwoQubitGates), *self.n)
+        ), "Error in SpinModel._set_jh(): j_h.shape != (len(TwoQubitGates), n - {{ (1,0), (0,0)}}), {} != {}".format(
+            j_h.shape, (len(TwoQubitGates), *(self.n - np.array((1, 0))))
         )
         self.j_h = np.transpose(j_h, (1, 2, 0))
 
@@ -314,8 +338,8 @@ class SpinModelDummy(AbstractModel):
         # convert input to numpy array to be sure
         h = np.array(h)
         assert (
-            h.shape == (len(one_q_gates), *self.n)
-        ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
+            h.shape == (len(SingleQubitGates), *self.n)
+        ), "Error in SpinModel._set_jh():: h.shape != (len(SingleQubitGates), n), {} != {}".format(h.shape, (len(SingleQubitGates), *self.n))
         self.h = np.transpose(h, (1, 2, 0))
 
     def _set_hamiltonian(self, reset: bool = True):
@@ -333,41 +357,41 @@ class SpinModelDummy(AbstractModel):
         h = self.h.tolist()
         
         # 1. Sum over inner bounds
-        for g in range(len(self._two_q_gates)):
+        for g in range(len(self._TwoQubitGates)):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
-        for g in range(len(self._two_q_gates)):
+        for g in range(len(self._TwoQubitGates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i+1][j])
+                self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
         
-        for g in range(len(self._two_q_gates)):
+        for g in range(len(self._TwoQubitGates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][j+1])
+                self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[i][0])
+                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
-            for g in range(len(self._two_q_gates)):
+            for g in range(len(self._TwoQubitGates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[i][j][g]*self._two_q_gates[g](self.qubits[i][j], self.qubits[0][j])
+                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
-        for g in range(len(self._one_q_gates)):
+        for g in range(len(self._SingleQubitGates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
+                    self.hamiltonian -= h[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
 
     def copy(self): pass
     def energy(self): pass 
