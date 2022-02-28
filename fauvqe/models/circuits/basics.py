@@ -22,12 +22,16 @@ def set_circuit(self):
     if not self.basics.options['append']:
         self.circuit = cirq.Circuit()
 
+    #Add i
+
     if self.basics.options.get("start") == None:
         pass
     elif self.basics.options["start"] == "exact":
         self.circuit.insert(0,self.basics._exact_layer(self))
     elif self.basics.options["start"] == "hadamard":
         self.circuit.insert(0,self.basics._hadamard_layer(self))
+    elif self.basics.options["start"] == "identity":
+        self.circuit.insert(0,self.basics._identity_layer(self))
     elif self.basics.options["start"] == "neel":
         self.circuit.insert(0,self.basics._neel_layer(self))
     elif self.basics.options["start"] == "mf":
@@ -42,6 +46,8 @@ def set_circuit(self):
         self.circuit.append(self.basics._exact_layer(self))
     elif self.basics.options["end"] == "hadamard":
         self.circuit.append(self.basics._hadamard_layer(self))
+    elif self.basics.options["end"] == "identity":
+        self.circuit.append(self.basics._identity_layer(self))
     elif self.basics.options["end"] == "neel":
         self.circuit.append(self.basics._neel_layer(self))
     elif self.basics.options["end"] == "mf":
@@ -79,6 +85,7 @@ def _exact_layer(self):
 
     #To Do: Generalise further by allowing to provide split Hamiltonian
     b_exact = self.basics.options["b_exact"]
+
     if self.basics.options.get("subsystem_qubits") is None and self.basics.options.get("subsystem_hamiltonians") is None:
         n_exact = self.basics.options["n_exact"]
         #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
@@ -192,6 +199,11 @@ def _hadamard_layer(self):
     for row in self.qubits:
         for qubit in row:
             yield cirq.H.on(qubit)
+
+def _identity_layer(self):
+    for row in self.qubits:
+        for qubit in row:
+            yield cirq.I.on(qubit)
 
 def _mf_layer(self):
     assert self.field == "X","Mean field layer only implemented for self.field == 'X'"
