@@ -133,6 +133,10 @@ class SpinModelFC(AbstractModel):
         elif qalgorithm == "cooling":
             self.cooling.options = { "append": False,
                                     "K":1,
+                                    "emin":None,
+                                    "emax":None,
+                                    "m":None,
+                                    "time_steps":1
                                   }
             self.cooling.options.update(options)
             self.cooling.set_circuit(self)
