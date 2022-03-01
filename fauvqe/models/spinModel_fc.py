@@ -18,6 +18,8 @@ class SpinModelFC(AbstractModel):
     is mother of different quantum circuit methods
     """
     basics  = importlib.import_module("fauvqe.models.circuits.basics")
+    trotter  = importlib.import_module("fauvqe.models.circuits.trotter")
+    cooling  = importlib.import_module("fauvqe.models.circuits.cooling")
     hea  = importlib.import_module("fauvqe.models.circuits.hea")
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
