@@ -6,7 +6,7 @@ import sympy
 import itertools
 
 # internal imports
-from fauvqe import Ising
+from fauvqe import Ising, SpinModel
 from fauvqe.models.circuits.basics import SpinModelDummy
 from .test_isings import IsingTester
 
@@ -114,23 +114,44 @@ def test__exact_layer(qubittype, n, j_v, j_h, h, field, n_exact, location):
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, ising.eig_vec[:,0], rtol=1e-7, atol=1e-8)
 
 @pytest.mark.parametrize(
-    "n",
+    "n, subsystem_qubits",
     [
         (
-            [1, 2] 
+            [1, 2],
+            None
         ),
         (
-            [2, 1]  
+            [2, 1],
+            None
         ),
         (
-            [2, 2]  
+            [2, 2],
+            None
         ),
         (
-            [1, 3]   
+            [1, 3],
+            None 
+        ),
+        (
+            [1, 2],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]
+        ),
+
+        (
+            [2, 1],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)]]
+        ),
+        (
+            [2, 2],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]
+        ),
+        (
+            [1, 3],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)]]  
         ),
     ]
 )
-def test__exact_layer_cc(n):
+def test__exact_layer_cc(n,subsystem_qubits):
     print(n)
     j_v = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
     j_h = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
@@ -141,6 +162,7 @@ def test__exact_layer_cc(n):
     ising.set_simulator("cirq")
     ising.set_circuit("basics",{    "start": "exact", 
                                     "n_exact": n,
+                                    "subsystem_qubits": subsystem_qubits,
                                     "cc_exact": True})
 
     #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
@@ -559,6 +581,66 @@ def test__exact_layer_subsystem_J(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
         print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
         print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-15, atol=1e-15)
+
+@pytest.mark.parametrize(
+    "n,SingleQubitGates, TwoQubitGates",
+    [
+        (
+            [1, 2],
+            [[cirq.X]],
+            [[lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)]]
+            ),
+            (
+            [2, 2],
+            [[cirq.X]],
+            [[lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)]]
+            ),
+    ]
+)
+def test__exact_layer_QubitGates(n,SingleQubitGates, TwoQubitGates):
+    j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
+    ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
+    ising.set_circuit("basics",{    "start": "exact",
+                                    "n_exact": n})
+    print("ising.circuit:\n{}\n".format(ising.circuit))
+
+    spinmodel = SpinModel("GridQubit", 
+                                        n, 
+                                        [j_v0], 
+                                        [j_h0], 
+                                        [h0],
+                                        [lambda q1, q2: cirq.Y(q1)*cirq.Y(q2)],
+                                        [cirq.Y])
+    spinmodel.set_circuit("basics",{    "start": "exact",
+                                    "n_exact": n,
+                                    "SingleQubitGates": SingleQubitGates,
+                                    "TwoQubitGates": TwoQubitGates})
+
+    print("spinmodel.circuit:\n{}\n".format(spinmodel.circuit))
+
+    #Only compare unitaries if circuits do not correspond
+    if ising.circuit == spinmodel.circuit:
+        assert True
+    else:
+        print("ising.circuit.all_qubits():\n{}\nspinmodel.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),spinmodel.circuit.all_qubits()))
+        print("ising.circuit.unitary()-spinmodel.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-spinmodel.circuit.unitary()))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),spinmodel.circuit.unitary(), rtol=1e-15, atol=1e-15)
+    
+
+def test__identity_layer():
+    ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
+
+    test_circuit = cirq.Circuit()
+    for qubit in list(itertools.chain(*ising.qubits)):
+        test_circuit.append(cirq.I.on(qubit))
+
+    ising.set_circuit("basics",{   "start": "identity",})
+    assert test_circuit == ising.circuit
+
+    ising.set_circuit("basics",{   "append": False, "end": "identity"})
+    assert test_circuit == ising.circuit
 
 def test__hadamard_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))

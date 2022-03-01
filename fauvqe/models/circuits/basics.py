@@ -133,9 +133,6 @@ def _exact_layer(self):
                     yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
                 else:
                     yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
-        if (self.n == n_exact).all() :
-            self.eig_val = temp_model.eig_val
-            self.eig_vec = temp_model.eig_vec
     else:
         #More flexible option
         #give lists of GridQubits to devide the system
@@ -205,6 +202,10 @@ def _exact_layer(self):
                 yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
             else:
                 yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
+
+    if (self.n == n_exact).all() :
+        self.eig_val = temp_model.eig_val
+        self.eig_vec = temp_model.eig_vec
 
 def _hadamard_layer(self):
     for row in self.qubits:
