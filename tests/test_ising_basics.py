@@ -159,6 +159,295 @@ def test__exact_layer_cc(n):
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=5e-8)
 
 
+@pytest.mark.parametrize(
+    "n, n_exact, subsystem_qubits",
+    [
+        (
+            [2, 2], 
+            [2, 1],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]
+        ),
+        (
+            [2, 2], 
+            [2, 2],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]
+        ),
+        (
+            [2, 2], 
+            [1, 2],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+            [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]
+        ),
+        (
+            [2, 3], 
+            [2, 1],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+            [cirq.GridQubit(0,2), cirq.GridQubit(1,2)]]
+        ),
+        (
+            [2, 3], 
+            [1, 3],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1),  cirq.GridQubit(0,2)],
+            [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)]]
+        ),
+        (
+            [1, 6], 
+            [1, 3],
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1),  cirq.GridQubit(0,2)],
+            [cirq.GridQubit(0,3), cirq.GridQubit(0,4), cirq.GridQubit(0,5)]]
+        ),
+    ]
+)
+def test__exact_layer_subsystem_qubits(n,n_exact,subsystem_qubits):
+    j_v = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h = 2*(np.random.rand(n[0],n[1])- 0.5)
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising.set_circuit("basics",{    "start": "exact", 
+                                    "n_exact": n_exact})
+
+    print("ising.circuit:\n{}\n".format(ising.circuit))
+    ising2= Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising2.set_circuit("basics",{    "start": "exact", 
+                                    "subsystem_qubits": subsystem_qubits})
+
+    print("ising2.circuit:\n{}\n".format(ising2.circuit))
+
+    assert(ising.circuit == ising2.circuit)
+
+@pytest.mark.parametrize(
+    "n, n_exact, j_v, j_h, h, subsystem_qubits, subsystem_h",
+    [
+        (
+            [2, 2], 
+            [2, 1],
+            2*(np.random.rand(2-1,2)- 0.5),
+            2*(np.random.rand(2,2-1)- 0.5),
+            np.ones((2,2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            [    np.transpose(np.array([ [[1], [1]]]), (1,0, 2)), 
+                np.transpose(np.array([ [[1], [1]] ]), (1,0, 2))] ,      
+        ),
+        (
+            [2, 2], 
+            [1, 2],
+            2*(np.random.rand(2-1,2)- 0.5),
+            2*(np.random.rand(2,2-1)- 0.5),
+            np.ones((2,2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+            [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+            [    np.transpose(np.array([ [[1], [1]]]), (0,1, 2)), 
+                np.transpose(np.array([ [[1], [1]] ]), (0,1, 2))] ,      
+        ),
+        (
+            [2, 3], 
+            [1, 3],
+            2*(np.random.rand(2-1,3)- 0.5),
+            2*(np.random.rand(2,3-1)- 0.5),
+            np.ones((2,3)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)],
+            [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)]],
+            [    np.transpose(np.array([ [[1], [1], [1]]]), (0,1, 2)), 
+                np.transpose(np.array([ [[1], [1], [1]] ]), (0,1, 2))] ,      
+        ),
+        (
+            [2, 3], 
+            [1, 3],
+            2*(np.random.rand(2-1,3)- 0.5),
+            2*(np.random.rand(2,3-1)- 0.5),
+            np.arange(1,1+6).reshape((2, 3)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)],
+            [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)]],
+            [    np.transpose(np.array([ [[1], [2], [3]]]), (0,1, 2)), 
+                np.transpose(np.array([ [[4], [5], [6]] ]), (0,1, 2))] ,      
+        ),
+        (
+            [2, 2], 
+            [2, 1],
+            np.zeros((2-1,2)),
+            np.zeros((2,2-1)),
+            np.ones((2,2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            [    np.transpose(np.array([ [[1], [1]]]), (1,0, 2)), 
+                np.transpose(np.array([ [[1], [1]] ]), (1,0, 2))] ,      
+        ),
+        (
+            [1, 2], 
+            [1, 2],
+            np.zeros((1-1,2)),
+            np.zeros((1,2-1)),
+            np.arange(2).reshape((1, 2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+            [    np.transpose(np.array([ [[0], [1]]]), (0,1, 2))] ,      
+        ),
+        (
+            [2, 1], 
+            [2, 1],
+            np.zeros((2-1,1)),
+            np.zeros((2,1-1)),
+            np.arange(2).reshape((2, 1)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)]],
+            [    np.transpose(np.array([ [[0], [1]]]), (1,0, 2))] ,      
+        ),
+        (
+            [2, 2], 
+            [2, 1],
+            np.zeros((2-1,2)),
+            np.zeros((2,2-1)),
+            np.array([0,2,1,3]).reshape((2, 2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            [    np.transpose(np.array([ [[0], [1]]]), (1,0, 2)), 
+                np.transpose(np.array([ [[2], [3]] ]), (1,0, 2))] ,      
+        ),
+        (
+            [2, 2], 
+            [2, 1],
+            np.zeros((2-1,2)),
+            np.zeros((2,2-1)),
+            np.array([0,1,0,1]).reshape((2, 2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            [    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)), 
+                np.transpose(np.array([ [[1], [1]] ]), (1,0, 2))] ,      
+        ),
+        #(
+        #    [2, 4], 
+        #    [2, 2],
+        #    np.array([0,1,0,1]).reshape((2-1, 4)),
+        #    np.array([0,1,0,1]).reshape((2, 4-1)),
+        #    np.array([0,1,0,1]).reshape((2, 4)),
+        #    [[cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+        #    [cirq.GridQubit(2,0), cirq.GridQubit(3,0), cirq.GridQubit(2,1), cirq.GridQubit(3,1)]],
+        #    [    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)), 
+        #        np.transpose(np.array([ [[1], [1]] ]), (1,0, 2))] ,      
+        #),
+    ]
+)
+def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsystem_h):
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising.set_circuit("basics",{   "start": "exact", 
+                                    "n_exact": n_exact})
+
+    print("ising.circuit:\n{}\n".format(ising.circuit))
+    h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
+    ising2 = Ising("GridQubit", n, j_v, j_h, h0, "X")
+    ising2.set_circuit("basics",{    "start": "exact", 
+                                    "subsystem_qubits": subsystem_qubits,
+                                    "subsystem_h": subsystem_h})
+    print("ising2.circuit:\n{}\n".format(ising2.circuit))
+
+    #Only compare unitaries if circuits do not correspond
+    if ising.circuit == ising2.circuit:
+        assert True
+    else:
+        print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
+        print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-15, atol=1e-15)
+
+
+@pytest.mark.parametrize(
+    "n, n_exact, j_v, j_h, h, subsystem_qubits, subsystem_j_v, subsystem_j_h",
+    [
+        (
+            [2, 1], 
+            [2, 1],
+            np.ones((2-1,1)),
+            np.ones((2,1-1)),
+            np.zeros((2,1)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)]],
+            [    np.transpose(np.array([ [[1]]]), (1,0, 2)) ]  ,     
+            [np.array([]).reshape(2, 0, 1)]
+        ),
+        (
+            [2, 1], 
+            [2, 1],
+            np.ones((2-1,1)),
+            np.ones((2,1-1)),
+            2*(np.random.rand(2,1)- 0.5),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)]],
+            [    np.transpose(np.array([ [[1]]]), (1,0, 2)) ]  ,     
+            [np.array([]).reshape(2, 0, 1)]  
+        ),
+        (
+            [1, 2], 
+            [1, 2],
+            np.ones((1-1,2)),
+            np.ones((1,2-1)),
+            np.zeros((1,2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+            [np.array([]).reshape(0, 2, 1)],
+            [    np.transpose(np.array([ [[1]]]), (1,0, 2)) ]   
+        ),
+        (
+            [1, 2], 
+            [1, 2],
+            np.ones((1-1,2)),
+            np.ones((1,2-1)),
+            2*(np.random.rand(1,2)- 0.5),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+            [np.array([]).reshape(0, 2, 1)],
+            [    np.transpose(np.array([ [[1]]]), (1,0, 2)) ]   
+        ),
+        (
+            [2, 2], 
+            [2, 1],
+            np.ones((2-1,2)),
+            np.ones((2,2-1)),
+            np.zeros((2,2)),
+            [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [cirq.GridQubit(0,0), cirq.GridQubit(1,0)]],
+            [   np.transpose(np.array([ [[1]]]), (1,0, 2)),
+                np.transpose(np.array([ [[1]]]), (1,0, 2))],     
+            [np.array([]).reshape(2, 0, 1)]
+        ),
+        #(
+          #  [2, 2], 
+          #  [2, 1],
+          #  np.ones((2-1,2)),
+          #  np.ones((2,2-1)),
+          #  2*(np.random.rand(2,2)- 0.5),
+          #  [[cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+          #  [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+          #  [    np.array([ [1]]),
+          #      np.array([ [1] ])] ,     
+         #   [    np.array([[1]]), 
+        #        np.array([ [1]])] ,   
+       # ),
+    ]
+)
+def test__exact_layer_subsystem_J(n,n_exact,j_v, j_h, h, subsystem_qubits, subsystem_j_v, subsystem_j_h):
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising.set_circuit("basics",{   "start": "exact", 
+                                    "n_exact": n_exact})
+
+    print("ising.circuit:\n{}\n".format(ising.circuit))
+
+    print("subsystem_j_v:\n{}\nsubsystem_j_h:\n{}".format(subsystem_j_v, subsystem_j_h))
+    j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    ising2 = Ising("GridQubit", n, j_v0, j_h0, h, "X")
+    ising2.set_circuit("basics",{    "start": "exact", 
+                                    "subsystem_qubits": subsystem_qubits,
+                                    "subsystem_j_h": subsystem_j_h,
+                                    "subsystem_j_v": subsystem_j_v})
+    print("ising2.circuit:\n{}\n".format(ising2.circuit))
+
+    #Only compare unitaries if circuits do not correspond
+    if ising.circuit == ising2.circuit:
+        assert True
+    else:
+        print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
+        print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-15, atol=1e-15)
+
 def test__hadamard_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
     ising.set_circuit("basics",{   "start": "hadamard",})

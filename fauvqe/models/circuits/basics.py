@@ -114,7 +114,12 @@ def _exact_layer(self):
                                         j*n_exact[1]: (j+1)*n_exact[1],0]],
                                     *TwoQubitGates,
                                     *SingleQubitGates)
-                temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
+                #To not loose qubits with no gates/ 0 qubits
+                temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+
+                temp_model.diagonalise( solver = "scipy", 
+                                        solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
+                                        matrix= temp_matrix)
                 
                 #This would be nicer in 1 line, but 2D list sclicing in python 
                 #Resulted in wrong result. compare lab book 2 page 109
@@ -188,7 +193,13 @@ def _exact_layer(self):
                                     #subsystem_h[i],
                                     *TwoQubitGates,
                                     *SingleQubitGates)
-            temp_model.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]})
+                                    
+            #To not loose qubits with no gates/ 0 qubits
+            temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+
+            temp_model.diagonalise( solver = "scipy", 
+                                    solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
+                                    matrix= temp_matrix)
 
             if self.basics.options["cc_exact"]:
                 yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
