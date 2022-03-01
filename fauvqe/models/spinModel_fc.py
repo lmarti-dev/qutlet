@@ -107,7 +107,7 @@ class SpinModelFC(AbstractModel):
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    if(h[i][j][g]!=0):
+                    if(hs[i][j][g]!=0):
                         self.hamiltonian -= hs[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
     
     def set_circuit(self, qalgorithm, options: dict = {}):

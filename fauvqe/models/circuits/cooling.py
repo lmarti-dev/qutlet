@@ -11,8 +11,8 @@ import cirq
 import sympy
 import itertools
 
-from fauvqe.models.cooling1a import Cooling1A
-from fauvqe.models.coolingna import CoolingNA
+#from fauvqe.models.cooling1a import Cooling1A
+#from fauvqe.models.coolingna import CoolingNA
 
 def set_K(self, K):
     if self.cooling.options["K"] != K:

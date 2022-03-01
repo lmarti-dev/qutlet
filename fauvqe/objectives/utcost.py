@@ -103,7 +103,7 @@ class UtCost(Objective):
             self.evaluate = self.evaluate_batch
 
     def _init_trotter_circuit(self):
-        self.trotter_circuit = self.model.trotter.get_trotter_circuit_from_hamiltonian(self.model.hamiltonian, self.t, self._q, self._m)
+        self.trotter_circuit = self.model.trotter.get_trotter_circuit_from_hamiltonian(self.model, self.model.hamiltonian, self.t, self._q, self._m)
     
     def _init_batch_wfcts(self):
         """

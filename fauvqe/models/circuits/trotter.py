@@ -16,20 +16,20 @@ def set_circuit(self):
     self.circuit.append(self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
 
 def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q, m):
-    return m * self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, t/m, q)
+    return m * self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t/m, q)
     
 def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q):
     if(q == 1):
-        return self._first_order_trotter_circuit(hamiltonian, t)
+        return self.trotter._first_order_trotter_circuit(self, hamiltonian, t)
     elif(q == 2):
-        half = self._first_order_trotter_circuit(hamiltonian, 0.5*t)
+        half = self.trotter._first_order_trotter_circuit(self, hamiltonian, 0.5*t)
         for k in range(len(half)-1, -1, -1):
             half.append(half[k])
         return half
     elif( (q % 2) == 0):
         nu = 1/(4 - 4**(1/(q - 1)))
-        partone = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, nu*t, q-2)
-        parttwo = self.get_single_step_trotter_circuit_from_hamiltonian(hamiltonian, (1-4*nu)*t, q-2)
+        partone = self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, nu*t, q-2)
+        parttwo = self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, (1-4*nu)*t, q-2)
         return 2*partone + parttwo + 2*partone
     else:
         raise NotImplementedError()
