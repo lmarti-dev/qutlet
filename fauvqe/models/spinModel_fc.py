@@ -123,6 +123,19 @@ class SpinModelFC(AbstractModel):
             self.hea.set_circuit(self)
             self.basics.rm_unused_cpv(self)  
             self.basics.add_missing_cpv(self)
+        elif qalgorithm == "trotter":
+            self.trotter.options = { "append": False,
+                                    "q":1,
+                                    "m":1
+                                  }
+            self.trotter.options.update(options)
+            self.trotter.set_circuit(self)
+        elif qalgorithm == "cooling":
+            self.cooling.options = { "append": False,
+                                    "K":1,
+                                  }
+            self.cooling.options.update(options)
+            self.cooling.set_circuit(self)
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             #This needs some further revisions as some parts are not very general yet
@@ -141,7 +154,7 @@ class SpinModelFC(AbstractModel):
             assert (
                 False
             ), "Invalid quantum algorithm, received: '{}', allowed is \n \
-                'basics', 'hea', 'qaoa'".format(
+                'basics', 'hea', 'qaoa', 'trotter', 'cooling'".format(
                 qalgorithm
             )
 

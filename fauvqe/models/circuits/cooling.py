@@ -19,15 +19,6 @@ def set_K(self, K):
         self.cooling.set_symbols(self)
         self.cooling.set_circuit(self)
 
-def set_symbols(self):
-    K = self.cooling.options["K"]
-    assert isinstance(p, (int, np.int_)), "Error: K needs to be int, received {}".format(type(K))
-    self.circuit_param = [sympy.Symbol("c")]
-
-def _set_c_values(self, c_values):
-    p = self.cooling.options["K"]
-    self.circuit_param_values[0] = c_values
-
 def set_circuit(self):
     K = self.cooling.options["K"]
     # Reset circuit
@@ -36,10 +27,23 @@ def set_circuit(self):
         self.circuit_param_values = np.zeros(1)
     
     for k in range(K):
-        self.circuit.append(self.cooling._trotter_layer(self, self.circuit_param[0]))
+        m=
+        self.circuit.append(self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m)
         for i in range(self.m_anc.n[0]):
             for j in range(self.m_anc.n[1]):
                 self.circuit.append(cirq.reset(self.qubits[self.m_sys.n[0]+i][j]))
 
+#Backup Code, if we decide to insert variable parameters into the trotter ansatz
+"""
 def _get_param_resolver(self, c):
     return cirq.ParamResolver({**{"c": c}})
+
+def set_symbols(self):
+    K = self.cooling.options["K"]
+    assert isinstance(p, (int, np.int_)), "Error: K needs to be int, received {}".format(type(K))
+    self.circuit_param = [sympy.Symbol("c")]
+
+def _set_c_values(self, c_values):
+    p = self.cooling.options["K"]
+    self.circuit_param_values[0] = c_values
+"""
