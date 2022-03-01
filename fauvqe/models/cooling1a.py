@@ -56,11 +56,11 @@ class Cooling1A(SpinModelFC):
         two_q_gates = [*m_sys._two_q_gates, *m_anc._two_q_gates, *int_gates]
         one_q_gates = [*m_sys._one_q_gates, *m_anc._one_q_gates]
         
-        j, h = self._combine_jh(m_sys, m_anc, j_int)
-        
         self.m_sys = m_sys
         self.m_anc = m_anc
         self.j_int = j_int
+        
+        j, h = self._combine_jh(m_sys, m_anc, j_int)
         
         super().__init__( 
             m_sys.qubittype,
@@ -153,6 +153,29 @@ class Cooling1A(SpinModelFC):
                     h[g, m_sys.n[0], i] = m_anc.h[0, i, g_anc]
         
         return js, h
+    
+    def _set_j_int(self, j_int):
+        """
+            To be called when j_int shall be changed after already having initialized the object.
+        """
+        self.j_int = j_int
+        for g in range(self.nbr_2Q_sys + self.nbr_2Q_anc, self.nbr_2Q):
+            g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
+            #Interaction js
+            for i in range(m_sys.n[0]):
+                for j in range(m_sys.n[1]):
+                    self.j[i, j, m_sys.n[0], j, g] = j_int[g_int, i, j]
+                    self.j[m_sys.n[0], j, i, j, g] = j_int[g_int, i, j]
+    
+    def _set_h_anc(self, h_anc):
+        """
+            To be called when h_anc shall be changed after already having initialized the object.
+        """
+        for g in range(self.nbr_1Q_sys, self.nbr_1Q):
+            g_anc = g - self.nbr_1Q_sys
+            #Ancilla hs
+            for i in range(m_anc.n[1]):
+                self.h[m_sys.n[0], i, g] = h_anc[0, i, g_anc]
     
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 

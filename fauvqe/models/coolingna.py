@@ -177,6 +177,16 @@ class CoolingNA(SpinModelFC):
         
         return js, h
     
+    def _set_h_anc(self, h_anc):
+        """
+            To be called when h_anc shall be changed after already having initialized the object.
+        """
+        for g in range(self.nbr_1Q_sys, self.nbr_1Q):
+            g_anc = g - self.nbr_1Q_sys
+            for i in range(m_anc.n[0]):
+                for j in range(m_anc.n[1]):
+                    self.h[m_sys.n[0]+i, j, g] = h_anc[i, j, g_anc]
+    
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
     

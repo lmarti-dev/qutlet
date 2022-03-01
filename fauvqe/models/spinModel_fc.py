@@ -95,18 +95,21 @@ class SpinModelFC(AbstractModel):
                 for j in range(self.n[1]):
                     #k==i, l>j
                     for l in range(j+1, self.n[1], 1):
-                        self.hamiltonian -= js[i][j][i][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[i][l])
+                        if(js[i][j][i][l][g] != 0):
+                            self.hamiltonian -= js[i][j][i][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[i][l])
                     #k>i
                     for k in range(i+1, self.n[0], 1):
                         for l in range(self.n[1]):
-                            self.hamiltonian -= js[i][j][k][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
+                            if(js[i][j][k][l][g] != 0):
+                                self.hamiltonian -= js[i][j][k][l][g] * self._two_q_gates[g](self.qubits[i][j], self.qubits[k][l])
                     
         # 2. Add external field
         for g in range(len(self._one_q_gates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= hs[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
-
+                    if(h[i][j][g]!=0):
+                        self.hamiltonian -= hs[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
+    
     def set_circuit(self, qalgorithm, options: dict = {}):
         if qalgorithm == "hea":
             self.hea.options = {"append": False,

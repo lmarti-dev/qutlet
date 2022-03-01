@@ -11,6 +11,9 @@ import cirq
 import sympy
 import itertools
 
+from fauvqe.models.cooling1a import Cooling1A
+from fauvqe.models.coolingna import CoolingNA
+
 def set_K(self, K):
     if self.cooling.options["K"] != K:
         self.cooling.options["K"] = K
@@ -26,8 +29,7 @@ def set_circuit(self):
         self.circuit = cirq.Circuit()
         self.circuit_param_values = np.zeros(1)
     if(K==1):
-        raise NotImplementedError()
-        self.circuit.append(self.cooling.BangBangProtocol(self)) #TODO
+        self.circuit.append(self.cooling.BangBangProtocol(self))
     else:
         self.circuit.append(self.cooling.LogSweepProtocol(self))
 
@@ -40,15 +42,38 @@ def LogSweepProtocol(self):
     else:
         e_min = self.cooling.options["emin"]
         e_max = self.cooling.options["emax"]
-        m = self.cooling.options["m"]
     for k in range(K):
         e, g, tau = self.cooling.__get_Log_Sweep_parameters(self, e_min, e_max, k)
         m = math.ceil(2*np.sqrt(1+ (spectral_spread**2)/(g**2)))
-        #TODO: Set j_int for different n_sys and set Hamiltonian newly before handing over to Trotter routine
-        yield self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m)
-        for i in range(self.m_anc.n[0]):
-            for j in range(self.m_anc.n[1]):
-                yield cirq.reset(self.qubits[self.m_sys.n[0]+i][j])
+        self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
+        self.t = tau
+        c = cirq.Circuit()
+        if(isinstance(self, CoolingNA)):
+            self._set_j_int(g/2 * self.j_int / self.j_int)
+            self._set_hamiltonian()
+            c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+            c.append( self.cooling._reset_layer(self) )
+            yield c * self.cooling.options["time_steps"]
+        elif(isinstance(self, Cooling1A)):
+            for n0 in range(self.m_sys.n[0]):
+                for n1 in range(self.m_sys.n[1]):
+                    j_int = np.zeros(shape=(1,*self.m_sys.n))
+                    j_int[0, n0, n1] = g/2
+                    self._set_j_int(j_int)
+                    dice = np.random.randint(0,3)
+                    if(dice == 0):
+                        pauli = cirq.X
+                    elif(dice == 1):
+                        pauli = cirq.Y
+                    else:
+                        pauli = cirq.Z
+                    self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+                    self._set_hamiltonian()
+                    c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+                    c.append( self.cooling._reset_layer(self) )
+            yield c * self.cooling.options["time_steps"]
+        else:
+            assert False, "Self is not instance of Cooling1A or CoolingNA"
 
 def __get_default_e_m(self):
     _N = 2**np.size(self.qubits)
@@ -75,7 +100,38 @@ def __get_Log_Sweep_parameters(self, e_min, e_max, k):
     return e, g, tau
 
 #BangBang
-def __get_Bang_Bang_parameters(self, interaction, system):
+def BangBangProtocol(self):
+    e, g, tau = self.cooling.__get_Bang_Bang_parameters(self, cirq.X)
+    m = math.ceil(2*np.sqrt(1+ (spectral_spread**2)/(g**2)))
+    self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
+    c = cirq.Circuit()
+    if(isinstance(self, CoolingNA)):
+        c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+        c.append( self.cooling._reset_layer(self) )
+        yield c * self.cooling.options["time_steps"]
+    elif(isinstance(self, Cooling1A)):
+        for n0 in range(self.m_sys.n[0]):
+            for n1 in range(self.m_sys.n[1]):
+                j_int = np.zeros(shape=(1,*self.m_sys.n))
+                j_int[0, n0, n1] = g/2
+                self._set_j_int(j_int)
+                self.t = tau
+                dice = np.random.randint(0,3)
+                if(dice == 0):
+                    pauli = cirq.X
+                elif(dice == 1):
+                    pauli = cirq.Y
+                else:
+                    pauli = cirq.Z
+                self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+                self._set_hamiltonian()
+                c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+                c.append( self.cooling._reset_layer(self) )
+        yield c * self.cooling.options["time_steps"]
+    else:
+        assert False, "Self is not instance of Cooling1A or CoolingNA"
+
+def __get_Bang_Bang_parameters(self, pauli):
     e = orth_norm(commutator(interaction(system.qubits[0][0]).matrix(flatten(system.qubits)), 
                                              system.hamiltonian.matrix())) #Free Spin precession
     g = 2/np.sqrt(3) * e #Interaction constants
@@ -86,6 +142,11 @@ def __get_Bang_Bang_parameters(self, interaction, system):
     return e, g, tau
 
 #General Functions
+def _reset_layer(self):
+    for i in range(self.m_anc.n[0]):
+        for j in range(self.m_anc.n[1]):
+            yield cirq.reset(self.qubits[self.m_sys.n[0]+i][j])
+
 def __commutator(A, B):
     return A@B - B@A
 
