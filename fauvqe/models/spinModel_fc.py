@@ -9,7 +9,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.abstractmodel import AbstractModel
-
+import fauvqe
 
 
 class SpinModelFC(AbstractModel):
@@ -134,6 +134,7 @@ class SpinModelFC(AbstractModel):
             self.trotter.options.update(options)
             self.trotter.set_circuit(self)
         elif qalgorithm == "cooling":
+            assert isinstance(self, fauvqe.Cooling1A) or isinstance(self, fauvqe.CoolingNA)
             self.cooling.options = { "append": False,
                                     "K":1,
                                     "emin":None,

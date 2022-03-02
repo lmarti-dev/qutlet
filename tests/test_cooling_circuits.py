@@ -5,7 +5,7 @@ import cirq
 import sympy
 
 # internal imports
-from fauvqe import Ising, CoolingNA, Cooling1A, AbstractExpectationValue
+from fauvqe import Ising, HeisenbergFC, CoolingNA, Cooling1A, AbstractExpectationValue
 
 @pytest.mark.parametrize(
     "n, boundaries, field, options, solution",
@@ -225,6 +225,7 @@ def test_set_circuit_na(n, boundaries, field, options, solution):
             "X",
             {   "K":1,
                 "time_steps":2,
+                 "m":1
             },
             2*cirq.Circuit(
                         (cirq.ZZ**(-13/15)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
@@ -330,3 +331,70 @@ def test_set_circuit_1a(n, boundaries, field, options, solution):
     #energy_final = energy.evaluate(model.cooling.ptrace(wf, range(np.size(n), np.size(n)+1)))
     #print(energy_initial, "vs.", energy_final)
     #assert energy_initial > energy_final 
+
+def test_set_K():
+    n=[2,1]
+    boundaries=[1,1]
+    m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])), "X")
+    m_anc = Ising("GridQubit", [1, n[1]], np.zeros((1, n[1])), np.zeros((1, n[1])), np.ones((1, n[1])), "Z")
+    j_int = np.ones((1, n[0], n[1]))
+    
+    model = Cooling1A(
+                    m_sys,
+                    m_anc,
+                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
+                    j_int
+    )
+    model.set_circuit("cooling")
+    model.cooling.set_K(model, 2)
+    assert model.cooling.options["K"] == 2
+
+@pytest.mark.parametrize(
+    "rho, ind, solution",
+    [
+        (
+            1/4*np.eye(4),
+            1,
+            1/2*np.eye(2)
+        ),
+        (
+            0.25*np.array(
+                        [[1, 1, 0, 0], 
+                        [1, 1, 0, 0], 
+                        [0, 0, 1, 1], 
+                        [0, 0, 1, 1]]
+            ),
+            0,
+            0.5*np.array(
+                        [[1, 1], 
+                        [1, 1]]
+            ),
+        ),
+        (
+            1/8*np.eye(8),
+            range(1, 3),
+            1/2*np.eye(2)
+        ),
+    ]
+)
+def test_ptrace(rho, ind, solution):
+    n=[2,1]
+    boundaries=[1,1]
+    m_sys = Ising("GridQubit", n)
+    m_anc = Ising("GridQubit", [1, n[1]])
+    j_int = np.ones((1, n[0], n[1]))
+    model = Cooling1A(
+                    m_sys,
+                    m_anc,
+                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
+                    j_int
+    )
+    assert np.linalg.norm(model.cooling.ptrace(rho, ind) - solution) < 1e-7
+
+def test_errors():
+    n=[1, 2]
+    m_sys = HeisenbergFC("GridQubit", n, np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])) )
+    with pytest.raises(AssertionError):
+        m_sys.set_circuit("cooling", {'K': 1})
+    with pytest.raises(AssertionError):
+        m_sys.set_circuit("cooling", {'K': 2})

@@ -19,7 +19,6 @@ def set_K(self, K):
         self.cooling.options["K"] = K
         self.cooling.options["append"] = False
         # Need to reset circuit
-        self.cooling.set_symbols(self)
         self.cooling.set_circuit(self)
 
 def set_circuit(self):
@@ -74,17 +73,13 @@ def LogSweepProtocol(self):
                     c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
                     c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
-        else:
-            assert False, "Self is not instance of Cooling1A or CoolingNA"
-
+        
 def __get_default_e_m(self):
     _N = 2**np.size(self.qubits)
     if np.size(self.eig_val) != _N or (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
         self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
     energy_ex = self.eig_val[0]
     energy_ex2 = self.eig_val[1]
-    if(energy_ex2 - energy_ex < 1e-7):
-        energy_ex2 = self.eig_val[2]
     e_min = (energy_ex2 - energy_ex)
     spectral_spread = (self.eig_val[-1] - energy_ex)
     e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.qubits[0][0]).matrix(self.cooling.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
@@ -130,16 +125,11 @@ def BangBangProtocol(self):
                     c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
                     c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
-    else:
-        assert False, "Self is not instance of Cooling1A or CoolingNA"
-
+    
 def __get_Bang_Bang_parameters(self, pauli):
     e = self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
     g = 2/np.sqrt(3) * e #Interaction constants
-    if(g!=0):
-        tau = np.pi / g #Simulation time
-    else:
-        tau = 0
+    tau = np.pi / g #Simulation time
     return e, g, tau
 
 def __config_system(sys, e, g, t, pauli):
