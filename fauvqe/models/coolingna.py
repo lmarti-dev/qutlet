@@ -177,15 +177,28 @@ class CoolingNA(SpinModelFC):
         
         return js, h
     
+    def _set_j_int(self, j_int):
+        """
+            To be called when j_int shall be changed after already having initialized the object.
+        """
+        self.j_int = j_int
+        for g in range(self.nbr_2Q_sys + self.nbr_2Q_anc, self.nbr_2Q):
+            g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
+            #Interaction js
+            for i in range(self.m_sys.n[0]):
+                for j in range(self.m_sys.n[1]):
+                    self.j[i, j, self.m_sys.n[0]+i, j, g] = j_int[g_int, i, j]
+                    self.j[self.m_sys.n[0]+i, j, i, j, g] = j_int[g_int, i, j]
+    
     def _set_h_anc(self, h_anc):
         """
             To be called when h_anc shall be changed after already having initialized the object.
         """
         for g in range(self.nbr_1Q_sys, self.nbr_1Q):
             g_anc = g - self.nbr_1Q_sys
-            for i in range(m_anc.n[0]):
-                for j in range(m_anc.n[1]):
-                    self.h[m_sys.n[0]+i, j, g] = h_anc[i, j, g_anc]
+            for i in range(self.m_anc.n[0]):
+                for j in range(self.m_anc.n[1]):
+                    self.h[self.m_sys.n[0]+i, j, g] = h_anc[i, j, g_anc]
     
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
@@ -199,7 +212,7 @@ class CoolingNA(SpinModelFC):
                 self.t)
 
         self_copy.circuit = self.circuit.copy()
-        self_copy.circuit_param = self.circuit_param.copy()
+        if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
         self_copy.hamiltonian = self.hamiltonian.copy()
 

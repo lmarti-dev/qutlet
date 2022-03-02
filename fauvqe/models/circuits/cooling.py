@@ -9,8 +9,10 @@ or functions are handed over to classical optimiser
 import numpy as np
 import cirq
 import sympy
-import itertools
+import math
+from itertools import chain
 
+import fauvqe 
 #from fauvqe.models.cooling1a import Cooling1A
 #from fauvqe.models.coolingna import CoolingNA
 
@@ -48,7 +50,7 @@ def LogSweepProtocol(self):
         self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
         self.t = tau
         c = cirq.Circuit()
-        if(isinstance(self, CoolingNA)):
+        if(isinstance(self, fauvqe.CoolingNA)):
             self._set_j_int(g/2 * self.j_int / self.j_int)
             self._set_hamiltonian()
             c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
@@ -85,7 +87,7 @@ def __get_default_e_m(self):
         energy_ex2 = self.eig_val[2]
     e_min = (energy_ex2 - energy_ex)
     spectral_spread = (self.eig_val[-1] - energy_ex)
-    e_max = max( [ self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.qubits[0][0]).matrix(helpers.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
+    e_max = max( [ self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.qubits[0][0]).matrix(self.cooling.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
     return e_min, e_max, spectral_spread
 
 def __get_Log_Sweep_parameters(self, e_min, e_max, k):
@@ -112,8 +114,9 @@ def BangBangProtocol(self):
     cool_y = self.cooling.__config_system(self.copy(), ey, gy, ty, cirq.Y)
     cool_z = self.cooling.__config_system(self.copy(), ez, gz, tz, cirq.Z)
     c = cirq.Circuit()
-    if(isinstance(self, CoolingNA)):
+    if(isinstance(self, fauvqe.CoolingNA)):
         for sys in [cool_x, cool_y, cool_z]:
+            print(sys.hamiltonian)
             c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
             c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
@@ -132,7 +135,7 @@ def BangBangProtocol(self):
         assert False, "Self is not instance of Cooling1A or CoolingNA"
 
 def __get_Bang_Bang_parameters(self, pauli):
-    e = self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.m_sys.qubits[0][0]).matrix(flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
+    e = self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
     g = 2/np.sqrt(3) * e #Interaction constants
     if(g!=0):
         tau = np.pi / g #Simulation time
@@ -161,6 +164,9 @@ def __orth_norm(A):
     mask = np.ones(A.shape, dtype=bool)
     np.fill_diagonal(mask, 0)
     return abs(A)[mask].max()
+
+def flatten(list_of_lists): 
+    return list(chain(*list_of_lists))
 
 #Backup Code, if we decide to insert variable parameters into the trotter ansatz
 """

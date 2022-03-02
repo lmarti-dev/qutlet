@@ -162,10 +162,10 @@ class Cooling1A(SpinModelFC):
         for g in range(self.nbr_2Q_sys + self.nbr_2Q_anc, self.nbr_2Q):
             g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
             #Interaction js
-            for i in range(m_sys.n[0]):
-                for j in range(m_sys.n[1]):
-                    self.j[i, j, m_sys.n[0], j, g] = j_int[g_int, i, j]
-                    self.j[m_sys.n[0], j, i, j, g] = j_int[g_int, i, j]
+            for i in range(self.m_sys.n[0]):
+                for j in range(self.m_sys.n[1]):
+                    self.j[i, j, self.m_sys.n[0], j, g] = j_int[g_int, i, j]
+                    self.j[self.m_sys.n[0], j, i, j, g] = j_int[g_int, i, j]
     
     def _set_h_anc(self, h_anc):
         """
@@ -174,8 +174,8 @@ class Cooling1A(SpinModelFC):
         for g in range(self.nbr_1Q_sys, self.nbr_1Q):
             g_anc = g - self.nbr_1Q_sys
             #Ancilla hs
-            for i in range(m_anc.n[1]):
-                self.h[m_sys.n[0], i, g] = h_anc[0, i, g_anc]
+            for i in range(self.m_anc.n[1]):
+                self.h[self.m_sys.n[0], i, g] = h_anc[0, i, g_anc]
     
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
