@@ -38,6 +38,7 @@ def set_circuit(self):
 #LogSweep
 def LogSweepProtocol(self):
     K = self.cooling.options["K"]
+    m = self.cooling.options["m"]
     if(self.cooling.options["emin"] is None or self.cooling.options["emax"] is None):
         e_min, e_max, spectral_spread = self.cooling.__get_default_e_m(self)
         print("Using default values for emin: {} and emax: {}".format(e_min, e_max))
@@ -46,7 +47,8 @@ def LogSweepProtocol(self):
         e_max = self.cooling.options["emax"]
     for k in range(K):
         e, g, tau = self.cooling.__get_Log_Sweep_parameters(self, e_min, e_max, k)
-        m = math.ceil(2*np.sqrt(1+ (spectral_spread**2)/(g**2)))
+        if(self.cooling.options["m"] is None):
+            m = math.ceil(2*np.sqrt(1+ (spectral_spread**2)/(g**2)))
         self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
         self.t = tau
         c = cirq.Circuit()
