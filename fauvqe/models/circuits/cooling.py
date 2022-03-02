@@ -13,8 +13,6 @@ import math
 from itertools import chain
 
 import fauvqe 
-#from fauvqe.models.cooling1a import Cooling1A
-#from fauvqe.models.coolingna import CoolingNA
 
 def set_K(self, K):
     if self.cooling.options["K"] != K:
@@ -58,7 +56,7 @@ def LogSweepProtocol(self):
             c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
             c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
-        elif(isinstance(self, Cooling1A)):
+        elif(isinstance(self, fauvqe.Cooling1A)):
             for n0 in range(self.m_sys.n[0]):
                 for n1 in range(self.m_sys.n[1]):
                     j_int = np.zeros(shape=(1,*self.m_sys.n))
@@ -89,7 +87,7 @@ def __get_default_e_m(self):
         energy_ex2 = self.eig_val[2]
     e_min = (energy_ex2 - energy_ex)
     spectral_spread = (self.eig_val[-1] - energy_ex)
-    e_max = max( [ self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.qubits[0][0]).matrix(self.cooling.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
+    e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.qubits[0][0]).matrix(self.cooling.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
     return e_min, e_max, spectral_spread
 
 def __get_Log_Sweep_parameters(self, e_min, e_max, k):
@@ -118,16 +116,15 @@ def BangBangProtocol(self):
     c = cirq.Circuit()
     if(isinstance(self, fauvqe.CoolingNA)):
         for sys in [cool_x, cool_y, cool_z]:
-            print(sys.hamiltonian)
             c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
             c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
-    elif(isinstance(self, Cooling1A)):
+    elif(isinstance(self, fauvqe.Cooling1A)):
         for n0 in range(self.m_sys.n[0]):
             for n1 in range(self.m_sys.n[1]):
-                j_int = np.zeros(shape=(1,*self.m_sys.n))
-                j_int[0, n0, n1] = g/2
-                for sys in [cool_x, cool_y, cool_z]:
+                for (g, sys) in [(gx, cool_x), (gy, cool_y), (gz, cool_z)]:
+                    j_int = np.zeros(shape=(1,*self.m_sys.n))
+                    j_int[0, n0, n1] = g/2
                     sys._set_j_int(j_int)
                     sys._set_hamiltonian()
                     c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
@@ -137,7 +134,7 @@ def BangBangProtocol(self):
         assert False, "Self is not instance of Cooling1A or CoolingNA"
 
 def __get_Bang_Bang_parameters(self, pauli):
-    e = self.cooling.__orth_norm(self.cooling.__commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
+    e = self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
     g = 2/np.sqrt(3) * e #Interaction constants
     if(g!=0):
         tau = np.pi / g #Simulation time
@@ -159,16 +156,30 @@ def _reset_layer(self):
         for j in range(self.m_anc.n[1]):
             yield cirq.reset(self.qubits[self.m_sys.n[0]+i][j])
 
-def __commutator(A, B):
+def commutator(A, B):
     return A@B - B@A
 
-def __orth_norm(A):
+def orth_norm(A):
     mask = np.ones(A.shape, dtype=bool)
     np.fill_diagonal(mask, 0)
     return abs(A)[mask].max()
 
 def flatten(list_of_lists): 
     return list(chain(*list_of_lists))
+
+def ptrace(A, ind):
+    n = np.log2(len(A))
+    assert abs(n - int(n)) < 1e-13, "Wrong matrix size. Required 2^n, Received {}".format(n)
+    n = int(n)
+    temp = A.reshape(*[2 for dummy in range(2*n)])
+    count = 0
+    if hasattr(ind, '__len__'):
+        for i in sorted(ind, reverse=True):
+            temp = np.trace(temp, axis1=i-count, axis2=n+i-2*count)
+            count +=1
+        return temp.reshape(2**(n-count), 2**(n-count))
+    else:
+        return np.trace(temp, axis1=ind, axis2=n+ind).reshape(2**(n-1), 2**(n-1))
 
 #Backup Code, if we decide to insert variable parameters into the trotter ansatz
 """
