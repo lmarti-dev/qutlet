@@ -140,6 +140,7 @@ class SpinModelFC(AbstractModel):
                                     "emin":None,
                                     "emax":None,
                                     "m":None,
+                                    "q":1,
                                     "time_steps":1,
                                   }
             self.cooling.options.update(options)

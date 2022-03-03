@@ -31,14 +31,16 @@ def set_circuit(self):
         self.circuit.append(self.cooling.BangBangProtocol(self))
     else:
         self.circuit.append(self.cooling.LogSweepProtocol(self))
+    print("Circuit depth:", len(self.circuit))
 
 #LogSweep
 def LogSweepProtocol(self):
     K = self.cooling.options["K"]
     m = self.cooling.options["m"]
+    q = self.cooling.options["q"]
     if(self.cooling.options["emin"] is None or self.cooling.options["emax"] is None):
         e_min, e_max, spectral_spread = self.cooling.__get_default_e_m(self)
-        print("Using default values for emin: {} and emax: {}".format(e_min, e_max))
+        print("Using default values for emin: {} and emax: {} and spectral spread: {}".format(e_min, e_max, spectral_spread))
     else:
         e_min = self.cooling.options["emin"]
         e_max = self.cooling.options["emax"]
@@ -52,7 +54,7 @@ def LogSweepProtocol(self):
         if(isinstance(self, fauvqe.CoolingNA)):
             self._set_j_int(g/2 * self.j_int / self.j_int)
             self._set_hamiltonian()
-            c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+            c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
             c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
         elif(isinstance(self, fauvqe.Cooling1A)):
@@ -70,18 +72,19 @@ def LogSweepProtocol(self):
                         pauli = cirq.Z
                     self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
                     self._set_hamiltonian()
-                    c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, 1, m) )
+                    c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
                     c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
         
 def __get_default_e_m(self):
-    _N = 2**np.size(self.qubits)
-    if np.size(self.eig_val) != _N or (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
-        self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
-    energy_ex = self.eig_val[0]
-    energy_ex2 = self.eig_val[1]
+    _n = np.size(self.m_sys.qubits)
+    _N = 2**_n
+    if np.size(self.m_sys.eig_val) != _N or (np.shape(self.m_sys.eig_vec) != np.array((_N, _N)) ).all():
+        self.m_sys.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
+    energy_ex = self.m_sys.eig_val[0]
+    energy_ex2 = self.m_sys.eig_val[1]
     e_min = (energy_ex2 - energy_ex)
-    spectral_spread = (self.eig_val[-1] - energy_ex)
+    spectral_spread = (self.m_sys.eig_val[-1] - energy_ex)
     e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
     return e_min, e_max, spectral_spread
 
@@ -102,6 +105,7 @@ def BangBangProtocol(self):
         m=1
     else:
         m = self.cooling.options["m"]
+    q = self.cooling.options["q"]
     ex, gx, tx = self.cooling.__get_Bang_Bang_parameters(self, cirq.X)
     ey, gy, ty = self.cooling.__get_Bang_Bang_parameters(self, cirq.Y)
     ez, gz, tz = self.cooling.__get_Bang_Bang_parameters(self, cirq.Z)
@@ -111,7 +115,7 @@ def BangBangProtocol(self):
     c = cirq.Circuit()
     if(isinstance(self, fauvqe.CoolingNA)):
         for sys in [cool_x, cool_y, cool_z]:
-            c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
+            c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, q, m) )
             c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
     elif(isinstance(self, fauvqe.Cooling1A)):
@@ -122,7 +126,7 @@ def BangBangProtocol(self):
                     j_int[0, n0, n1] = g/2
                     sys._set_j_int(j_int)
                     sys._set_hamiltonian()
-                    c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, 1, m) )
+                    c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, q, m) )
                     c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
     
