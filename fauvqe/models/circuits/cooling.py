@@ -82,7 +82,7 @@ def __get_default_e_m(self):
     energy_ex2 = self.eig_val[1]
     e_min = (energy_ex2 - energy_ex)
     spectral_spread = (self.eig_val[-1] - energy_ex)
-    e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.qubits[0][0]).matrix(self.cooling.flatten(self.qubits)), self.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
+    e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
     return e_min, e_max, spectral_spread
 
 def __get_Log_Sweep_parameters(self, e_min, e_max, k):
