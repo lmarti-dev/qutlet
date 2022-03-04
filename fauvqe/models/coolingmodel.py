@@ -11,7 +11,7 @@ import cirq
 from fauvqe.models.spinModel_fc import SpinModelFC
 
 
-class Cooling1A(SpinModelFC):
+class CoolingModel(SpinModelFC):
     """
     Class for cooling structure using n system qubits and 1 ancilla qubit inherits SpinModelFC
     """
@@ -26,20 +26,28 @@ class Cooling1A(SpinModelFC):
         m_sys model defining the system of interest
         m_anc model defining the ancilla system
         int_gates, a cirq.PauliSum defining the interaction gates between system and ancillas including interaction constants
+        j_int an array encoding the interaction constants between ancillas and system
         t: Simulation Time
         """
         assert m_sys.qubittype == m_anc.qubittype, "Incompatible Qubittypes, System: {}, Ancilla: {}".format(
             m_sys.qubittype, m_anc.qubittype
         )
-        assert m_anc.n[0] == 1 and m_anc.n[1] == m_sys.n[1], "Could not instantiate single row ancilla cooling with ancilla model of size {}".format(
-            m_anc.n
-        )
         j_int = np.array(j_int)
-        assert j_int.shape == (len(int_gates), m_sys.n[0], m_sys.n[1]), "Wrong shape of j_int, received: {} expected: {}".format(
-            j_int.shape, (len(int_gates), m_sys.n[0], m_sys.n[1])
+        assert j_int.shape == (len(int_gates), *m_sys.n ), "Wrong shape of j_int, received: {} expected: {}".format(
+            j_int.shape, (len(int_gates), *m_sys.n)
         )
-        
-        n = [m_sys.n[0] + 1, m_sys.n[1]]
+        if(m_anc.n[0] == m_sys.n[0] and m_anc.n[1] == m_sys.n[1]):
+            n = [2*m_sys.n[0], m_sys.n[1]]
+            self.cooling_type = "NA"
+            self._get_int_index = self._get_int_index_na
+        elif(m_anc.n[0] == 1 and m_anc.n[1] == m_sys.n[1]):
+            n = [m_sys.n[0] + 1, m_sys.n[1]]
+            self.cooling_type = "1A"
+            self._get_int_index = self._get_int_index_1a
+        else:
+            assert False, "Could not instantiate system doubled ancilla cooling or single qubit ancilla cooling with ancilla model of size {}".format(
+                m_anc.n
+            )
         
         self.nbr_2Q_sys = len(m_sys._two_q_gates)
         self.nbr_2Q_anc = len(m_anc._two_q_gates)
@@ -72,8 +80,17 @@ class Cooling1A(SpinModelFC):
             t
         )
     
+    def _get_int_index_na(self, i):
+        return self.m_sys.n[0] + i
+    
+    def _get_int_index_1a(self, i):
+        return self.m_sys.n[0]
+    
     def _combine_jh(self, m_sys, m_anc, j_int):
-        n = [m_sys.n[0] + 1, m_sys.n[1]]
+        if(self.cooling_type == "NA"):
+            n = [2*m_sys.n[0], m_sys.n[1]]
+        else:
+            n = [m_sys.n[0] + 1, m_sys.n[1]]
         g_int = 0
         js = np.zeros(shape=(self.nbr_2Q, *n, *n))
         for g in range(self.nbr_2Q):
@@ -93,17 +110,17 @@ class Cooling1A(SpinModelFC):
                     for i in range(m_sys.n[0]-1):
                         for j in range(m_sys.n[1]-1):
                             js[g, i, j, i+1, j] = m_sys.j_v[i, j, g]
-                            js[g, i, j, i, j+1] = m_sys.j_h[i, j, g]
+                            js[g, i, j, i, (j+1)] = m_sys.j_h[i, j, g]
                             js[g, i+1, j, i, j] = m_sys.j_v[i, j, g]
-                            js[g, i, j+1, i, j] = m_sys.j_h[i, j, g]
+                            js[g, i, (j+1), i, j] = m_sys.j_h[i, j, g]
                     for i in range(m_sys.n[0] - 1):
                         j = m_sys.n[1] - 1
                         js[g, i, j, i+1, j] = m_sys.j_v[i, j, g]
                         js[g, i+1, j, i, j] = m_sys.j_v[i, j, g]
                     for j in range(m_sys.n[1] - 1):
                         i = m_sys.n[0] - 1
-                        js[g, i, j, i, j+1] = m_sys.j_h[i, j, g]
-                        js[g, i, j+1, i, j] = m_sys.j_h[i, j, g]
+                        js[g, i, j, i, (j+1)] = m_sys.j_h[i, j, g]
+                        js[g, i, (j+1), i, j] = m_sys.j_h[i, j, g]
                     if m_sys.boundaries[1] == 0:
                         for i in range(m_sys.n[0]):
                             j = m_sys.n[1] - 1
@@ -114,6 +131,7 @@ class Cooling1A(SpinModelFC):
                             i = m_sys.n[0] - 1
                             js[g, i, j, 0, j] = m_sys.j_v[i, j, g]
                             js[g, 0, j, i, j] = m_sys.j_v[i, j, g]
+            
             elif(g<self.nbr_2Q_sys + self.nbr_2Q_anc):
                 g_anc = g - self.nbr_2Q_sys
                 #Ancilla js
@@ -121,24 +139,45 @@ class Cooling1A(SpinModelFC):
                     for i in range(m_anc.n[0]):
                         for j in range(m_anc.n[1]):
                             for l in range(j+1, m_anc.n[1], 1):
-                                js[g, m_sys.n[0] + i, j, m_sys.n[0] + i, l] = m_anc.j[i, j, i, l, g_anc]
-                                js[g, m_sys.n[0] + i, l, m_sys.n[0] + i, j] = m_anc.j[i, j, i, l, g_anc]
+                                js[g, m_sys.n[0] + i, j, m_sys.n[0]+i, l] = m_anc.j[i, j, i, l, g_anc]
+                                js[g, m_sys.n[0] + i, l, m_sys.n[0]+i, j] = m_anc.j[i, j, i, l, g_anc]
+                            for k in range(i+1, m_anc.n[0], 1):
+                                for l in range(m_anc.n[1]):
+                                    js[g, m_sys.n[0] + i, j, m_sys.n[0] + k, l] = m_anc.j[i, j, k, l, g_anc]
+                                    js[g, m_sys.n[0] + k, l, m_sys.n[0] + i, j] = m_anc.j[i, j, k, l, g_anc]
                 else:
-                    for i in range(m_anc.n[1] - 1):
-                        js[g, m_sys.n[0], i, m_sys.n[0], i+1] = m_anc.j_h[0, i, g_anc]
-                        js[g, m_sys.n[0], i + 1, m_sys.n[0], i] = m_anc.j_h[0, i, g_anc]
-                    if(m_anc.boundaries[0] == 0):
-                        i = m_anc.n[1] - 1
-                        js[g, m_sys.n[0], i, m_sys.n[0], 0] = m_anc.j_h[0, i, g_anc]
-                        js[g, m_sys.n[0], 0, m_sys.n[0], i] = m_anc.j_h[0, i, g_anc]
+                    for i in range(m_anc.n[0]-1):
+                        for j in range(m_anc.n[1]-1):
+                            js[g, m_sys.n[0] + i, j, m_sys.n[0] + i+1, j] = m_anc.j_v[i, j, g_anc]
+                            js[g, m_sys.n[0] + i, j, m_sys.n[0] + i, j+1] = m_anc.j_h[i, j, g_anc]
+                            js[g, m_sys.n[0] + i+1, j, m_sys.n[0] + i, j] = m_anc.j_v[i, j, g_anc]
+                            js[g, m_sys.n[0] + i, j+1, m_sys.n[0] + i, j] = m_anc.j_h[i, j, g_anc]
+                    for i in range(m_anc.n[0] - 1):
+                        j = m_anc.n[1] - 1
+                        js[g, m_sys.n[0] + i, j, m_sys.n[0] + i+1, j] = m_anc.j_v[i, j, g_anc]
+                        js[g, m_sys.n[0] + i+1, j, m_sys.n[0] + i, j] = m_anc.j_v[i, j, g_anc]
+                    for j in range(m_anc.n[1] - 1):
+                        i = m_anc.n[0] - 1
+                        js[g, m_sys.n[0] + i, j, m_sys.n[0] + i, j+1] = m_anc.j_h[i, j, g_anc]
+                        js[g, m_sys.n[0] + i, j+1, m_sys.n[0] + i, j] = m_anc.j_h[i, j, g_anc]
+                    if m_anc.boundaries[1] == 0:
+                        for i in range(m_anc.n[0]):
+                            j = m_anc.n[1] - 1
+                            js[g, m_sys.n[0] + i, j, m_sys.n[0] + i, 0] = m_anc.j_h[i, j, g_anc]
+                            js[g, m_sys.n[0] + i, 0, m_sys.n[0] + i, j] = m_anc.j_h[i, j, g_anc]
+                    if m_anc.boundaries[0] == 0:
+                        for j in range(m_anc.n[1]):
+                            i = m_anc.n[0] - 1
+                            js[g, m_sys.n[0] + i, j, m_sys.n[0], j] = m_anc.j_v[i, j, g_anc]
+                            js[g, m_sys.n[0], j, m_sys.n[0] + i, j] = m_anc.j_v[i, j, g_anc]
             else:
                 g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, j, m_sys.n[0], j] = j_int[g_int, i, j]
-                        js[g, m_sys.n[0], j, i, j] = j_int[g_int, i, j]
-                
+                        js[g, i, j, self._get_int_index(i), j] = j_int[g_int, i, j]
+                        js[g, self._get_int_index(i), j, i, j] = j_int[g_int, i, j]
+        
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
             if(g<self.nbr_1Q_sys):
@@ -149,8 +188,9 @@ class Cooling1A(SpinModelFC):
             else:
                 g_anc = g - self.nbr_1Q_sys
                 #Ancilla hs
-                for i in range(m_anc.n[1]):
-                    h[g, m_sys.n[0], i] = m_anc.h[0, i, g_anc]
+                for i in range(m_anc.n[0]):
+                    for j in range(m_anc.n[1]):
+                        h[g, m_sys.n[0] + i, j] = m_anc.h[i, j, g_anc]
         
         return js, h
     
@@ -164,8 +204,8 @@ class Cooling1A(SpinModelFC):
             #Interaction js
             for i in range(self.m_sys.n[0]):
                 for j in range(self.m_sys.n[1]):
-                    self.j[i, j, self.m_sys.n[0], j, g] = j_int[g_int, i, j]
-                    self.j[self.m_sys.n[0], j, i, j, g] = j_int[g_int, i, j]
+                    self.j[i, j, self._get_int_index(i), j, g] = j_int[g_int, i, j]
+                    self.j[self._get_int_index(i), j, i, j, g] = j_int[g_int, i, j]
     
     def _set_h_anc(self, h_anc):
         """
@@ -173,30 +213,30 @@ class Cooling1A(SpinModelFC):
         """
         for g in range(self.nbr_1Q_sys, self.nbr_1Q):
             g_anc = g - self.nbr_1Q_sys
-            #Ancilla hs
-            for i in range(self.m_anc.n[1]):
-                self.h[self.m_sys.n[0], i, g] = h_anc[0, i, g_anc]
+            for i in range(self.m_anc.n[0]):
+                for j in range(self.m_anc.n[1]):
+                    self.h[self.m_sys.n[0]+i, j, g] = h_anc[i, j, g_anc]
     
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
     
-    def copy(self) -> Cooling1A:
-        self_copy = Cooling1A( 
+    def copy(self) -> CoolingModel:
+        self_copy = CoolingModel(
                 self.m_sys,
                 self.m_anc,
                 self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
                 self.j_int,
                 self.t)
-
+        
         self_copy.circuit = self.circuit.copy()
         if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
         self_copy.hamiltonian = self.hamiltonian.copy()
-
+        
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
         if self._Ut is not None: self_copy._Ut = self._Ut.copy()
-
+        
         return self_copy
     
     def to_json_dict(self) -> Dict:

@@ -134,7 +134,7 @@ class SpinModelFC(AbstractModel):
             self.trotter.options.update(options)
             self.trotter.set_circuit(self)
         elif qalgorithm == "cooling":
-            assert isinstance(self, fauvqe.Cooling1A) or isinstance(self, fauvqe.CoolingNA)
+            assert isinstance(self, fauvqe.CoolingModel)
             self.cooling.options = { "append": False,
                                     "K":1,
                                     "emin":None,

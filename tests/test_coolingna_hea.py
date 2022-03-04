@@ -5,7 +5,7 @@ import cirq
 import sympy
 
 # internal imports
-from fauvqe import CoolingNA, Ising
+from fauvqe import CoolingModel, Ising
 
 @pytest.mark.parametrize(
     "n, boundaries, options, solution",
@@ -26,7 +26,7 @@ def test_set_symbols(n, boundaries, options, solution):
     m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.ones((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -95,7 +95,7 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
     m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.ones((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -236,7 +236,7 @@ def test__2_Qubit_layer(n, boundaries, options, solution):
     m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.zeros((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -314,7 +314,7 @@ def test_set_circuit(n, boundaries, options, solution):
     m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.zeros((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -330,7 +330,7 @@ def test_assert_layerwise():
     m_anc = Ising("GridQubit", n, np.zeros((n[0]-boundaries[0], n[1])), np.zeros((n[0], n[1])), np.zeros((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],

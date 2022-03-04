@@ -646,3 +646,111 @@ Test Adam + ExpectationValue
 Sequential Time: 12.747387409210205
 Parallel Time: 4.545637607574463
 
+===Thu, 03 Mar 2022 15:21:26 +0000===
+Test No Indices 
+
+Sequential Time: 2.772674798965454
+Parallel Time: 0.9292941093444824
+
+===Thu, 03 Mar 2022 15:21:29 +0000===
+Test Indices 
+
+Sequential Time: 1.9078254699707031
+Parallel Time: 1.4089195728302002
+
+===Thu, 03 Mar 2022 15:21:31 +0000===
+Test Indices 
+
+Sequential Time: 1.2662179470062256
+Parallel Time: 1.0895845890045166
+
+===Thu, 03 Mar 2022 15:21:34 +0000===
+Test Indices 
+
+Sequential Time: 1.4867668151855469
+Parallel Time: 1.4033942222595215
+
+===Thu, 03 Mar 2022 15:21:36 +0000===
+Test Indices 
+
+Sequential Time: 1.0300676822662354
+Parallel Time: 1.0766425132751465
+
+===Thu, 03 Mar 2022 15:22:01 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.927281379699707
+Parallel Time: 5.874644756317139
+
+===Thu, 03 Mar 2022 15:22:16 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.736908912658691
+Parallel Time: 3.5109119415283203
+
+===Thu, 03 Mar 2022 15:22:47 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.655616760253906
+Parallel Time: 7.747598648071289
+
+===Thu, 03 Mar 2022 15:23:04 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.669713735580444
+Parallel Time: 4.3726112842559814
+
+===Sat, 05 Mar 2022 00:20:18 +0000===
+Test No Indices 
+
+Sequential Time: 2.757134199142456
+Parallel Time: 0.9052879810333252
+
+===Sat, 05 Mar 2022 00:20:21 +0000===
+Test Indices 
+
+Sequential Time: 1.8710944652557373
+Parallel Time: 1.3850266933441162
+
+===Sat, 05 Mar 2022 00:20:23 +0000===
+Test Indices 
+
+Sequential Time: 1.248835802078247
+Parallel Time: 1.0827815532684326
+
+===Sat, 05 Mar 2022 00:20:26 +0000===
+Test Indices 
+
+Sequential Time: 1.4622225761413574
+Parallel Time: 1.3578650951385498
+
+===Sat, 05 Mar 2022 00:20:28 +0000===
+Test Indices 
+
+Sequential Time: 0.9833633899688721
+Parallel Time: 1.0623257160186768
+
+===Sat, 05 Mar 2022 00:20:53 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.855318069458008
+Parallel Time: 5.566252708435059
+
+===Sat, 05 Mar 2022 00:21:06 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.033546447753906
+Parallel Time: 3.2942934036254883
+
+===Sat, 05 Mar 2022 00:21:38 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.608023643493652
+Parallel Time: 7.412635087966919
+
+===Sat, 05 Mar 2022 00:21:55 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.592977523803711
+Parallel Time: 4.23794960975647
+

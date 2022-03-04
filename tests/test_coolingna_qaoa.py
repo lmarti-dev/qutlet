@@ -5,7 +5,7 @@ import cirq
 import sympy
 
 # internal imports
-from fauvqe import Ising, CoolingNA
+from fauvqe import Ising, CoolingModel
 
 def test_set_circuit_wf():
     n=[1,2]
@@ -13,7 +13,7 @@ def test_set_circuit_wf():
     m_anc = Ising("GridQubit", n, np.zeros((n[0], n[1])), np.zeros((n[0], n[1])), np.ones((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -212,7 +212,7 @@ def test_set_circuit(n, boundaries, field, options, solution):
     m_anc = Ising("GridQubit", n, np.zeros((n[0], n[1])), np.zeros((n[0], n[1])), np.ones((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -231,7 +231,7 @@ def test_get_param_resolver(p):
     m_anc = Ising("GridQubit", n, np.zeros((n[0], n[1])), np.zeros((n[0], n[1])), np.ones((n[0], n[1])))
     j_int = np.ones((1, n[0], n[1]))
     
-    model = CoolingNA(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],

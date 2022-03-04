@@ -1,5 +1,5 @@
 """
-This is a submodule for Cooling1A() and CoolingNA()
+This is a submodule for CoolingModel()
 
 This file is not exectuded, rather called within Cooling classes when:
 -set_circuit('cooling') is called 
@@ -12,8 +12,6 @@ import sympy
 import scipy
 import math
 from itertools import chain
-
-import fauvqe 
 
 def set_K(self, K):
     if self.cooling.options["K"] != K:
@@ -52,13 +50,13 @@ def LogSweepProtocol(self):
         self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
         self.t = tau
         c = cirq.Circuit()
-        if(isinstance(self, fauvqe.CoolingNA)):
+        if(self.cooling_type == "NA"):
             self._set_j_int(g/2 * self.j_int / self.j_int)
             self._set_hamiltonian()
             c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
             c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
-        elif(isinstance(self, fauvqe.Cooling1A)):
+        elif(self.cooling_type == "1A"):
             for n0 in range(self.m_sys.n[0]):
                 for n1 in range(self.m_sys.n[1]):
                     j_int = np.zeros(shape=(1,*self.m_sys.n))
@@ -108,12 +106,12 @@ def BangBangProtocol(self):
     cool_y = self.cooling.__config_system(self.copy(), ey, gy, ty, cirq.Y)
     cool_z = self.cooling.__config_system(self.copy(), ez, gz, tz, cirq.Z)
     c = cirq.Circuit()
-    if(isinstance(self, fauvqe.CoolingNA)):
+    if(self.cooling_type == "NA"):
         for sys in [cool_x, cool_y, cool_z]:
             c.append( sys.trotter.get_trotter_circuit_from_hamiltonian(sys, sys.hamiltonian, sys.t, q, m) )
             c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
-    elif(isinstance(self, fauvqe.Cooling1A)):
+    elif(self.cooling_type == "1A"):
         for n0 in range(self.m_sys.n[0]):
             for n1 in range(self.m_sys.n[1]):
                 for (g, sys) in [(gx, cool_x), (gy, cool_y), (gz, cool_z)]:

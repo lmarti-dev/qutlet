@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import Ising, Cooling1A, ExpectationValue, HeisenbergFC
+from fauvqe import Ising, CoolingModel, ExpectationValue, HeisenbergFC
 
 @pytest.mark.parametrize(
     "n, boundaries",
@@ -23,7 +23,7 @@ def test_copy(n, boundaries):
     m_anc = Ising("GridQubit", [1,n[1]], np.zeros((1,n[1])), np.zeros((1,n[1])), np.ones((1,n[1])))
     j_int = np.ones((1, *n))
     
-    model = Cooling1A(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -46,7 +46,7 @@ def test_copy_fc(n):
     m_anc = HeisenbergFC("GridQubit", [1,n[1]], np.zeros((1,n[1], 1,n[1])), np.zeros((1,n[1], 1,n[1])), np.zeros((1,n[1], 1,n[1])), np.ones((1,n[1])))
     j_int = np.ones((1, *n))
     
-    model = Cooling1A(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -62,7 +62,7 @@ def test_json():
     m_anc = Ising("GridQubit", [1,1], np.zeros((0,1)), np.zeros((1,1)), np.ones((1,1)))
     j_int = np.ones((1, *n))
     
-    model = Cooling1A(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
@@ -71,7 +71,7 @@ def test_json():
     model.set_circuit("qaoa")
     json = model.to_json_dict()
     
-    model2 = Cooling1A.from_json_dict(json)
+    model2 = CoolingModel.from_json_dict(json)
     
     assert (model == model2)
 
@@ -81,7 +81,7 @@ def test_energy_notimplemented():
     m_anc = Ising("GridQubit", [1,1], np.zeros((0,1)), np.zeros((1,1)), np.ones((1,1)))
     j_int = np.ones((1, *n))
     
-    model = Cooling1A(
+    model = CoolingModel(
                     m_sys,
                     m_anc,
                     [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
