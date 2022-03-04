@@ -19,14 +19,14 @@ import warnings
 from fauvqe.models.abstractmodel import AbstractModel
 
 def set_circuit(self):
-    if not self.basics.options['append']:
+    if self.basics.options.get('append') is False:
         self.circuit = cirq.Circuit()
 
     #Add i
 
     if self.basics.options.get("start") == None:
         pass
-    elif self.basics.options["start"] == "exact":
+    elif self.basics.options.get("start") == "exact":
         self.circuit.insert(0,self.basics._exact_layer(self))
     elif self.basics.options["start"] == "hadamard":
         self.circuit.insert(0,self.basics._hadamard_layer(self))
@@ -57,38 +57,95 @@ def set_circuit(self):
                 'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["end"]  )
 
 def _exact_layer(self):
-    #1. Check whether given subgrid is multiple of overall grid
-    #2. Use this to determine where/ how to apply it
-    #3. Need to generate and solve smaller proxy systems
-    #
-    #   How to cut a circuit to sub-systems?
-    #   example 2x4 to (1,2) subsystems
-    #
-    #   x - x - x - x -     x - x, x - x -,
-    #   |   |   |   |    => x - x or x - x - 
-    #   x - x - x - x -     |   |    |   |  
-    #
-    #   hard to tell what's best => further flag
-    #Further have to include boundary condition of large system for i = n_exact[0] or j = n_exact[1]
+    """
+    This function creates a circuit to rotate from the computational Z basis
+    into a subsystem eigenbasis.
+
+    The default behaviour is:
+        Use a fitting subsystem size and cut the bounds between the subsystems.
+        In Particular:
+        1. Check whether given subgrid is multiple of overall grid
+        2. Use this to determine where/ how to apply it
+        3. Need to generate and solve smaller proxy systems
+    
+        Example of default behaviour: Cut 2x4 into 1x2 subsystems
+            x - x - x - x -     x - x, x - x -,
+            |   |   |   |    => x - x or x - x - 
+            x - x - x - x -     |   |    |   |  
+        
+        hard to tell what's best => further flag
+        In the default behaviour the boundary conditions are [1,1] meaning closed boundaries
+
+    Parameters
+    ----------
+        b_exact: [int,int]
+            Boundary conditions of the subsystems
+
+        cc_exact: boolean
+            If true return the hermitian conjugate 
+            Usually needed if a given state should be expressed in subsystem basis
+
+        n_exact: [int,int]
+            System size of the subsystems
+
+        SingleQubitGates: List[cirq SingleQubiteGates]
+            The default uses the SingleQubitGates from SpinModel. 
+            However, it can be set here seperately to rotate in a subsystem basis that e.g. has only parts of the systems singel Qubit terms
+
+        subsystem_h: List[3D numpy arrays]:
+            Requires subsystem_qubits
+            Allows to split SingleQubitTerms in multiple subsystem coverings to realise matching term counting
+
+        subsystem_j_h: List[3D numpy arrays]:
+            Requires subsystem_qubits
+            Allows to split TwoQubitTerms in multiple subsystem coverings to realise matching term counting
+
+        subsystem_j_v: List[3D numpy arrays]:
+            Requires subsystem_qubits
+            Allows to split TwoQubitTerms in multiple subsystem coverings to realise matching term counting
+
+        subsystem_qubits: List[List[cirq Qubits]]
+            Generalisation of n_exact, this allows to have non symmetric coveraging. e.g. cuting 2x4 into 2x1, 2x2 and 1x2
+
+        TwoQubitGates: List[cirq TwoQubiteGates]
+            The default uses the TwoQubitGates from SpinModel. 
+            However, it can be set here seperately to rotate in a subsystem basis that e.g. has only parts of the systems two Qubit terms
+
+
+    To Dos
+    ----------
+        -Implement functionality to create subsystem rotations from "subsystem_hamiltonians" (cirq.PauliSums)
+        -Make subsystem_h, subsystem_j_h and subsystem_j_v work with n_exact (currently require subsystem_qubits)
+        -When subsystem_qubits are used, allow for b_exact != [1,1] (so far assumed/used as simplification)
+        -More uniform naming of flags
+        -Simplify inputs for SpinModels with only 1 Single or TwoQubitGate -> needs to be done first in SpinModel
+
+    """
     if self.qubittype != "GridQubit":
         raise NotImplementedError()
 
+    #Get b_exact or set default
+    if self.basics.options.get("b_exact") is None:
+        b_exact = [1,1]
+    else:
+        b_exact = self.basics.options.get("b_exact")
+
+    #Get SingleQubitGates or set default
     if self.basics.options.get("SingleQubitGates") is None:
         SingleQubitGates = self._SingleQubitGates,
     else:
         SingleQubitGates = self.basics.options.get("SingleQubitGates")
 
+    #Get TwoQubitGatesor set default
     if self.basics.options.get("TwoQubitGates") is None:
         TwoQubitGates =self._TwoQubitGates,
     else:
         TwoQubitGates = self.basics.options.get("TwoQubitGates")
 
-    #To Do: Generalise further by allowing to provide split Hamiltonian
-    b_exact = self.basics.options["b_exact"]
 
     if self.basics.options.get("subsystem_qubits") is None and self.basics.options.get("subsystem_hamiltonians") is None:
-        n_exact = self.basics.options["n_exact"]
-        #print("self.n: \t {},n_exact \t {},b_exact \t {}".format(self.n, n_exact, b_exact))
+        n_exact = self.basics.options.get("n_exact")
+
         if np.sum(self.n%n_exact) != 0:
             warnings.warn("IsingBasicsWarning: self.n%n_exact != [0, 0], but self.n%n_exact = {}".format(self.n%n_exact))
         
@@ -101,19 +158,17 @@ def _exact_layer(self):
                 # 1. Create Ising object for subsystem
                 # 2. then use diagonalise()
                 # 3. Add cirq.MatrixGate to self.circuit
-
-                #maybe can write all in 1 loop by min(.., self.n[0]-self.boundaries[0] )
-                #-> works already
                 temp_model = SpinModelDummy("GridQubit",
                                     n_exact,
                                     [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
-                                                j*n_exact[1]: (j+1)*n_exact[1], 0]],
+                                                j*n_exact[1]: (j+1)*n_exact[1], :]],
                                     [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
-                                                j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], 0]],
+                                                j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], :]],
                                     [self.h[i*n_exact[0]:(i+1)*n_exact[0],
-                                        j*n_exact[1]: (j+1)*n_exact[1],0]],
+                                        j*n_exact[1]: (j+1)*n_exact[1],:]],
                                     *TwoQubitGates,
                                     *SingleQubitGates)
+
                 #To not loose qubits with no gates/ 0 qubits
                 temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
 
@@ -121,7 +176,7 @@ def _exact_layer(self):
                                         solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                         matrix= temp_matrix)
                 
-                #This would be nicer in 1 line, but 2D list sclicing in python 
+                #This would be nicer in 1 line, but 2D list slicing in python 
                 #Resulted in wrong result. compare lab book 2 page 109
                 temp_qubits = []
                 for k in range(n_exact[0]):
@@ -129,7 +184,8 @@ def _exact_layer(self):
                         temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
                 #print("temp_qubits: \t {}".format(temp_qubits))
 
-                if self.basics.options["cc_exact"]:
+                #Get cc_exact or set default
+                if self.basics.options.get("cc_exact") is True:
                     yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
                 else:
                     yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
@@ -138,16 +194,17 @@ def _exact_layer(self):
         #give lists of GridQubits to devide the system
         #allow to adapt J and h of subsystem to prevent overcounting by multiple coverage
         # if subsystem_j_v, subsystem_j_h or subsystem_h are not given use self.j_v, self.j_h or self.h accordingly
+         #ToDo: apply b_exact accordingly
         
         #Check whether set of qubits match and non is there twice
-        subsystem_qubits = self.basics.options["subsystem_qubits"]
+        subsystem_qubits = self.basics.options.get("subsystem_qubits")
         assert ( set(self.basics.flatten(self.qubits)) == set(self.basics.flatten(subsystem_qubits)) 
             ), "Subsystem qubits do not match system qubits;\nProvided system qubits are:\n{}\nProvided sub system qubits are:\n{}\n".format(
             set(self.basics.flatten(self.qubits)), 
             set(self.basics.flatten(subsystem_qubits))
             )
         
-        #apply b_exact accordingly
+        #Get subsystem_h or set default
         if self.basics.options.get("subsystem_h") is None:
             subsystem_h = []
             for i in range(len(subsystem_qubits)):
@@ -156,6 +213,7 @@ def _exact_layer(self):
         else:
             subsystem_h = self.basics.options.get("subsystem_h")
 
+        #Get subsystem_j_h or set default
         if self.basics.options.get("subsystem_j_h") is None:
             subsystem_j_h = []
             for i in range(len(subsystem_qubits)):
@@ -164,6 +222,7 @@ def _exact_layer(self):
         else:
             subsystem_j_h = self.basics.options.get("subsystem_j_h")
 
+        #Get subsystem_j_v or set default
         if self.basics.options.get("subsystem_j_v") is None:
             subsystem_j_v = []
             for i in range(len(subsystem_qubits)):
@@ -172,37 +231,40 @@ def _exact_layer(self):
         else:
             subsystem_j_v = self.basics.options.get("subsystem_j_v")
 
+        #Prints for debugging and to confirm correct structure of subsystem_h etc
+        #Keep those for the moment
         print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))
         print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))
         print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))
+        
         for i in range(len(subsystem_qubits)):
             #Need to calculate n_exact from subsystem_qubits
             n_exact = [ max(subsystem_qubits[i])._row- min(subsystem_qubits[i])._row + 1,
                         max(subsystem_qubits[i])._col- min(subsystem_qubits[i])._col + 1]
-            print("n_exact: {}".format(n_exact))
+            
+            #np.transpose here required due to bad implementation in SpinModel
+            #Very unexpected behaviour + slows down coding
             temp_model = SpinModelDummy("GridQubit",
                                     n_exact,
                                     np.transpose(subsystem_j_v[i], (2, 0,1)),
                                     np.transpose(subsystem_j_h[i], (2, 0,1)),
                                     np.transpose(subsystem_h[i], (2, 0,1)),
-                                    #subsystem_j_v[i],
-                                    #subsystem_j_h[i],
-                                    #subsystem_h[i],
                                     *TwoQubitGates,
                                     *SingleQubitGates)
                                     
             #To not loose qubits with no gates/ 0 qubits
             temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
-
             temp_model.diagonalise( solver = "scipy", 
                                     solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                     matrix= temp_matrix)
 
-            if self.basics.options["cc_exact"]:
+            #Get cc_exact or set default
+            if self.basics.options.get("cc_exact") is True:
                 yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
             else:
                 yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
 
+    #If this method is used to rotate into the eigenbasis, store eigenvalues and vectors, as those are already calcualted
     if (self.n == n_exact).all() :
         self.eig_val = temp_model.eig_val
         self.eig_vec = temp_model.eig_vec
