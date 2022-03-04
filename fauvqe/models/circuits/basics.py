@@ -1,16 +1,18 @@
 """
-    Include here methods that are relevant for different circuit ansätze
-    To avoid replicates
+    This submodule creates basic circuits:
+        -subsystem rotation circuit "exact"
+        -Hadamrd layer "hadamard", use toi change Z <-> X basis
+        -Identity layer on each qubit to include them in the circuit "identity"
+        -Ising meanfield layer "mf"
+        -Ising neel layer "neel"
 
-
-    self.circuit.moments[1]._operations[0]._gate.__dict__
+    To Do:
+        Possibly migrate subsystem rotation circuits to own submodule
 """
 # external import
 import cirq
 from numbers import Real
 import numpy as np
-import inspect
-import itertools 
 import sympy
 from typing import Literal, List
 import warnings
@@ -22,39 +24,75 @@ def set_circuit(self):
     if self.basics.options.get('append') is False:
         self.circuit = cirq.Circuit()
 
-    #Add i
-
-    if self.basics.options.get("start") == None:
+    tmp = self.basics.options.get("start")
+    if tmp is None:
         pass
-    elif self.basics.options.get("start") == "exact":
+    elif tmp == "exact":
         self.circuit.insert(0,self.basics._exact_layer(self))
-    elif self.basics.options["start"] == "hadamard":
+    elif tmp == "hadamard":
         self.circuit.insert(0,self.basics._hadamard_layer(self))
-    elif self.basics.options["start"] == "identity":
+    elif tmp == "identity":
         self.circuit.insert(0,self.basics._identity_layer(self))
-    elif self.basics.options["start"] == "neel":
-        self.circuit.insert(0,self.basics._neel_layer(self))
-    elif self.basics.options["start"] == "mf":
+    elif tmp =="mf":
         self.circuit.insert(0,self.basics._mf_layer(self))
+    elif tmp == "neel":
+        self.circuit.insert(0,self.basics._neel_layer(self))
     else:
         assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["start"] )
+                'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("start") )
 
-    if self.basics.options["end"] == None:
+    tmp = self.basics.options.get("end")
+    if tmp is None:
         pass
-    elif self.basics.options.get("end") == "exact":
+    elif tmp == "exact":
         self.circuit.append(self.basics._exact_layer(self))
-    elif self.basics.options["end"] == "hadamard":
+    elif tmp == "hadamard":
         self.circuit.append(self.basics._hadamard_layer(self))
-    elif self.basics.options["end"] == "identity":
+    elif tmp == "identity":
         self.circuit.append(self.basics._identity_layer(self))
-    elif self.basics.options["end"] == "neel":
-        self.circuit.append(self.basics._neel_layer(self))
-    elif self.basics.options["end"] == "mf":
+    elif tmp == "mf":
         self.circuit.append(self.basics._mf_layer(self))
+    elif tmp == "neel":
+        self.circuit.append(self.basics._neel_layer(self))
     else:
         assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-                'exact', 'hadamard', 'neel',  and 'mf'".format(self.basics.options["end"]  )
+                'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("end")  )
+
+    #Match case the python version of switch case only works
+    #starting with Python 3.10
+    #match self.basics.options.get("start"):
+    #    case None:
+    #        pass
+    #    case "exact":
+    #        self.circuit.insert(0,self.basics._exact_layer(self))
+    #    case "hadamard":
+    #        self.circuit.insert(0,self.basics._hadamard_layer(self))
+    #    case "identity":
+    #        self.circuit.insert(0,self.basics._identity_layer(self))
+    #    case "mf":
+    #        self.circuit.insert(0,self.basics._mf_layer(self))
+    #    case "neel":
+    #        self.circuit.insert(0,self.basics._neel_layer(self))
+    #    case _:
+    #        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
+    #            'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("start") )
+
+    #match self.basics.options.get("end"):
+    #    case None:
+    #        pass
+    #    case "exact":
+    #        self.circuit.append(self.basics._exact_layer(self))
+    #    case "hadamard":
+    #        self.circuit.append(self.basics._hadamard_layer(self))
+    #    case "identity":
+    #        self.circuit.append(self.basics._identity_layer(self))
+    #    case "neel":
+    #        self.circuit.append(self.basics._neel_layer(self))
+    #    case "mf":
+    #        self.circuit.append(self.basics._mf_layer(self))
+    #    case _:
+    #        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
+    #            'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("end")  )
 
 def _exact_layer(self):
     """
@@ -142,7 +180,7 @@ def _exact_layer(self):
     else:
         TwoQubitGates = self.basics.options.get("TwoQubitGates")
 
-
+    #If subsystem_qubits is None fall back to using n_exact
     if self.basics.options.get("subsystem_qubits") is None and self.basics.options.get("subsystem_hamiltonians") is None:
         n_exact = self.basics.options.get("n_exact")
 
