@@ -196,14 +196,20 @@ def _exact_layer(self):
                 # 1. Create Ising object for subsystem
                 # 2. then use diagonalise()
                 # 3. Add cirq.MatrixGate to self.circuit
+
+                #np.transpose here required due to bad implementation in SpinModel
+                #Very unexpected behaviour + slows down coding
                 temp_model = SpinModelDummy("GridQubit",
                                     n_exact,
-                                    [self.j_v[i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
-                                                j*n_exact[1]: (j+1)*n_exact[1], :]],
-                                    [self.j_h[ i*n_exact[0]:(i+1)*n_exact[0],
-                                                j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], :]],
-                                    [self.h[i*n_exact[0]:(i+1)*n_exact[0],
-                                        j*n_exact[1]: (j+1)*n_exact[1],:]],
+                                    np.transpose(self.j_v[  i*n_exact[0]:(i+1)*n_exact[0]-b_exact[0],
+                                                            j*n_exact[1]: (j+1)*n_exact[1],:], 
+                                                            (2, 0,1)),
+                                    np.transpose(self.j_h[  i*n_exact[0]:(i+1)*n_exact[0],
+                                                            j*n_exact[1]:(j+1)*n_exact[1]-b_exact[1], :], 
+                                                            (2, 0,1)),
+                                    np.transpose(self.h[i*n_exact[0]:(i+1)*n_exact[0],
+                                                        j*n_exact[1]: (j+1)*n_exact[1],:], 
+                                                        (2, 0,1)),
                                     *TwoQubitGates,
                                     *SingleQubitGates)
 

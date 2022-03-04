@@ -603,6 +603,7 @@ def test__exact_layer_QubitGates(n,SingleQubitGates, TwoQubitGates):
     h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_circuit("basics",{    "start": "exact",
+                                    "b_exact": None,
                                     "n_exact": n})
     print("ising.circuit:\n{}\n".format(ising.circuit))
 
@@ -615,6 +616,7 @@ def test__exact_layer_QubitGates(n,SingleQubitGates, TwoQubitGates):
                                         [cirq.Y])
     spinmodel.set_circuit("basics",{    "start": "exact",
                                     "n_exact": n,
+                                    "b_exact": [1,1],
                                     "SingleQubitGates": SingleQubitGates,
                                     "TwoQubitGates": TwoQubitGates})
 
