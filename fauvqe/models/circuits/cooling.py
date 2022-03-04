@@ -9,6 +9,7 @@ or functions are handed over to classical optimiser
 import numpy as np
 import cirq
 import sympy
+import scipy
 import math
 from itertools import chain
 
@@ -63,17 +64,11 @@ def LogSweepProtocol(self):
                     j_int = np.zeros(shape=(1,*self.m_sys.n))
                     j_int[0, n0, n1] = g/2
                     self._set_j_int(j_int)
-                    dice = np.random.randint(0,3)
-                    if(dice == 0):
-                        pauli = cirq.X
-                    elif(dice == 1):
-                        pauli = cirq.Y
-                    else:
-                        pauli = cirq.Z
-                    self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
-                    self._set_hamiltonian()
-                    c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
-                    c.append( self.cooling._reset_layer(self) )
+                    for pauli in [cirq.X, cirq.Y, cirq.Z]:
+                        self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+                        self._set_hamiltonian()
+                        c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
+                        c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
         
 def __get_default_e_m(self):
@@ -136,13 +131,13 @@ def __get_Bang_Bang_parameters(self, pauli):
     tau = np.pi / g #Simulation time
     return e, g, tau
 
-def __config_system(sys, e, g, t, pauli):
-    sys._set_h_anc(np.transpose([e/2 * np.ones((*sys.m_anc.n,))], (1, 2, 0)))
-    sys.t = t
-    sys._set_j_int(g/2 * sys.j_int / sys.j_int)
-    sys._two_q_gates[sys.nbr_2Q_sys + sys.nbr_2Q_anc:sys.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
-    sys._set_hamiltonian()
-    return sys
+def __config_system(system, e, g, t, pauli):
+    system._set_h_anc(np.transpose([e/2 * np.ones((*system.m_anc.n,))], (1, 2, 0)))
+    system.t = t
+    system._set_j_int(g/2 * system.j_int / system.j_int)
+    system._two_q_gates[system.nbr_2Q_sys + system.nbr_2Q_anc:system.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+    system._set_hamiltonian()
+    return system
 
 #General Functions
 def _reset_layer(self):
@@ -154,9 +149,8 @@ def commutator(A, B):
     return A@B - B@A
 
 def orth_norm(A):
-    mask = np.ones(A.shape, dtype=bool)
-    np.fill_diagonal(mask, 0)
-    return abs(A)[mask].max()
+    eig_val = scipy.linalg.eigvalsh(A)
+    return (eig_val[-1] - eig_val[0])/2
 
 def flatten(list_of_lists): 
     return list(chain(*list_of_lists))
