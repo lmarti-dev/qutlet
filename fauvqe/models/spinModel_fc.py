@@ -16,6 +16,45 @@ class SpinModelFC(AbstractModel):
     """
     2D SpinModel class for fully connected interaction graphs inherits AbstractModel
     is mother of different quantum circuit methods
+    
+    Parameters
+    ----------
+    qubittype: str, indicates QubitType supported by cirq library
+    n: List[int], system size (row and column)
+    j: np.array, interaction constants for TwoQubitGates
+    h: np.array, field strengths for SingleQubitGates
+    TwoQubitGates: List[cirq.PauliSum], List of entangling cirq gates
+    SingleQubitGates: List[cirq.PauliSum], List of single qubit cirq gates
+    t: Real = 0, Simulation time
+    
+    Methods
+    ----------
+    _check_symmetric(self, j: np.array)
+        Returns
+        ---------
+        bool:
+            Checks whether interaction constant adjacency matric is symmetric
+    
+    _combine_jh(self): List[np.array]
+        Returns
+        ---------
+        List[np.array]:
+            Arrays defining interaction js and field strengths h
+    
+    _set_jh(self, j, h): void
+        Returns
+        ---------
+        void
+    
+    _set_hamiltonian(self, reset: bool): void
+        Returns
+        ---------
+        void
+    
+    set_circuit(self, qalgorithm: str, options: dict): void
+        Returns
+        ---------
+        void
     """
     basics  = importlib.import_module("fauvqe.models.circuits.basics")
     trotter  = importlib.import_module("fauvqe.models.circuits.trotter")
@@ -24,10 +63,10 @@ class SpinModelFC(AbstractModel):
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
 
     def __init__(self, 
-                 qubittype, 
-                 n,
-                 j,
-                 h,
+                 qubittype: str, 
+                 n: List[int],
+                 j: np.array,
+                 h: np.array,
                  two_q_gates: List[cirq.PauliSum],
                  one_q_gates: List[cirq.PauliSum],
                  t: Real = 0):
@@ -46,19 +85,46 @@ class SpinModelFC(AbstractModel):
         self.circuit_param_values = np.array([])
         self._two_q_gates = two_q_gates
         self._one_q_gates = one_q_gates
-        self._set_jh(j, h, two_q_gates, one_q_gates)
+        self._set_jh(j, h)
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
 
-    def _check_symmetric(self, j):
+    def _check_symmetric(self, j: np.array) -> bool:
+        """
+        Check whether handed interaction adjacency matrix is symmetric and returns result as boolean variable
+
+        Parameters
+        ----------
+        self
+        j: np.array, interaction adjacency matrix
+        
+        Returns
+        -------
+        j == j.T: bool
+        """
         return np.allclose(
             j, 
             np.transpose(j, (0, 3, 4, 1, 2)),
             atol=1e-13
         )
     
-    def _set_jh(self, j, h, two_q_gates, one_q_gates):
+    def _set_jh(self, j: np.array, h: np.array) -> None:
+        """
+        Set interaction and field strengths after checking shape asserts
+
+        Parameters
+        ----------
+        self
+        j: np.array, interaction adjacency matrix
+        h: field strength tensor
+        
+        Returns
+        -------
+        void
+        """
+        two_q_gates = self._two_q_gates
+        one_q_gates = self._one_q_gates
         # convert input to numpy array to be sure
         j = np.array(j)
         assert (
@@ -76,11 +142,18 @@ class SpinModelFC(AbstractModel):
         ), "Error in SpinModel._set_jh():: h.shape != (len(one_q_gates), n), {} != {}".format(h.shape, (len(one_q_gates), *self.n))
         self.h = np.transpose(h, (1, 2, 0))
 
-    def _set_hamiltonian(self, reset: bool = True):
+    def _set_hamiltonian(self, reset: bool = True) -> None:
         """
-            Append or Reset Hamiltonian
-
-            Create a cirq.PauliSum object fitting to j, h  
+        Append or Reset Hamiltonian; Create a cirq.PauliSum object fitting to j, h  
+        
+        Parameters
+        ----------
+        self
+        reset: bool, indicates whether to reset or append Hamiltonian
+        
+        Returns
+        -------
+        void 
         """
         if reset:
             self.hamiltonian = cirq.PauliSum()
@@ -110,7 +183,24 @@ class SpinModelFC(AbstractModel):
                     if(hs[i][j][g]!=0):
                         self.hamiltonian -= hs[i][j][g]*self._one_q_gates[g](self.qubits[i][j])
     
-    def set_circuit(self, qalgorithm, options: dict = {}):
+    def set_circuit(self, qalgorithm: str, options: dict = {}) -> None:
+        """
+        Append or Reset circuit. Possible circuit types are
+            hea: 
+            trotter: 
+            cooling: 
+            qaoa: 
+        
+        Parameters
+        ----------
+        self
+        qalgorithm: str, determines the circuit type
+        options: options handed over to the circuit generating script
+        
+        Returns
+        -------
+        void 
+        """
         if qalgorithm == "hea":
             self.hea.options = {"append": False,
                                 "p": 1,
