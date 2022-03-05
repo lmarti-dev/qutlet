@@ -13,20 +13,54 @@ from fauvqe.models.spinModel_fc import SpinModelFC
 
 class CoolingModel(SpinModelFC):
     """
-    Class for cooling structure using n system qubits and 1 ancilla qubit inherits SpinModelFC
+    CoolingModel class
+    
+    Class for cooling structure using n system qubits and either a copy of the system or a single added row as ancilla qubit; inherits SpinModelFC
+    
+    Parameters
+    ----------
+    m_sys: AbstractModel, System Model
+    m_anc: AbstractModel, Ancilla Model
+    int_gates: List[cirq.PauliSum], List of gates used for the interaction between system and ancilla qubits
+    j_int: np.array, interaction coefficients used on the interaction gates int_gates
+    t: Real, simulation time
+    
+    Methods
+    ----------
+    _get_int_index(self, i:int): int
+        Returns
+        ---------
+        int:
+            Index which determines the ancilla qubit connected to the ith row of the system
+    
+    _combine_jh(self): List[np.array]
+        Returns
+        ---------
+        List[np.array]:
+            Arrays defining interaction js and field strengths h
+    
+    _set_j_int(self, j_int): void
+        Returns
+        ---------
+        void
+    
+    _set_h_anc(self, h_anc): void
+        Returns
+        ---------
+        void
     """
     
     def __init__(self, 
-                 m_sys,
-                 m_anc,
+                 m_sys: AbstractModel,
+                 m_anc: AbstractModel,
                  int_gates: List[cirq.PauliSum],
                  j_int: np.array,
                  t: Real = 0):
         """
-        m_sys model defining the system of interest
-        m_anc model defining the ancilla system
-        int_gates, a cirq.PauliSum defining the interaction gates between system and ancillas including interaction constants
-        j_int an array encoding the interaction constants between ancillas and system
+        m_sys: model defining the system of interest
+        m_anc: model defining the ancilla system
+        int_gates: a cirq.PauliSum defining the interaction gates between system and ancillas including interaction constants
+        j_int: an array encoding the interaction constants between ancillas and system
         t: Simulation Time
         """
         assert m_sys.qubittype == m_anc.qubittype, "Incompatible Qubittypes, System: {}, Ancilla: {}".format(
@@ -68,7 +102,7 @@ class CoolingModel(SpinModelFC):
         self.m_anc = m_anc
         self.j_int = j_int
         
-        j, h = self._combine_jh(m_sys, m_anc, j_int)
+        j, h = self._combine_jh()
         
         super().__init__( 
             m_sys.qubittype,
@@ -80,13 +114,27 @@ class CoolingModel(SpinModelFC):
             t
         )
     
-    def _get_int_index_na(self, i):
+    def _get_int_index_na(self, i: int) -> int:
         return self.m_sys.n[0] + i
     
-    def _get_int_index_1a(self, i):
+    def _get_int_index_1a(self, i: int) -> int:
         return self.m_sys.n[0]
     
-    def _combine_jh(self, m_sys, m_anc, j_int):
+    def _combine_jh(self) -> List[np.array]:
+        """Combine interaction and field strengths from system and ancilla qubits to get the new interaction graph
+
+        Parameters
+        ----------
+        self
+        
+        Returns
+        -------
+        js: np.array
+        h: np.array
+        """
+        m_sys = self.m_sys
+        m_anc = self.m_anc
+        j_int = self.j_int
         if(self.cooling_type == "NA"):
             n = [2*m_sys.n[0], m_sys.n[1]]
         else:
@@ -194,9 +242,18 @@ class CoolingModel(SpinModelFC):
         
         return js, h
     
-    def _set_j_int(self, j_int):
-        """
+    def _set_j_int(self, j_int: np.array) -> None:
+        """Sets the new interaction constants j_int and recombines the whole interaction graph.
             To be called when j_int shall be changed after already having initialized the object.
+        
+        Parameters
+        ----------
+        self
+        j_int: np.array
+        
+        Returns
+        -------
+        void
         """
         self.j_int = j_int
         for g in range(self.nbr_2Q_sys + self.nbr_2Q_anc, self.nbr_2Q):
@@ -207,9 +264,18 @@ class CoolingModel(SpinModelFC):
                     self.j[i, j, self._get_int_index(i), j, g] = j_int[g_int, i, j]
                     self.j[self._get_int_index(i), j, i, j, g] = j_int[g_int, i, j]
     
-    def _set_h_anc(self, h_anc):
-        """
+    def _set_h_anc(self, h_anc: np.array) -> None:
+        """Sets the new ancilla field strengts h_anc and recombines the whole interaction graph.
             To be called when h_anc shall be changed after already having initialized the object.
+            
+        Parameters
+        ----------
+        self
+        h_anc: np.array
+        
+        Returns
+        -------
+        void
         """
         for g in range(self.nbr_1Q_sys, self.nbr_1Q):
             g_anc = g - self.nbr_1Q_sys
