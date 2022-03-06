@@ -15,6 +15,7 @@ from fauvqe import Ising, HeisenbergFC, CoolingModel, AbstractExpectationValue
             [1, 1], 
             "X",
             {   "K":1,
+                "m":1,
                 "time_steps":1,
             },
             cirq.Circuit(
@@ -51,6 +52,7 @@ from fauvqe import Ising, HeisenbergFC, CoolingModel, AbstractExpectationValue
             [1, 1], 
             "X",
             {   "K":1,
+                "m":1,
                 "time_steps":2,
             },
             cirq.Circuit(
@@ -156,11 +158,11 @@ def test_set_circuit_na(n, boundaries, field, options, solution):
     model.set_circuit("cooling", options)
     model.set_simulator("dm", dtype=np.complex128)
     print("model.circuit: \n{}".format(cirq.align_left(model.circuit)))
-    print("solution: \n{}".format(cirq.align_left(solution)))
+    print("solution: \n{}".format(model.cooling.options["m"]*cirq.align_left(solution)))
     initial = 2**(-2*np.size(n)) * np.eye(2**(2*np.size(n))).astype(np.complex128)
     
     wf = model.simulator.simulate(model.circuit, initial_state=initial).final_density_matrix
-    sol_wf = model.simulator.simulate(solution, initial_state=initial).final_density_matrix
+    sol_wf = model.simulator.simulate(model.cooling.options["m"]*solution, initial_state=initial).final_density_matrix
     
     assert np.linalg.norm(wf - sol_wf) < 1e-7
     
@@ -178,6 +180,7 @@ def test_set_circuit_na(n, boundaries, field, options, solution):
             [1, 1], 
             "X",
             {   "K":1,
+                "m":1,
                 "time_steps":1,
             },
             cirq.Circuit(
@@ -322,7 +325,7 @@ def test_set_circuit_1a(n, boundaries, field, options, solution):
     print("solution: \n{}".format(cirq.align_left(solution)))
     initial = 2**(-(np.size(n)+n[1])) * np.eye(2**(np.size(n) + n[1])).astype(np.complex128)
     wf = model.simulator.simulate(model.circuit, initial_state=initial).final_density_matrix
-    sol_wf = model.simulator.simulate(solution, initial_state=initial).final_density_matrix
+    sol_wf = model.simulator.simulate(model.cooling.options["m"]*solution, initial_state=initial).final_density_matrix
     
     assert np.linalg.norm(wf - sol_wf) < 1e-7
     

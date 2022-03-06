@@ -205,12 +205,6 @@ def BangBangProtocol(self) -> None:
         -------
         void
     """
-    #code shorthands
-    if(self.cooling.options["m"] is None):
-        m=1
-    else:
-        m = self.cooling.options["m"]
-    q = self.cooling.options["q"]
     #Same parameters as in LogSweep, we need to loop through the three different cooling objects, however
     ex, gx, tx = self.cooling.__get_Bang_Bang_parameters(self, cirq.X)
     ey, gy, ty = self.cooling.__get_Bang_Bang_parameters(self, cirq.Y)
@@ -218,6 +212,13 @@ def BangBangProtocol(self) -> None:
     cool_x = self.cooling.__config_system(self.copy(), ex, gx, tx, cirq.X)
     cool_y = self.cooling.__config_system(self.copy(), ey, gy, ty, cirq.Y)
     cool_z = self.cooling.__config_system(self.copy(), ez, gz, tz, cirq.Z)
+    
+    if(self.cooling.options["m"] is None):
+        m = int( 10*max([tx, ty, tz]))
+    else:
+        m = self.cooling.options["m"]
+    q = self.cooling.options["q"]
+    
     c = cirq.Circuit()
     if(self.cooling_type == "NA"):
         for system in [cool_x, cool_y, cool_z]:
