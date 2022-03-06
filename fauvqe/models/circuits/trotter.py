@@ -10,7 +10,7 @@ import cirq
 from numbers import Real
 import sympy
 
-def set_circuit(self):
+def set_circuit(self) -> None:
     """
         Sets the circuit for Trotter-Suzuki sequence of order q and with Trotter number m
         
@@ -56,7 +56,7 @@ def get_trotter_circuit_from_hamiltonian(self, hamiltonian: cirq.PauliSum, t: Re
     """
     return m * self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t/m, q)
     
-def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian: cirq.PauliSum, t: Real, q: np.uint):
+def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian: cirq.PauliSum, t: Real, q: np.uint) -> cirq.Circuit:
     """
         Sets the single time step t/m for Trotter-Suzuki sequence of order q. Different cases for order q:
         q=1: Linear Trotter-Suzuki
