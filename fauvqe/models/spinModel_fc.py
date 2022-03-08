@@ -295,6 +295,25 @@ class SpinModelFC(AbstractModel):
     def energy(self, j, h) -> np.ndarray:
         return self.energy_1q(h) + self.energy_2q(j)
     
+    def normalise(self, spread: float = 2) -> None:
+        '''
+        Scales and shifts the system Hamiltonian, B, J and shift to achieve
+        specified minimum and maximum energies in the Hamiltonian
+        eigenspectrum.
+        
+        Overrides AbstractModel's normalise() function
+        '''
+        _n = np.size(self.qubits)
+        _N = 2**_n
+        if np.size(self.eig_val) != _N or \
+        (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
+            self.diagonalise(solver = "numpy")
+        previous_spread = (self.eig_val[-1] - self.eig_val[0])
+        scale = spread / previous_spread
+        super().normalise(spread)
+        self.j *= scale
+        self.h *= scale
+    
     def copy(self) -> SpinModelFC:
         self_copy = SpinModelFC( self.qubittype,
                 self.n,

@@ -1078,3 +1078,435 @@ Test Adam + ExpectationValue
 Sequential Time: 12.357117414474487
 Parallel Time: 4.323082685470581
 
+===Tue, 08 Mar 2022 17:27:50 +0000===
+Test No Indices 
+
+Sequential Time: 2.8542287349700928
+Parallel Time: 0.9734725952148438
+
+===Tue, 08 Mar 2022 17:27:54 +0000===
+Test Indices 
+
+Sequential Time: 2.0701961517333984
+Parallel Time: 1.539280652999878
+
+===Tue, 08 Mar 2022 17:27:57 +0000===
+Test Indices 
+
+Sequential Time: 1.36130690574646
+Parallel Time: 1.1877853870391846
+
+===Tue, 08 Mar 2022 17:28:00 +0000===
+Test Indices 
+
+Sequential Time: 1.5558290481567383
+Parallel Time: 1.5077040195465088
+
+===Tue, 08 Mar 2022 17:28:02 +0000===
+Test Indices 
+
+Sequential Time: 1.0615057945251465
+Parallel Time: 1.1588499546051025
+
+===Tue, 08 Mar 2022 17:28:28 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 19.80106210708618
+Parallel Time: 6.0792176723480225
+
+===Tue, 08 Mar 2022 17:28:42 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.52314305305481
+Parallel Time: 3.6008970737457275
+
+===Tue, 08 Mar 2022 17:29:16 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 25.25621247291565
+Parallel Time: 8.168536186218262
+
+===Tue, 08 Mar 2022 17:29:34 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.216741800308228
+Parallel Time: 4.625303030014038
+
+===Tue, 08 Mar 2022 17:46:11 +0000===
+Test No Indices 
+
+Sequential Time: 2.9694230556488037
+Parallel Time: 1.1665024757385254
+
+===Tue, 08 Mar 2022 17:46:15 +0000===
+Test Indices 
+
+Sequential Time: 2.032726526260376
+Parallel Time: 1.5778839588165283
+
+===Tue, 08 Mar 2022 17:46:17 +0000===
+Test Indices 
+
+Sequential Time: 1.3431284427642822
+Parallel Time: 1.198960304260254
+
+===Tue, 08 Mar 2022 17:46:21 +0000===
+Test Indices 
+
+Sequential Time: 1.5963294506072998
+Parallel Time: 1.6380138397216797
+
+===Tue, 08 Mar 2022 17:46:23 +0000===
+Test Indices 
+
+Sequential Time: 1.0710101127624512
+Parallel Time: 1.214106559753418
+
+===Tue, 08 Mar 2022 17:46:50 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 20.717780351638794
+Parallel Time: 6.5984485149383545
+
+===Tue, 08 Mar 2022 17:47:06 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.908115148544312
+Parallel Time: 4.146089315414429
+
+===Tue, 08 Mar 2022 17:47:41 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 25.948864936828613
+Parallel Time: 8.691069841384888
+
+===Tue, 08 Mar 2022 17:47:58 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.208888292312622
+Parallel Time: 4.665178298950195
+
+===Tue, 08 Mar 2022 23:32:44 +0000===
+Test No Indices 
+
+Sequential Time: 2.8570289611816406
+Parallel Time: 1.0892064571380615
+
+===Tue, 08 Mar 2022 23:32:47 +0000===
+Test Indices 
+
+Sequential Time: 2.0319764614105225
+Parallel Time: 1.5391230583190918
+
+===Tue, 08 Mar 2022 23:32:50 +0000===
+Test Indices 
+
+Sequential Time: 1.347456932067871
+Parallel Time: 1.2382090091705322
+
+===Tue, 08 Mar 2022 23:32:53 +0000===
+Test Indices 
+
+Sequential Time: 1.6014080047607422
+Parallel Time: 1.5823264122009277
+
+===Tue, 08 Mar 2022 23:32:55 +0000===
+Test Indices 
+
+Sequential Time: 1.0890302658081055
+Parallel Time: 1.151735544204712
+
+===Tue, 08 Mar 2022 23:33:21 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 19.94727087020874
+Parallel Time: 6.0928895473480225
+
+===Tue, 08 Mar 2022 23:33:36 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.486516237258911
+Parallel Time: 3.555236577987671
+
+===Tue, 08 Mar 2022 23:34:10 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 25.77813982963562
+Parallel Time: 7.981153249740601
+
+===Tue, 08 Mar 2022 23:34:27 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.93514609336853
+Parallel Time: 4.495469093322754
+
+===Tue, 08 Mar 2022 23:50:08 +0000===
+Test No Indices 
+
+Sequential Time: 2.713376998901367
+Parallel Time: 0.9652457237243652
+
+===Tue, 08 Mar 2022 23:50:12 +0000===
+Test Indices 
+
+Sequential Time: 1.962587833404541
+Parallel Time: 1.4778141975402832
+
+===Tue, 08 Mar 2022 23:50:14 +0000===
+Test Indices 
+
+Sequential Time: 1.2684926986694336
+Parallel Time: 1.1644580364227295
+
+===Tue, 08 Mar 2022 23:50:17 +0000===
+Test Indices 
+
+Sequential Time: 1.5628259181976318
+Parallel Time: 1.4036409854888916
+
+===Tue, 08 Mar 2022 23:50:19 +0000===
+Test Indices 
+
+Sequential Time: 0.9886360168457031
+Parallel Time: 1.0713779926300049
+
+===Tue, 08 Mar 2022 23:50:44 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.69215726852417
+Parallel Time: 5.757776260375977
+
+===Tue, 08 Mar 2022 23:50:57 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.0685555934906
+Parallel Time: 3.406102180480957
+
+===Tue, 08 Mar 2022 23:51:29 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.749900341033936
+Parallel Time: 7.764842748641968
+
+===Tue, 08 Mar 2022 23:51:46 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.487874031066895
+Parallel Time: 4.395122051239014
+
+===Wed, 09 Mar 2022 00:00:33 +0000===
+Test No Indices 
+
+Sequential Time: 2.836026668548584
+Parallel Time: 1.0083129405975342
+
+===Wed, 09 Mar 2022 00:00:36 +0000===
+Test Indices 
+
+Sequential Time: 1.8809449672698975
+Parallel Time: 1.398514747619629
+
+===Wed, 09 Mar 2022 00:00:39 +0000===
+Test Indices 
+
+Sequential Time: 1.268892526626587
+Parallel Time: 1.0849051475524902
+
+===Wed, 09 Mar 2022 00:00:42 +0000===
+Test Indices 
+
+Sequential Time: 1.509342908859253
+Parallel Time: 1.4012424945831299
+
+===Wed, 09 Mar 2022 00:00:44 +0000===
+Test Indices 
+
+Sequential Time: 0.9819936752319336
+Parallel Time: 1.1800332069396973
+
+===Wed, 09 Mar 2022 00:01:08 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.977131605148315
+Parallel Time: 5.735371112823486
+
+===Wed, 09 Mar 2022 00:01:22 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.006777286529541
+Parallel Time: 3.4199628829956055
+
+===Wed, 09 Mar 2022 00:01:54 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 24.302772045135498
+Parallel Time: 7.487163305282593
+
+===Wed, 09 Mar 2022 00:02:11 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.744605541229248
+Parallel Time: 4.3291401863098145
+
+===Wed, 09 Mar 2022 00:09:40 +0000===
+Test No Indices 
+
+Sequential Time: 2.692995071411133
+Parallel Time: 0.9309029579162598
+
+===Wed, 09 Mar 2022 00:09:44 +0000===
+Test Indices 
+
+Sequential Time: 1.9731457233428955
+Parallel Time: 1.4309790134429932
+
+===Wed, 09 Mar 2022 00:09:46 +0000===
+Test Indices 
+
+Sequential Time: 1.2772815227508545
+Parallel Time: 1.1178429126739502
+
+===Wed, 09 Mar 2022 00:09:49 +0000===
+Test Indices 
+
+Sequential Time: 1.516495943069458
+Parallel Time: 1.420947790145874
+
+===Wed, 09 Mar 2022 00:09:51 +0000===
+Test Indices 
+
+Sequential Time: 0.9933655261993408
+Parallel Time: 1.0877916812896729
+
+===Wed, 09 Mar 2022 00:10:16 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 19.023805379867554
+Parallel Time: 5.759313583374023
+
+===Wed, 09 Mar 2022 00:10:30 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 9.953985929489136
+Parallel Time: 3.446702003479004
+
+===Wed, 09 Mar 2022 00:11:02 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 24.563977003097534
+Parallel Time: 7.786999702453613
+
+===Wed, 09 Mar 2022 00:11:19 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.616445064544678
+Parallel Time: 4.25678014755249
+
+===Wed, 09 Mar 2022 00:22:16 +0000===
+Test No Indices 
+
+Sequential Time: 2.7608234882354736
+Parallel Time: 0.9282722473144531
+
+===Wed, 09 Mar 2022 00:22:19 +0000===
+Test Indices 
+
+Sequential Time: 1.8889906406402588
+Parallel Time: 1.4223122596740723
+
+===Wed, 09 Mar 2022 00:22:22 +0000===
+Test Indices 
+
+Sequential Time: 1.2580845355987549
+Parallel Time: 1.0881803035736084
+
+===Wed, 09 Mar 2022 00:22:25 +0000===
+Test Indices 
+
+Sequential Time: 1.5104739665985107
+Parallel Time: 1.392380952835083
+
+===Wed, 09 Mar 2022 00:22:27 +0000===
+Test Indices 
+
+Sequential Time: 1.0166456699371338
+Parallel Time: 1.083101511001587
+
+===Wed, 09 Mar 2022 00:22:51 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.88872766494751
+Parallel Time: 5.738239765167236
+
+===Wed, 09 Mar 2022 00:23:05 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.072470903396606
+Parallel Time: 3.3913662433624268
+
+===Wed, 09 Mar 2022 00:23:37 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 24.15531587600708
+Parallel Time: 7.737295389175415
+
+===Wed, 09 Mar 2022 00:23:55 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.779253005981445
+Parallel Time: 4.42226243019104
+
+===Wed, 09 Mar 2022 00:47:17 +0000===
+Test No Indices 
+
+Sequential Time: 2.6818714141845703
+Parallel Time: 0.917072057723999
+
+===Wed, 09 Mar 2022 00:47:21 +0000===
+Test Indices 
+
+Sequential Time: 1.8585622310638428
+Parallel Time: 1.3936576843261719
+
+===Wed, 09 Mar 2022 00:47:23 +0000===
+Test Indices 
+
+Sequential Time: 1.2617740631103516
+Parallel Time: 1.0872676372528076
+
+===Wed, 09 Mar 2022 00:47:26 +0000===
+Test Indices 
+
+Sequential Time: 1.5186400413513184
+Parallel Time: 1.3754773139953613
+
+===Wed, 09 Mar 2022 00:47:28 +0000===
+Test Indices 
+
+Sequential Time: 1.0025417804718018
+Parallel Time: 1.063866138458252
+
+===Wed, 09 Mar 2022 00:47:52 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.6191463470459
+Parallel Time: 5.629736661911011
+
+===Wed, 09 Mar 2022 00:48:06 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 9.851577758789062
+Parallel Time: 3.3086836338043213
+
+===Wed, 09 Mar 2022 00:48:37 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.50286030769348
+Parallel Time: 7.465691089630127
+
+===Wed, 09 Mar 2022 00:48:54 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.534181594848633
+Parallel Time: 4.2531492710113525
+

@@ -147,3 +147,42 @@ def test_energy(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z, sol):
     ini = np.zeros(16).astype(np.complex64)
     ini[0] = 1
     assert abs(obj.evaluate(ini) - sol) < 1e-13
+
+@pytest.mark.parametrize(
+    "qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z",
+    [
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((2, 2, 2, 2)),
+            np.ones((2, 2, 2, 2)),
+            np.ones((2, 2, 2, 2)),
+            np.zeros((2, 2)),
+            np.zeros((2, 2)),
+            np.zeros((2, 2)),
+        ),
+        (
+            "GridQubit",
+            [2, 2],
+            np.zeros((2, 2, 2, 2)),
+            np.zeros((2, 2, 2, 2)),
+            np.zeros((2, 2, 2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+        ),
+        (
+            "GridQubit",
+            [2, 2],
+            np.ones((2, 2, 2, 2)),
+            np.ones((2, 2, 2, 2)),
+            np.ones((2, 2, 2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2)),
+            np.ones((2, 2))
+        )]
+)
+def test_normalise(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z):
+    model = HeisenbergFC(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z)
+    model.normalise()
+    assert abs((model.eig_val[0] - model.eig_val[-1]) + 2) < 1e-7

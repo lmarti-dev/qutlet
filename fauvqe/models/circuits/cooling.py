@@ -10,7 +10,6 @@ import numpy as np
 import cirq
 import sympy
 import scipy
-import math
 from typing import List
 from numbers import Real
 from itertools import chain
@@ -80,6 +79,7 @@ def LogSweepProtocol(self) -> None:
     K = self.cooling.options["K"]
     m = self.cooling.options["m"]
     q = self.cooling.options["q"]
+    self.m_sys.normalise()
     if(self.cooling.options["emin"] is None or self.cooling.options["emax"] is None):
         #Use optimal emax and emin if nothing is handed
         e_min, e_max, spectral_spread = self.cooling.__get_default_e_m(self)
@@ -87,6 +87,7 @@ def LogSweepProtocol(self) -> None:
     else:
         e_min = self.cooling.options["emin"]
         e_max = self.cooling.options["emax"]
+        spectral_spread = 2
     #Loop through gradation number K
     for k in range(K):
         #e: Energy gap of Two-Level system
@@ -95,7 +96,7 @@ def LogSweepProtocol(self) -> None:
         e, gamma, tau = self.cooling.__get_Log_Sweep_parameters(self, e_min, e_max, k)
         if(self.cooling.options["m"] is None):
             #Set Trotter number, if it is not handed over in options
-            m = math.ceil(2*np.sqrt(1+ (spectral_spread**2)/(gamma**2)))
+            m = int(2*np.sqrt(1+ (spectral_spread**2)/(gamma**2)))
         #Reset ancilla energy gap
         self._set_h_anc(np.transpose([e/2 * np.ones((*self.m_anc.n,))], (1, 2, 0)))
         #Reset simulation time
@@ -153,7 +154,11 @@ def __get_default_e_m(self) -> List[Real]:
     energy_ex2 = self.m_sys.eig_val[1]
     e_min = (energy_ex2 - energy_ex)
     spectral_spread = (self.m_sys.eig_val[-1] - energy_ex)
-    e_max = max( [ self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) for pauli in [cirq.X, cirq.Y, cirq.Z] ] )
+    e_max = max( self.cooling.orth_norm(1.j*
+        self.cooling.commutator(
+            np.array(pauli(self.m_sys.qubits[i][j]).matrix(self.cooling.flatten(self.m_sys.qubits))),
+            np.array(self.m_sys.hamiltonian.matrix())
+        )) for pauli in [cirq.X, cirq.Y, cirq.Z] for i in range(self.m_sys.n[0]) for j in range(self.m_sys.n[1]) )
     return e_min, e_max, spectral_spread
 
 def __get_Log_Sweep_parameters(self, e_min: Real, e_max: Real, k: np.uint) -> List[Real]:
@@ -331,7 +336,7 @@ def commutator(A: np.array, B:np.array) -> np.array:
         -------
         [A, B]
     """
-    return A@B - B@A
+    return np.dot(A,B) - np.dot(B,A)
 
 def orth_norm(A: np.array) -> Real:
     """
@@ -348,6 +353,7 @@ def orth_norm(A: np.array) -> Real:
         ||A||_\perp
     """
     eig_val = scipy.linalg.eigvalsh(A)
+    #print((eig_val[-1] - eig_val[0])/2)
     return (eig_val[-1] - eig_val[0])/2
 
 def flatten(list_of_lists: List[List[object]]) -> List[object]: 
