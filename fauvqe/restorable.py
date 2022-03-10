@@ -35,7 +35,7 @@ class Restorable(abc.ABC):
                 else:
                     return False
             else:
-                exceptions = ['simulator', '_get_gradients', '_get_single_cost', 'evaluate', '_optimise_step', '_two_q_gates', '_get_int_index']
+                exceptions = ['simulator', '_get_gradients', '_get_single_cost', 'evaluate', '_optimise_step', '_TwoQubitGates', '_get_int_index']
                 if key not in exceptions:
                     #print("key: \t{}\ngetattr(self, key): \n{}\ngetattr(other, key): \n{}\n".format(key, getattr(self, key), getattr(other, key)))
                     temp_bools.append(getattr(self, key) == getattr(other, key))

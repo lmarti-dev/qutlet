@@ -28,7 +28,7 @@ def test__eq__():
     #print("ising == ising2: \t {}".format(ising == ising2))
     assert (ising == ising2)
 
-    ising.set_Ut()
+    ising.h = 0*np.ones((n[0], n[1]))
     assert ising != ising2 
 
 
