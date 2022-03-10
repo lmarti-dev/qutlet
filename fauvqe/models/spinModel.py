@@ -53,7 +53,8 @@ class SpinModel(AbstractModel):
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
-    def _set_jh(self, j_v, j_h, h, two_q_gates, one_q_gates):
+
+    def _set_jh(self, j_v, j_h, h, TwoQubitGates, SingleQubitGates):
         # convert input to numpy array to be sure
         j_v = np.array(j_v)
         # J vertical needs one row/horizontal line less
@@ -195,7 +196,7 @@ class SpinModel(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
-                                #"fully_connected" : False,
+                                "fully_connected" : False,
                                 "SingleQubitVariables": _SingleQubitVariables,
                                 "TwoQubitVariables": _TwoQubitVariables,
                                 "SingleQubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._SingleQubitGates))],
@@ -229,8 +230,8 @@ class SpinModel(AbstractModel):
                                 "H_layer": True,
                                 "fully_connected" : False,
                                 "i0": 0,
-                                "1QubitGates": [ lambda q, theta: cirq.Z(q)**(theta)],
-                                "2QubitGates" : [lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]
+                                "SingleQubitGates": [ lambda q, theta: cirq.Z(q)**(theta)],
+                                "TwoQubitGates" : [lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]
                                 }
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)

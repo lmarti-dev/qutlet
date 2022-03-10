@@ -352,6 +352,22 @@ def test_set_K():
     model.cooling.set_K(model, 2)
     assert model.cooling.options["K"] == 2
 
+def test_get_default_e_m():
+    n=[2,1]
+    boundaries=[1,1]
+    m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])), "X")
+    m_anc = Ising("GridQubit", [1, n[1]], np.zeros((1, n[1])), np.zeros((1, n[1])), np.ones((1, n[1])), "Z")
+    j_int = np.ones((1, n[0], n[1]))
+    
+    model = CoolingModel(
+                    m_sys,
+                    m_anc,
+                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
+                    j_int
+    )
+    e_min, e_max, spectral_spread = model.cooling.__get_default_e_m(model)
+    assert abs(spectral_spread + 2*model.m_sys.eig_val[0]) < 1e-7
+
 @pytest.mark.parametrize(
     "rho, ind, solution",
     [

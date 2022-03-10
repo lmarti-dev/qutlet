@@ -83,20 +83,20 @@ class CoolingModel(SpinModelFC):
                 m_anc.n
             )
         
-        self.nbr_2Q_sys = len(m_sys._two_q_gates)
-        self.nbr_2Q_anc = len(m_anc._two_q_gates)
+        self.nbr_2Q_sys = len(m_sys._TwoQubitGates)
+        self.nbr_2Q_anc = len(m_anc._TwoQubitGates)
         self.nbr_2Q_int = len(int_gates)
         self.nbr_2Q = self.nbr_2Q_sys + self.nbr_2Q_anc + self.nbr_2Q_int
         
-        self.nbr_1Q_sys = len(m_sys._one_q_gates)
-        self.nbr_1Q_anc = len(m_anc._one_q_gates)
+        self.nbr_1Q_sys = len(m_sys._SingleQubitGates)
+        self.nbr_1Q_anc = len(m_anc._SingleQubitGates)
         self.nbr_1Q = self.nbr_1Q_sys + self.nbr_1Q_anc
         
         self.sys_fc = issubclass(m_sys.__class__, SpinModelFC)
         self.anc_fc = issubclass(m_anc.__class__, SpinModelFC)
         
-        two_q_gates = [*m_sys._two_q_gates, *m_anc._two_q_gates, *int_gates]
-        one_q_gates = [*m_sys._one_q_gates, *m_anc._one_q_gates]
+        _TwoQubitGates = [*m_sys._TwoQubitGates, *m_anc._TwoQubitGates, *int_gates]
+        _SingleQubitGates = [*m_sys._SingleQubitGates, *m_anc._SingleQubitGates]
         
         self.m_sys = m_sys
         self.m_anc = m_anc
@@ -109,8 +109,8 @@ class CoolingModel(SpinModelFC):
             np.array(n),
             j,
             h,
-            two_q_gates,
-            one_q_gates,
+            _TwoQubitGates,
+            _SingleQubitGates,
             t
         )
     
@@ -290,7 +290,7 @@ class CoolingModel(SpinModelFC):
         self_copy = CoolingModel(
                 self.m_sys,
                 self.m_anc,
-                self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
+                self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
                 self.j_int,
                 self.t)
         
@@ -310,7 +310,7 @@ class CoolingModel(SpinModelFC):
             "constructor_params": {
                 "m_sys": self.m_sys,
                 "m_anc": self.m_anc,
-                "int_gates": self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
+                "int_gates": self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
                 "j_int": self.j_int,
                 "t": self.t
              },

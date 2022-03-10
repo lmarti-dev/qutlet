@@ -120,7 +120,7 @@ def LogSweepProtocol(self) -> None:
                     #Reset coupling constants...
                     self._set_j_int(j_int)
                     for pauli in [cirq.X, cirq.Y, cirq.Z]:
-                        self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+                        self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
                         #--- and Hamiltonian
                         self._set_hamiltonian()
                         #Trotter Layer
@@ -298,7 +298,7 @@ def __config_system(system: object, e: Real, gamma: Real, t: Real, pauli: cirq.G
     system._set_h_anc(np.transpose([e/2 * np.ones((*system.m_anc.n,))], (1, 2, 0)))
     system.t = t
     system._set_j_int(gamma/2 * system.j_int / system.j_int)
-    system._two_q_gates[system.nbr_2Q_sys + system.nbr_2Q_anc:system.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
+    system._TwoQubitGates[system.nbr_2Q_sys + system.nbr_2Q_anc:system.nbr_2Q] = [lambda q1, q2: pauli(q1)*cirq.X(q2)]
     system._set_hamiltonian()
     return system
 

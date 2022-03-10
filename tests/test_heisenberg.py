@@ -150,7 +150,7 @@ def test_json():
 def test_glues_circuit(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h, glue_axis, sol_circuit, sol_circuit_param):
     model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h)
     model.set_circuit("qaoa", {
-    "1QubitGates": []
+    "SingleQubitGates": []
     })
     
     model.glue_circuit(axis=glue_axis)

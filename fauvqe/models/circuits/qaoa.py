@@ -147,8 +147,8 @@ def _UC_layer(self, gamma):
     """
     if(self.qaoa.options["fully_connected"]):
         #2-qubit gates
-        for g in range(len(self.qaoa.options["2QubitGates"])):
-            gate = self.qaoa.options["2QubitGates"][g]
+        for g in range(len(self.qaoa.options["TwoQubitGates"])):
+            gate = self.qaoa.options["TwoQubitGates"][g]
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     for l in range(j+1, self.n[1], 1):
@@ -159,8 +159,8 @@ def _UC_layer(self, gamma):
                             if(self.j[i][j][k][l][g] != 0):
                                 yield gate(self.qubits[i][j], self.qubits[k][l], gamma * self.j[i][j][k][l][g])
         #Single qubit gates
-        for g in range(len(self.qaoa.options["1QubitGates"])):
-            gate = self.qaoa.options["1QubitGates"][g]
+        for g in range(len(self.qaoa.options["SingleQubitGates"])):
+            gate = self.qaoa.options["SingleQubitGates"][g]
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     if(self.h[i][j][g] != 0):
@@ -187,8 +187,8 @@ def _UC_layer(self, gamma):
     
     else:
         #2-qubit gates
-        for g in range(len(self.qaoa.options["2QubitGates"])):
-            gate = self.qaoa.options["2QubitGates"][g]
+        for g in range(len(self.qaoa.options["TwoQubitGates"])):
+            gate = self.qaoa.options["TwoQubitGates"][g]
             for k in range(2):
                 if self.n[0] > 1:
                     for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
@@ -207,8 +207,8 @@ def _UC_layer(self, gamma):
                         if self.boundaries[1] == 0 and self.n[1]%2 == int(1-k):
                             yield gate(self.qubits[i][self.n[1]-1], self.qubits[i][0], gamma * self.j_h[i,self.n[1]-1][g])
         #Single qubit gates
-        for g in range(len(self.qaoa.options["1QubitGates"])):
-            gate = self.qaoa.options["1QubitGates"][g]
+        for g in range(len(self.qaoa.options["SingleQubitGates"])):
+            gate = self.qaoa.options["SingleQubitGates"][g]
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     if(self.h[i][j][g] != 0):

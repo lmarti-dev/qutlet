@@ -11,7 +11,7 @@ def test_set_circuit_wf():
     n=[1,2];boundaries=[1,1]
     model = Heisenberg("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])))
     options = {
-                    "1QubitGates": [],
+                    "SingleQubitGates": [],
     }
     model.set_circuit("qaoa", options)
     print(model.circuit)
@@ -45,8 +45,8 @@ def test_set_circuit_wf():
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGates": [],
-             "2QubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
+            {"SingelQubitGates": [],
+             "TwoQubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
                               lambda q1, q2, theta: cirq.YY(q1, q2)**(theta),
                              lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), 
@@ -59,8 +59,8 @@ def test_set_circuit_wf():
         (
             [1, 3], 
             [1, 1], 
-            {"1QubitGates": [],
-             "2QubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
+            {"SingleQubitGates": [],
+             "TwoQubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
                               lambda q1, q2, theta: cirq.YY(q1, q2)**(theta),
                              lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
@@ -77,8 +77,8 @@ def test_set_circuit_wf():
         (
             [1, 3], 
             [1, 0], 
-            {"1QubitGates": [],
-             "2QubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
+            {"SingleQubitGates": [],
+             "TwoQubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
                               lambda q1, q2, theta: cirq.YY(q1, q2)**(theta),
                              lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
@@ -98,8 +98,8 @@ def test_set_circuit_wf():
         (
             [3, 1], 
             [0, 1], 
-            {"1QubitGates": [],
-             "2QubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
+            {"SingleQubitGates": [],
+             "TwoQubitGates" : [lambda q1, q2, theta: cirq.XX(q1, q2)**(theta),
                               lambda q1, q2, theta: cirq.YY(q1, q2)**(theta),
                              lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(2, 0)),
