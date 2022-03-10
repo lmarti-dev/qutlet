@@ -30,9 +30,9 @@ def test_set_symbols(n, boundaries, options, solution):
     #Note that gates & symbols are different based on boundaries
     model = Heisenberg("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])))
     options.update({
-                    "1QubitGates": None,
-                    "1Qvariables": [[]],
-                    "2Qvariables": [['phi', 'theta'], ['psi', 'kappa'], ['mu', 'nu']],
+                    "SingleQubitGates": None,
+                    "SingleQubitVariables": [[]],
+                    "TwoQubitVariables": [['phi', 'theta'], ['psi', 'kappa'], ['mu', 'nu']],
     })
     model.set_circuit("hea", options)
     assert(set(model.circuit_param) == set(solution))
@@ -43,9 +43,9 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGates": [lambda x: cirq.XPowGate(exponent=x),
+            {"SingleQubitGates": [lambda x: cirq.XPowGate(exponent=x),
                              lambda z: cirq.ZPowGate(exponent=z)], 
-            "1Qvariables": [['x'],['z']],
+            "SingleQubitVariables": [['x'],['z']],
             },
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 1)),
@@ -55,9 +55,9 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [1, 2], 
             [1, 1], 
-            {"1QubitGates": [lambda x: cirq.XPowGate(exponent=x),
+            {"SingleQubitGates": [lambda x: cirq.XPowGate(exponent=x),
                              lambda z: cirq.ZPowGate(exponent=z)], 
-            "1Qvariables": [['x'],['z']],
+            "SingleQubitVariables": [['x'],['z']],
             "p": 2
             },
             cirq.Circuit((cirq.X**sympy.Symbol('x0')).on(cirq.GridQubit(0, 0)),
@@ -73,7 +73,7 @@ def test_set_symbols(n, boundaries, options, solution):
             [1, 3],
             [1, 1], 
             {
-                "1Qvariables": [['a', 'x', 'z'], ['b', 'w', 'y'], ['c', 'u', 'v']],
+                "SingleQubitVariables": [['a', 'x', 'z'], ['b', 'w', 'y'], ['c', 'u', 'v']],
             },
             cirq.Circuit(cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
                                         z_exponent= sympy.Symbol('z0'), 
@@ -106,8 +106,8 @@ def test_set_symbols(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"1QubitGates": [lambda x: cirq.ry(rads=x), lambda z: cirq.rz(rads=z)], 
-            "1Qvariables": [['x'], ['z']],
+            {"SingleQubitGates": [lambda x: cirq.ry(rads=x), lambda z: cirq.rz(rads=z)], 
+            "SingleQubitVariables": [['x'], ['z']],
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ry(sympy.Symbol('x0_0')).on(cirq.GridQubit(0, 0)),
                         cirq.ry(sympy.Symbol('x0_1')).on(cirq.GridQubit(0, 1)),
@@ -122,7 +122,7 @@ def test_set_symbols(n, boundaries, options, solution):
 )
 def test__1_Qubit_layer(n, boundaries, options, solution):
     model = Heisenberg("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
-    circuit_options = {"2QubitGates": None}
+    circuit_options = {"TwoQubitGates": None}
     circuit_options.update(options)
     model.set_circuit("hea", circuit_options)
     print('Heisenberg Circuit:\n', model.circuit)
@@ -136,7 +136,7 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
             [1, 4], 
             [1, 0], 
             {
-                "2Qvariables": [['phi', 'theta'], ['kappa', 'psi'], ['mu', 'nu']],
+                "TwoQubitVariables": [['phi', 'theta'], ['kappa', 'psi'], ['mu', 'nu']],
             },
             cirq.Circuit(cirq.FSimGate(theta=sympy.Symbol('theta0'), phi=sympy.Symbol('phi0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
@@ -167,9 +167,9 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
             [2, 2], 
             [1, 1], 
             {
-                "2QubitGates": [lambda phi, theta: cirq.ZZPowGate(exponent=theta),
+                "TwoQubitGates": [lambda phi, theta: cirq.ZZPowGate(exponent=theta),
                                lambda psi, kappa: cirq.YYPowGate(exponent=kappa)],
-                "2Qvariables": [['phi', 'theta'], ['psi', 'kappa']],
+                "TwoQubitVariables": [['phi', 'theta'], ['psi', 'kappa']],
                 "parametrisation": "layerwise"
             },
             cirq.Circuit(cirq.ZZPowGate(exponent=sympy.Symbol('theta0_0')).\
@@ -192,9 +192,9 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 2], 
             [1, 1], 
-            {"2QubitGates": [lambda phi, theta: cirq.ISwapPowGate (exponent=theta), 
+            {"TwoQubitGates": [lambda phi, theta: cirq.ISwapPowGate (exponent=theta), 
                              lambda psi, kappa: cirq.ISwapPowGate (exponent=kappa)],
-             "2Qvariables": [['phi', 'theta'], ['psi', 'kappa']],
+             "TwoQubitVariables": [['phi', 'theta'], ['psi', 'kappa']],
             "parametrisation": "individual"},
             cirq.Circuit(cirq.ISwapPowGate (exponent=sympy.Symbol('theta0_0_v0_0')).\
                             on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
@@ -217,7 +217,7 @@ def test__1_Qubit_layer(n, boundaries, options, solution):
 )
 def test__2_Qubit_layer(n, boundaries, options, solution):
     model = Heisenberg("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])), np.ones((n[0], n[1])))
-    circuit_options = {"1QubitGates": None}
+    circuit_options = {"SingleQubitGates": None}
     circuit_options.update(options)
     model.set_circuit("hea", circuit_options)
     print('Ising Circuit:\n', model.circuit)
@@ -230,12 +230,12 @@ def test__2_Qubit_layer(n, boundaries, options, solution):
         (
             [2, 3], 
             [1, 0], 
-            {"1QubitGates": [lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z)],
-            "2QubitGates": [lambda theta, phi: cirq.CZPowGate (exponent=theta),
+            {"SingleQubitGates": [lambda a, x, z: cirq.PhasedXPowGate(exponent=x, phase_exponent=z)],
+            "TwoQubitGates": [lambda theta, phi: cirq.CZPowGate (exponent=theta),
                            lambda kappa, psi: cirq.YYPowGate (exponent=kappa),
                            lambda mu, nu: cirq.XXPowGate (exponent=mu)],
-            "1Qvariables": [['a', 'x', 'z']],
-            "2Qvariables": [['theta', 'phi'], ['kappa', 'psi'], ['mu', 'nu']],
+            "SingleQubitVariables": [['a', 'x', 'z']],
+            "TwoQubitVariables": [['theta', 'phi'], ['kappa', 'psi'], ['mu', 'nu']],
             "parametrisation": "layerwise"},
             cirq.Circuit(cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 0)),
                         cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 1)),
