@@ -177,7 +177,6 @@ class SpinModel(AbstractModel):
                                     "b_exact" : [0, 0],
                                     "cc_exact": False}
             self.basics.options.update(options)
-            print(self.basics.options)
             self.basics.set_circuit(self)
         elif qalgorithm == "hea":
             # Defaults for 1 and 2 qubit gates

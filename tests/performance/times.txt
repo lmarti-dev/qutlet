@@ -3493,3 +3493,57 @@ Test Adam + ExpectationValue
 Sequential Time: 12.91804814338684
 Parallel Time: 4.382558584213257
 
+===Fr, 11 Mär 2022 12:12:33 +0000===
+Test No Indices 
+
+Sequential Time: 2.5988516807556152
+Parallel Time: 0.9007284641265869
+
+===Fr, 11 Mär 2022 12:12:49 +0000===
+Test Indices 
+
+Sequential Time: 11.755130052566528
+Parallel Time: 4.898848295211792
+
+===Fr, 11 Mär 2022 12:12:59 +0000===
+Test Indices 
+
+Sequential Time: 6.217509746551514
+Parallel Time: 3.2769007682800293
+
+===Fr, 11 Mär 2022 12:13:24 +0000===
+Test Indices 
+
+Sequential Time: 18.20071816444397
+Parallel Time: 6.474047899246216
+
+===Fr, 11 Mär 2022 12:13:37 +0000===
+Test Indices 
+
+Sequential Time: 9.718798637390137
+Parallel Time: 3.8524580001831055
+
+===Fr, 11 Mär 2022 12:13:56 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.30574917793274
+Parallel Time: 4.722984552383423
+
+===Fr, 11 Mär 2022 12:14:07 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.568629264831543
+Parallel Time: 3.0474345684051514
+
+===Fr, 11 Mär 2022 12:14:38 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.218827486038208
+Parallel Time: 7.659559726715088
+
+===Fr, 11 Mär 2022 12:14:55 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.64179277420044
+Parallel Time: 4.341517210006714
+

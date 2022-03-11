@@ -5,7 +5,7 @@ from cirq import Circuit as cirq_Circuit
 from cirq import Simulator as cirq_Simulator
 from numbers import Integral
 import numpy as np
-from typing import Literal, Tuple, Dict
+from typing import Literal, Tuple, Dict, List
 
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.models.abstractmodel import AbstractModel
@@ -58,25 +58,33 @@ class ExpectationValue(AbstractExpectationValue):
         else:
             # This is the quick and easy but factor 2 slower cirq implementation
             # Of rotated basis expecation values
+            # So far not quite clear if this does what we want
+            # rot_circuit = identity already gives correct expectation value
             assert isinstance(self._model.simulator, cirq_Simulator), "Currently cirq simulator for rotated expectation values required"
 
             rotation_circuits = options.get("rotation_circuits")
             if options.get("qubit_order") is None:
                 _qubit_order={self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
             else:
-                _quit_order=options.get("qubit_order") 
-
+                _qubit_order=options.get("qubit_order") 
+            print("_qubit_order: {}".format(_qubit_order))
             if isinstance(rotation_circuits, cirq_Circuit):
                 return self._model.simulator.simulate_expectation_values(
                         rotation_circuits,
-                        observable=self._observable,
-                        ) / self.__n_qubits
-            elif isinstance(rotation_circuits, List[cirq_Circuit]):
+                        initial_state=wavefunction,
+                        observables=self._observable) / self.__n_qubits
+                        #qubit_order=_qubit_order) / self.__n_qubits
+            elif all(isinstance(obj, cirq_Circuit) for obj in rotation_circuits):
+                #Doing this potential does not make sense:
                 expectation_value = 0
                 for i in range(len(rotation_circuits)):                    
                     expectation_value += self._model.simulator.simulate_expectation_values(
                                             rotation_circuits[i],
-                                            observable=self._observable) / self.__n_qubits
+                                            initial_state=wavefunction,
+                                            observables=self._observable,
+                                            qubit_order=_qubit_order) / self.__n_qubits/ len(rotation_circuits)
+                    print(rotation_circuits[i])
+                    print(expectation_value)
                 return expectation_value
             else:
                 assert False, "Given rotation circuit is not of type cirq.Circuit"
