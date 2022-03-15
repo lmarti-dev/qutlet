@@ -629,7 +629,62 @@ def test__exact_layer_QubitGates(n,SingleQubitGates, TwoQubitGates):
         print("ising.circuit.all_qubits():\n{}\nspinmodel.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),spinmodel.circuit.all_qubits()))
         print("ising.circuit.unitary()-spinmodel.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-spinmodel.circuit.unitary()))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),spinmodel.circuit.unitary(), rtol=1e-15, atol=1e-15)
-    
+
+@pytest.mark.parametrize(
+    "n,basics_options,SingleQubitGates, TwoQubitGates, subsystem_hamiltonians",
+    [
+        (
+            [1, 2],
+            { "n_exact": [1, 2]},
+            [[cirq.X]],
+            [[lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)]],
+            [-cirq.Z(cirq.GridQubit(0,0))*cirq.Z(cirq.GridQubit(0,1))-cirq.X(cirq.GridQubit(0,0))-cirq.X(cirq.GridQubit(0,1))],
+        ),
+        #This currently fails as method with n_exact starts at (0,0)
+        #Need to rethink temp_model to start at correct qubits
+            (
+            [2, 2],
+            { "n_exact": [1, 2]},
+            [[cirq.Y]],
+            [[lambda q1, q2: cirq.X(q1)*cirq.Z(q2)]],
+            [-cirq.X(cirq.GridQubit(0,0))*cirq.Z(cirq.GridQubit(0,1))-cirq.Y(cirq.GridQubit(0,0))-cirq.Y(cirq.GridQubit(0,1)),
+            -cirq.X(cirq.GridQubit(1,0))*cirq.Z(cirq.GridQubit(1,1))-cirq.Y(cirq.GridQubit(1,0))-cirq.Y(cirq.GridQubit(1,1))],
+            ),
+        #This currently fails as method with subsystem_qubits starts at (0,0) at temp_model
+            (
+            [2, 2],
+            { "subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]},
+            [[cirq.Y]],
+            [[lambda q1, q2: cirq.X(q1)*cirq.Z(q2)]],
+            [-cirq.X(cirq.GridQubit(0,0))*cirq.Z(cirq.GridQubit(0,1))-cirq.Y(cirq.GridQubit(0,0))-cirq.Y(cirq.GridQubit(0,1)),
+            -cirq.X(cirq.GridQubit(1,0))*cirq.Z(cirq.GridQubit(1,1))-cirq.Y(cirq.GridQubit(1,0))-cirq.Y(cirq.GridQubit(1,1))],
+            ),
+    ]
+)
+def test__exact_layer_subsystem_hamiltonians(n,basics_options,SingleQubitGates, TwoQubitGates, subsystem_hamiltonians):
+    j_v0 = np.ones((n[0]-1,n[1]))
+    j_h0 = np.ones((n[0],n[1]-1))
+    h0 = np.ones((n[0],n[1]))
+
+    spinmodel = SpinModel("GridQubit", 
+                            n, 
+                            [j_v0], 
+                            [j_h0], 
+                            [h0],
+                            [lambda q1, q2: cirq.Y(q1)*cirq.Y(q2)],
+                            [cirq.Y])
+    options = {    "start": "exact",
+                    "b_exact": [1,1],
+                    "SingleQubitGates": SingleQubitGates,
+                    "TwoQubitGates": TwoQubitGates}
+    options.update(basics_options)
+    print(options)
+    spinmodel.set_circuit("basics",options)
+
+    print("spinmodel.subsystem_hamiltonians:\n{}\nsubsystem_hamiltonians:\n{}\n"
+    .format(spinmodel.subsystem_hamiltonians[1],subsystem_hamiltonians[1]))
+    assert(all([spinmodel.subsystem_hamiltonians[i]==subsystem_hamiltonians[i] for i in range(len(subsystem_hamiltonians))]))
 
 def test__identity_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
