@@ -162,6 +162,10 @@ def _exact_layer(self):
     if self.qubittype != "GridQubit":
         raise NotImplementedError()
 
+    #Init self.subsystem_hamiltonians: List[cirq.PauliSum] if it does not exist
+    if hasattr(self, 'subsystem_hamiltonians') is False:
+        self.subsystem_hamiltonians = []
+
     #Get b_exact or set default
     if self.basics.options.get("b_exact") is None:
         b_exact = [1,1]
@@ -227,6 +231,9 @@ def _exact_layer(self):
                     for l in range(n_exact[1]):
                         temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
                 #print("temp_qubits: \t {}".format(temp_qubits))
+
+                #Store cirq PauliSums of subsystem Hamiltonians
+                self.subsystem_hamiltonians.append(temp_model.hamiltonian)
 
                 #Get cc_exact or set default
                 if self.basics.options.get("cc_exact") is True:
@@ -301,6 +308,9 @@ def _exact_layer(self):
             temp_model.diagonalise( solver = "scipy", 
                                     solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                     matrix= temp_matrix)
+
+            #Store cirq PauliSums of subsystem Hamiltonians
+            self.subsystem_hamiltonians.append(temp_model.hamiltonian)
 
             #Get cc_exact or set default
             if self.basics.options.get("cc_exact") is True:
