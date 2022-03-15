@@ -13,3 +13,4 @@ from fauvqe.objectives.matrixcost import MatrixCost
 from fauvqe.objectives.objective import Objective
 from fauvqe.objectives.tracedistance import TraceDistance
 from fauvqe.objectives.utcost import UtCost
+from fauvqe.objectives.variance import Variance

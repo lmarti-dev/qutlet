@@ -15,9 +15,10 @@ from fauvqe.objectives.objective import Objective
 
 
 class Variance(AbstractExpectationValue):
-    """Correlation Expectation value objective
+    """
+    Varianceobjective
 
-    This class implements as objective the n-point correlation of a given state vector. The special case n=1 reduces to the magnetisation objective.
+    This class implements as objective the Variance of given observables w.r.t. a given state.
 
     Parameters
     ----------
@@ -41,15 +42,19 @@ class Variance(AbstractExpectationValue):
             <Variance observable=self.observable>
     """
 
-    def __init__(self, model: AbstractModel, observables: Optional[Union[cirq.PauliSum, List[cirq.PauliSum]]]=None, wavefunction: np.ndarray=None,):
+    def __init__(   self, 
+                    model: AbstractModel, 
+                    observables: Optional[Union[cirq.PauliSum, List[cirq.PauliSum]]]=None, 
+                    wavefunction: np.ndarray=None,):
         #Optionally store wavevector w.r.t. which variance is calculated
+
         self._wavefunction=wavefunction
         super().__init__(model, observables)
     
     def evaluate(   self, 
                     observables: Optional[Union[cirq.PauliSum, List[cirq.PauliSum]]]=None,
                     wavefunction: np.ndarray=None, 
-                    q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None)-> Union[np.float64, List[np.float64]]:
+                    _qubit_order: Mapping[cirq.ops.pauli_string.TKey, int]=None)-> Union[np.float64, List[np.float64]]:
         #Returns variance of observables with respect to given wavefunction
         #E.g. variance of X with respect to X or Z eigen state
         #or variance of ground state |\psi_0> w.r.t. a subsystem Hamiltonian parition
@@ -67,22 +72,41 @@ class Variance(AbstractExpectationValue):
                 # Use the stored wavefunction if no other wavefunction was given
                 wavefunction = self._wavefunction.view()
 
-        if(q_map is None):
-            q_map = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
+        if(_qubit_order is None):
+            _qubit_order = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
 
         #Implement <O²> - <O>²
-        return np.real(self._model.simulator.simulate_expectation_values(
+        print(np.power(np.array(self._model.simulator.simulate_expectation_values(
+                            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+                            qubit_order = _qubit_order,
+                            observables=observables, # This allows for a list of observables
+                            initial_state=wavefunction,
+                            )),2))
+
+        if isinstance(observables, list):
+            square_observables = [observables[i]**2 for i in range(len(observables))]
+        else:
+            square_observables= observables**2
+        #print(np.array(self._model.simulator.simulate_expectation_values(
+        #            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+        #            qubit_order = _qubit_order,
+        #            observables=[observable**2 for observable in observables] , # This allows for a list of observables
+        #            initial_state=wavefunction,
+        #            )))
+        return np.real(np.array(self._model.simulator.simulate_expectation_values(
                     program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-                    qubit_order = q_map,
-                    observables=observables**2, # This allows for a list of observables
+                    qubit_order = _qubit_order,
+                    observables=square_observables, # This allows for a list of observables
                     initial_state=wavefunction,
-                    ) 
-                    - self._model.simulator.simulate_expectation_values(
-                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-                    qubit_order = q_map,
-                    observables=observables, # This allows for a list of observables
-                    initial_state=wavefunction,
-                    )**2)
+                    ))
+                    - np.power(
+                        np.array(self._model.simulator.simulate_expectation_values(
+                            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+                            qubit_order = _qubit_order,
+                            observables=observables, # This allows for a list of observables
+                            initial_state=wavefunction,
+                            )),
+                        2))
 
     def to_json_dict(self) -> Dict:
         return {

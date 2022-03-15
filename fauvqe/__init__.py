@@ -31,7 +31,8 @@ from fauvqe.objectives import (
     MatrixCost,
     Objective,
     TraceDistance,
-    UtCost
+    UtCost,
+    Variance
 )
 from fauvqe.optimisers import (
     ADAM,
