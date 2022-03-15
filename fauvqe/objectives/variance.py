@@ -76,23 +76,11 @@ class Variance(AbstractExpectationValue):
             _qubit_order = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
 
         #Implement <O²> - <O>²
-        print(np.power(np.array(self._model.simulator.simulate_expectation_values(
-                            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-                            qubit_order = _qubit_order,
-                            observables=observables, # This allows for a list of observables
-                            initial_state=wavefunction,
-                            )),2))
-
         if isinstance(observables, list):
             square_observables = [observables[i]**2 for i in range(len(observables))]
         else:
             square_observables= observables**2
-        #print(np.array(self._model.simulator.simulate_expectation_values(
-        #            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-        #            qubit_order = _qubit_order,
-        #            observables=[observable**2 for observable in observables] , # This allows for a list of observables
-        #            initial_state=wavefunction,
-        #            )))
+
         return np.real(np.array(self._model.simulator.simulate_expectation_values(
                     program = cirq.Circuit(), # to keep previous behaviour use empty circuit
                     qubit_order = _qubit_order,
