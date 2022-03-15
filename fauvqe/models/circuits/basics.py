@@ -215,7 +215,8 @@ def _exact_layer(self):
                                                         j*n_exact[1]: (j+1)*n_exact[1],:], 
                                                         (2, 0,1)),
                                     *TwoQubitGates,
-                                    *SingleQubitGates)
+                                    *SingleQubitGates,
+                                    n_offset=[i*n_exact[0],j*n_exact[1]])
 
                 #To not loose qubits with no gates/ 0 qubits
                 temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
@@ -301,7 +302,8 @@ def _exact_layer(self):
                                     np.transpose(subsystem_j_h[i], (2, 0,1)),
                                     np.transpose(subsystem_h[i], (2, 0,1)),
                                     *TwoQubitGates,
-                                    *SingleQubitGates)
+                                    *SingleQubitGates,
+                                    n_offset=[min(subsystem_qubits[i])._row, min(subsystem_qubits[i])._col] )
                                     
             #To not loose qubits with no gates/ 0 qubits
             temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
@@ -476,7 +478,8 @@ class SpinModelDummy(AbstractModel):
                  h,
                  TwoQubitGates: List[cirq.PauliSum],
                  SingleQubitGates: List[cirq.PauliSum],
-                 t: Real = 0):
+                 t: Real = 0,
+                 n_offset = [0,0]):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -489,6 +492,9 @@ class SpinModelDummy(AbstractModel):
         """
         # convert all input to np array to be sure
         super().__init__(qubittype, np.array(n))
+        
+        self._offset_qubits(n_offset)
+        
         self.circuit_param = None
         self.circuit_param_values = np.array([])
         self._TwoQubitGates = TwoQubitGates
@@ -497,6 +503,10 @@ class SpinModelDummy(AbstractModel):
         self._set_hamiltonian()
         super().set_simulator()
         self.t = t
+
+    def _offset_qubits(self, n_offset):
+        temp = [[cirq.GridQubit(i, j) for j in range(n_offset[1],n_offset[1]+self.n[1])] for i in range(n_offset[0],n_offset[0]+self.n[0])]
+        self.qubits = temp
 
     def _set_jh(self, j_v, j_h, h, TwoQubitGates, SingleQubitGates):
         # convert input to numpy array to be sure
