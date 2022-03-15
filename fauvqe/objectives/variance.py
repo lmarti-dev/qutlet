@@ -100,7 +100,8 @@ class Variance(AbstractExpectationValue):
         return {
             "constructor_params": {
                 "model": self._model,
-                "observables": self._observable
+                "observables": self._observable,
+                "wavefunction": self._wavefunction
             },
         }
 

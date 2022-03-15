@@ -39,7 +39,7 @@ class MockAbstractModel(AbstractModel):
             1,
         ),
         (
-            np.array([1,0]),
+            None,
             cirq.PauliSum.from_pauli_strings([cirq.Y(cirq.LineQubit(i)) for i in range(1)]),
             1,
             1,
@@ -266,25 +266,34 @@ def test_evaluate_Ising(n, j_v, j_h , h, field, init_state, basics_options, vari
 
 #to do test sub systems
 # Ising, n_exact -> test whether subsystems have smaller variance that X,Z for J=h=1
-"""
+
+
 def test_json():
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", {"p": 5})
-    objective = Correlation(ising, "Z")
+    model = Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
+    model.set_simulator("cirq")
+    
+    observables=[cirq.X(cirq.GridQubit(0,0)), cirq.Y(cirq.GridQubit(0,1)), cirq.Z(cirq.GridQubit(1,0))*cirq.Z(cirq.GridQubit(1,1)) ]
+
+    state=np.random.rand(2**4,1)
+    state=state/np.linalg.norm(state)
+    objective = Variance(model, observables= observables, wavefunction=state)
+
+    json = objective.to_json_dict()    
+    objective2 = Variance.from_json_dict(json)
+    
     print(objective)
-    json = objective.to_json_dict()
-    
-    objective2 = Correlation.from_json_dict(json)
-    
+
     assert (objective == objective2)
 
+def test_repr():
+    model = MockAbstractModel("LineQubit", 1)
+    variance_obj = Variance(model,wavefunction=np.array([1,0]), observables=cirq.Z(cirq.LineQubit(0)))
+    assert repr(variance_obj) == "<Variance observable={}>".format(cirq.Z(cirq.LineQubit(0)))
 #############################################################
 #                                                           #
 #                    Assert tests                           #
 #                                                           #
 #############################################################
-"""
 def test_evaluate_assert():
     model = MockAbstractModel("LineQubit", 1)
     variance_obj = Variance(model,np.array([1,0]), cirq.Z(cirq.LineQubit(0)))
