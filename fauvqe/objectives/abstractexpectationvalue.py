@@ -1,11 +1,11 @@
 """
     Abstract class for the expectation value as objective function for an AbstractModel object.
 """
-from typing import Literal, Tuple, Dict, Mapping, Optional
-from numbers import Integral
-
-import numpy as np
 import cirq
+from numbers import Integral
+import numpy as np
+from typing import Dict, List, Literal, Mapping, Optional, Tuple, Union
+
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -30,7 +30,7 @@ class AbstractExpectationValue(Objective):
             <AbstractExpectationValue observable=self._observable>
     """
 
-    def __init__(self, model: AbstractModel, observable: Optional[cirq.PauliSum]=None):
+    def __init__(self, model: AbstractModel, observable: Optional[Union[cirq.PauliSum, List[cirq.PauliSum]]]=None):
         super().__init__(model)
         self._N = 2**np.size(model.qubits)
         if(observable is None):
