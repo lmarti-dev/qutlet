@@ -218,29 +218,30 @@ def _exact_layer(self):
                                     *SingleQubitGates,
                                     n_offset=[i*n_exact[0],j*n_exact[1]])
 
-                #To not loose qubits with no gates/ 0 qubits
-                temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
-
-                temp_model.diagonalise( solver = "scipy", 
-                                        solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
-                                        matrix= temp_matrix)
-                
-                #This would be nicer in 1 line, but 2D list slicing in python 
-                #Resulted in wrong result. compare lab book 2 page 109
-                temp_qubits = []
-                for k in range(n_exact[0]):
-                    for l in range(n_exact[1]):
-                        temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
-                #print("temp_qubits: \t {}".format(temp_qubits))
-
                 #Store cirq PauliSums of subsystem Hamiltonians
                 self.subsystem_hamiltonians.append(temp_model.hamiltonian)
 
-                #Get cc_exact or set default
-                if self.basics.options.get("cc_exact") is True:
-                    yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
-                else:
-                    yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
+                if self.basics.options.get("subsystem_diagonalisation") is not False:
+                    #To not loose qubits with no gates/ 0 qubits
+                    temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+
+                    temp_model.diagonalise( solver = "scipy", 
+                                            solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
+                                            matrix= temp_matrix)
+                    
+                    #This would be nicer in 1 line, but 2D list slicing in python 
+                    #Resulted in wrong result. compare lab book 2 page 109
+                    temp_qubits = []
+                    for k in range(n_exact[0]):
+                        for l in range(n_exact[1]):
+                            temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
+                    #print("temp_qubits: \t {}".format(temp_qubits))
+
+                    #Get cc_exact or set default
+                    if self.basics.options.get("cc_exact") is True:
+                        yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
+                    else:
+                        yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
     else:
         #More flexible option
         #give lists of GridQubits to devide the system
@@ -305,23 +306,25 @@ def _exact_layer(self):
                                     *SingleQubitGates,
                                     n_offset=[min(subsystem_qubits[i])._row, min(subsystem_qubits[i])._col] )
                                     
-            #To not loose qubits with no gates/ 0 qubits
-            temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
-            temp_model.diagonalise( solver = "scipy", 
-                                    solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
-                                    matrix= temp_matrix)
-
             #Store cirq PauliSums of subsystem Hamiltonians
             self.subsystem_hamiltonians.append(temp_model.hamiltonian)
+            
+            #To not loose qubits with no gates/ 0 qubits
+            #TO DO: this can be much mor efficent by using converter class and scipy sparse
+            if self.basics.options.get("subsystem_diagonalisation") is not False:
+                temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+                temp_model.diagonalise( solver = "scipy", 
+                                        solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
+                                        matrix= temp_matrix)
 
-            #Get cc_exact or set default
-            if self.basics.options.get("cc_exact") is True:
-                yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
-            else:
-                yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
+                #Get cc_exact or set default
+                if self.basics.options.get("cc_exact") is True:
+                    yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
+                else:
+                    yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
 
     #If this method is used to rotate into the eigenbasis, store eigenvalues and vectors, as those are already calcualted
-    if (self.n == n_exact).all() :
+    if (self.n == n_exact).all() and self.basics.options.get("subsystem_diagonalisation") is not False:
         self.eig_val = temp_model.eig_val
         self.eig_vec = temp_model.eig_vec
 
