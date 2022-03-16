@@ -226,6 +226,96 @@ def test_evaluate_rot_Z(n):
     objective = ExpectationValue(ising)
     assert abs(objective.evaluate(wavefunction) - objective.evaluate(wavefunction, {"rotation_circuits": ising.circuit})) < 1e-7
 
+@pytest.mark.parametrize(
+    "n, j_v, j_h, h, basics_options",
+    [
+        (
+            #First subsystem X partition, second subsystem Z parition
+            [1,2],
+            0.2*np.ones((1-1,2)),
+            0.3*np.ones((1,2-1)),
+            0.7*np.ones((1,2)),
+            {   "start": "exact",
+                "subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1),], 
+                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+                "subsystem_j_v":[   np.array([]).reshape(0, 2, 1),
+                                    np.array([]).reshape(0, 2, 1)],
+                "subsystem_j_h": [   0*np.transpose(np.array([[[1]]]), (1,0, 2)),
+                                    0.3*np.transpose(np.array([[[1]]]), (1,0, 2))],
+                "subsystem_h": [    0.7*np.transpose(np.array([[[1]], [ [1]]]), (1,0, 2)), 
+                                    0*np.transpose(np.array([[[1]], [ [1]]]), (1,0, 2)) ]
+            },
+        ),
+        (
+            #First subsystem X partition, second subsystem Z parition
+            [2,2],
+            0.2*np.ones((2-1,2)),
+            0.3*np.ones((2,2-1)),
+            0.7*np.ones((2,2)),
+            {   "start": "exact",
+                "subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(1,0), cirq.GridQubit(1,1)], 
+                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_j_v": [  0*np.transpose(np.array( [[[1]], [[1]]]), (1,0, 2)),
+                                    0.2*np.transpose(np.array([[[1]], [[1]]]), (1,0, 2))],
+                "subsystem_j_h": [  0*np.transpose(np.array([[[1], [1]]]), (1,0, 2)),
+                                    0.3*np.transpose(np.array([[[1], [1]]]), (1,0, 2))],
+                "subsystem_h": [    0.7*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (1,0, 2)), 
+                                    0*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (1,0, 2)) ]
+            },
+        ),
+        (
+            #Parition in 2 1x2 subsystems where h = h/2
+            [2,2],
+            0.2*np.ones((2-1,2)),
+            0.3*np.ones((2,2-1)),
+            0.7*np.ones((2,2)),
+            {   "start": "exact",
+                "subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(1,0), cirq.GridQubit(1,1)], 
+                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_j_v": [  1*0.2*np.transpose(np.array( [[[1]], [[1]]]), (1,0, 2)),
+                                    0*0.2*np.transpose(np.array([[[1]], [[1]]]), (1,0, 2))],
+                "subsystem_j_h": [  0*0.3*np.transpose(np.array([[[1], [1]]]), (1,0, 2)),
+                                    1*0.3*np.transpose(np.array([[[1], [1]]]), (1,0, 2))],
+                "subsystem_h": [    0.5*0.7*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (1,0, 2)), 
+                                    0.5*0.7*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (1,0, 2)) ]
+            },
+        ),
+    ],
+)
+def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options):
+    #j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    #j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    #h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
+
+    ising = Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising.set_circuit("basics", basics_options)
+    ising.set_simulator("cirq")
+
+    #Assert that subsystem partition match Hamiltonian
+    #print(ising.hamiltonian)
+    #print(ising.subsystem_hamiltonians[1])
+    assert(ising.hamiltonian == sum(ising.subsystem_hamiltonians))
+
+    #Use a random state vector for the asserts
+    state=np.random.rand(2**(n[0]*n[1])).astype(np.complex128)
+    state=state/np.linalg.norm(state)
+    
+    #Use ExpectationValue for the entire Hamiltonian and evaluate from AbstractExpectationValue for partitions
+    exp_obj = ExpectationValue(ising)
+    abstractexp_obj = AbstractExpectationValue(ising)
+
+    #Assert Abstractexpectationvalue vs. more efficent Expectationvalue
+    energy_from_exp_obj = exp_obj.evaluate(state)*(n[0]*n[1]) 
+    assert abs(energy_from_exp_obj - abstractexp_obj.evaluate(state,  atol = 1e-14)) < 5e-7
+
+    #Assert that sum of subsystem expectation values match Hamiltonian expectation value
+    energy_tmp = 0
+    for i in range(len(ising.subsystem_hamiltonians)):
+        abstractexp_obj2 = AbstractExpectationValue(ising, ising.subsystem_hamiltonians[i])
+        energy_tmp += abstractexp_obj2.evaluate(state,  atol = 1e-14)
+    assert abs(energy_from_exp_obj - energy_tmp) < 5e-7
+
+
 def test_json():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
