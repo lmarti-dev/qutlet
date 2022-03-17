@@ -286,9 +286,10 @@ def _exact_layer(self):
 
         #Prints for debugging and to confirm correct structure of subsystem_h etc
         #Keep those for the moment
-        print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))
-        print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))
-        print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))
+        if self.basics.options.get("print") is True:
+            print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))
+            print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))
+            print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))
         
         for i in range(len(subsystem_qubits)):
             #Need to calculate n_exact from subsystem_qubits
