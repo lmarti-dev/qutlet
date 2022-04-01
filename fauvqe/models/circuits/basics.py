@@ -171,6 +171,10 @@ def _exact_layer(self):
     if hasattr(self, 'subsystem_hamiltonians') is False:
         self.subsystem_hamiltonians = []
 
+    #Init self.subsystem_qubits: List[List[cirq.GridQubit]]
+    if hasattr(self, 'subsystem_qubits') is False:
+        self.subsystem_qubits = []
+
     #Get b_exact or set default
     if self.basics.options.get("b_exact") is None:
         b_exact = [1,1]
@@ -243,6 +247,9 @@ def _exact_layer(self):
                             temp_qubits.append(self.qubits[i*n_exact[0]+k][j*n_exact[1]+l])
                     #print("temp_qubits: \t {}".format(temp_qubits))
 
+                    #Store subsystem qubits
+                    self.subsystem_qubits.append(temp_qubits)
+
                     #Get cc_exact or set default
                     if self.basics.options.get("cc_exact") is True:
                         yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
@@ -263,6 +270,9 @@ def _exact_layer(self):
             set(self.basics.flatten(subsystem_qubits))
             )
         
+        #Store subsystem qubits
+        self.subsystem_qubits = subsystem_qubits
+
         #Get subsystem_h or set default
         if self.basics.options.get("subsystem_h") is None:
             subsystem_h = []
@@ -469,6 +479,37 @@ def rm_unused_cpv(self):
 
 def flatten(nested_list):
     return [item for sublist in nested_list for item in sublist]
+
+def get_energy_filter_from_subsystem(self, subsystem_energies = None):
+    #To Do Add qubit_map from subsystem qubits
+    #Set a subsystem qubit_map -> need later for simulations
+    if hasattr(self, 'subsystem_qubits') is True and hasattr(self, 'subsystem_qubit_map') is True:
+        self.subsystem_qubit_map = {}
+        for i_subsystem in range(len(self.subsystem_qubits)):
+            self.subsystem_qubit_map.update({self.subsystem_qubits[i_subsystem][l]: int(l + len(qubit_map)) for l in range(len(self.subsystem_qubits[i_subsystem]))})
+
+    if subsystem_energies == None:
+        if hasattr(self, 'subsystem_energies') is True:
+            subsystem_energies = self.subsystem_energies
+        else:
+            assert False, "No subsystem energies provided"
+
+    print(subsystem_energies[0])
+    if np.size(subsystem_energies) == 2**np.size(self.qubits):
+        return subsystem_energies
+    else:
+        energy_filter = np.add(np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]
+                                    .reshape((1,2**np.size( self.subsystem_qubits[0]))), 
+                               np.size( self.subsystem_qubits[1])*self.subsystem_energies[1]
+                                    .reshape((2**np.size( self.subsystem_qubits[1]),1))
+                                ).reshape((1,2**np.size( self.subsystem_qubits[0] + self.subsystem_qubits[1]))) 
+        for i in range(2,len(subsystem_energies)):
+            print(i)
+            energy_filter = np.add( energy_filter,
+                                    np.size( self.subsystem_qubits[i])*self.subsystem_energies[i]
+                                        .reshape((2**np.size( self.subsystem_qubits[i]),1))
+                                    ).reshape((1,np.size(energy_filter)*2**np.size(self.subsystem_qubits[i]))) 
+        return np.squeeze(energy_filter)/np.size(self.qubits)
 
 class SpinModelDummy(AbstractModel):
     """
