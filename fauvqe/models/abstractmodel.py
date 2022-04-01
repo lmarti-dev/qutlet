@@ -268,6 +268,7 @@ class AbstractModel(Restorable):
             self.solver_options = { "k": 2,
                                     "which": 'SA'}
             self.solver_options.update(solver_options)
+            print(self.solver_options)
             self.eig_val, self.eig_vec = scipy_sparse_solver(
                 matrix, 
                 **self.solver_options,

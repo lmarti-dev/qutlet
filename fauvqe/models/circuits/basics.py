@@ -162,6 +162,11 @@ def _exact_layer(self):
     if self.qubittype != "GridQubit":
         raise NotImplementedError()
 
+    #Init self.subsystem_energies: List[nd.arrays] if it does not exist
+    #Store subsystem energy spectrum as need for energy filter
+    if hasattr(self, 'subsystem_energies') is False:
+        self.subsystem_energies = []
+
     #Init self.subsystem_hamiltonians: List[cirq.PauliSum] if it does not exist
     if hasattr(self, 'subsystem_hamiltonians') is False:
         self.subsystem_hamiltonians = []
@@ -229,6 +234,7 @@ def _exact_layer(self):
                                             solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                             matrix= temp_matrix)
                     
+                    self.subsystem_energies.append(temp_model.eig_val)
                     #This would be nicer in 1 line, but 2D list slicing in python 
                     #Resulted in wrong result. compare lab book 2 page 109
                     temp_qubits = []
@@ -318,6 +324,7 @@ def _exact_layer(self):
                                         solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                         matrix= temp_matrix)
 
+                self.subsystem_energies.append(temp_model.eig_val)
                 #Get cc_exact or set default
                 if self.basics.options.get("cc_exact") is True:
                     yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
