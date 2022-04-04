@@ -149,10 +149,11 @@ def test_json():
 )
 def test_glues_circuit(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h, glue_axis, sol_circuit, sol_circuit_param):
     model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h)
-    model.set_circuit("qaoa")
+    model.set_circuit("qaoa", {
+    "SingleQubitGates": []
+    })
     
     model.glue_circuit(axis=glue_axis)
-    #print(ising.circuit)
 
     model2 = Heisenberg(qubittype, 
                     [(2-glue_axis)*n[0], (1+glue_axis)*n[1]], 
@@ -160,13 +161,14 @@ def test_glues_circuit(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h
                     np.concatenate((j_x_h, j_x_h), axis=glue_axis) , 
                     np.concatenate((j_y_v, j_y_v), axis=glue_axis),
                     np.concatenate((j_y_h, j_y_h), axis=glue_axis) , 
-                     np.concatenate((j_z_v, j_z_v), axis=glue_axis),
+                    np.concatenate((j_z_v, j_z_v), axis=glue_axis),
                     np.concatenate((j_z_h, j_z_h), axis=glue_axis) , 
                     np.concatenate((h, h), axis=glue_axis) )
     model2.circuit = sol_circuit
     model2.circuit_param = sol_circuit_param
     model2.circuit_param_values = np.array([0]*len(model2.circuit_param))
-    
+    print(model.circuit)
+    print(model2.circuit)
     assert(model == model2)
 
 @pytest.mark.parametrize(
