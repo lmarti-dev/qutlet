@@ -164,15 +164,15 @@ def _exact_layer(self):
 
     #Init self.subsystem_energies: List[nd.arrays] if it does not exist
     #Store subsystem energy spectrum as need for energy filter
-    if hasattr(self, 'subsystem_energies') is False:
+    if hasattr(self, 'subsystem_energies') is False or self.basics.options.get("append") is False:
         self.subsystem_energies = []
 
     #Init self.subsystem_hamiltonians: List[cirq.PauliSum] if it does not exist
-    if hasattr(self, 'subsystem_hamiltonians') is False:
+    if hasattr(self, 'subsystem_hamiltonians') is False or self.basics.options.get("append") is False:
         self.subsystem_hamiltonians = []
 
     #Init self.subsystem_qubits: List[List[cirq.GridQubit]]
-    if hasattr(self, 'subsystem_qubits') is False:
+    if hasattr(self, 'subsystem_qubits') is False or self.basics.options.get("append") is False:
         self.subsystem_qubits = []
 
     #Get b_exact or set default
@@ -303,9 +303,9 @@ def _exact_layer(self):
         #Prints for debugging and to confirm correct structure of subsystem_h etc
         #Keep those for the moment
         if self.basics.options.get("print") is True:
-            print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))
-            print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))
-            print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))
+            print("self.h:\n{}\nsubsystem_h: \n{}".format(self.h, subsystem_h))          # pragma: no cover 
+            print("self.j_h:\n{}\nsubsystem_j_h: \n{}".format(self.j_h, subsystem_j_h))  # pragma: no cover 
+            print("self.j_v:\n{}\nsubsystem_j_v: \n{}".format(self.j_v, subsystem_j_v))  # pragma: no cover 
         
         for i in range(len(subsystem_qubits)):
             #Need to calculate n_exact from subsystem_qubits
@@ -488,13 +488,15 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
         for i_subsystem in range(len(self.subsystem_qubits)):
             self.subsystem_qubit_map.update({self.subsystem_qubits[i_subsystem][l]: int(l + len(qubit_map)) for l in range(len(self.subsystem_qubits[i_subsystem]))})
 
-    if subsystem_energies == None:
-        if hasattr(self, 'subsystem_energies') is True:
-            subsystem_energies = self.subsystem_energies
-        else:
-            assert False, "No subsystem energies provided"
+    #Do this two step if to away issue that all() not applicable for None
+    #But also all() needed if subsystem_energies not None
+    if np.size(subsystem_energies) == 1:
+        if (subsystem_energies == None):
+            if hasattr(self, 'subsystem_energies') is True:
+                subsystem_energies = self.subsystem_energies
+            else:
+                assert False, "No subsystem energies provided"
 
-    print(subsystem_energies[0])
     if np.size(subsystem_energies) == 2**np.size(self.qubits):
         return subsystem_energies
     else:
@@ -504,7 +506,6 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                                     .reshape((2**np.size( self.subsystem_qubits[1]),1))
                                 ).reshape((1,2**np.size( self.subsystem_qubits[0] + self.subsystem_qubits[1]))) 
         for i in range(2,len(subsystem_energies)):
-            print(i)
             energy_filter = np.add( energy_filter,
                                     np.size( self.subsystem_qubits[i])*self.subsystem_energies[i]
                                         .reshape((2**np.size( self.subsystem_qubits[i]),1))
