@@ -286,8 +286,9 @@ def _exact_layer(self):
         if self.basics.options.get("subsystem_j_h") is None:
             subsystem_j_h = []
             for i in range(len(subsystem_qubits)):
+                _real_col = min(1, max(subsystem_qubits[i])._col- min(subsystem_qubits[i])._col)
                 subsystem_j_h.append(self.j_h[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1,
-                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1-b_exact[1], :])
+                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+_real_col-b_exact[1], :])
         else:
             subsystem_j_h = self.basics.options.get("subsystem_j_h")
 
@@ -295,8 +296,9 @@ def _exact_layer(self):
         if self.basics.options.get("subsystem_j_v") is None:
             subsystem_j_v = []
             for i in range(len(subsystem_qubits)):
-                subsystem_j_v.append(self.j_v[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1-b_exact[0],
-                        min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
+                _real_row = min(1, max(subsystem_qubits[i])._row- min(subsystem_qubits[i])._row)
+                subsystem_j_v.append(   self.j_v[   min(subsystem_qubits[i])._row: (max(subsystem_qubits[i])._row+_real_row-b_exact[0]),
+                                                    min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
         else:
             subsystem_j_v = self.basics.options.get("subsystem_j_v")
 
@@ -324,6 +326,7 @@ def _exact_layer(self):
                                     n_offset=[min(subsystem_qubits[i])._row, min(subsystem_qubits[i])._col] )
                                     
             #Store cirq PauliSums of subsystem Hamiltonians
+            print(temp_model.hamiltonian)
             self.subsystem_hamiltonians.append(temp_model.hamiltonian)
             
             #To not loose qubits with no gates/ 0 qubits
