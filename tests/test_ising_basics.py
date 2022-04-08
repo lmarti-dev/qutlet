@@ -179,8 +179,71 @@ def test__exact_layer_cc(n,subsystem_qubits):
         wf0[i-1]=0
 
         print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
-        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=5e-8)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
 
+@pytest.mark.parametrize(
+    "n, basics_options",
+    [
+        (
+            [1, 2],
+            {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
+        ),
+        (
+            [2, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]}
+        ),
+    ]
+)
+def test_subsystem_U(n, basics_options):
+    #Take random h \in 0.1 ..1 and J \in +- 0.1 .. 1
+    #Take random SingleQubiteGate and random TwoQubiteGate
+    #Check whether
+    # U^\dagger |\phi_m^(HA)> \otimes |\phi_l^(HB)> = |m> \otimes |l>
+    j_v = 2*0.9*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_v = j_v + np.sign(j_v)+0.1
+    j_h = 2*0.9*(np.random.rand(n[0],n[1]-1)- 0.5)
+    j_v = j_v + np.sign(j_v)+0.1
+    h = 0.9*(np.random.rand(n[0],n[1])+ 0.1)
+    #print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+
+    #This does not actually matter as Ising itself is not used
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+    ising.set_simulator("cirq", {"dtype": np.complex128})
+
+    #Get random SingleQubiteGate and random TwoQubiteGate 
+    #[[cirq.X]],
+    #[[lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)]]
+    _pauligates = [cirq.I, cirq.X, cirq.Y, cirq.Z]
+    tmp_SQG = _pauligates[np.random.randint(4)]
+    tmp_TQG = lambda q1, q2: _pauligates[np.random.randint(4)](q1)*_pauligates[np.random.randint(4)](q2)
+
+    common_options = {    "start": "exact", 
+                          "append": False,
+                          "cc_exact": True,
+                          "SingleQubitGates": [[tmp_SQG]],
+                          "TwoQubitGates": [[tmp_TQG]]}
+    common_options.update(basics_options)
+    ising.set_circuit("basics", common_options)
+    
+    #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
+    #Should end up in the nth Z-Eigenstate
+    wf0 = np.zeros(2**(n[0]*n[1]))
+
+    #TO DO ADAPT THIS:
+    for i in range(2**(n[0]*n[1])):
+        #Get composite subststem eigenstate by tensorproduct
+        #wf_from_subsystem_diagonalisation= np.tensordot(ising.subsystem_U[0][:,3], ising.subsystem_U[1][:,3], axes=0).reshape(16)
+        #
+        wf = ising.simulator.simulate(  initial_state=ising.eig_vec[:,i],
+                                        program=ising.circuit).state_vector()
+        wf = wf/np.linalg.norm(wf)
+
+        wf0[i]=1
+        wf0[i-1]=0
+
+        print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
 
 @pytest.mark.parametrize(
     "n, n_exact, subsystem_qubits",
@@ -718,6 +781,8 @@ def test__exact_layer_subsystem_hamiltonians(n,basics_options,SingleQubitGates, 
     for i in range(len(subsystem_hamiltonians)):
         print("spinmodel.subsystem_hamiltonians[{}]\n{}\nsubsystem_hamiltonians[{}]\n{}\n".format(i, spinmodel.subsystem_hamiltonians[i],i, subsystem_hamiltonians[i]))
     assert(all([spinmodel.subsystem_hamiltonians[i]==subsystem_hamiltonians[i] for i in range(len(subsystem_hamiltonians))]))
+
+
 
 def test__identity_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
@@ -1263,6 +1328,126 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
     assert(abs(E -(E_A+E_B)) < 1e-17)
 
+@pytest.mark.parametrize(
+    "subsystem_qubits, target_qubit_map",
+    [
+        (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+            {cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1},
+        ),
+        (
+            [[ cirq.GridQubit(1,1), cirq.GridQubit(0,1)]],
+            {cirq.GridQubit(1,1):0, cirq.GridQubit(0,1):1},
+        ),
+        (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+            [ cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+            {cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(1,0):2, cirq.GridQubit(1,1):3},
+        ),
+        (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+            [ cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            {cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):2, cirq.GridQubit(1,0):1, cirq.GridQubit(1,1):3},
+        ),
+        (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+            [ cirq.GridQubit(1,0), cirq.GridQubit(1,1),cirq.GridQubit(1,2), cirq.GridQubit(1,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(0,2):2, cirq.GridQubit(0,3):3,
+                cirq.GridQubit(1,0):4, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):6, cirq.GridQubit(1,3):7},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+                [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+                [   cirq.GridQubit(0,2), cirq.GridQubit(1,2)],
+                [   cirq.GridQubit(0,3), cirq.GridQubit(1,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):2, cirq.GridQubit(0,2):4, cirq.GridQubit(0,3):6,
+                cirq.GridQubit(1,0):1, cirq.GridQubit(1,1):3, cirq.GridQubit(1,2):5, cirq.GridQubit(1,3):7},
+        ),
+         (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+            [ cirq.GridQubit(1,0), cirq.GridQubit(1,1),cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+            [ cirq.GridQubit(2,0), cirq.GridQubit(2,1),cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+            [ cirq.GridQubit(3,0), cirq.GridQubit(3,1),cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(0,2):2, cirq.GridQubit(0,3):3,
+                cirq.GridQubit(1,0):4, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):6, cirq.GridQubit(1,3):7,
+                cirq.GridQubit(2,0):8, cirq.GridQubit(2,1):9, cirq.GridQubit(2,2):10, cirq.GridQubit(2,3):11,
+                cirq.GridQubit(3,0):12, cirq.GridQubit(3,1):13, cirq.GridQubit(3,2):14, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
+                [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
+                [   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):4, cirq.GridQubit(0,2):8, cirq.GridQubit(0,3):12,
+                cirq.GridQubit(1,0):1, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):9, cirq.GridQubit(1,3):13,
+                cirq.GridQubit(2,0):2, cirq.GridQubit(2,1):6, cirq.GridQubit(2,2):10, cirq.GridQubit(2,3):14,
+                cirq.GridQubit(3,0):3, cirq.GridQubit(3,1):7, cirq.GridQubit(3,2):11, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1),cirq.GridQubit(0,2), cirq.GridQubit(0,3),
+             cirq.GridQubit(1,0), cirq.GridQubit(1,1),cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+            [ cirq.GridQubit(2,0), cirq.GridQubit(2,1),cirq.GridQubit(2,2), cirq.GridQubit(2,3),
+             cirq.GridQubit(3,0), cirq.GridQubit(3,1),cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(0,2):2, cirq.GridQubit(0,3):3,
+                cirq.GridQubit(1,0):4, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):6, cirq.GridQubit(1,3):7,
+                cirq.GridQubit(2,0):8, cirq.GridQubit(2,1):9, cirq.GridQubit(2,2):10, cirq.GridQubit(2,3):11,
+                cirq.GridQubit(3,0):12, cirq.GridQubit(3,1):13, cirq.GridQubit(3,2):14, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0),
+                   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2),
+                   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):4, cirq.GridQubit(0,2):8, cirq.GridQubit(0,3):12,
+                cirq.GridQubit(1,0):1, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):9, cirq.GridQubit(1,3):13,
+                cirq.GridQubit(2,0):2, cirq.GridQubit(2,1):6, cirq.GridQubit(2,2):10, cirq.GridQubit(2,3):14,
+                cirq.GridQubit(3,0):3, cirq.GridQubit(3,1):7, cirq.GridQubit(3,2):11, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(1,0), cirq.GridQubit(1,1),
+                   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(3,0), cirq.GridQubit(3,1)],
+                [   cirq.GridQubit(0,2), cirq.GridQubit(0,3), cirq.GridQubit(1,2), cirq.GridQubit(1,3),
+                   cirq.GridQubit(2,2), cirq.GridQubit(2,3), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(0,2):8, cirq.GridQubit(0,3):9,
+                cirq.GridQubit(1,0):2, cirq.GridQubit(1,1):3, cirq.GridQubit(1,2):10, cirq.GridQubit(1,3):11,
+                cirq.GridQubit(2,0):4, cirq.GridQubit(2,1):5, cirq.GridQubit(2,2):12, cirq.GridQubit(2,3):13,
+                cirq.GridQubit(3,0):6, cirq.GridQubit(3,1):7, cirq.GridQubit(3,2):14, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
+                [   cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(1,1), cirq.GridQubit(1,2),
+                   cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(3,1), cirq.GridQubit(3,2)],
+                [   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):4, cirq.GridQubit(0,2):5, cirq.GridQubit(0,3):12,
+                cirq.GridQubit(1,0):1, cirq.GridQubit(1,1):6, cirq.GridQubit(1,2):7, cirq.GridQubit(1,3):13,
+                cirq.GridQubit(2,0):2, cirq.GridQubit(2,1):8, cirq.GridQubit(2,2):9, cirq.GridQubit(2,3):14,
+                cirq.GridQubit(3,0):3, cirq.GridQubit(3,1):10, cirq.GridQubit(3,2):11, cirq.GridQubit(3,3):15},
+        ),
+        (
+            [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+                [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3),
+                   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                [   cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            {   cirq.GridQubit(0,0):0, cirq.GridQubit(0,1):1, cirq.GridQubit(0,2):2, cirq.GridQubit(0,3):3,
+                cirq.GridQubit(1,0):4, cirq.GridQubit(1,1):5, cirq.GridQubit(1,2):6, cirq.GridQubit(1,3):7,
+                cirq.GridQubit(2,0):8, cirq.GridQubit(2,1):9, cirq.GridQubit(2,2):10, cirq.GridQubit(2,3):11,
+                cirq.GridQubit(3,0):12, cirq.GridQubit(3,1):13, cirq.GridQubit(3,2):14, cirq.GridQubit(3,3):15},
+        ),
+    ]
+)
+def test_set_get_subsystem_qubit_map(subsystem_qubits, target_qubit_map):
+    n = [1,2]
+    j_v0 = np.ones((n[0]-1,n[1]))
+    j_h0 = np.ones((n[0],n[1]-1))
+    h0 = np.ones((n[0],n[1]))
+
+    #This does not matter so much
+    #We simply need a SpinModel like object
+    ising = Ising("GridQubit", n, j_v0, j_h0, h0, "Z")
+
+    ising.subsystem_qubits = subsystem_qubits
+    test_qubit_map = ising.basics.get_subsystem_qubit_map(ising)
+    assert(target_qubit_map == test_qubit_map)
 
 def test_set_circuit_errors():
     ising= Ising("GridQubit", [1, 3], np.ones((0, 3)), np.ones((1, 2)), np.ones((1, 3)), "Z")

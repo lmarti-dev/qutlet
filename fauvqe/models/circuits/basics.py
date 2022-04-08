@@ -167,6 +167,9 @@ def _exact_layer(self):
     if hasattr(self, 'subsystem_energies') is False or self.basics.options.get("append") is False:
         self.subsystem_energies = []
 
+    if hasattr(self, 'subsystem_U') is False or self.basics.options.get("append") is False:
+        self.subsystem_U = []
+
     #Init self.subsystem_hamiltonians: List[cirq.PauliSum] if it does not exist
     if hasattr(self, 'subsystem_hamiltonians') is False or self.basics.options.get("append") is False:
         self.subsystem_hamiltonians = []
@@ -336,13 +339,25 @@ def _exact_layer(self):
                 temp_model.diagonalise( solver = "scipy", 
                                         solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                         matrix= temp_matrix)
+                #tmp_eig_val=temp_model.eig_val
+                #temp_model.diagonalise( solver = "numpy", 
+                #                        matrix= temp_matrix)
+                #print(tmp_eig_val-temp_model.eig_val)
+                #print("type(temp_model.eig_val[0]): {}".format(type(temp_model.eig_val[0])))
 
                 self.subsystem_energies.append(temp_model.eig_val)
+                self.subsystem_U.append(temp_model.eig_vec)
                 #Get cc_exact or set default
                 if self.basics.options.get("cc_exact") is True:
-                    yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*subsystem_qubits[i])
+                    yield cirq.MatrixGate(  matrix=np.matrix.getH(temp_model.eig_vec),
+                                            unitary_check_rtol=1e-14,
+                                            unitary_check_atol=1e-14,
+                                            ).on(*subsystem_qubits[i])
                 else:
-                    yield cirq.MatrixGate(temp_model.eig_vec).on(*subsystem_qubits[i])
+                    yield cirq.MatrixGate(temp_model.eig_vec,
+                                        unitary_check_rtol=1e-14,
+                                        unitary_check_atol=1e-14,
+                                        ).on(*subsystem_qubits[i])
 
     #If this method is used to rotate into the eigenbasis, store eigenvalues and vectors, as those are already calcualted
     if (self.n == n_exact).all() and self.basics.options.get("subsystem_diagonalisation") is not False:
@@ -503,6 +518,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
     if np.size(subsystem_energies) == 2**np.size(self.qubits):
         return subsystem_energies
     else:
+        print(subsystem_energies)
         energy_filter = np.add(np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]
                                     .reshape((1,2**np.size( self.subsystem_qubits[0]))), 
                                np.size( self.subsystem_qubits[1])*self.subsystem_energies[1]
@@ -514,6 +530,14 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                                         .reshape((2**np.size( self.subsystem_qubits[i]),1))
                                     ).reshape((1,np.size(energy_filter)*2**np.size(self.subsystem_qubits[i]))) 
         return np.squeeze(energy_filter)/np.size(self.qubits)
+
+def get_subsystem_qubit_map(self):
+    qubit_map={}
+    for i in np.arange(len(self.subsystem_qubits)):
+        #print(self.subsystem_qubits[i])
+        tmp_qubit_map = {self.subsystem_qubits[i][k]: int(len(qubit_map)+ k) for k in np.arange(len(self.subsystem_qubits[i]))}
+        qubit_map.update(tmp_qubit_map)
+    return qubit_map
 
 class SpinModelDummy(AbstractModel):
     """
