@@ -151,7 +151,7 @@ class AbstractModel(Restorable):
         """
 
     # set simualtor to be written better, aka more general
-    def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}, dtype = np.complex64):
+    def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}):
         if simulator_name == "qsim":
             """
             Possible qsim options:
@@ -191,8 +191,9 @@ class AbstractModel(Restorable):
             self.simulator_options.update(simulator_options)
             self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
         elif simulator_name == "cirq":
-            self.simulator_options = {}
-            self.simulator = cirq.Simulator(dtype=dtype)
+            self.simulator_options = {"dtype": np.complex64}
+            self.simulator_options.update(simulator_options)
+            self.simulator = cirq.Simulator(**self.simulator_options)
         else:
             assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
                 simulator_name

@@ -91,7 +91,7 @@ def test_set_simulator():
     # and whether simulator_options are correct default
     AbstractModel_obj.set_simulator(simulator_name="cirq")
     assert type(AbstractModel_obj.simulator) == cirq.sim.sparse_simulator.Simulator
-    assert AbstractModel_obj.simulator_options == {}
+    assert AbstractModel_obj.simulator_options == {"dtype": np.complex64}
 
     # Test whether an Assertion error is raised otherwise
     with pytest.raises(AssertionError):
