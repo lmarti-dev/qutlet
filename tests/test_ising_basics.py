@@ -225,6 +225,7 @@ def test_subsystem_U(n, basics_options):
                           "TwoQubitGates": [[tmp_TQG]]}
     common_options.update(basics_options)
     ising.set_circuit("basics", common_options)
+    _qubit_order = ising.basics.get_subsystem_qubit_map(ising)
     
     #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
     #Should end up in the nth Z-Eigenstate
@@ -233,14 +234,41 @@ def test_subsystem_U(n, basics_options):
     #TO DO ADAPT THIS:
     for i in range(2**(n[0]*n[1])):
         #Get composite subststem eigenstate by tensorproduct
-        #wf_from_subsystem_diagonalisation= np.tensordot(ising.subsystem_U[0][:,3], ising.subsystem_U[1][:,3], axes=0).reshape(16)
-        #
-        wf = ising.simulator.simulate(  initial_state=ising.eig_vec[:,i],
-                                        program=ising.circuit).state_vector()
+        if len(ising.subsystem_qubits) == 1:
+            in_state = ising.eig_vec[:,i]
+        else:
+            # Maybe this is a function that also should be provided in circuits.basics
+            # i to binary
+            # cut subsystems accordingly
+            # retransform to int to use in ising.subsystem_U[0][:,3] etc
+
+            tmp_binary = np.binary_repr(i, width=n[0]*n[1])
+
+            i_sub_0 = int(tmp_binary[:len(ising.subsystem_qubits[0])],2)
+            tmp_binary = tmp_binary[len(ising.subsystem_qubits[0]):]
+            print(i_sub_0, tmp_binary)
+
+            i_sub_1 = int(tmp_binary[:len(ising.subsystem_qubits[1])],2)
+            tmp_binary = tmp_binary[len(ising.subsystem_qubits[1]):]
+            print(i_sub_1, tmp_binary)
+
+            in_state= np.tensordot(ising.subsystem_U[0][:,i_sub_0], ising.subsystem_U[1][:,i_sub_1], axes=0).reshape(2**(n[0]*n[1]))
+            
+            #To do add code for len(ising.subsystem_qubits) > 2
+
+
+            #in_state= np.tensordot(ising.subsystem_U[0][:,3], ising.subsystem_U[1][:,3], axes=0).reshape(2**(n[0]*n[1]))
+        
+        #This tests U^\dagger |\phi_m^(HA)> \otimes |\phi_l^(HB)> = |m> \otimes |l>
+        wf = ising.simulator.simulate(  initial_state=in_state,
+                                        program=ising.circuit,
+                                        qubit_order=_qubit_order).state_vector()
         wf = wf/np.linalg.norm(wf)
 
         wf0[i]=1
         wf0[i-1]=0
+
+        #To Do also check whether energy in energy filter is correct
 
         print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
@@ -436,7 +464,6 @@ def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
         print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
         print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-15, atol=1e-15)
-
 
 @pytest.mark.parametrize(
     "n, n_exact, j_v, j_h, h, subsystem_qubits, subsystem_j_v, subsystem_j_h",
@@ -782,8 +809,6 @@ def test__exact_layer_subsystem_hamiltonians(n,basics_options,SingleQubitGates, 
         print("spinmodel.subsystem_hamiltonians[{}]\n{}\nsubsystem_hamiltonians[{}]\n{}\n".format(i, spinmodel.subsystem_hamiltonians[i],i, subsystem_hamiltonians[i]))
     assert(all([spinmodel.subsystem_hamiltonians[i]==subsystem_hamiltonians[i] for i in range(len(subsystem_hamiltonians))]))
 
-
-
 def test__identity_layer():
     ising= Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
 
@@ -883,7 +908,6 @@ def test__mf_layer(qubittype, n, j_v, j_h, h, field, theta, location):
 
     #Better:
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(test_circuit.unitary(),ising.circuit.unitary(), rtol=1e-15, atol=1e-15)
-
 
 def test__neel_layer():
     ising= Ising("GridQubit", [2, 3], np.ones((1, 3)), np.ones((2, 2)), np.ones((2, 3)))
