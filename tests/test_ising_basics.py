@@ -185,20 +185,30 @@ def test__exact_layer_cc(n,subsystem_qubits):
 @pytest.mark.parametrize(
     "n, basics_options",
     [
-       # (
-       #     [1, 2],
-       #     {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
-       # ),
+        #Here the "subsystem" is already the entire system
+        #These are included here as less convoluted tests
+        #Having them pass but the real subsystem fail helps 
+        (
+            [1, 2],
+            {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
+        ),
+        #Mix qubit order to get non-standard one
+        (
+            [2, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,1),
+                                    cirq.GridQubit(1,0), cirq.GridQubit(0,1)]]}
+        ),
+        #Below the "subsystem" is already the entire system
         (
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
                                     [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]}
         ),
-       # (
-       #     [2, 2],
-       #     {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
-       #                             [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]}
-       # ),
+        (
+            [2, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+                                    [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]}
+        ),
     ]
 )
 def test_subsystem_U(n, basics_options):
@@ -220,9 +230,11 @@ def test_subsystem_U(n, basics_options):
     #Get random SingleQubiteGate and random TwoQubiteGate 
     #[[cirq.X]],
     #[[lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)]]
-    _pauligates = [cirq.I, cirq.X, cirq.Y, cirq.Z]
-    tmp_SQG = _pauligates[np.random.randint(4)]
-    tmp_TQG = lambda q1, q2: _pauligates[np.random.randint(4)](q1)*_pauligates[np.random.randint(4)](q2)
+    #_pauligates = [cirq.I, cirq.X, cirq.Y, cirq.Z]
+
+    _pauligates = [cirq.X, cirq.Y, cirq.Z]
+    tmp_SQG = _pauligates[np.random.randint(3)]
+    tmp_TQG = lambda q1, q2: _pauligates[np.random.randint(3)](q1)*_pauligates[np.random.randint(3)](q2)
 
     common_options = {    "start": "exact", 
                           "append": False,
@@ -232,6 +244,8 @@ def test_subsystem_U(n, basics_options):
     common_options.update(basics_options)
     ising.set_circuit("basics", common_options)
     _qubit_order = ising.basics.get_subsystem_qubit_map(ising)
+
+
 
     #Prepare energy comparison
     AExpValue_obj = AbstractExpectationValue(ising,
@@ -247,7 +261,7 @@ def test_subsystem_U(n, basics_options):
         #Get composite subststem eigenstate by tensorproduct
         if len(ising.subsystem_qubits) == 1:
             in_state = ising.eig_vec[:,i]
-            E_filter= _energy_filter[0][i]
+            E_filter= _energy_filter[i]
         else:
             # Maybe this is a function that also should be provided in circuits.basics
             # i to binary
@@ -258,15 +272,13 @@ def test_subsystem_U(n, basics_options):
 
             i_sub_0 = int(tmp_binary[:len(ising.subsystem_qubits[0])],2)
             tmp_binary = tmp_binary[len(ising.subsystem_qubits[0]):]
-            print(i_sub_0, tmp_binary)
+            #print(i_sub_0, tmp_binary)
 
             i_sub_1 = int(tmp_binary[:len(ising.subsystem_qubits[1])],2)
             tmp_binary = tmp_binary[len(ising.subsystem_qubits[1]):]
-            print(i_sub_1, tmp_binary)
+            #print(i_sub_1, tmp_binary)
 
             in_state= np.tensordot(ising.subsystem_U[0][:,i_sub_0], ising.subsystem_U[1][:,i_sub_1], axes=0).reshape(2**(n[0]*n[1]))
-            print(_energy_filter[i])
-
             #To do add code for len(ising.subsystem_qubits) > 2
             
             #in_state= np.tensordot(ising.subsystem_U[0][:,3], ising.subsystem_U[1][:,3], axes=0).reshape(2**(n[0]*n[1]))
@@ -280,15 +292,22 @@ def test_subsystem_U(n, basics_options):
         wf0[i]=1
         wf0[i-1]=0
 
-        print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
+        #print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
         
         #To Do also check whether energy in energy filter is correct
         # Once calc energy via AbstractExpectationValue, once use index in energy filter
-        E_AEV = AExpValue_obj.evaluate(wavefunction=in_state, atol=1e-14)/(n[0]*n[1])
-        print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t{}\nDifference: \t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
-        assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
         
+        #use here qubit order for subsystem = system
+        if len(ising.subsystem_qubits) == 1:
+            E_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                            wavefunction=in_state)/(n[0]*n[1])
+        else:
+            E_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                            q_map=_qubit_order,
+                                            wavefunction=in_state)/(n[0]*n[1])
+        print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t\t{}\nDifference: \t\t\t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
+        assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
 
 @pytest.mark.parametrize(
     "n, n_exact, subsystem_qubits",
