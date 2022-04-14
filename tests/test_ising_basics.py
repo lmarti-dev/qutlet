@@ -1648,6 +1648,12 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
                                             initial_state = state).state_vector()
     E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
 
+    AExpValue_obj = AbstractExpectationValue(ising,
+                                            sum(ising.subsystem_hamiltonians)) 
+    E_A_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                   #q_map=qubit_map_A,
+                                   wavefunction=state)/(n[0]*n[1])
+
     # H_B
     # 1. Set rotation circuit 
     # 2. Get energy filter
@@ -1669,15 +1675,27 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
     #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
+    qubit_map_B = ising.basics.get_subsystem_qubit_map(ising)
+    print("qubit_map_B: {}".format(qubit_map_B))
     energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
-    wf_HB_basis = ising.simulator.simulate( ising.circuit, 
+    wf_HB_basis = ising.simulator.simulate( program=ising.circuit, 
                                             initial_state = state).state_vector()
-    E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
+    wf_HB_basis2 = ising.simulator.simulate( program=cirq.Circuit(),
+                                            qubit_order=qubit_map_B,
+                                            initial_state = wf_HB_basis).state_vector()                                        
+    E_B = np.vdot(energy_filter_B, abs(wf_HB_basis2)**2)
     
+    AExpValue_obj = AbstractExpectationValue(ising,
+                                            sum(ising.subsystem_hamiltonians)) 
+    E_B_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                   #this makes it not workq_map=qubit_map_B,
+                                   wavefunction=state)/(n[0]*n[1])
+
     #Assert H = H_A + H_B
     assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
-    print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
+    print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}".format(E_A,E_A_AEV, E_B, E_B_AEV,E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
     assert(abs(E -(E_A+E_B)) < 1e-7)
 
 @pytest.mark.parametrize(
