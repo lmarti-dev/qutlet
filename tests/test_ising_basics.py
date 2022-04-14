@@ -161,7 +161,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
     print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
     ising= Ising("GridQubit", n, j_v, j_h, h, "X")
 
-    ising.set_simulator("cirq")
+    ising.set_simulator("cirq", {"dtype": np.complex128})
     ising.set_circuit("basics",{    "start": "exact", 
                                     "n_exact": n,
                                     "subsystem_qubits": subsystem_qubits,
@@ -477,19 +477,26 @@ def test__exact_layer_subsystem_qubits(n,n_exact,subsystem_qubits):
     j_v = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
     j_h = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
     h = 2*(np.random.rand(n[0],n[1])- 0.5)
-    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    #print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    
     ising= Ising("GridQubit", n, j_v, j_h, h, "X")
     ising.set_circuit("basics",{    "start": "exact", 
                                     "n_exact": n_exact})
 
-    print("ising.circuit:\n{}\n".format(ising.circuit))
+    #print("ising.circuit:\n{}\n".format(ising.circuit))
+
     ising2= Ising("GridQubit", n, j_v, j_h, h, "X")
-    ising2.set_circuit("basics",{    "start": "exact", 
+    ising2.set_circuit("basics",{   "start": "exact", 
                                     "subsystem_qubits": subsystem_qubits})
+    #print("ising2.circuit:\n{}\n".format(ising2.circuit))
 
-    print("ising2.circuit:\n{}\n".format(ising2.circuit))
-
-    assert(ising.circuit == ising2.circuit)
+    #Only compare unitaries if circuits do not correspond
+    if ising.circuit == ising2.circuit:
+        assert True
+    else:
+        print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
+        print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-7, atol=1e-7)
 
 @pytest.mark.parametrize(
     "n, n_exact, j_v, j_h, h, subsystem_qubits, subsystem_h",
@@ -608,13 +615,13 @@ def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
     ising.set_circuit("basics",{   "start": "exact", 
                                     "n_exact": n_exact})
 
-    print("ising.circuit:\n{}\n".format(ising.circuit))
+    #print("ising.circuit:\n{}\n".format(ising.circuit))
     h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
     ising2 = Ising("GridQubit", n, j_v, j_h, h0, "X")
     ising2.set_circuit("basics",{    "start": "exact", 
                                     "subsystem_qubits": subsystem_qubits,
                                     "subsystem_h": subsystem_h})
-    print("ising2.circuit:\n{}\n".format(ising2.circuit))
+    #print("ising2.circuit:\n{}\n".format(ising2.circuit))
 
     #Only compare unitaries if circuits do not correspond
     if ising.circuit == ising2.circuit:
@@ -622,7 +629,7 @@ def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
     else:
         print("ising.circuit.all_qubits():\n{}\nising2.circuit.all_qubits():\n{}\n".format(ising.circuit.all_qubits(),ising2.circuit.all_qubits()))
         print("ising.circuit.unitary()-ising2.circuit.unitary()\n{}\n".format(ising.circuit.unitary()-ising2.circuit.unitary()))
-        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-15, atol=1e-15)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(ising.circuit.unitary(),ising2.circuit.unitary(), rtol=1e-12, atol=1e-12)
 
 @pytest.mark.parametrize(
     "n, n_exact, j_v, j_h, h, subsystem_qubits, subsystem_j_v, subsystem_j_h",
@@ -807,14 +814,14 @@ def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
     ]
 )
 def test__exact_layer_subsystem_J(n,n_exact,j_v, j_h, h, subsystem_qubits, subsystem_j_v, subsystem_j_h):
-    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    #print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
     ising= Ising("GridQubit", n, j_v, j_h, h, "X")
     ising.set_circuit("basics",{   "start": "exact", 
                                     "n_exact": n_exact})
 
-    print("ising.circuit:\n{}\n".format(ising.circuit))
+    #print("ising.circuit:\n{}\n".format(ising.circuit))
 
-    print("subsystem_j_v:\n{}\nsubsystem_j_h:\n{}".format(subsystem_j_v, subsystem_j_h))
+    #print("subsystem_j_v:\n{}\nsubsystem_j_h:\n{}".format(subsystem_j_v, subsystem_j_h))
     j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
     j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
     ising2 = Ising("GridQubit", n, j_v0, j_h0, h, "X")
@@ -822,7 +829,7 @@ def test__exact_layer_subsystem_J(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
                                     "subsystem_qubits": subsystem_qubits,
                                     "subsystem_j_h": subsystem_j_h,
                                     "subsystem_j_v": subsystem_j_v})
-    print("ising2.circuit:\n{}\n".format(ising2.circuit))
+    #print("ising2.circuit:\n{}\n".format(ising2.circuit))
 
     #Only compare unitaries if circuits do not correspond
     if ising.circuit == ising2.circuit:
@@ -1128,6 +1135,7 @@ def test_rm_unused_cpv():
     assert set(init_circuit_param) == set(ising.circuit_param)
     assert np.size(ising.circuit_param) == np.size(ising.circuit_param_values)
     assert (init_circuit_param_values == ising.circuit_param_values ).all
+
 @pytest.mark.parametrize(
     "n",
     [
@@ -1408,14 +1416,18 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
         #Compare ising.circuit
         (
             [2,2],
-            {"subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
-                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
-            "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
-            "subsystem_j_v" :   [   np.transpose(np.array([ [[0]], [[0]]]), (1,0, 2)) ]},
-            {   "subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
-                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
-                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
-                "subsystem_j_h" :   [    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)) ]  }
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2)),
+                                        0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2))]},
+                #"subsystem_j_v" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
+                #                        np.transpose(np.array([ [[0]]]), (1,0, 2)) ]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2)),
+                                        0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2))]},
+                #"subsystem_j_h" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
+                #                        np.transpose(np.array([ [[0]]]), (1,0, 2)),]  }
         ),
     ]
 )
@@ -1442,28 +1454,36 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
             |  |  |  |     &   |  |  |  |
             x  x--x  x         x--x  x--x
     """
-    h= np.random.rand(1,1)
-    J= 2*(np.random.rand(1,1)- 0.5)
+    #h= np.random.rand(1,1)
+    #J= 2*(np.random.rand(1,1)- 0.5)
+    h = 0; J = 1;
     j_v0 = J*np.ones((n[0]-1,n[1]))
-    j_h0 = J*np.ones((n[0],n[1]-1))
+    j_h0 = 1.5*J*np.ones((n[0],n[1]-1))
     h0 = h*np.ones((n[0],n[1]))
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
-    ising.set_simulator("cirq")
+    ising.set_simulator("cirq", {"dtype": np.complex128})
     print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
 
 
     # Calculate energy of random state
     expval_obj = ExpectationValue(ising)
+    aexpval_obj = AbstractExpectationValue(ising)
     state=np.random.rand(1,2**(n[0]*n[1])) + 1j*np.random.rand(1,2**(n[0]*n[1])) 
     state=np.squeeze(state)/np.linalg.norm(state)
+
+    #state = np.zeros(2**(n[0]*n[1])).astype(np.complex128)
+    #state[0] = 0.5; state[1] = 0.5; state[2] = 0.5; state[3] = 0.5
+    print("np.linalg.norm(state): {}".format(np.linalg.norm(state)))
+
     E = expval_obj.evaluate(state)
+    E = aexpval_obj.evaluate(state)/(n[0]*n[1])
 
      #For HA and HB Common basics_options
-    common_basics_options={"start": "exact", 
-                        "append": False, 
-                        "subsystem_diagonalisation": True,
-                        "b_exact": [0,0],
-                        "cc_exact": True}
+    common_basics_options={ "start": "exact", 
+                            "append": False, 
+                            "subsystem_diagonalisation": True,
+                            "b_exact": [0,0],
+                            "cc_exact": False}
 
     # H_A
     # 1. Set rotation circuit 
@@ -1472,17 +1492,21 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     basics_options = common_basics_options.copy()
     for key, coefficent in zip(["subsystem_h", "subsystem_j_h", "subsystem_j_v"],[h,J,J]):
         if HA_options.get(key) is not None:
-            HA_options[key] = coefficent*HA_options.get(key)
+            HA_options[key] = [coefficent*subsystem for subsystem in HA_options.get(key)]
 
     basics_options.update(HA_options)
     ising.set_circuit("basics",basics_options)
-    print("H_A:\n{}\n".format(ising.subsystem_hamiltonians[0]))
-    #print("H_A rotation circuit:\n{}\n".format(ising.circuit))
+    print("H_A:\n{}\n".format(sum(ising.subsystem_hamiltonians)))
+    print("H_A rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
+    #qubit_map_A = ising.basics.get_subsystem_qubit_map(ising)
     energy_filter_A = ising.basics.get_energy_filter_from_subsystem(ising)
     wf_HA_basis = ising.simulator.simulate( ising.circuit, 
-                                            initial_state = state).state_vector()
+                                            initial_state = state,
+    #                                        qubit_order=qubit_map_A,
+                                            ).state_vector()
+    print(energy_filter_A)
     E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
 
     # H_B
@@ -1492,24 +1516,26 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     basics_options = common_basics_options.copy()
     for key, coefficent in zip(["subsystem_h", "subsystem_j_h", "subsystem_j_v"],[h,J,J]):
         if HB_options.get(key) is not None:
-            HB_options[key] = coefficent*HB_options.get(key)
+            HB_options[key] = [coefficent*subsystem for subsystem in HB_options.get(key)]
 
     basics_options.update(HB_options)
     #print(basics_options)
     ising.set_circuit("basics",basics_options)
-    print("H_B:\n{}\n".format(ising.subsystem_hamiltonians[0]))
-    print(ising.circuit)
-    #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
+    print("H_B:\n{}\n".format(sum(ising.subsystem_hamiltonians)))
+    print("H_B rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
+    #qubit_map_B = ising.basics.get_subsystem_qubit_map(ising)
     energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
     wf_HB_basis = ising.simulator.simulate( ising.circuit, 
-                                            initial_state = state).state_vector()
+                                            initial_state = state,
+    #                                        qubit_order=qubit_map_B,
+                                            ).state_vector()
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
     
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
-    assert(abs(E -(E_A+E_B)) < 1e-17)
+    assert(abs(E -(E_A+E_B)) < 1e-7)
 
 @pytest.mark.parametrize(
     "subsystem_qubits, target_qubit_map",

@@ -255,9 +255,15 @@ def _exact_layer(self):
 
                     #Get cc_exact or set default
                     if self.basics.options.get("cc_exact") is True:
-                        yield cirq.MatrixGate(np.matrix.getH(temp_model.eig_vec)).on(*temp_qubits)
+                        yield cirq.MatrixGate(  np.matrix.getH(temp_model.eig_vec),
+                                                unitary_check_rtol=1e-12,
+                                                unitary_check_atol=1e-12,
+                                                ).on(*temp_qubits)
                     else:
-                        yield cirq.MatrixGate(temp_model.eig_vec).on(*temp_qubits)
+                        yield cirq.MatrixGate(  temp_model.eig_vec,
+                                                unitary_check_rtol=1e-12,
+                                                unitary_check_atol=1e-12,
+                                                ).on(*temp_qubits)
     else:
         #More flexible option
         #give lists of GridQubits to devide the system
