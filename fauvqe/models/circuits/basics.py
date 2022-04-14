@@ -516,7 +516,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                 assert False, "No subsystem energies provided"
 
     if np.size(subsystem_energies) == 2**np.size(self.qubits):
-        return subsystem_energies
+        return np.squeeze(subsystem_energies)
     else:
         print(subsystem_energies)
         energy_filter = np.add(np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]

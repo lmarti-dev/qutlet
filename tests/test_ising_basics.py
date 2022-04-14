@@ -8,6 +8,7 @@ import itertools
 # internal imports
 from fauvqe import Ising, SpinModel, Converter
 from fauvqe.models.circuits.basics import SpinModelDummy
+from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.objectives.expectationvalue import ExpectationValue
 from .test_isings import IsingTester
 
@@ -184,15 +185,20 @@ def test__exact_layer_cc(n,subsystem_qubits):
 @pytest.mark.parametrize(
     "n, basics_options",
     [
-        (
-            [1, 2],
-            {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
-        ),
+       # (
+       #     [1, 2],
+       #     {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
+       # ),
         (
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
                                     [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]}
         ),
+       # (
+       #     [2, 2],
+       #     {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+       #                             [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]}
+       # ),
     ]
 )
 def test_subsystem_U(n, basics_options):
@@ -226,6 +232,11 @@ def test_subsystem_U(n, basics_options):
     common_options.update(basics_options)
     ising.set_circuit("basics", common_options)
     _qubit_order = ising.basics.get_subsystem_qubit_map(ising)
+
+    #Prepare energy comparison
+    AExpValue_obj = AbstractExpectationValue(ising,
+                                            sum(ising.subsystem_hamiltonians))
+    _energy_filter = ising.basics.get_energy_filter_from_subsystem(ising)
     
     #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
     #Should end up in the nth Z-Eigenstate
@@ -236,6 +247,7 @@ def test_subsystem_U(n, basics_options):
         #Get composite subststem eigenstate by tensorproduct
         if len(ising.subsystem_qubits) == 1:
             in_state = ising.eig_vec[:,i]
+            E_filter= _energy_filter[0][i]
         else:
             # Maybe this is a function that also should be provided in circuits.basics
             # i to binary
@@ -253,10 +265,10 @@ def test_subsystem_U(n, basics_options):
             print(i_sub_1, tmp_binary)
 
             in_state= np.tensordot(ising.subsystem_U[0][:,i_sub_0], ising.subsystem_U[1][:,i_sub_1], axes=0).reshape(2**(n[0]*n[1]))
-            
+            print(_energy_filter[i])
+
             #To do add code for len(ising.subsystem_qubits) > 2
-
-
+            
             #in_state= np.tensordot(ising.subsystem_U[0][:,3], ising.subsystem_U[1][:,3], axes=0).reshape(2**(n[0]*n[1]))
         
         #This tests U^\dagger |\phi_m^(HA)> \otimes |\phi_l^(HB)> = |m> \otimes |l>
@@ -268,10 +280,15 @@ def test_subsystem_U(n, basics_options):
         wf0[i]=1
         wf0[i-1]=0
 
-        #To Do also check whether energy in energy filter is correct
-
         print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
+        
+        #To Do also check whether energy in energy filter is correct
+        # Once calc energy via AbstractExpectationValue, once use index in energy filter
+        E_AEV = AExpValue_obj.evaluate(wavefunction=in_state, atol=1e-14)/(n[0]*n[1])
+        print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t{}\nDifference: \t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
+        assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
+        
 
 @pytest.mark.parametrize(
     "n, n_exact, subsystem_qubits",
