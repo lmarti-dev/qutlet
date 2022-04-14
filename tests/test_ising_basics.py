@@ -1,4 +1,5 @@
 # external imports
+from unicodedata import decimal
 import pytest
 import numpy as np
 import cirq
@@ -1359,7 +1360,8 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
     basics_options = common_basics_options.copy()
     basics_options.update(HA_options)
     ising.set_circuit("basics",basics_options)
-    print("H_A:\n{}\n".format(ising.subsystem_hamiltonians[0]))
+    hamiltonian_HA = sum(ising.subsystem_hamiltonians)
+    print("H_A:\n{}\n".format(hamiltonian_HA))
     #print("H_A rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
@@ -1376,7 +1378,8 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
     basics_options.update(HB_options)
     #print(basics_options)
     ising.set_circuit("basics",basics_options)
-    print("H_B:\n{}\n".format(ising.subsystem_hamiltonians[0]))
+    hamiltonian_HB = sum(ising.subsystem_hamiltonians)
+    print("H_B:\n{}\n".format(hamiltonian_HB))
     #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
@@ -1385,6 +1388,8 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
                                             initial_state = state).state_vector()
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
     
+    #Assert H = H_A + H_B
+    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
     assert(abs(E -(E_A+E_B)) < 1e-7)
@@ -1401,12 +1406,22 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
             [2,2],
             {"subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
                                     cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
-            "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
+            "subsystem_h" :     [   0*0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
             "subsystem_j_v" :   [   np.transpose(np.array([ [[0]], [[0]]]), (1,0, 2)) ]},
             {   "subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
                                     cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
-                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
+                "subsystem_h" :     [   2*0.5*np.transpose(np.array([[[1], [1]], [[1], [1]]]), (0, 1,2))],
                 "subsystem_j_h" :   [    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)) ]  }
+        ),
+        (
+            [2,2],
+            {"subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
+                                    cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+            "subsystem_j_v" :[    np.transpose(np.array([ [[0]], [[0]]]), (1,0, 2)) ]},
+            {   "subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
+                                    cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_h" : [ np.transpose(np.array([[[0], [0]], [[0], [0]]]), (0, 1,2))],
+                "subsystem_j_h" :[    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)) ]  }
         ),
         #Here the layout is also
         #    +  +        x--x
@@ -1414,21 +1429,21 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
         #    +  +        x--x
         #But actually only diagonalise the subsystems
         #Compare ising.circuit
-        (
-            [2,2],
-            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
-                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
-                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2)),
-                                        0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2))]},
-                #"subsystem_j_v" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
-                #                        np.transpose(np.array([ [[0]]]), (1,0, 2)) ]},
-            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
-                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
-                "subsystem_h" :     [   0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2)),
-                                        0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2))]},
-                #"subsystem_j_h" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
-                #                        np.transpose(np.array([ [[0]]]), (1,0, 2)),]  }
-        ),
+        #(
+        #    [2,2],
+        #    {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+        #                                [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+        #        "subsystem_h" :     [   0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2)),
+        #                                0.5*np.transpose(np.array([[[1], [1]]]), (0, 1,2))]},
+        #        #"subsystem_j_v" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
+        #        #                        np.transpose(np.array([ [[0]]]), (1,0, 2)) ]},
+        #    {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+        #                                [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+        #        "subsystem_h" :     [   0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2)),
+        #                                0.5*np.transpose(np.array([[[1]], [[1]]]), (0, 1,2))]},
+        #        #"subsystem_j_h" :   [   np.transpose(np.array([ [[0]]]), (1,0, 2)),
+        #        #                        np.transpose(np.array([ [[0]]]), (1,0, 2)),]  }
+        #),
     ]
 )
 def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
@@ -1456,10 +1471,13 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     """
     #h= np.random.rand(1,1)
     #J= 2*(np.random.rand(1,1)- 0.5)
-    h = 0; J = 1;
-    j_v0 = J*np.ones((n[0]-1,n[1]))
-    j_h0 = 1.5*J*np.ones((n[0],n[1]-1))
+    h = 0.7; J = 1;
+    #j_v0 = J*np.ones((n[0]-1,n[1]))
+    #j_h0 = 0.3*J*np.ones((n[0],n[1]-1))
     h0 = h*np.ones((n[0],n[1]))
+    j_v0 = J*np.arange(1, 1+ (n[0]-1)*n[1]).reshape((n[0]-1,n[1]))
+    j_h0 = 0.3*J*np.arange(1, 1+ (n[1]-1)*n[0]).reshape((n[0],n[1]-1))
+    #h0 = h*np.arange(1, 1+ n[1]*n[0]).reshape((n[0],n[1]))
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_simulator("cirq", {"dtype": np.complex128})
     print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
@@ -1468,15 +1486,16 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     # Calculate energy of random state
     expval_obj = ExpectationValue(ising)
     aexpval_obj = AbstractExpectationValue(ising)
-    state=np.random.rand(1,2**(n[0]*n[1])) + 1j*np.random.rand(1,2**(n[0]*n[1])) 
-    state=np.squeeze(state)/np.linalg.norm(state)
+    #state=np.random.rand(1,2**(n[0]*n[1])) + 1j*np.random.rand(1,2**(n[0]*n[1])) 
+    #state=np.squeeze(state)/np.linalg.norm(state)
 
-    #state = np.zeros(2**(n[0]*n[1])).astype(np.complex128)
+    state = np.zeros(2**(n[0]*n[1])).astype(np.complex128)
     #state[0] = 0.5; state[1] = 0.5; state[2] = 0.5; state[3] = 0.5
+    state[15] = 1;
     print("np.linalg.norm(state): {}".format(np.linalg.norm(state)))
 
     E = expval_obj.evaluate(state)
-    E = aexpval_obj.evaluate(state)/(n[0]*n[1])
+    #E = aexpval_obj.evaluate(state)/(n[0]*n[1])
 
      #For HA and HB Common basics_options
     common_basics_options={ "start": "exact", 
@@ -1496,18 +1515,28 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
 
     basics_options.update(HA_options)
     ising.set_circuit("basics",basics_options)
-    print("H_A:\n{}\n".format(sum(ising.subsystem_hamiltonians)))
-    print("H_A rotation circuit:\n{}\n".format(ising.circuit))
+    hamiltonian_HA = sum(ising.subsystem_hamiltonians)
+    print("\nH_A:\n{}\n".format(hamiltonian_HA))
+    #print("H_A rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
-    #qubit_map_A = ising.basics.get_subsystem_qubit_map(ising)
+    qubit_map_A = ising.basics.get_subsystem_qubit_map(ising)
+    print("qubit_map_A: {}".format(qubit_map_A))
     energy_filter_A = ising.basics.get_energy_filter_from_subsystem(ising)
     wf_HA_basis = ising.simulator.simulate( ising.circuit, 
                                             initial_state = state,
-    #                                        qubit_order=qubit_map_A,
+                                            qubit_order=qubit_map_A,
                                             ).state_vector()
-    print(energy_filter_A)
-    E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
+    print("energy_filter_A:\n {}".format(energy_filter_A))
+    #print(np.round(abs(state)**2, decimals=3))
+    print("abs(wf_HA_basis)**2:\n {}".format(np.round(abs(wf_HA_basis)**2, decimals=3)))
+    E_A = np.dot(energy_filter_A, abs(wf_HA_basis)**2)
+    
+    AExpValue_obj = AbstractExpectationValue(ising,
+                                            sum(ising.subsystem_hamiltonians)) 
+    E_A_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                   #q_map=qubit_map_A,
+                                   wavefunction=state)/(n[0]*n[1])
 
     # H_B
     # 1. Set rotation circuit 
@@ -1521,18 +1550,132 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     basics_options.update(HB_options)
     #print(basics_options)
     ising.set_circuit("basics",basics_options)
-    print("H_B:\n{}\n".format(sum(ising.subsystem_hamiltonians)))
-    print("H_B rotation circuit:\n{}\n".format(ising.circuit))
+    hamiltonian_HB = sum(ising.subsystem_hamiltonians)
+    print("\nH_B:\n{}\n".format(hamiltonian_HB))
+    #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
     
-    #qubit_map_B = ising.basics.get_subsystem_qubit_map(ising)
+    qubit_map_B = ising.basics.get_subsystem_qubit_map(ising)
+    print("qubit_map_B: {}".format(qubit_map_B))
     energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
+    print("energy_filter_B:\n {}".format(energy_filter_B))
+
     wf_HB_basis = ising.simulator.simulate( ising.circuit, 
                                             initial_state = state,
     #                                        qubit_order=qubit_map_B,
                                             ).state_vector()
+    print("abs(wf_HB_basis)**2:\n {}".format(np.round(abs(wf_HB_basis)**2, decimals=3)))
+    
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
     
+    AExpValue_obj = AbstractExpectationValue(ising,
+                                            sum(ising.subsystem_hamiltonians)) 
+    E_B_AEV = AExpValue_obj.evaluate( atol=1e-14,
+                                   #q_map=qubit_map_B,
+                                   wavefunction=state)/(n[0]*n[1])
+    #Assert H = H_A + H_B
+    print("H - (H_A + H_B):\n{}".format(ising.hamiltonian -(hamiltonian_HA+hamiltonian_HB)))
+    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
+    print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}".format(E_A,E_A_AEV, E_B, E_B_AEV,E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
+    assert(abs(E -(E_A+E_B)) < 1e-7)
+    #assert False
+
+@pytest.mark.parametrize(
+    "n, HA_options, HB_options",
+    [
+        (
+            [2,2],
+            {"subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
+                                    cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_j_v" :[    np.transpose(np.array([ [[0]], [[0]]]), (1,0, 2)) ]},
+            {   "subsystem_qubits": [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1), 
+                                    cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+                "subsystem_j_h" :[    np.transpose(np.array([ [[0], [0]]]), (1,0, 2)) ]  }
+        ),
+        (
+            [2,2],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]}
+        ),
+    ]
+)
+def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
+    j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
+    ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
+    ising.set_simulator("cirq", {"dtype": np.complex128})
+    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+
+    # Calculate energy of random state
+    expval_obj = ExpectationValue(ising)
+    state=np.random.rand(1,2**(n[0]*n[1])) + 1j*np.random.rand(1,2**(n[0]*n[1])) 
+    state=np.squeeze(state)/np.linalg.norm(state)
+    E = expval_obj.evaluate(state)
+
+    #For HA and HB Common basics_options
+    common_basics_options={"start": "exact", 
+                        "append": False, 
+                        "subsystem_diagonalisation": True,
+                        "b_exact": [0,0],
+                        "cc_exact": True}
+
+    # H_A
+    # 1. Set rotation circuit 
+    # 2. Get energy filter
+    # 3. Calculate <\phi|H_A|phi> in H_A eigen basis
+    basics_options = common_basics_options.copy()
+
+    subsystem_h = []
+    subsystem_qubits = HA_options.get("subsystem_qubits")
+    for i in range(len(subsystem_qubits)):
+        subsystem_h.append(0.5*ising.h[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1,
+                min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
+    HA_options.update({"subsystem_h": subsystem_h})
+
+    basics_options.update(HA_options)
+    ising.set_circuit("basics",basics_options)
+    hamiltonian_HA = sum(ising.subsystem_hamiltonians)
+    print("H_A:\n{}\n".format(hamiltonian_HA))
+    #print("H_A rotation circuit:\n{}\n".format(ising.circuit))
+    #print("Phi0: {}".format(phi0))
+    
+    energy_filter_A = ising.basics.get_energy_filter_from_subsystem(ising)
+    wf_HA_basis = ising.simulator.simulate( ising.circuit, 
+                                            initial_state = state).state_vector()
+    E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
+
+    # H_B
+    # 1. Set rotation circuit 
+    # 2. Get energy filter
+    # 3. Calculate <\phi|H_B|phi> in H_B eigen basis
+    basics_options = common_basics_options.copy()
+
+    subsystem_h = []
+    subsystem_qubits = HB_options.get("subsystem_qubits")
+    for i in range(len(subsystem_qubits)):
+        subsystem_h.append(0.5*ising.h[min(subsystem_qubits[i])._row: max(subsystem_qubits[i])._row+1,
+                min(subsystem_qubits[i])._col: max(subsystem_qubits[i])._col+1, :])
+    HB_options.update({"subsystem_h": subsystem_h})
+    
+    basics_options.update(HB_options)
+    #print(basics_options)
+    ising.set_circuit("basics",basics_options)
+    hamiltonian_HB = sum(ising.subsystem_hamiltonians)
+    print("H_B:\n{}\n".format(hamiltonian_HB))
+    #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
+    #print("Phi0: {}".format(phi0))
+    
+    energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
+    wf_HB_basis = ising.simulator.simulate( ising.circuit, 
+                                            initial_state = state).state_vector()
+    E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
+    
+    #Assert H = H_A + H_B
+    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
     assert(abs(E -(E_A+E_B)) < 1e-7)
