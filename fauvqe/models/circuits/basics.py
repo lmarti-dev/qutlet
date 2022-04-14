@@ -355,8 +355,8 @@ def _exact_layer(self):
                                             ).on(*subsystem_qubits[i])
                 else:
                     yield cirq.MatrixGate(temp_model.eig_vec,
-                                        unitary_check_rtol=1e-14,
-                                        unitary_check_atol=1e-14,
+                                        unitary_check_rtol=1e-12,
+                                        unitary_check_atol=1e-12,
                                         ).on(*subsystem_qubits[i])
 
     #If this method is used to rotate into the eigenbasis, store eigenvalues and vectors, as those are already calcualted

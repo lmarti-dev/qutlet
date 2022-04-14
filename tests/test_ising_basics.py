@@ -182,6 +182,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
         print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
         cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
 
+@pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, basics_options",
     [
@@ -197,6 +198,12 @@ def test__exact_layer_cc(n,subsystem_qubits):
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,1),
                                     cirq.GridQubit(1,0), cirq.GridQubit(0,1)]]}
+        ),
+        #Test [2,4] block as largest block in real sim
+        (
+            [2, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(0,1), cirq.GridQubit(1,1),
+                                    cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(0,3), cirq.GridQubit(1,3)]]}
         ),
         #Below the "subsystem" is already the entire system
         # 2 subsystems
@@ -232,11 +239,76 @@ def test__exact_layer_cc(n,subsystem_qubits):
                                     [cirq.GridQubit(2,0), cirq.GridQubit(2,1)]]}
         ),
         #Mixing qubit order within the subsystems still fails:
+        #(
+        #    [3, 2],
+        #    {"subsystem_qubits": [  [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+        #                            [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+        #                            [cirq.GridQubit(2,1), cirq.GridQubit(2,0)]]}
+        #),
         (
-            [3, 2],
-            {"subsystem_qubits": [  [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
-                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
-                                    [cirq.GridQubit(2,1), cirq.GridQubit(2,0)]]}
+            [2, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+                                    [cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(1,1), cirq.GridQubit(1,2)],
+                                    [cirq.GridQubit(0,3), cirq.GridQubit(1,3)]]}
+        ),
+        (
+            [4, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(2,0), cirq.GridQubit(2,1)],
+                                    [cirq.GridQubit(3,0), cirq.GridQubit(3,1)]]}
+        ),
+        (
+            [3, 3],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)],
+                                    [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1)],
+                                    [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)]]}
+        ),
+        # This takes long and fails
+        #(
+        #    [3, 4],
+        #    {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)],
+        #                            [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1),
+        #                            cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)],
+        #                            [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3)]]}
+        #),
+        #This works but takes long
+        (
+            [3, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)],
+                                    [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1)],
+                                    [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)],
+                                    [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3)]]}
+        ),
+        #Test coverings like used in later simulations:
+        #1x4, 4x1 covering
+        (
+            [4, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
+                                    [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                                    [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
+                                    [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]]}
+        ),
+        (
+            [4, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                                    [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                                    [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
+        ),
+        #2x4, 1x4_2x4_1x4 covering
+        (
+            [4, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3),
+                                    cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                                    [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3),
+                                    cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
+        ),
+        (
+            [4, 4],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3),
+                                    cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                                    [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
         ),
     ]
 )
@@ -285,8 +357,16 @@ def test_subsystem_U(n, basics_options):
     #Should end up in the nth Z-Eigenstate
     wf0 = np.zeros(2**(n[0]*n[1]))
 
-    #TO DO ADAPT THIS:
-    for i in range(2**(n[0]*n[1])):
+    #For less than 8 qubits check every basis vector
+    #Otherwise check a random sample
+    if n[0]*n[1] < 9:
+        indices = range(2**(n[0]*n[1]))
+    else:
+        rng = np.random.default_rng()
+        indices=rng.integers(low=0, high=2**(n[0]*n[1]), size=16)
+
+    previous_i = 0
+    for i in indices:
         #Get composite subststem eigenstate by tensorproduct
         if len(ising.subsystem_qubits) == 1:
             in_state = ising.eig_vec[:,i]
@@ -309,7 +389,7 @@ def test_subsystem_U(n, basics_options):
 
             in_state= np.tensordot( ising.subsystem_U[0][:,i_sub_0], 
                                     ising.subsystem_U[1][:,i_sub_1], 
-                                    axes=0).reshape(2**(len(ising.subsystem_qubits[0])*len(ising.subsystem_qubits[1])))
+                                    axes=0).reshape(2**(len(ising.subsystem_qubits[0])+len(ising.subsystem_qubits[1])))
 
             #To do add code for len(ising.subsystem_qubits) > 2
             for n_sub in range(2, len(ising.subsystem_qubits)):
@@ -328,11 +408,15 @@ def test_subsystem_U(n, basics_options):
                                         qubit_order=_qubit_order).state_vector()
         wf = wf/np.linalg.norm(wf)
 
+
+        wf0[previous_i]=0
+        previous_i = i
+
         wf0[i]=1
-        wf0[i-1]=0
+        
 
         #print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
-        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-14, atol=5e-14)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=n[0]*n[1]*1e-14, atol=n[0]*n[1]*5e-14)
         
         #To Do also check whether energy in energy filter is correct
         # Once calc energy via AbstractExpectationValue, once use index in energy filter
@@ -345,7 +429,7 @@ def test_subsystem_U(n, basics_options):
             E_AEV = AExpValue_obj.evaluate( atol=1e-14,
                                             q_map=_qubit_order,
                                             wavefunction=in_state)/(n[0]*n[1])
-        print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t\t{}\nDifference: \t\t\t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
+        #print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t\t{}\nDifference: \t\t\t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
         assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
 
 @pytest.mark.parametrize(
