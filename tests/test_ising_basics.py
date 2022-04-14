@@ -217,6 +217,27 @@ def test__exact_layer_cc(n,subsystem_qubits):
                                     [cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
                                     [cirq.GridQubit(0,2), cirq.GridQubit(1,2)]]}
         ),
+        (
+            [3, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                    [cirq.GridQubit(2,0), cirq.GridQubit(2,1)]]}
+        ),
+        #Mix up subsystem qubit order
+        #Mixing subsystems work
+        (
+            [3, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(2,0), cirq.GridQubit(2,1)]]}
+        ),
+        #Mixing qubit order within the subsystems still fails:
+        (
+            [3, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                    [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(2,1), cirq.GridQubit(2,0)]]}
+        ),
     ]
 )
 def test_subsystem_U(n, basics_options):
@@ -325,7 +346,7 @@ def test_subsystem_U(n, basics_options):
                                             q_map=_qubit_order,
                                             wavefunction=in_state)/(n[0]*n[1])
         print("Energy from AbstractExpectationValue: \t{}\nEnergy from energy filter: \t\t{}\nDifference: \t\t\t\t {}".format(E_AEV,_energy_filter[i], E_AEV - _energy_filter[i]))
-        #assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
+        assert(abs(E_AEV-_energy_filter[i]) < 1e-14)
 
 @pytest.mark.parametrize(
     "n, n_exact, subsystem_qubits",

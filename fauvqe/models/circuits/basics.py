@@ -530,9 +530,9 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                                     .reshape((2**np.size( self.subsystem_qubits[0]),1))
                                 ).reshape((1,2**np.size( self.subsystem_qubits[0] + self.subsystem_qubits[1]))) 
         for i in range(2,len(subsystem_energies)):
-            energy_filter = np.add( energy_filter,
-                                    np.size( self.subsystem_qubits[i])*self.subsystem_energies[i]
-                                        .reshape((2**np.size( self.subsystem_qubits[i]),1))
+            energy_filter = np.add( np.size( self.subsystem_qubits[i])*self.subsystem_energies[i]
+                                        .reshape((1,2**np.size( self.subsystem_qubits[i]))),
+                                    energy_filter.reshape((np.size(energy_filter),1))
                                     ).reshape((1,np.size(energy_filter)*2**np.size(self.subsystem_qubits[i]))) 
         return np.squeeze(energy_filter)/np.size(self.qubits)
 
