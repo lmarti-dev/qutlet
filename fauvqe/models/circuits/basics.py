@@ -14,7 +14,7 @@ import cirq
 from numbers import Real
 import numpy as np
 import sympy
-from typing import Literal, List
+from typing import Literal, List, Union
 import warnings
 
 #Internal import
@@ -559,6 +559,39 @@ def get_subsystem_qubit_map(self,
 def get_subsystem_qubit_order(self):
     #Aliase to get qubit list
     return self.basics.get_subsystem_qubit_map(self,return_list=True)
+
+def permute_state_vector(   self, 
+                            wavefunction: np.ndarray,
+                            permutations: Union[List[int],List[List[int]]]):
+    #Might be important to make this efficently
+    # Note only differing qubits need to be swapped
+    # e.g. 2 qubits:
+    #   |00>    ->  |00>    NO Swap  
+    #   |01>    ->  |10>    Swap
+    #   |10>    ->  |01>    Swap
+    #   |11>    ->  |11>    NO Swap 
+    # probably easiest ist to just swap all 
+    # 1. get old/new indices list
+    # 2. wavefunction[new_ind] = wavefunction[old_ind]
+    # or wavefunction = wavefunction[new_order_Hilbert]
+    _n = int(np.log2(np.size(wavefunction)))
+    new_indices=np.arange(2**_n)
+
+    if all(isinstance(i, int) for i in permutations):
+        permutations = [permutations]
+
+    for permutation in permutations:
+        non_permuted = sorted(permutation)
+        
+        #This works:
+        bin_indices = ((new_indices.reshape(-1,1) & (2**np.arange(_n))) != 0).astype(int)
+        bin_indices[:,non_permuted]= bin_indices[:,permutation]
+
+        new_indices = np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little'))
+
+    return wavefunction[new_indices]
+
+
 
 class SpinModelDummy(AbstractModel):
     """
