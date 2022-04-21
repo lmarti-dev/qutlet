@@ -542,13 +542,23 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                                     ).reshape((1,np.size(energy_filter)*2**np.size(self.subsystem_qubits[i]))) 
         return np.squeeze(energy_filter)/np.size(self.qubits)
 
-def get_subsystem_qubit_map(self):
+def get_subsystem_qubit_map(self, 
+                            return_list=False):
     qubit_map={}
     for i in np.arange(len(self.subsystem_qubits)):
         #print(self.subsystem_qubits[i])
         tmp_qubit_map = {self.subsystem_qubits[i][k]: int(len(qubit_map)+ k) for k in np.arange(len(self.subsystem_qubits[i]))}
         qubit_map.update(tmp_qubit_map)
-    return qubit_map
+    
+    #If flag is set cast dictionary to list
+    if return_list:
+        return list(dict(sorted(qubit_map.items(), key=lambda item: item[1])).keys())
+    else:
+        return qubit_map
+
+def get_subsystem_qubit_order(self):
+    #Aliase to get qubit list
+    return self.basics.get_subsystem_qubit_map(self,return_list=True)
 
 class SpinModelDummy(AbstractModel):
     """
