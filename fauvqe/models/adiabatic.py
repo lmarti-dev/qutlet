@@ -100,15 +100,11 @@ class Adiabatic(SpinModelFC):
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
-                "qubittype": self.qubittype,
-                "n": self.n,
-                "j_x": self.j[:,:,:,:,0],
-                "j_y": self.j[:,:,:,:,1],
-                "j_z": self.j[:,:,:,:,2],
-                "h_x": self.h[:,:,0],
-                "h_y": self.h[:,:,1],
-                "h_z": self.h[:,:,2],
-                "t": self.t
+                "H0": self.H0,
+                "H1": self.H1,
+                "sweep": self._sweep,
+                "t": self.t,
+                "T": self.T
             },
             "params": {
                 "circuit": self.circuit,
