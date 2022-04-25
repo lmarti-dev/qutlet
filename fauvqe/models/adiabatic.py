@@ -37,8 +37,16 @@ class Adiabatic(SpinModelFC):
         else:
             assert abs(sweep(0))<1e-13 and abs(sweep(T) - 1)<1e-13, "Handed sweep is not a switch function, instead sweep(0)= {} and sweep(T) = {}".format(sweep(0), sweep(T))
         
-        self._H0 = H0
-        self._H1 = H1
+        if(isinstance(H0, SpinModel)):
+            self._H0 = SpinModelFC.toFC(H0)
+        else:
+            self._H0 = H0
+        
+        if(isinstance(H1, SpinModel)):
+            self._H1 = SpinModelFC.toFC(H1)
+        else:
+            self._H1 = H1
+        
         self.t = t
         self.T = T
         self._sweep = sweep
@@ -54,7 +62,7 @@ class Adiabatic(SpinModelFC):
                 t
         )
     
-    def get_interactions(self):
+    def get_interactions(self) -> List[list]:
         self.energy_fields = [*self.H0.energy_fields, *self.H1.energy_fields]
         
         l = self._sweep(self.t)
