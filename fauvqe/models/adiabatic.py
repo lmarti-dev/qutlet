@@ -17,6 +17,7 @@ class Adiabatic(SpinModelFC):
     def __init__(self, 
                  H0: Union[SpinModelFC, SpinModel],
                  H1: Union[SpinModelFC, SpinModel],
+                 sweep: lambda = None,
                  t: Real = 0,
                  T: Real = 1):
         """
@@ -31,33 +32,38 @@ class Adiabatic(SpinModelFC):
         
         assert t >= 0 and t <= T, "Simulation time incompatible with adiabatic sweep time, received \nt= {} \nand \nT= {}".format(t, T)
         
-        self.H0 = H0
-        self.H1 = H1
+        if(sweep is None):
+            sweep = lambda time: time/T
+        else:
+            assert abs(sweep(0))<1e-13 and abs(sweep(T) - 1)<1e-13, "Handed sweep is not a switch function, instead sweep(0)= {} and sweep(T) = {}".format(sweep(0), sweep(T))
+        
+        self._H0 = H0
+        self._H1 = H1
+        self.T = T
+        self._sweep = sweep
         
         ########################################################################
         
-        super().__init__(qubittype, 
-                 np.array(n),
-                 np.array([j_x, j_y, j_z]),
-                 np.array(h).reshape((3, n[0], n[1])),
-                 [lambda q1, q2: cirq.X(q1)*cirq.X(q2),
-                  lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
-                  lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-                 [cirq.X, cirq.Y, cirq.Z],
+        super().__init__(H0.qubittype, 
+                 np.array(H0.n),
+                 #np.array([j_x, j_y, j_z]),
+                 #np.array(h).reshape((3, n[0], n[1])),
+                 #[lambda q1, q2: cirq.X(q1)*cirq.X(q2),
+                 # lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
+                 # lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
+                 #[cirq.X, cirq.Y, cirq.Z],
                  t
         )
         self.energy_fields = ["X", "Y", "Z"]
     
-    def copy(self) -> HeisenbergFC:
-        self_copy = HeisenbergFC( self.qubittype,
-                self.n,
-                self.j[:,:,:,:,0],
-                self.j[:,:,:,:,1],
-                self.j[:,:,:,:,2],
-                self.h[:,:,0],
-                self.h[:,:,1],
-                self.h[:,:,2],
-                self.t )
+    def copy(self) -> Adiabatic:
+        self_copy = Adiabatic( 
+                self._H0,
+                self._H1,
+                self._sweep,
+                self.t,
+                self.T 
+        )
         
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
