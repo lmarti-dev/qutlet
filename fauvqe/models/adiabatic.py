@@ -39,22 +39,38 @@ class Adiabatic(SpinModelFC):
         
         self._H0 = H0
         self._H1 = H1
+        self.t = t
         self.T = T
         self._sweep = sweep
         
-        ########################################################################
+        j_tot, h_tot, TwoQubitGates, SingleQubitGates = self.get_interactions()
         
         super().__init__(H0.qubittype, 
-                 np.array(H0.n),
-                 #np.array([j_x, j_y, j_z]),
-                 #np.array(h).reshape((3, n[0], n[1])),
-                 #[lambda q1, q2: cirq.X(q1)*cirq.X(q2),
-                 # lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
-                 # lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-                 #[cirq.X, cirq.Y, cirq.Z],
-                 t
+                np.array(H0.n),
+                np.array(j_tot),
+                np.array(h_tot),
+                TwoQubitGates,
+                SingleQubitGates,
+                t
         )
-        self.energy_fields = ["X", "Y", "Z"]
+    
+    def get_interactions(self):
+        self.energy_fields = [*self.H0.energy_fields, *self.H1.energy_fields]
+        
+        l = self._sweep(self.t)
+        
+        j0 = np.transpose(self.H0.j, (4, 0, 1, 2, 3))
+        j1 = np.transpose(self.H1.j, (4, 0, 1, 2, 3))
+        h0 = np.transpose(self.H0.h, (2, 0, 1))
+        h1 = np.transpose(self.H1.h, (2, 0, 1))
+        
+        j_tot = np.array([*(1-l)*j0, *l*j1])
+        h_tot = np.array([*(1-l)*h0, *l*h1])
+        
+        TwoQubitGates = [*self.H0._TwoQubitGates, *self.H1._TwoQubitGates]
+        SingleQubitGates = [*self.H0._SingleQubitGates, *self.H1._SingleQubitGates]
+        
+        return j_tot, h_tot, TwoQubitGates, SingleQubitGates
     
     def copy(self) -> Adiabatic:
         self_copy = Adiabatic( 
