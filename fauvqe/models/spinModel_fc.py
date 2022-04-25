@@ -9,6 +9,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.models.spinModel import SpinModel
 import fauvqe
 
 
@@ -361,3 +362,49 @@ class SpinModelFC(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
+    
+    @classmethod
+    def toFC(cls, model: SpinModel) -> SpinModelFC:
+        j_h = np.transpose(model.j_h, (2, 0, 1))
+        j_v = np.transpose(model.j_v, (2, 0, 1))
+        j = np.zeros(model.j_h.shape[-1], *model.n, *model.n)
+        for g in range(len(j_h)):
+            for n0 in range(model.n[0]-1):
+                for n1 in range(model.n[1]-1):
+                    j[g][n0][n1][n0][(n1+1)] = j_h[g][n0][n1]
+                    j[g][n0][(n1+1)][n0][n1] = j_h[g][n0][n1]
+                    j[g][n0][n1][(n0+1)][n1] = j_v[g][n0][n1]
+                    j[g][(n0+1)][n1][n0][n1] = j_v[g][n0][n1]
+            
+            for n0 in range(model.n[0]-1):
+                n1 = model.n[1]-1
+                j[g][n0][n1][(n0+1)][n1] = j_v[g][n0][n1]
+                j[g][(n0+1)][n1][n0][n1] = j_v[g][n0][n1]
+            
+            for n1 in range(model.n[1]-1):
+                n0 = model.n[0]-1
+                j[g][n0][n1][n0][n1+1] = j_h[g][n0][n1]
+                j[g][n0][n1+1][n0][n1] = j_h[g][n0][n1]
+            
+            if model.boundaries[1] == 0:
+                for n0 in range(model.n[0]):
+                    n1 = model.n[1]-1
+                    j[g][n0][n1][n0][0] = j_h[g][n0][n1]
+                    j[g][n0][0][n0][n1] = j_h[g][n0][n1]
+            
+            if model.boundaries[0] == 0:
+                for n1 in range(model.n[1]):
+                    n0 = model.n[0]-1
+                    j[g][n0][n1][0][n1] = j_v[g][n0][n1]
+                    j[g][0][n1][n0][n1] = j_v[g][n0][n1]
+            
+        modelFC = SpinModelFC(
+            model.qubittype, 
+            model.n,
+            j,
+            model.h,
+            model._TwoQubitGates,
+            model._SingleQubitGates,
+            model.t
+        )
+        return modelFC
