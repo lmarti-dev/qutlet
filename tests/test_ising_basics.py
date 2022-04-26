@@ -1951,7 +1951,8 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
     #for ordering in list(itertools.permutations([0,1, 2, 3])):
 
     #TODO: Still need to get this from qubit_order compared to standard order
-    ordering=[0,2,1,3]
+    #ordering=[0,2,1,3]
+    ordering = ising.basics.get_reordering_from_subsystem(ising)
 
     qubit_order_B_tmp = [x for _,x in sorted(zip(ordering,qubit_order_B))]
 
@@ -2101,6 +2102,110 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}"
             .format(E_A,E_A_AEV, E_B, E_B_AEV, E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
     assert(abs(E -(E_A+E_B)) < 1e-7)
+
+@pytest.mark.parametrize(
+    "n, subsystem_qubits, true_ordering",
+    [
+        (
+            [1,2], 
+            [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
+            [0,1],
+        ),
+        (
+            [2, 2],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
+                [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]],
+            [   0,  2,  
+                1,  3,],
+        ),
+        (
+            [2, 2],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]],
+            [   0,  1,  
+                2,  3,],
+        ),
+        # Test relevant examples
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
+                [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
+                [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            [   0,  4,  8,  12,
+                1,  5,  9,  13,
+                2,  6,  10, 14,
+                3, 7, 11, 15],
+        ),
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+                [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            [   0,  1,  2,  3,
+                4,  5,  6,  7,
+                8,  9,  10, 11,
+                12, 13, 14, 15],
+        ),
+       # #2x4, 1x4_2x4_1x4 covering
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3),
+                cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3),
+                 cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            [   0,  1,  2,  3,
+                4,  5,  6,  7,
+                8,  9,  10, 11,
+                12, 13, 14, 15],
+        ),
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
+                [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3),
+                cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]],
+            [   0,  1,  2,  3,
+                4,  5,  6,  7,
+                8,  9,  10, 11,
+                12, 13, 14, 15],
+        ),
+        #2x4, 1x4_2x4_1x4 covering 90° rotated
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0),
+                cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2),
+                 cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            [   0,  4,  8,  12,
+                1,  5,  9,  13,
+                2,  6,  10, 14,
+                3, 7, 11, 15],
+        ),
+        (
+            [4, 4],
+            [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
+                [cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1),
+                cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
+                [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]],
+            [   0,  4,  8,  12,
+                1,  5,  9,  13,
+                2,  6,  10, 14,
+                3, 7, 11, 15],
+        ),
+    ]
+)
+def test_get_reordering_from_subsystem(n, subsystem_qubits, true_ordering):
+    j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
+    j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
+    h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
+    model = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
+    model.subsystem_qubits = subsystem_qubits
+
+    ordering = model.basics.get_reordering_from_subsystem(model)
+
+    assert(ordering == true_ordering)
 
 @pytest.mark.parametrize(
     "subsystem_qubits, target_qubit_map",

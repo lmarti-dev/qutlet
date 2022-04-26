@@ -594,10 +594,10 @@ def permute_state_vector(   self,
 def get_reordering_from_subsystem(self):
     # from assert in exact_layer know that qubits and subsystems are the same
     #Get qubit flatten list
-    _system_qubits= ising.basics.flatten(ising.qubits)
+    _system_qubits= self.basics.flatten(self.qubits)
 
     #Get subsystem qubits flatten list
-    _subsystem_qubits= ising.basics.flatten(ising.subsystem_qubits)
+    _subsystem_qubits= self.basics.flatten(self.subsystem_qubits)
 
     #Return index reordering
     return [_system_qubits.index(_subsystem_qubits[i]) for i in range(len(_system_qubits))]
