@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 from typing import Tuple, Dict, Literal, Union
 from numbers import Real
+from scipy.integrate import quad
 
 import numpy as np
 import cirq
@@ -130,3 +131,42 @@ class Adiabatic(SpinModelFC):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
+    
+    #Overrides SpinModelFC's function
+    def _set_hamiltonian(self, reset: bool = True) -> None:
+        """
+        Append or Reset Hamiltonian; Combine Hamiltonians:
+            (1 - sweep(t)) * H0 + sweep(t) * H1
+        
+        Parameters
+        ----------
+        self
+        reset: bool, indicates whether to reset or append Hamiltonian
+        
+        Returns
+        -------
+        void 
+        """
+        if reset:
+            self.hamiltonian = cirq.PauliSum()
+        
+        self.hamiltonian = (1-self._sweep(self.t)) * self._H0.hamiltonian + self._sweep(self.t) * self._H1.hamiltonian
+    
+    #Overrides SpinModelFC's function
+    def set_Ut(self):
+        _n = np.size(self.qubits)
+        _N = 2**(_n)
+        
+        if self.t == 0:
+            self._Ut = np.identity(_N)
+            return True
+        
+        sweep_integrated, error = quad(self._sweep, 0, self.t)
+        if(error > 1e-13):
+            print('WARNING: Numerical integration error: {}'.format(error))
+        
+        hamiltonian_integrated = ((self.t - sweep_integrated) * self._H0.hamiltonian + sweep_integrated * self._H1.hamiltonian).matrix()
+        
+        eig_val, eig_vec =  np.linalg.eigh(hamiltonian_integrated)
+        
+        self._Ut = eig_vec @ np.diag( np.exp( -1j * eig_val ) ) @ eig_vec.conjugate().transpose()
