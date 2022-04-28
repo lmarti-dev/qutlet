@@ -9,7 +9,6 @@ import numpy as np
 import cirq
 
 from fauvqe.models.abstractmodel import AbstractModel
-from fauvqe.models.spinModel import SpinModel
 import fauvqe
 
 
@@ -364,7 +363,7 @@ class SpinModelFC(AbstractModel):
         return inst
     
     @classmethod
-    def toFC(cls, model: SpinModel) -> SpinModelFC:
+    def toFC(cls, model: fauvqe.SpinModel) -> SpinModelFC:
         j_h = np.transpose(model.j_h, (2, 0, 1))
         j_v = np.transpose(model.j_v, (2, 0, 1))
         j = np.zeros(model.j_h.shape[-1], *model.n, *model.n)

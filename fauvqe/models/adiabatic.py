@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from collections.abc import Callable
 from typing import Tuple, Dict, Literal, Union
 from numbers import Real
 from scipy.integrate import quad
@@ -18,7 +19,7 @@ class Adiabatic(SpinModelFC):
     def __init__(self, 
                  H0: Union[SpinModelFC, SpinModel],
                  H1: Union[SpinModelFC, SpinModel],
-                 sweep: lambda = None,
+                 sweep: Callable[Real] = None,
                  t: Real = 0,
                  T: Real = 1):
         """
