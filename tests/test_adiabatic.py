@@ -217,6 +217,95 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
 
 
 @pytest.mark.parametrize(
+    "qubittype, n, j_v, j_h, h, t, field, h0, h1",
+    [
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0,
+            'X',
+            -np.array([[1, 1, 1, 0], 
+                      [1, -1, 0, 1], 
+                      [1, 0, -1, 1], 
+                      [0, 1, 1, 1]]),
+            -np.array([[0, 0, 0, 1], 
+                      [0, 0, 1, 0], 
+                      [0, 1, 0, 0], 
+                      [1, 0, 0, 0]])
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            1.0,
+            'X',
+            -np.array([[1, 1, 1, 0], 
+                      [1, -1, 0, 1], 
+                      [1, 0, -1, 1], 
+                      [0, 1, 1, 1]]),
+            -np.array([[0, 0, 0, 1], 
+                      [0, 0, 1, 0], 
+                      [0, 1, 0, 0], 
+                      [1, 0, 0, 0]])
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0.5,
+            'X',
+            -np.array([[1, 1, 1, 0], 
+                      [1, -1, 0, 1], 
+                      [1, 0, -1, 1], 
+                      [0, 1, 1, 1]]),
+            -np.array([[0, 0, 0, 1], 
+                      [0, 0, 1, 0], 
+                      [0, 1, 0, 0], 
+                      [1, 0, 0, 0]])
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0.5,
+            'Z',
+            - np.array([[3, 0, 0, 0], 
+                        [0, -1, 0, 0], 
+                        [0, 0, -1, 0], 
+                        [0, 0, 0, -1]]),
+            -np.array([[1, 0, 0, 0], 
+                      [0, -1, 0, 0], 
+                      [0, 0, -1, 0], 
+                      [0, 0, 0, 1]])
+        )
+    ]
+)
+def test_set_ut_override(qubittype, n, j_v, j_h, h, t, field, h0, h1):
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    zeros = np.zeros((n[0], n[1]))
+    H0 = Ising(qubittype, n, j_v, j_h, h, field)
+    if(field == 'X'):
+        H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, zeros, zeros)
+    else:
+        H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, zeros)
+    
+    model = Adiabatic(H0, H1, t=t)
+    model.set_Ut()
+    
+    assert np.linalg.norm(model._Ut - expm(-1j*((t-t**2 / 2) * h0 + t**2 / 2 * h1))) < 1e-13
+
+
+@pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, t, field, sol",
     [
         (

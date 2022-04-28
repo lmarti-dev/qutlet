@@ -135,7 +135,7 @@ class Adiabatic(SpinModelFC):
         
         sweep_integrated, error = quad(self._sweep, 0, self.t)
         if(error > 1e-13):
-            print('WARNING: Numerical integration error: {}'.format(error))
+            print('WARNING: Numerical integration error: {}'.format(error)) #pragma: no cover
         
         hamiltonian_integrated = ((self.t - sweep_integrated) * self._H0.hamiltonian + sweep_integrated * self._H1.hamiltonian).matrix()
         
