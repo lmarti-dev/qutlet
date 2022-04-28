@@ -1996,3 +1996,111 @@ Test Adam + ExpectationValue
 Sequential Time: 12.50451111793518
 Parallel Time: 4.290138483047485
 
+===Thu, 28 Apr 2022 18:21:25 +0000===
+Test No Indices 
+
+Sequential Time: 2.7581217288970947
+Parallel Time: 0.9952890872955322
+
+===Thu, 28 Apr 2022 18:21:47 +0000===
+Test Indices 
+
+Sequential Time: 15.813841819763184
+Parallel Time: 5.2701215744018555
+
+===Thu, 28 Apr 2022 18:21:59 +0000===
+Test Indices 
+
+Sequential Time: 8.436352729797363
+Parallel Time: 3.3732945919036865
+
+===Thu, 28 Apr 2022 18:22:24 +0000===
+Test Indices 
+
+Sequential Time: 18.90629744529724
+Parallel Time: 6.662182569503784
+
+===Thu, 28 Apr 2022 18:22:39 +0000===
+Test Indices 
+
+Sequential Time: 10.200232028961182
+Parallel Time: 3.996946096420288
+
+===Thu, 28 Apr 2022 18:23:05 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 20.442408323287964
+Parallel Time: 6.3441407680511475
+
+===Thu, 28 Apr 2022 18:23:20 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.534849166870117
+Parallel Time: 3.363689661026001
+
+===Thu, 28 Apr 2022 18:23:55 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 27.031373262405396
+Parallel Time: 7.967902183532715
+
+===Thu, 28 Apr 2022 18:24:13 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.570081233978271
+Parallel Time: 4.64960241317749
+
+===Thu, 28 Apr 2022 18:31:25 +0000===
+Test No Indices 
+
+Sequential Time: 2.7757279872894287
+Parallel Time: 0.9193606376647949
+
+===Thu, 28 Apr 2022 18:31:46 +0000===
+Test Indices 
+
+Sequential Time: 15.341400384902954
+Parallel Time: 5.171939849853516
+
+===Thu, 28 Apr 2022 18:31:58 +0000===
+Test Indices 
+
+Sequential Time: 8.305160760879517
+Parallel Time: 3.2980356216430664
+
+===Thu, 28 Apr 2022 18:32:22 +0000===
+Test Indices 
+
+Sequential Time: 18.392431020736694
+Parallel Time: 6.089971542358398
+
+===Thu, 28 Apr 2022 18:32:36 +0000===
+Test Indices 
+
+Sequential Time: 9.564730167388916
+Parallel Time: 3.64630126953125
+
+===Thu, 28 Apr 2022 18:33:01 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 19.445358753204346
+Parallel Time: 5.969065427780151
+
+===Thu, 28 Apr 2022 18:33:15 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.285819292068481
+Parallel Time: 3.384791374206543
+
+===Thu, 28 Apr 2022 18:33:48 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 24.640780448913574
+Parallel Time: 7.686628580093384
+
+===Thu, 28 Apr 2022 18:34:05 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.878138542175293
+Parallel Time: 4.4420084953308105
+
