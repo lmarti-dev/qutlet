@@ -143,7 +143,7 @@ def test_json():
     assert (model == model2)
 
 @pytest.mark.parametrize(
-    "qubittype, n, j_v, j_h, h, t, sol",
+    "qubittype, n, j_v, j_h, h, t, field, sol",
     [
         (
             "GridQubit",
@@ -152,6 +152,7 @@ def test_json():
             np.ones((1, 1)),
             np.ones((1, 2)),
             0,
+            'X',
             -0.5
         ),
         (
@@ -161,6 +162,7 @@ def test_json():
             np.ones((1, 1)),
             np.ones((1, 2)),
             1,
+            'X',
             0.0
         ),
         (
@@ -170,16 +172,30 @@ def test_json():
             np.ones((1, 1)),
             np.ones((1, 2)),
             0.5,
+            'X',
             -0.25
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0.5,
+            'Z',
+            -1
         )
     ]
 )
-def test_energy(qubittype, n, j_v, j_h, h, t, sol):
+def test_energy(qubittype, n, j_v, j_h, h, t, field, sol):
     zeros_v = np.zeros((n[0]-1, n[1]))
     zeros_h = np.zeros((n[0], n[1]-1))
     zeros = np.zeros((n[0], n[1]))
-    H0 = Ising(qubittype, n, j_v, j_h, h, "X")
-    H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, zeros, zeros)
+    H0 = Ising(qubittype, n, j_v, j_h, h, field)
+    if(field == 'X'):
+        H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, zeros, zeros)
+    else:
+        H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, zeros)
     
     model = Adiabatic(H0, H1, t=t)
     obj = ExpectationValue(model)
