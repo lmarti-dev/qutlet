@@ -363,7 +363,7 @@ class SpinModelFC(AbstractModel):
         return inst
     
     @classmethod
-    def toFC(cls, model: fauvqe.SpinModel) -> SpinModelFC:
+    def toFC(cls, model: fauvqe.SpinModel) -> np.ndarray:
         j_h = np.transpose(model.j_h, (2, 0, 1))
         j_v = np.transpose(model.j_v, (2, 0, 1))
         j = np.zeros((model.j_h.shape[-1], *model.n, *model.n))
@@ -398,6 +398,7 @@ class SpinModelFC(AbstractModel):
                     j[g][n0][n1][0][n1] = j_v[g][n0][n1]
                     j[g][0][n1][n0][n1] = j_v[g][n0][n1]
         
+        '''
         h = np.transpose(model.h, (2, 0, 1))
         
         modelFC = SpinModelFC(
@@ -412,3 +413,5 @@ class SpinModelFC(AbstractModel):
         
         modelFC.energy_fields = model.energy_fields
         return modelFC
+        '''
+        return np.transpose(j, (1, 2, 3, 4, 0))

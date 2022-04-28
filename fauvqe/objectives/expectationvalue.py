@@ -37,7 +37,8 @@ class ExpectationValue(AbstractExpectationValue):
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
     
     def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
-        assert len(self.__energy_fields) == len(self.__energies), "Length of Pauli types and energy masks do not match"
+        assert len(self.__energy_fields) == len(self.__energies), "Length of Pauli types and energy masks do not match, {}!={}".format(len(self.__energy_fields), len(self.__energies))
+        print(self.__energies)
         i=0
         res=0
         for field in self.__energy_fields:

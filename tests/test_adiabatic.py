@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import Adiabatic, Ising, Heisenberg, HeisenbergFC
+from fauvqe import Adiabatic, Ising, Heisenberg, HeisenbergFC, ExpectationValue
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]
@@ -116,7 +116,10 @@ def test__eq__():
     ],
 )
 def test_copy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z):
-    model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z)
+    H0 = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z)
+    H1 = Ising(qubittype, n, j_z_v, j_z_h, h_x, "X")
+    
+    model = Adiabatic(H0, H1)
     model.set_circuit("qaoa")
     model2 = model.copy()
     
@@ -127,87 +130,59 @@ def test_copy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, 
     assert( model is not model2 )
 
 def test_json():
-    model = Heisenberg("GridQubit", [1, 2], np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.ones((1, 2)), np.ones((1, 2)), np.ones((1, 2)))
+    H0 = Heisenberg("GridQubit", [1, 2], np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.ones((1, 2)), np.ones((1, 2)), np.ones((1, 2)))
+    
+    H1 = Heisenberg("GridQubit", [1, 2], np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.zeros((0, 2)), np.ones((1, 1)), np.ones((1, 2)), np.ones((1, 2)), np.ones((1, 2)))
+    
+    model = Adiabatic(H0, H1)
     
     json = model.to_json_dict()
     
-    model2 = Heisenberg.from_json_dict(json)
+    model2 = Adiabatic.from_json_dict(json)
     
     assert (model == model2)
 
 @pytest.mark.parametrize(
-    "qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h, glue_axis, sol_circuit, sol_circuit_param",
+    "qubittype, n, j_v, j_h, h, t, sol",
     [
         (
             "GridQubit",
-            [1, 3],
-            np.ones((0, 3)),
-            np.ones((1, 3)),
-            np.ones((0, 3)),
-            np.ones((1, 3)),
-            np.ones((0, 3)),
-            np.ones((1, 3)),
-            np.ones((1, 3)),
-            1,
-            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
-                        cirq.H.on(cirq.GridQubit(0, 3)), cirq.H.on(cirq.GridQubit(0, 4)), cirq.H.on(cirq.GridQubit(0, 5)),
-                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 0)), (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.X**sympy.Symbol('b0_g0')).on(cirq.GridQubit(0, 2)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 3)),
-                        (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 4)), (cirq.X**sympy.Symbol('b0_g1')).on(cirq.GridQubit(0, 5)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 4)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 5), cirq.GridQubit(0, 0)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 4), cirq.GridQubit(0, 5)),),
-            [sympy.Symbol('b0_g0'),sympy.Symbol('g0_g0'),sympy.Symbol('b0_g1'),sympy.Symbol('g0_g1')]
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0,
+            -0.5
         ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            1,
+            0.0
+        ),
+        (
+            "GridQubit",
+            [1, 2],
+            np.ones((0, 2)),
+            np.ones((1, 1)),
+            np.ones((1, 2)),
+            0.5,
+            -0.25
+        )
     ]
 )
-def test_glues_circuit(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h, glue_axis, sol_circuit, sol_circuit_param):
-    model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h)
-    model.set_circuit("qaoa", {
-    "SingleQubitGates": []
-    })
+def test_energy(qubittype, n, j_v, j_h, h, t, sol):
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    zeros = np.zeros((n[0], n[1]))
+    H0 = Ising(qubittype, n, j_v, j_h, h, "X")
+    H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, zeros, zeros)
     
-    model.glue_circuit(axis=glue_axis)
-
-    model2 = Heisenberg(qubittype, 
-                    [(2-glue_axis)*n[0], (1+glue_axis)*n[1]], 
-                    np.concatenate((j_x_v, j_x_v), axis=glue_axis),
-                    np.concatenate((j_x_h, j_x_h), axis=glue_axis) , 
-                    np.concatenate((j_y_v, j_y_v), axis=glue_axis),
-                    np.concatenate((j_y_h, j_y_h), axis=glue_axis) , 
-                    np.concatenate((j_z_v, j_z_v), axis=glue_axis),
-                    np.concatenate((j_z_h, j_z_h), axis=glue_axis) , 
-                    np.concatenate((h, h), axis=glue_axis) )
-    model2.circuit = sol_circuit
-    model2.circuit_param = sol_circuit_param
-    model2.circuit_param_values = np.array([0]*len(model2.circuit_param))
-    print(model.circuit)
-    print(model2.circuit)
-    assert(model == model2)
-
-@pytest.mark.parametrize(
-    "qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z",
-    [
-        (
-            "GridQubit",
-            [2, 2],
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2)),
-            np.ones((2, 2))
-        )]
-)
-def test_energy(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z):
-    model = Heisenberg(qubittype, n, j_x_v, j_x_h, j_y_v, j_y_h, j_z_v, j_z_h, h_x, h_y, h_z)
+    model = Adiabatic(H0, H1, t=t)
     obj = ExpectationValue(model)
-    ini = np.zeros(16).astype(np.complex64)
+    ini = np.zeros(2**(n[0]*n[1])).astype(np.complex64)
     ini[0] = 1
-    assert abs(obj.evaluate(ini) + 3) < 1e-13
+    assert abs(obj.evaluate(ini) - sol) < 1e-13

@@ -40,15 +40,16 @@ class Adiabatic(SpinModelFC):
         else:
             assert abs(sweep(0))<1e-13 and abs(sweep(T) - 1)<1e-13, "Handed sweep is not a switch function, instead sweep(0)= {} and sweep(T) = {}".format(sweep(0), sweep(T))
         
+        self._H0 = H0
+        self._H1 = H1
+        
         if(isinstance(H0, fauvqe.SpinModel)):
-            self._H0 = SpinModelFC.toFC(H0)
-        else:
-            self._H0 = H0
+            #self._H0 = SpinModelFC.toFC(H0)
+            self._H0.j = SpinModelFC.toFC(H0)
         
         if(isinstance(H1, fauvqe.SpinModel)):
-            self._H1 = SpinModelFC.toFC(H1)
-        else:
-            self._H1 = H1
+            #self._H1 = SpinModelFC.toFC(H1)
+            self._H1.j = SpinModelFC.toFC(H1)
         
         self.t = t
         self.T = T
@@ -102,37 +103,6 @@ class Adiabatic(SpinModelFC):
         if self._Ut is not None: self_copy._Ut = self._Ut.copy()
 
         return self_copy
-
-    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        return [super().energy( self.j[:,:,:,:,0], self.h[:,:,0]), 
-                super().energy( self.j[:,:,:,:,1], self.h[:,:,1]), 
-                super().energy( self.j[:,:,:,:,2], self.h[:,:,2])]
-
-    def to_json_dict(self) -> Dict:
-        return {
-            "constructor_params": {
-                "H0": self.H0,
-                "H1": self.H1,
-                "sweep": self._sweep,
-                "t": self.t,
-                "T": self.T
-            },
-            "params": {
-                "circuit": self.circuit,
-                "circuit_param": self.circuit_param,
-                "circuit_param_values": self.circuit_param_values,
-            },
-        }
-
-    @classmethod
-    def from_json_dict(cls, dct: Dict):
-        inst = cls(**dct["constructor_params"])
-
-        inst.circuit = dct["params"]["circuit"]
-        inst.circuit_param = dct["params"]["circuit_param"]
-        inst.circuit_param_values = dct["params"]["circuit_param_values"]
-
-        return inst
     
     #Overrides SpinModelFC's function
     def _set_hamiltonian(self, reset: bool = True) -> None:
@@ -172,3 +142,33 @@ class Adiabatic(SpinModelFC):
         eig_val, eig_vec =  np.linalg.eigh(hamiltonian_integrated)
         
         self._Ut = eig_vec @ np.diag( np.exp( -1j * eig_val ) ) @ eig_vec.conjugate().transpose()
+    
+    def energy(self) -> Tuple[np.ndarray, np.ndarray]:
+        return [*((1 - self._sweep(self.t)) * np.array( self._H0.energy())),
+                  *(self._sweep(self.t) * np.array(self._H1.energy()))]
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "H0": self._H0,
+                "H1": self._H1,
+                "sweep": self._sweep,
+                "t": self.t,
+                "T": self.T
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst
