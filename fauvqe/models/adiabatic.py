@@ -57,7 +57,8 @@ class Adiabatic(SpinModelFC):
         
         j_tot, h_tot, TwoQubitGates, SingleQubitGates = self.get_interactions()
         
-        super().__init__(H0.qubittype, 
+        super().__init__(
+                H0.qubittype, 
                 np.array(H0.n),
                 np.array(j_tot),
                 np.array(h_tot),
@@ -121,7 +122,6 @@ class Adiabatic(SpinModelFC):
         """
         if reset:
             self.hamiltonian = cirq.PauliSum()
-        
         self.hamiltonian = (1-self._sweep(self.t)) * self._H0.hamiltonian + self._sweep(self.t) * self._H1.hamiltonian
     
     #Overrides SpinModelFC's function

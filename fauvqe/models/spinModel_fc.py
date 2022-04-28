@@ -86,9 +86,9 @@ class SpinModelFC(AbstractModel):
         self._TwoQubitGates = TwoQubitGates
         self._SingleQubitGates = SingleQubitGates
         self._set_jh(j, h)
+        self.t = t
         self._set_hamiltonian()
         super().set_simulator()
-        self.t = t
 
     def _check_symmetric(self, j: np.array) -> bool:
         """
