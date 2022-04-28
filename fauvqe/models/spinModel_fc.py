@@ -366,7 +366,8 @@ class SpinModelFC(AbstractModel):
     def toFC(cls, model: fauvqe.SpinModel) -> SpinModelFC:
         j_h = np.transpose(model.j_h, (2, 0, 1))
         j_v = np.transpose(model.j_v, (2, 0, 1))
-        j = np.zeros(model.j_h.shape[-1], *model.n, *model.n)
+        j = np.zeros((model.j_h.shape[-1], *model.n, *model.n))
+        
         for g in range(len(j_h)):
             for n0 in range(model.n[0]-1):
                 for n1 in range(model.n[1]-1):
@@ -396,14 +397,18 @@ class SpinModelFC(AbstractModel):
                     n0 = model.n[0]-1
                     j[g][n0][n1][0][n1] = j_v[g][n0][n1]
                     j[g][0][n1][n0][n1] = j_v[g][n0][n1]
-            
+        
+        h = np.transpose(model.h, (2, 0, 1))
+        
         modelFC = SpinModelFC(
             model.qubittype, 
             model.n,
             j,
-            model.h,
+            h,
             model._TwoQubitGates,
             model._SingleQubitGates,
             model.t
         )
+        
+        modelFC.energy_fields = model.energy_fields
         return modelFC

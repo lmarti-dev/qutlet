@@ -10,6 +10,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.spinModel_fc import SpinModelFC
+import fauvqe
 
 
 class Adiabatic(SpinModelFC):
@@ -30,7 +31,7 @@ class Adiabatic(SpinModelFC):
         """
         assert H0.qubittype == H1.qubittype, "Qubit types incompatible, received \nH0: {} \nand \nH1: {}".format(H0.qubittype, H1.qubittype)
         
-        assert H0.n == H1.n, "Qubit numbers incompatible, received \nH0: {} \nand \nH1: {}".format(H0.n, H1.n)
+        assert (H0.n == H1.n).all(), "Qubit numbers incompatible, received \nH0: {} \nand \nH1: {}".format(H0.n, H1.n)
         
         assert t >= 0 and t <= T, "Simulation time incompatible with adiabatic sweep time, received \nt= {} \nand \nT= {}".format(t, T)
         
@@ -39,12 +40,12 @@ class Adiabatic(SpinModelFC):
         else:
             assert abs(sweep(0))<1e-13 and abs(sweep(T) - 1)<1e-13, "Handed sweep is not a switch function, instead sweep(0)= {} and sweep(T) = {}".format(sweep(0), sweep(T))
         
-        if(isinstance(H0, SpinModel)):
+        if(isinstance(H0, fauvqe.SpinModel)):
             self._H0 = SpinModelFC.toFC(H0)
         else:
             self._H0 = H0
         
-        if(isinstance(H1, SpinModel)):
+        if(isinstance(H1, fauvqe.SpinModel)):
             self._H1 = SpinModelFC.toFC(H1)
         else:
             self._H1 = H1
@@ -65,20 +66,20 @@ class Adiabatic(SpinModelFC):
         )
     
     def get_interactions(self) -> List[list]:
-        self.energy_fields = [*self.H0.energy_fields, *self.H1.energy_fields]
+        self.energy_fields = [*self._H0.energy_fields, *self._H1.energy_fields]
         
         l = self._sweep(self.t)
         
-        j0 = np.transpose(self.H0.j, (4, 0, 1, 2, 3))
-        j1 = np.transpose(self.H1.j, (4, 0, 1, 2, 3))
-        h0 = np.transpose(self.H0.h, (2, 0, 1))
-        h1 = np.transpose(self.H1.h, (2, 0, 1))
+        j0 = np.transpose(self._H0.j, (4, 0, 1, 2, 3))
+        j1 = np.transpose(self._H1.j, (4, 0, 1, 2, 3))
+        h0 = np.transpose(self._H0.h, (2, 0, 1))
+        h1 = np.transpose(self._H1.h, (2, 0, 1))
         
         j_tot = np.array([*(1-l)*j0, *l*j1])
         h_tot = np.array([*(1-l)*h0, *l*h1])
         
-        TwoQubitGates = [*self.H0._TwoQubitGates, *self.H1._TwoQubitGates]
-        SingleQubitGates = [*self.H0._SingleQubitGates, *self.H1._SingleQubitGates]
+        TwoQubitGates = [*self._H0._TwoQubitGates, *self._H1._TwoQubitGates]
+        SingleQubitGates = [*self._H0._SingleQubitGates, *self._H1._SingleQubitGates]
         
         return j_tot, h_tot, TwoQubitGates, SingleQubitGates
     

@@ -12,21 +12,23 @@ def test__eq__():
     n = [1,3]; boundaries = [1, 0]
     H0 = Heisenberg("GridQubit", 
                        n, 
-                       np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
-                       np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
-                       np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
+                       np.ones((n[0]-boundaries[0], n[1])), 
+                    np.ones((n[0], n[1]-boundaries[1])), 
+                       np.ones((n[0]-boundaries[0], n[1])), 
+                    np.ones((n[0], n[1]-boundaries[1])), 
+                       np.ones((n[0]-boundaries[0], n[1])), 
+                    np.ones((n[0], n[1]-boundaries[1])), 
                        np.ones((n[0], n[1])),
                        np.ones((n[0], n[1])),
                        np.ones((n[0], n[1])))
     
     H1 = Ising("GridQubit", 
                n, 
-               np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
-               np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
-               np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), 
+               np.ones((n[0]-boundaries[0], n[1])), 
+               np.ones((n[0], n[1]-boundaries[1])), 
                np.ones((n[0], n[1])),
-               np.ones((n[0], n[1])),
-               np.ones((n[0], n[1])))
+               "X"
+              )
     
     model = Adiabatic(H0, H1)
     model2 = Adiabatic(H0, H1)
