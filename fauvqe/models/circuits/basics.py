@@ -504,7 +504,7 @@ def rm_unused_cpv(self):
 def flatten(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def get_energy_filter_from_subsystem(self, subsystem_energies = None):
+def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder = True):
     #To Do Add qubit_map from subsystem qubits
     #Set a subsystem qubit_map -> need later for simulations
     if hasattr(self, 'subsystem_qubits') is True and hasattr(self, 'subsystem_qubit_map') is True:
@@ -540,7 +540,15 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None):
                                         .reshape((1,2**np.size( self.subsystem_qubits[i]))),
                                     energy_filter.reshape((np.size(energy_filter),1))
                                     ).reshape((1,np.size(energy_filter)*2**np.size(self.subsystem_qubits[i]))) 
-        return np.squeeze(energy_filter)/np.size(self.qubits)
+        
+        # If the subsystems are not in standard order return energy filter in standard order
+        ordering = self.basics.get_reordering_from_subsystem(self)
+        if (ordering == range(np.size(self.qubits))) or (not do_reorder):
+            return np.squeeze(energy_filter)/np.size(self.qubits)
+        else:
+            return self.basics.permute_state_vector(   self,
+                                                        np.squeeze(energy_filter)/np.size(self.qubits), 
+                                                        ordering)
 
 def get_subsystem_qubit_map(self, 
                             return_list=False):
