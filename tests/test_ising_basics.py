@@ -352,7 +352,7 @@ def test_subsystem_U(n, basics_options):
     #Prepare energy comparison
     AExpValue_obj = AbstractExpectationValue(ising,
                                             sum(ising.subsystem_hamiltonians))
-    _energy_filter = ising.basics.get_energy_filter_from_subsystem(ising)
+    _energy_filter = ising.basics.get_energy_filter_from_subsystem(ising, do_reorder = False)
     
     #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
     #Should end up in the nth Z-Eigenstate
@@ -593,7 +593,7 @@ def test_subsystem_U2(n, basics_options):
     #Prepare energy comparison
     AExpValue_obj = AbstractExpectationValue(ising,
                                             sum(ising.subsystem_hamiltonians))
-    _energy_filter = ising.basics.get_energy_filter_from_subsystem(ising)
+    _energy_filter = ising.basics.get_energy_filter_from_subsystem(ising, do_reorder = False)
     
     #Starting at the nth Ising eigenvector and applying U^-1 = U^dagger
     #Should end up in the nth Z-Eigenstate
