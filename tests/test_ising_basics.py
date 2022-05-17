@@ -1759,7 +1759,7 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
                             "append": False, 
                             "subsystem_diagonalisation": True,
                             "b_exact": [0,0],
-                            "cc_exact": False}
+                            "cc_exact": True}
 
     # H_A
     # 1. Set rotation circuit 
@@ -1787,8 +1787,10 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
                                             program=ising.circuit,
                                             ).state_vector()
 
-    re_ordering = ising.basics.get_reordering_from_subsystem(ising)
-    wf_HA_basis = ising.basics.permute_state_vector(ising,wf_HA_basis, re_ordering)
+    #This is not needed anymore:
+    #+reordering the wavefunction is not quite desired
+    #re_ordering = ising.basics.get_reordering_from_subsystem(ising)
+    #wf_HA_basis = ising.basics.permute_state_vector(ising,wf_HA_basis, re_ordering)
                                 
     E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
 
@@ -1839,9 +1841,9 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     wf_HB_basis = ising.simulator.simulate( initial_state = state,
                                             program=ising.circuit,
                                             ).state_vector()
-
-    re_ordering = ising.basics.get_reordering_from_subsystem(ising)
-    wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, re_ordering)
+    #Not needed anymore
+    #re_ordering = ising.basics.get_reordering_from_subsystem(ising)
+    #wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, re_ordering)
                                 
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
    
