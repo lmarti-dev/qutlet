@@ -1963,10 +1963,6 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
                                    wavefunction=state)/(n[0]*n[1])
 
     qubit_order_B = ising.basics.get_subsystem_qubit_order(ising)
-    #for ordering in list(itertools.permutations([0,1, 2, 3])):
-
-    #TODO: Still need to get this from qubit_order compared to standard order
-    #ordering=[0,2,1,3]
     ordering = ising.basics.get_reordering_from_subsystem(ising)
 
     qubit_order_B_tmp = [x for _,x in sorted(zip(ordering,qubit_order_B))]
@@ -1978,7 +1974,7 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
                                             ).state_vector()
     #print("wf_HB_basis:\n{}".format(np.round(wf_HB_basis, decimals=3)))
 
-    #This is not needed
+    #This is not needed anymore:
     #wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, ordering)
                                 
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
