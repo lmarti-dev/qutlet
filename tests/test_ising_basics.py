@@ -1978,7 +1978,8 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
                                             ).state_vector()
     #print("wf_HB_basis:\n{}".format(np.round(wf_HB_basis, decimals=3)))
 
-    wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, ordering)
+    #This is not needed
+    #wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, ordering)
                                 
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
     print("qubit_order_B_tmp: {}\nPermutation: {}\nE_B: {}\tabs(E_B_AEV-E_B): {}\n"
@@ -2068,27 +2069,39 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     #print("Phi0: {}".format(phi0))
     
     qubit_order_A = ising.basics.get_subsystem_qubit_order(ising)
-    ordering = ising.basics.get_reordering_from_subsystem(ising)
-    qubit_order_A_tmp = [x for _,x in sorted(zip(ordering,qubit_order_A))]
-
     energy_filter_A = ising.basics.get_energy_filter_from_subsystem(ising)
     wf_HA_basis = ising.simulator.simulate( ising.circuit, 
-                                            qubit_order=qubit_order_A_tmp,
+                                            #qubit_order=qubit_order_A,
                                             initial_state = state).state_vector()
-    
-    wf_HA_basis = ising.basics.permute_state_vector(ising,wf_HA_basis, ordering)
-
     E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
 
     AExpValue_obj = AbstractExpectationValue(ising,
                                             sum(ising.subsystem_hamiltonians)) 
-    
-    qubit_map_A = ising.basics.get_subsystem_qubit_map(ising)
     E_A_AEV = AExpValue_obj.evaluate( atol=1e-14,
-                                   q_map=qubit_map_A,
+                                   #q_map=qubit_map_A,
                                    wavefunction=state)/(n[0]*n[1])
 
-    print("qubit_order_A: {}\nPermutation: {}\nE_A: {}\tabs(E_A_AEV-E_A): {}\n".format(qubit_map_A,ordering, E_A, abs(E_A_AEV-E_A)))
+    #qubit_order_A = ising.basics.get_subsystem_qubit_order(ising)
+    #ordering = ising.basics.get_reordering_from_subsystem(ising)
+    #qubit_order_A_tmp = [x for _,x in sorted(zip(ordering,qubit_order_A))]
+    #
+    #energy_filter_A = ising.basics.get_energy_filter_from_subsystem(ising)
+    #wf_HA_basis = ising.simulator.simulate( ising.circuit, 
+    #                                        qubit_order=qubit_order_A_tmp,
+    #                                        initial_state = state).state_vector()
+    #
+    #wf_HA_basis = ising.basics.permute_state_vector(ising,wf_HA_basis, ordering)
+    #
+    #E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
+    #
+    #AExpValue_obj = AbstractExpectationValue(ising,
+    #                                        sum(ising.subsystem_hamiltonians)) 
+    #qubit_map_A = ising.basics.get_subsystem_qubit_map(ising)
+    #E_A_AEV = AExpValue_obj.evaluate( atol=1e-14,
+    #                               q_map=qubit_map_A,
+    #                               wavefunction=state)/(n[0]*n[1])
+
+    print("qubit_order_A: {}\nE_A: {}\tabs(E_A_AEV-E_A): {}\n".format(qubit_order_A, E_A, abs(E_A_AEV-E_A)))
 
     # H_B
     # 1. Set rotation circuit 
@@ -2104,34 +2117,28 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     HB_options.update({"subsystem_h": subsystem_h})
     
     basics_options.update(HB_options)
+    
     #print(basics_options)
     ising.set_circuit("basics",basics_options)
     hamiltonian_HB = sum(ising.subsystem_hamiltonians)
     #print("H_B:\n{}\n".format(hamiltonian_HB))
     #print("H_B rotation circuit:\n{}\n".format(ising.circuit))
     #print("Phi0: {}".format(phi0))
+    
+    #qubit_order_B = ising.basics.get_subsystem_qubit_order(ising)
+    energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
+    wf_HB_basis = ising.simulator.simulate( ising.circuit, 
+                                            #qubit_order=qubit_order_B,
+                                            initial_state = state).state_vector()
+    E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
 
     AExpValue_obj = AbstractExpectationValue(ising,
                                             sum(ising.subsystem_hamiltonians)) 
     E_B_AEV = AExpValue_obj.evaluate( atol=1e-14,
-                                   #this makes it not workq_map=qubit_map_B,
+                                   #q_map=qubit_map_B,
                                    wavefunction=state)/(n[0]*n[1])
-    
-    qubit_order_B = ising.basics.get_subsystem_qubit_order(ising)
-    ordering = ising.basics.get_reordering_from_subsystem(ising)
-    qubit_order_B_tmp = [x for _,x in sorted(zip(ordering,qubit_order_B))]
 
-    energy_filter_B = ising.basics.get_energy_filter_from_subsystem(ising)
-    wf_HB_basis = ising.simulator.simulate( initial_state = state,
-                                            #qubit_order=qubit_order_B_tmp,
-                                            program=ising.circuit,
-                                            ).state_vector()
-
-    wf_HB_basis = ising.basics.permute_state_vector(ising,wf_HB_basis, ordering)
-
-    print("wf_HB_basis:\n{}".format(np.round(wf_HB_basis, decimals=3)))                            
-    E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
-    print("qubit_order_B_tmp: {}\nPermutation: {}\nE_B: {}\tabs(E_B_AEV-E_B): {}\n".format(qubit_order_B_tmp,ordering, E_B, abs(E_B_AEV-E_B)))
+    #print("qubit_order_B: {}\nE_B: {}\tabs(E_B_AEV-E_B): {}\n".format(qubit_order_B, E_B, abs(E_B_AEV-E_B)))
 
     #Assert H = H_A + H_B
     assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
