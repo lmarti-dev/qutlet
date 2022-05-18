@@ -543,6 +543,13 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
         
         # If the subsystems are not in standard order return energy filter in standard order
         ordering = self.basics.get_reordering_from_subsystem(self)
+        print("ordering: {}\nnp.size(energy_filter): {}\nnp.squeeze(energy_filter)/np.size(self.qubits) {}\nself.basics.permute_state_vector: {}"
+        .format(ordering, 
+                np.size(energy_filter),
+                np.size(np.squeeze(energy_filter)/np.size(self.qubits)),
+                np.size(self.basics.permute_state_vector(   self,
+                                                        np.squeeze(energy_filter)/np.size(self.qubits), 
+                                                        ordering))))
         if (ordering == range(np.size(self.qubits))) or (not do_reorder):
             return np.squeeze(energy_filter)/np.size(self.qubits)
         else:
@@ -583,6 +590,17 @@ def permute_state_vector(   self,
     # 2. wavefunction[new_ind] = wavefunction[old_ind]
     # or wavefunction = wavefunction[new_order_Hilbert]
     _n = int(np.log2(np.size(wavefunction)))
+    if _n <= 8:
+        uint_type = np.uint8
+    elif _n <= 16:
+        uint_type = np.uint16
+    elif _n <= 32:
+        uint_type = np.uint32
+    else:
+        uint_type = np.uint64
+
+    print("_n: {}\nuint_type: {}".format(_n, uint_type))
+
     new_indices=np.arange(2**_n)
 
     if all(isinstance(i, int) for i in permutations):
@@ -591,11 +609,13 @@ def permute_state_vector(   self,
     for permutation in permutations:
         non_permuted = sorted(permutation)
         
-        #This works:
+        #This works for n<9:
+        #reason backbits works only fo uInt8
         bin_indices = ((new_indices.reshape(-1,1) & (2**np.arange(_n))) != 0).astype(int)
         bin_indices[:,non_permuted]= bin_indices[:,permutation]
 
-        new_indices = np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little'))
+        new_indices = np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little').view(uint_type))
+        print("np.size(bin_indices): {}\nnp.size(new_indices): {}".format(np.size(bin_indices),np.size(new_indices)))
 
     return wavefunction[new_indices]
 
