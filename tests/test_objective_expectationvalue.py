@@ -22,7 +22,6 @@ def consistency_check(model):
         abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1]))/abs(EV_obj.evaluate(wf))))
     assert abs(EV_obj.evaluate(wf)-AEV_obj.evaluate(wf,atol=1e-16)/(model.n[0]*model.n[1])) < 1e-6
 
-
 @pytest.mark.parametrize(
     "n, b, field",
     [
@@ -108,6 +107,52 @@ def test_evaluate(state, expectation_value):
     )
     expval = objective.evaluate(state)
     assert abs(expval - expectation_value) < 1e-7
+
+@pytest.mark.parametrize(
+    "n, b",
+    [
+        ([2,2], [1,1]),
+        ([1,2], [1,1]),
+        ([3,2], [0,1]),
+        ([3,3], [0,0]),
+        ([2,4], [1,0]),
+    ],
+)
+def test_evaluate_from_energy_filter0(n,b):
+    j_v = 2*(np.random.rand(n[0]-b[0],n[1])- 0.5)
+    j_h = 2*(np.random.rand(n[0],n[1]-b[1])- 0.5)
+    h = 2*(np.random.rand(n[0],n[1])- 0.5)
+    print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
+    ising= Ising("GridQubit", n, j_v, j_h, h, "X")
+
+    temp_matrix = ising.hamiltonian.matrix(ising.basics.flatten(ising.qubits))
+
+    ising.diagonalise( solver = "scipy", 
+                       solver_options={"subset_by_index": [0, 2**(n[0]*n[1]) - 1]},
+                        matrix= temp_matrix)
+
+    ExpVal = ExpectationValue(  ising,
+                                energy_filter = (n[0]*n[1])*ising.basics.get_energy_filter_from_subsystem(ising, ising.eig_val))
+    
+    print(ising.eig_val)
+
+    wf0 = np.zeros(2**(n[0]*n[1]))
+
+    #For less than 8 qubits check every basis vector
+    #Otherwise check a random sample
+    if n[0]*n[1] < 9:
+        indices = range(2**(n[0]*n[1]))
+    else:
+        rng = np.random.default_rng()
+        indices=rng.integers(low=0, high=2**(n[0]*n[1]), size=16)
+
+    previous_i = 0
+    for i in indices:
+        wf0[previous_i]=0
+        previous_i = i
+
+        wf0[i]=1
+        assert ising.eig_val[i] == ExpVal.evaluate(wf0)
 
 @pytest.mark.parametrize(
     "n, qubit_order",
@@ -315,7 +360,6 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options):
         energy_tmp += abstractexp_obj2.evaluate(state,  atol = 1e-14)
     assert abs(energy_from_exp_obj - energy_tmp) < 5e-7
 
-
 def test_json():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_simulator("qsim")
@@ -327,7 +371,6 @@ def test_json():
     objective2 = ExpectationValue.from_json_dict(json)
     
     assert (objective == objective2)
-
 
 def test_simulate():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))

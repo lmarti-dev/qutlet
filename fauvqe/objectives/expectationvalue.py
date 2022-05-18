@@ -5,7 +5,7 @@ from cirq import Circuit as cirq_Circuit
 from cirq import Simulator as cirq_Simulator
 from numbers import Integral
 import numpy as np
-from typing import Literal, Tuple, Dict, List
+from typing import Dict, List, Literal, Optional, Tuple
 
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.models.abstractmodel import AbstractModel
@@ -30,14 +30,22 @@ class ExpectationValue(AbstractExpectationValue):
             <ExpectationValue Energy fields=self.__energy_fields>
     """
 
-    def __init__(self, model: AbstractModel):
+    def __init__(   self, 
+                    model: AbstractModel,
+                    energy_filter: Optional[np.ndarray] = None):
         super().__init__(model)
-        self.__energy_fields: List[Literal["X", "Y", "Z"]] = model.energy_fields
-        self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
+        if energy_filter is None:
+            self.__energy_fields: List[Literal["X", "Y", "Z"]] = model.energy_fields
+            self.__energies: Tuple[np.ndarray, np.ndarray] = model.energy()
+            assert len(self.__energy_fields) == len(self.__energies), "Length of Pauli types and energy masks do not match"
+        else:
+            self.__energy_fields = ["Z"]
+            #The minus here is added to compensate a -1 later
+            self.__energies = [-energy_filter]
+
         self.__n_qubits: Integral = np.log2(np.size(self.__energies[0]))
     
     def evaluate(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
-        assert len(self.__energy_fields) == len(self.__energies), "Length of Pauli types and energy masks do not match"
         if options.get("rotation_circuits") is None:
             i=0
             expectation_value=0
