@@ -510,7 +510,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
     if hasattr(self, 'subsystem_qubits') is True and hasattr(self, 'subsystem_qubit_map') is True:
         self.subsystem_qubit_map = {}
         for i_subsystem in range(len(self.subsystem_qubits)):
-            self.subsystem_qubit_map.update({self.subsystem_qubits[i_subsystem][l]: int(l + len(qubit_map)) for l in range(len(self.subsystem_qubits[i_subsystem]))})
+            self.subsystem_qubit_map.update({self.subsystem_qubits[i_subsystem][l]: int(l + len(self.subsystem_qubit_map)) for l in range(len(self.subsystem_qubits[i_subsystem]))})
 
     #Do this two step if to away issue that all() not applicable for None
     #But also all() needed if subsystem_energies not None

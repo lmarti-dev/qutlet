@@ -2028,6 +2028,116 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
             {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)], 
                                         [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)]]}
         ),
+        (
+            [4,2],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)]]}
+        ),
+        (
+            [2,4],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)]]}
+        ),
+        (
+            [3,3],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)]]}
+        ),
+        (
+            [5,2],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1)],
+                                        [   cirq.GridQubit(4,0), cirq.GridQubit(4,1)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0), cirq.GridQubit(4,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1), cirq.GridQubit(4,1)]]}
+        ),
+        (
+            [2,5],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3)],
+                                        [   cirq.GridQubit(0,4), cirq.GridQubit(1,4)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3), cirq.GridQubit(0,4)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3), cirq.GridQubit(1,4)]]}
+        ),
+        (
+            [4,3],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)]]}
+        ),
+        (
+            [3,4],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)]]}
+        ),
+        (
+            [6,2],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1)],
+                                        [   cirq.GridQubit(4,0), cirq.GridQubit(4,1)],
+                                        [   cirq.GridQubit(5,0), cirq.GridQubit(5,1)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0), cirq.GridQubit(4,0), cirq.GridQubit(5,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1), cirq.GridQubit(4,1), cirq.GridQubit(5,1)]]}
+        ),
+        (
+            [2,6],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3)],
+                                        [   cirq.GridQubit(0,4), cirq.GridQubit(1,4)],
+                                        [   cirq.GridQubit(0,5), cirq.GridQubit(1,5)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3), cirq.GridQubit(0,4), cirq.GridQubit(0,5)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3), cirq.GridQubit(1,4), cirq.GridQubit(1,5)]]}
+        ),
+        (
+            [4,4],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
+        ),
+        # the order in subsystem qubits matters
+        # e.g. this fails:
+        #(
+        #    [2,3],
+        #    {   "subsystem_qubits": [   [   cirq.GridQubit(1,0), cirq.GridQubit(0,0)], 
+        #                                [   cirq.GridQubit(1,2), cirq.GridQubit(0,2)],
+        #                                [   cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]},
+        #    {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)], 
+        #                                [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)]]}
+        #),
     ]
 )
 def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
@@ -2081,6 +2191,7 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     wf_HA_basis = ising.simulator.simulate( ising.circuit, 
                                             #qubit_order=qubit_order_A,
                                             initial_state = state).state_vector()
+    print("np.size(energy_filter_A): {}\nnp.size(wf_HA_basis): {}\n2**(n[0]*n[1]): {}".format(np.size(energy_filter_A), np.size(wf_HA_basis), 2**(n[0]*n[1])))
     E_A = np.vdot(energy_filter_A, abs(wf_HA_basis)**2)
 
     AExpValue_obj = AbstractExpectationValue(ising,
@@ -2381,6 +2492,14 @@ def test_set_get_subsystem_qubit_map(subsystem_qubits, target_qubit_map):
     test_qubit_map = ising.basics.get_subsystem_qubit_map(ising)
     assert(target_qubit_map == test_qubit_map)
 
+    #test updating subsystem_qubit_map in get_energy_filter_from_subsystem
+    ising.subsystem_qubit_map = {cirq.GridQubit(0,0):-1}
+    ising.subsystem_energies = np.zeros(2**np.size(ising.qubits))
+    ising.basics.get_energy_filter_from_subsystem(ising)
+    assert(ising.subsystem_qubit_map == test_qubit_map)
+
+
+
 def test_set_circuit_errors():
     ising= Ising("GridQubit", [1, 3], np.ones((0, 3)), np.ones((1, 2)), np.ones((1, 3)), "Z")
     with pytest.raises(AssertionError):
@@ -2398,3 +2517,8 @@ def test_set_circuit_errors():
     ising.qubittype = "test"
     with pytest.raises(NotImplementedError):
         ising.set_circuit("basics", {"start": "exact"})
+
+def test_get_energy_filter_from_subsystem_errors():
+    ising= Ising("GridQubit", [1, 3], np.ones((0, 3)), np.ones((1, 2)), np.ones((1, 3)), "Z")
+    with pytest.raises(AssertionError):
+        ising.basics.get_energy_filter_from_subsystem(ising)

@@ -3601,3 +3601,141 @@ Test Adam + ExpectationValue
 Sequential Time: 13.628003358840942
 Parallel Time: 5.238680601119995
 
+===Mi, 18 Mai 2022 10:27:39 +0000===
+Test No Indices 
+
+Sequential Time: 2.691361665725708
+Parallel Time: 0.9374170303344727
+
+===Mi, 18 Mai 2022 10:27:57 +0000===
+Test Indices 
+
+Sequential Time: 12.619361162185669
+Parallel Time: 5.379424095153809
+
+===Mi, 18 Mai 2022 10:28:07 +0000===
+Test Indices 
+
+Sequential Time: 6.343709468841553
+Parallel Time: 3.4202065467834473
+
+===Mi, 18 Mai 2022 10:28:33 +0000===
+Test Indices 
+
+Sequential Time: 19.51550841331482
+Parallel Time: 7.19015908241272
+
+===Mi, 18 Mai 2022 10:28:48 +0000===
+Test Indices 
+
+Sequential Time: 9.76381254196167
+Parallel Time: 4.264745712280273
+
+===Mi, 18 Mai 2022 10:29:07 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.659956455230713
+Parallel Time: 5.289870977401733
+
+===Mi, 18 Mai 2022 10:29:19 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.7242591381073
+Parallel Time: 3.217625379562378
+
+===Mi, 18 Mai 2022 10:29:51 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.43485927581787
+Parallel Time: 8.094683647155762
+
+===Mi, 18 Mai 2022 10:30:08 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.479079961776733
+Parallel Time: 4.54559326171875
+
+===Mi, 18 Mai 2022 10:38:22 +0000===
+Test No Indices 
+
+Sequential Time: 2.73323130607605
+Parallel Time: 0.946082592010498
+
+===Mi, 18 Mai 2022 10:38:39 +0000===
+Test Indices 
+
+Sequential Time: 11.757728815078735
+Parallel Time: 5.5598461627960205
+
+===Mi, 18 Mai 2022 10:38:49 +0000===
+Test Indices 
+
+Sequential Time: 6.243193864822388
+Parallel Time: 3.4324843883514404
+
+===Mi, 18 Mai 2022 10:39:16 +0000===
+Test Indices 
+
+Sequential Time: 19.556486129760742
+Parallel Time: 7.216886758804321
+
+===Mi, 18 Mai 2022 10:39:31 +0000===
+Test Indices 
+
+Sequential Time: 10.721323728561401
+Parallel Time: 4.118677616119385
+
+===Mi, 18 Mai 2022 10:39:50 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.327150821685791
+Parallel Time: 4.883981227874756
+
+===Mi, 18 Mai 2022 10:40:02 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.801491022109985
+Parallel Time: 3.3846676349639893
+
+===Mi, 18 Mai 2022 10:40:35 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 24.445538997650146
+Parallel Time: 8.139029502868652
+
+===Mi, 18 Mai 2022 10:40:52 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.595084190368652
+Parallel Time: 4.5525901317596436
+
+===Mi, 18 Mai 2022 11:23:18 +0000===
+Test No Indices 
+
+Sequential Time: 2.6217691898345947
+Parallel Time: 0.9414646625518799
+
+===Mi, 18 Mai 2022 11:23:36 +0000===
+Test Indices 
+
+Sequential Time: 11.986799716949463
+Parallel Time: 5.825499773025513
+
+===Mi, 18 Mai 2022 11:23:46 +0000===
+Test Indices 
+
+Sequential Time: 6.408886432647705
+Parallel Time: 3.4447877407073975
+
+===Mi, 18 Mai 2022 11:24:12 +0000===
+Test Indices 
+
+Sequential Time: 18.635786771774292
+Parallel Time: 7.137242317199707
+
+===Mi, 18 Mai 2022 11:24:26 +0000===
+Test Indices 
+
+Sequential Time: 9.911255836486816
+Parallel Time: 4.090061902999878
+
