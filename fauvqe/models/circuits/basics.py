@@ -590,17 +590,6 @@ def permute_state_vector(   self,
     # 2. wavefunction[new_ind] = wavefunction[old_ind]
     # or wavefunction = wavefunction[new_order_Hilbert]
     _n = int(np.log2(np.size(wavefunction)))
-    if _n <= 8:
-        uint_type = np.uint8
-    elif _n <= 16:
-        uint_type = np.uint16
-    elif _n <= 32:
-        uint_type = np.uint32
-    else:
-        uint_type = np.uint64
-
-    print("_n: {}\nuint_type: {}".format(_n, uint_type))
-
     new_indices=np.arange(2**_n)
 
     if all(isinstance(i, int) for i in permutations):
@@ -609,13 +598,17 @@ def permute_state_vector(   self,
     for permutation in permutations:
         non_permuted = sorted(permutation)
         
-        #This works for n<9:
-        #reason backbits works only fo uInt8
-        bin_indices = ((new_indices.reshape(-1,1) & (2**np.arange(_n))) != 0).astype(int)
+        bin_indices = ((new_indices.reshape(-1,1) & (2**np.arange(_n))) != 0).astype(np.int64)
         bin_indices[:,non_permuted]= bin_indices[:,permutation]
 
-        new_indices = np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little').view(uint_type))
-        print("np.size(bin_indices): {}\nnp.size(new_indices): {}".format(np.size(bin_indices),np.size(new_indices)))
+        if _n <= 8:
+            #This works for n<9:
+            #reason backbits works only fo uInt8
+            new_indices = np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little'))
+        else:
+            new_indices = np.dot(   np.squeeze(np.packbits(bin_indices,axis=1,bitorder='little').view(np.uint8)), 
+                                2**np.array([8*i for i in range(int(np.ceil(_n/8)))]))
+        #print("np.size(bin_indices): {}\nnp.size(new_indices): {}".format(np.size(bin_indices),np.size(new_indices)))
 
     return wavefunction[new_indices]
 

@@ -3739,3 +3739,33 @@ Test Indices
 Sequential Time: 9.911255836486816
 Parallel Time: 4.090061902999878
 
+===Mi, 18 Mai 2022 16:57:51 +0000===
+Test No Indices 
+
+Sequential Time: 2.720519781112671
+Parallel Time: 0.9422500133514404
+
+===Mi, 18 Mai 2022 16:58:08 +0000===
+Test Indices 
+
+Sequential Time: 11.882160902023315
+Parallel Time: 5.47887659072876
+
+===Mi, 18 Mai 2022 16:58:18 +0000===
+Test Indices 
+
+Sequential Time: 6.334294080734253
+Parallel Time: 3.407641649246216
+
+===Mi, 18 Mai 2022 16:58:45 +0000===
+Test Indices 
+
+Sequential Time: 19.601197719573975
+Parallel Time: 7.299342632293701
+
+===Mi, 18 Mai 2022 16:58:59 +0000===
+Test Indices 
+
+Sequential Time: 9.983402252197266
+Parallel Time: 4.156698226928711
+

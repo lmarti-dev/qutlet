@@ -1,4 +1,5 @@
 # external imports
+from turtle import rt
 from unicodedata import decimal
 from xmlrpc.client import boolean
 import pytest
@@ -2128,6 +2129,30 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
                                         [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
                                         [   cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
         ),
+        (
+            [6,3],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2)],
+                                        [   cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2)],
+                                        [   cirq.GridQubit(4,0), cirq.GridQubit(4,1), cirq.GridQubit(4,2)],
+                                        [   cirq.GridQubit(5,0), cirq.GridQubit(5,1), cirq.GridQubit(5,2)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0), cirq.GridQubit(4,0), cirq.GridQubit(5,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1), cirq.GridQubit(3,1), cirq.GridQubit(4,1), cirq.GridQubit(5,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2), cirq.GridQubit(4,2), cirq.GridQubit(5,2)]]}
+        ),
+        (
+            [3,6],
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)], 
+                                        [   cirq.GridQubit(0,1), cirq.GridQubit(1,1), cirq.GridQubit(2,1)],
+                                        [   cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2)],
+                                        [   cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3)],
+                                        [   cirq.GridQubit(0,4), cirq.GridQubit(1,4), cirq.GridQubit(2,4)],
+                                        [   cirq.GridQubit(0,5), cirq.GridQubit(1,5), cirq.GridQubit(2,5)]]},
+            {   "subsystem_qubits": [   [   cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3), cirq.GridQubit(0,4), cirq.GridQubit(0,5)], 
+                                        [   cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3), cirq.GridQubit(1,4), cirq.GridQubit(1,5)],
+                                        [   cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3), cirq.GridQubit(2,4), cirq.GridQubit(2,5)]]}
+        ),
         # the order in subsystem qubits matters
         # e.g. this fails:
         #(
@@ -2265,7 +2290,7 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}"
             .format(E_A,E_A_AEV, E_B, E_B_AEV, E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
-    assert(abs(E -(E_A+E_B)) < 1e-7)
+    assert(abs(E -(E_A+E_B)) < (n[0]*n[1])*2e-8)
 
 @pytest.mark.parametrize(
     "n, subsystem_qubits, true_ordering",
@@ -2498,7 +2523,190 @@ def test_set_get_subsystem_qubit_map(subsystem_qubits, target_qubit_map):
     ising.basics.get_energy_filter_from_subsystem(ising)
     assert(ising.subsystem_qubit_map == test_qubit_map)
 
+@pytest.mark.parametrize(
+    "wf_in, permutation, wf_out",
+    [
+        (
+            np.array([0,1,0,0]),
+            [1,0],
+            np.array([0,0,1,0]),
+        ),
+        (
+            np.array([0,0,0,0,1/2,1/2,1/2,1/2]),
+            [2,1,0],
+            np.array([0,1/2,0,1/2,0,1/2,0,1/2]),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**4-3)),
+                axis=None
+            ),
+            [1,0,2,3],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**4-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**5-3)),
+                axis=None
+            ),
+            [1,0,2,3,4],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**5-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**6-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**6-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**7-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**7-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**8-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6,7],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**8-3)),
+                axis=None
+            ),
+        ),
+         (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**9-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6,7,8],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**9-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0], dtype=np.uint8),
+                np.zeros(2**9-3, dtype=np.uint8)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6,7,8],
+            np.concatenate(
+                (np.array([0,0,1], dtype=np.uint8),
+                np.zeros(2**9-3, dtype=np.uint8)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**16-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**16-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,1,0]),
+                np.zeros(2**18-3)),
+                axis=None
+            ),
+            [1,0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17],
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**18-3)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**9-3)),
+                axis=None
+            ),
+            [8,1],
+            np.concatenate(
+                (np.zeros(2**8-1),
+                np.array([0,1]),
+                np.zeros(2**8-1)),
+                axis=None
+            ),
+        ),
+        (
+            np.concatenate(
+                (np.array([0,0,1]),
+                np.zeros(2**17-3)),
+                axis=None
+            ),
+            [15,1],
+            np.concatenate(
+                (np.zeros(2**15-1),
+                np.array([0,1]),
+                np.zeros(2**16+2**15-1)),
+                axis=None
+            ),
+        ),
+        #For n>24 it passes again...
+        #(
+        #    np.concatenate(
+        #        (np.array([0,1,0], dtype=np.uint8),
+        #        np.zeros(2**25-3, dtype=np.uint8)),
+        #        axis=None
+        #    ),
+        #    [1,0],
+        #    np.concatenate(
+        #        (np.array([0,0,1], dtype=np.uint8),
+        #        np.zeros(2**25-3, dtype=np.uint8)),
+        #        axis=None
+        #    ),
+        #),
+    ]
+)
+def test_permute_state_vector(wf_in, permutation, wf_out):
+    #This does/should not matter we just need a SpinModel object
+    ising= Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "Z")
 
+    wf_test = ising.basics.permute_state_vector(ising, wf_in, permutation)
+    #print(wf_test)
+
+    assert np.size(wf_in) == np.size(wf_test)
+    np.testing.assert_allclose(wf_test, wf_out, rtol=1e-15, atol=1e-15)
+    #assert False
 
 def test_set_circuit_errors():
     ising= Ising("GridQubit", [1, 3], np.ones((0, 3)), np.ones((1, 2)), np.ones((1, 3)), "Z")
