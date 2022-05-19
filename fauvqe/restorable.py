@@ -49,3 +49,12 @@ class Restorable(abc.ABC):
             return self._tqdm(range(max_index), file=stdout)
         else:
             return range(max_index)
+
+    #This is also a function prone to move to linalg submodule:
+    def sample( self,
+                wavefunction: np.ndarray, 
+                repetitions: int):
+        _n = int(np.log2(np.size(wavefunction)))
+        return np.random.choice( 2**_n,
+                                size = repetitions,
+                                p=abs(wavefunction)**2)
