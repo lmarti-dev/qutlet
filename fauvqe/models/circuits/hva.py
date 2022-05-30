@@ -1,3 +1,5 @@
+import cirq
+import sympy
 """
 HAMILTONIAN VARIATIONAL ANSATZ
 This file contains helper functions related to Fock models VQEs. 
@@ -8,8 +10,9 @@ Ideally, the FSWAPs would be automated.
 
 """
 
-def create_circuit_from_mapping(self,mapping: str):
-    r"""
+def set_circuit(self):
+
+    """
     This function takes a mapping from the encoded fermions to the qubit grid
     if you have
 
@@ -26,9 +29,14 @@ def create_circuit_from_mapping(self,mapping: str):
 
         i.e. the grid is put in a linear list, row-major
         
-        0 - > GridQubit(p,q)
-
     """
+    
+
+
+
+
 
 def optimize_mapping(self):
+    # need to check whether there is an optimal mappng of fermions to qubits
+    # it seems pretty straightforward
     pass

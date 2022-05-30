@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-
 # External import
 
 import openfermion as of
 from typing import Dict,Union,Sequence,Optional
-from cirq import OP_TREE,Qid
+from typing import get_origin
+import cirq
 import numpy as np
+
 
 # Internal import
 
 from fauvqe.models.fermionicModel import FermionicModel
-from tests.test_ising import hamiltonian
-
+import fauvqe.utils as utils
 
 class FermiHubbardModel(FermionicModel):
     """
@@ -24,7 +24,9 @@ class FermiHubbardModel(FermionicModel):
                 y_dimension: int,
                 tunneling: float,
                 coulomb: float,
-                hamiltonian_options: Dict={}):
+                hamiltonian_options: Dict={},
+                hv_grid_qubits=0,
+                transform_name: str="jordan_wigner"):
         
         self.x_dimension=x_dimension
         self.y_dimension=y_dimension
@@ -32,8 +34,18 @@ class FermiHubbardModel(FermionicModel):
         self.coulomb=coulomb
         self.hamiltonian_options=hamiltonian_options
 
-        super().__init__(n=(x_dimension,y_dimension),
-                        qubittype="GridQubit")
+        # decide whether to stack the spin secotrs horizontally or vertically
+        if hv_grid_qubits==0:
+            # horizontally by default
+            n=(x_dimension,2*y_dimension)
+        elif hv_grid_qubits==1:
+            (2*x_dimension,y_dimension)
+        else:
+            raise ValueError("Invalid value for hv_grid_qubit. expected 0 or 1 but got {}".format(hv_grid_qubits))
+        super().__init__(n=n,
+                        qubittype="GridQubit",
+                        transform_name=transform_name)
+        self.set_simulator("cirq")
     def copy(self):
         self_copy = FermiHubbardModel(x_dimension=self.x_dimension,
                                     y_dimension=self.y_dimension,
@@ -46,10 +58,10 @@ class FermiHubbardModel(FermionicModel):
     def to_json_dict(self) -> Dict:
         pass
     def _set_fock_hamiltonian(self, reset: bool = True):
-        """
+        """This function sets the fock hamiltonian from the fermihubbard function in open fermion
+
         the fermi_hubbard function from openfermion represents the hamiltonian in a 1D array,
         so the ordering is already decided; and it is not snake, but end-to-end rows. 
-        Perhaps I'll have to make my own since it's symbolic anyway (and not too hard to implement)
         The current operator ordering is from
 
         u11d11  u12d12  u13d13
@@ -61,7 +73,10 @@ class FermiHubbardModel(FermionicModel):
         0   1   2   3   4   5     6   7   8   9   10  11    12  13  14  15  16  17
         u11 d11 u12 d12 u13 d13 / u21 d21 u22 d22 u23 d23 / u31 d31 u32 d32 u33 d33
 
+        Args:
+            reset (bool, optional): Whether to reset the Hamiltonian to an empty FermionOperator. Defaults to True.
         """
+        
         if reset:
             self.fock_hamiltonian=of.FermionOperator()
         self.fock_hamiltonian = of.fermi_hubbard(x_dimension=self.x_dimension,
@@ -73,23 +88,121 @@ class FermiHubbardModel(FermionicModel):
         assert (class_name == "FermionOperator"
         ), "fock_hamiltonian should be a FermionOperator, but is a {}".format(class_name)
 
-    def get_initial_state(self,
+    def _get_initial_state(self,
                         name: str,
-                        initial_state: Union[int, Sequence[int]] = 0
-                        ) -> OP_TREE:
-        # this is actually a fermionic gaussian state, need to find how to limit the occ number.
-        if name == "slater":
-            # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
+                        initial_state: Union[int, Sequence[int]],
+                        Nf: int
+                        ) -> cirq.OP_TREE:
+        if name == "gaussian":
             tv=of.get_diagonal_coulomb_hamiltonian(self.fock_hamiltonian)
-            # only get the T part
             quadratic_hamiltonian=of.QuadraticHamiltonian(tv.one_body)
-            # get diagonalizing_bogoliubov_transform b_j = sum_i Q_ji a_i
-            _,unitary_rows,_ = quadratic_hamiltonian.diagonalizing_bogoliubov_transform()
-            # turns a matrix into a circuit of givens rotations
-            #  you need the qubit system to get it however
-            op_tree = of.prepare_slater_determinant(qubits=self.qubits,
-                                                    slater_determinant_matrix=unitary_rows,
-                                                    initial_state=initial_state)
-            return op_tree          
-        else:
+            cirq.OP_TREE = of.prepare_gaussian_state(qubits=self.flattened_qubits,
+                                    quadratic_hamiltonian=quadratic_hamiltonian,
+                                    occupied_orbitals=list(range(Nf)),
+                                    initial_state=initial_state)
+            return cirq.OP_TREE
+        elif name == "slater":
+            _,unitary_rows = self.diagonalize_non_interacting_hamiltonian()
+
+            cirq.OP_TREE=of.prepare_slater_determinant(qubits=self.flattened_qubits,
+                                        slater_determinant_matrix=unitary_rows[:Nf,:],
+                                        initial_state=initial_state)
+            return cirq.OP_TREE
+        else:   
             raise NameError("No initial state named {}".format(name))
+    
+
+
+    def set_initial_state_circuit(self,name: str,
+                            initial_state: Union[int, Sequence[int]] = None,
+                            Nf: int=None):
+        """Inserts the cirq.OP_TREE generated by _get_initial_state into the circuit
+
+        Args:
+            name (str): the name of the type of initial state desired
+            initial_state (Union[int, Sequence[int]], optional): the indices of qubits that start n the 1 state. Defaults to 0 (i.e. all flipped down).
+                                                                An int input will be converted to binary and interpreted as a computational basis vector
+                                                                e.g. 34 = 100010 means the first and fifth qubits are initialized at one.
+            rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators. 
+                                                                Q diagonalizes Nf rows of the non-interacting hamiltonian
+        """
+        if Nf==None:
+            # if Nf is none, use half the Q matrix
+            Nf = self.x_dimension*self.y_dimension
+        if initial_state == None:
+            # default initial state is all 0s
+            initial_state = []
+        cirq.OP_TREE=self._get_initial_state(name=name,initial_state=initial_state,Nf=Nf)
+        self.circuit.append(cirq.OP_TREE)
+
+    def diagonalize_non_interacting_hamiltonian(self):
+        # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
+        tv=of.get_diagonal_coulomb_hamiltonian(self.fock_hamiltonian)
+        """
+            only get the T part
+            the repartition of spin sectors on the matrix is as such:
+                u11 d11 u12 d12 u21 d21 u22 d22
+            u11 0   0   t   0   t   0   0   0
+            d11 0   0   0   t   0   t   0   0
+            u12
+            d12      ...
+            u21
+            d21
+            u22
+            d22
+        """
+        quadratic_hamiltonian=of.QuadraticHamiltonian(tv.one_body)
+        # get diagonalizing_bogoliubov_transform b_j = sum_i Q_ji a_i s.t H = bDb* with D diag.
+        # the bogoliubov transform conserves particle number, i.e. the bogops are single particle (i think?)
+        orbital_energies,unitary_rows,_ = quadratic_hamiltonian.diagonalizing_bogoliubov_transform()
+        
+        # sort them so that you get them in order 
+        idx = np.argsort(orbital_energies)
+        
+        unitary_rows = unitary_rows[idx,:]
+        orbital_energies = orbital_energies[idx]
+
+        return orbital_energies,unitary_rows
+
+    @property
+    def non_interacting_fock_hamiltonian(self) -> of.FermionOperator:
+        return of.fermi_hubbard(x_dimension=self.x_dimension,
+                                y_dimension=self.y_dimension,
+                                tunneling=self.tunneling,
+                                coulomb=0.0,
+                                **self.hamiltonian_options)
+    @property
+    def non_interacting_hamiltonian(self) -> cirq.PauliSum:
+        return self._encode_fock_hamiltonian(model=self.non_interacting_fock_hamiltonian,transform_name=self.transform_name)        
+    
+
+    def add_missing_qubits(self):
+        circuit_qubits=list(self.circuit.all_qubits())
+        model_qubits = self.flattened_qubits
+        missing_qubits = [x for x in model_qubits if x not in circuit_qubits]
+        if circuit_qubits==[]:
+            print("The circuit has no qubits")
+            self.circuit = cirq.Circuit()
+        self.circuit.append([cirq.I(mq) for mq in missing_qubits])
+    
+    def get_expectation(self,observables):
+        return self.simulator.simulate_expectation_values(program=self.circuit,
+                                                        observables=observables,
+                                                        qubit_order=cirq.ops.QubitOrder.DEFAULT
+                                                        )
+    def evaluate(self,observables):
+        # this fails if the circuit has unused qubits, as they will not appear in circuit.qubits
+        # and the validation methods will think the circuit has not the same qbits as the (hamiltonian) cirq.PauliSum
+        # need to look into adding "empty" qubits
+        try:
+            expectation=self.get_expectation(observables)
+        except ValueError:
+            # happens when qubits are missing and len() fails
+            self.add_missing_qubits()
+            expectation=self.get_expectation(observables)
+        except KeyError:
+            # happens because of qubits = [qubit_to_index_dict[q] for q in qsim_op.qubits]
+            # this also happens when the simlator is qsim I believe
+            self.add_missing_qubits()
+            expectation=self.get_expectation(observables)
+        return expectation
