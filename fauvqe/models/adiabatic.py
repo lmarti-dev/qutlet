@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import Tuple, Dict, Literal, Union
 from numbers import Real
 from scipy.integrate import quad
+import scipy
 
 import numpy as np
 import cirq
@@ -124,24 +125,20 @@ class Adiabatic(SpinModelFC):
             self.hamiltonian = cirq.PauliSum()
         self.hamiltonian = (1-self._sweep(self.t)) * self._H0.hamiltonian + self._sweep(self.t) * self._H1.hamiltonian
     
-    #Overrides SpinModelFC's function
-    def set_Ut(self):
-        _n = np.size(self.qubits)
-        _N = 2**(_n)
+    #Only Trotterization with adiabatic assumption possible -> alternative Integrate Schrödinger equation directly
+    def set_Uts(self, trotter_steps: int = 0):
+        if(trotter_steps == 0):
+            trotter_steps = int(self.T)
+        delta_t = self.T / trotter_steps
         
-        if self.t == 0:
-            self._Ut = np.identity(_N)
-            return True
-        
-        sweep_integrated, error = quad(self._sweep, 0, self.t)
-        if(error > 1e-7):
-            print('WARNING: Numerical integration error: {}'.format(error)) #pragma: no cover
-        
-        hamiltonian_integrated = ((self.t - sweep_integrated) * self._H0.hamiltonian + sweep_integrated * self._H1.hamiltonian).matrix()
-        
-        eig_val, eig_vec =  np.linalg.eigh(hamiltonian_integrated)
-        
-        self._Ut = eig_vec @ np.diag( np.exp( -1j * eig_val ) ) @ eig_vec.conjugate().transpose()
+        self._Uts = []
+        for m in range(trotter_steps):
+            hamiltonian = ((1 - self._sweep(m*delta_t)) * self._H0.hamiltonian + self._sweep(m*delta_t) * self._H1.hamiltonian).matrix()
+            eig_val, eig_vec =  np.linalg.eigh(hamiltonian)
+            self._Uts.append( 
+                np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
+            )
+        #returns into self._Uts the Trotter factors to further use and single time execution
     
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         return [*((1 - self._sweep(self.t)) * np.array( self._H0.energy())),
