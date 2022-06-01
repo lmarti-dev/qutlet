@@ -3,7 +3,7 @@ import abc
 import importlib
 import numpy as np
 from sys import stdout
-from typing import Dict
+from typing import Dict 
 
 class Restorable(abc.ABC):
     @abc.abstractmethod

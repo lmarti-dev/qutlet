@@ -2544,8 +2544,6 @@ def test_get_energy_filter_from_subsystem7(n,HA_options,HB_options):
             .format(E_A,E_A_AEV, E_B, E_B_AEV, E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
     assert(abs(E -(E_A+E_B)) < (n[0]*n[1])*2e-8)
 
-
-
 @pytest.mark.parametrize(
     "n, subsystem_qubits, true_ordering",
     [
@@ -2963,16 +2961,24 @@ def test_permute_state_vector(wf_in, permutation, wf_out):
     #assert False
 
 
+
+# 2.
+# For Sampling 
+# Add in ExpevationValue evaluate/Optimiser from sample functionality? Or convert sample to wf first?
+# Implement perfect sampling strategy in simulation file
+# in test take Ising close to phase transition for square lattice, equal sampling budget and check variance + mean better?
 @pytest.mark.parametrize(
-    "n, subsystem_qubits",
+    "n, HA_options, HB_options",
     [
         (   
-            [1,2],
+            [2,2],
             [[ cirq.GridQubit(0,0), cirq.GridQubit(0,1)]],
         ),
     ]
 )
-def test_energy_from_energy_filter(n, subsystem_qubits):
+def test_energy_from_energy_filter_sample(n, subsystem_qubits):
+    #Use J=h=1 
+    # is ther Var X approx VarZ -> plots?
     j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
     j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
     h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
@@ -2990,11 +2996,6 @@ def test_energy_from_energy_filter(n, subsystem_qubits):
     assert False
 
 
-# 2.
-# For Sampling 
-# Add in ExpevationValue evaluate/Optimiser from sample functionality? Or convert sample to wf first?
-# Implement perfect sampling strategy in simulation file
-# in test take Ising close to phase transition for square lattice, equal sampling budget and check variance + mean better?
 
 def test_set_circuit_errors():
     ising= Ising("GridQubit", [1, 3], np.ones((0, 3)), np.ones((1, 2)), np.ones((1, 3)), "Z")

@@ -256,13 +256,13 @@ def _exact_layer(self):
                     #Get cc_exact or set default
                     if self.basics.options.get("cc_exact") is True:
                         yield cirq.MatrixGate(  np.matrix.getH(temp_model.eig_vec),
-                                                unitary_check_rtol=1e-12,
-                                                unitary_check_atol=1e-12,
+                                                unitary_check_rtol=n_exact[0]*n_exact[1]*1e-12,
+                                                unitary_check_atol=n_exact[0]*n_exact[1]*1e-12,
                                                 ).on(*temp_qubits)
                     else:
                         yield cirq.MatrixGate(  temp_model.eig_vec,
-                                                unitary_check_rtol=1e-12,
-                                                unitary_check_atol=1e-12,
+                                                unitary_check_rtol=n_exact[0]*n_exact[1]*1e-12,
+                                                unitary_check_atol=n_exact[0]*n_exact[1]*1e-12,
                                                 ).on(*temp_qubits)
     else:
         #More flexible option
@@ -335,7 +335,7 @@ def _exact_layer(self):
                                     n_offset=[min(subsystem_qubits[i])._row, min(subsystem_qubits[i])._col] )
                                     
             #Store cirq PauliSums of subsystem Hamiltonians
-            print(temp_model.hamiltonian)
+            #print(temp_model.hamiltonian)
             self.subsystem_hamiltonians.append(temp_model.hamiltonian)
             
             #To not loose qubits with no gates/ 0 qubits
@@ -356,13 +356,13 @@ def _exact_layer(self):
                 #Get cc_exact or set default
                 if self.basics.options.get("cc_exact") is True:
                     yield cirq.MatrixGate(  matrix=np.matrix.getH(temp_model.eig_vec),
-                                            unitary_check_rtol=1e-12,
-                                            unitary_check_atol=1e-12,
+                                            unitary_check_rtol=temp_model.n[0]*temp_model.n[1]*1e-12,
+                                            unitary_check_atol=temp_model.n[0]*temp_model.n[1]*1e-12,
                                             ).on(*subsystem_qubits[i])
                 else:
                     yield cirq.MatrixGate(temp_model.eig_vec,
-                                        unitary_check_rtol=1e-12,
-                                        unitary_check_atol=1e-12,
+                                        unitary_check_rtol=temp_model.n[0]*temp_model.n[1]*1e-12,
+                                        unitary_check_atol=temp_model.n[0]*temp_model.n[1]*1e-12,
                                         ).on(*subsystem_qubits[i])
 
     #If this method is used to rotate into the eigenbasis, store eigenvalues and vectors, as those are already calcualted
@@ -524,7 +524,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
     if np.size(subsystem_energies) == 2**np.size(self.qubits):
         return np.squeeze(subsystem_energies)
     else:
-        print(subsystem_energies)
+        #print(subsystem_energies)
         #energy_filter = np.add(np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]
         #                            .reshape((1,2**np.size( self.subsystem_qubits[0]))), 
         #                       np.size( self.subsystem_qubits[1])*self.subsystem_energies[1]
@@ -543,13 +543,13 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
         
         # If the subsystems are not in standard order return energy filter in standard order
         ordering = self.basics.get_reordering_from_subsystem(self)
-        print("ordering: {}\nnp.size(energy_filter): {}\nnp.squeeze(energy_filter)/np.size(self.qubits) {}\nself.basics.permute_state_vector: {}"
-        .format(ordering, 
-                np.size(energy_filter),
-                np.size(np.squeeze(energy_filter)/np.size(self.qubits)),
-                np.size(self.basics.permute_state_vector(   self,
-                                                        np.squeeze(energy_filter)/np.size(self.qubits), 
-                                                        ordering))))
+        #print("ordering: {}\nnp.size(energy_filter): {}\nnp.squeeze(energy_filter)/np.size(self.qubits) {}\nself.basics.permute_state_vector: {}"
+        #.format(ordering, 
+        #        np.size(energy_filter),
+        #        np.size(np.squeeze(energy_filter)/np.size(self.qubits)),
+        #        np.size(self.basics.permute_state_vector(   self,
+        #                                                np.squeeze(energy_filter)/np.size(self.qubits), 
+        #                                               ordering))))
         if (ordering == range(np.size(self.qubits))) or (not do_reorder):
             return np.squeeze(energy_filter)/np.size(self.qubits)
         else:
