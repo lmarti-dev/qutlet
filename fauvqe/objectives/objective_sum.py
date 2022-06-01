@@ -1,5 +1,6 @@
 """
     This abstract class is a generalisation of Objective and allows to use combination of Objectives
+    TODO Write tests see 20220601.py
 """
 import abc
 from numbers import Real
@@ -109,16 +110,19 @@ class ObjectiveSum(Restorable):
         Real:
             The value of the objective function for the given wavefunction.
         """
-        if self._combined_objective_fct is None:
-            if isinstance(self._objectives, List):
-                _tmp = 0
-                for i in range(len(self._objectives)):
-                    _tmp += self._objectives[i].evaluate(wavefunctions[i])
-                return _tmp
-            else:
-                return self._objectives.evaluate(wavefunctions)
+        if isinstance(self._objectives, List):
+            _tmp = []
+            for i in range(len(self._objectives)):
+                _tmp.append(self._objectives[i].evaluate(wavefunctions[i]))
         else:
-            raise NotImplementedError()  # pragma: no cover
+            _tmp = self._objectives.evaluate(wavefunctions)
+
+        if self._combined_objective_fct is None:
+            return np.sum(_tmp)
+        else:
+            # e.g. have here the lambda function
+            # lambda x0, x1: 0.5*x0 + x1**2
+            return self._combined_objective_fct(*_tmp)
     
     def __repr__(self) -> str:
         """
