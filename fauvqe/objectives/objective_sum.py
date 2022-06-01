@@ -124,6 +124,10 @@ class ObjectiveSum(Restorable):
             # lambda x0, x1: 0.5*x0 + x1**2
             return self._combined_objective_fct(*_tmp)
     
+    #TODO Add typing
+    def set_linear_combined_objective_fct(self, coefficents):
+        self._combined_objective_fct = lambda *args: sum([coefficents[i]*args[i] for i in range(len(coefficents))])
+
     def __repr__(self) -> str:
         """
             Representation function.
