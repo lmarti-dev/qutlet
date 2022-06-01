@@ -30,6 +30,7 @@ from fauvqe.objectives import (
     Magnetisation,
     MatrixCost,
     Objective,
+    ObjectiveSum,
     TraceDistance,
     UtCost,
     Variance
