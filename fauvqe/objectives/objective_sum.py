@@ -3,7 +3,7 @@
 """
 import abc
 from numbers import Real
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 #Change to from cirq import
 import cirq
@@ -43,28 +43,25 @@ class ObjectiveSum(Restorable):
     #   To allow 0.3*ExpectionValue(ising) - Entanglement(ising)/2
     #   To return the correct ObjectiveSum
     def __init__(   self, 
-                    models: Union[List[AbstractModel], AbstractModel],
                     objectives: Union[List[Objective], Objective],
-                    combined_objective_fct: None):
-        assert (len(models) == len(objectives)), 
-        "ObjectiveSum error: number of provided models and objectives must be equal. len(models) != len(objectives): {} != {}".format(
-            len(models), len(objectives))
-        #Maybe model not even needed here?
-        self._models: Union[List[AbstractModel], AbstractModel] = models
+                    combined_objective_fct = None):
         self._objectives: Union[List[Objective], Objective] = objectives
         self._combined_objective_fct= combined_objective_fct
 
     @property
-    def models(self) -> AbstractModel:
-        """The AbstractModel instance linked to this objective
+    def objectives(self) -> Union[List[Objective], Objective]:
+        """
+        The Objectives linked to this ObjectiveSum
 
         Returns
         -------
-        AbstractModel
+            Union[List[Objective], Objective]
         """
-        return self._models
+        return self._objectives
 
-    def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
+    def simulate(self, 
+                param_resolver, 
+                initial_state: Optional[np.ndarray] = None) -> Union[List[np.array], np.array]:
         #TODO: Allow for sampling and sampling budget allocation
         #Return Union[List[nd.array], nd.array]
         #Note that for both evaluate and simulate, simualte and evaluate of the respective objective is used
@@ -82,17 +79,25 @@ class ObjectiveSum(Restorable):
         -------
         numpy.ndarray: The simulated wavefunction.
         """
-        wf = self._model.simulator.simulate(
-            self._model.circuit,
-            param_resolver=param_resolver,
-            initial_state=initial_state,
-        ).state_vector()
+        
+        #TODO Potentially parallise this
+        if isinstance(self._objectives, List):
+            wavefunctions = []
+            for objective in self._objectives:
+                #print(objective)
+                wavefunctions.append(objective.simulate(
+                        param_resolver=param_resolver,
+                        initial_state=initial_state))
+            return wavefunctions
+        else:
+            return self._objectives.simulate(
+                        param_resolver=param_resolver,
+                        initial_state=initial_state)
 
-        return wf/np.linalg.norm(wf)
-
-    @abc.abstractmethod
-    def evaluate(self, wavefunction: np.ndarray) -> Real:
-        """Calculate the objective for a given wavefunction.
+    def evaluate(   self, 
+                    wavefunctions: Union[List[np.array], np.array]) -> Real:
+        """
+        Calculate the objective sum for a given wavefunction/sample 
 
         Parameters
         ----------
@@ -104,62 +109,37 @@ class ObjectiveSum(Restorable):
         Real:
             The value of the objective function for the given wavefunction.
         """
-        raise NotImplementedError()  # pragma: no cover
-
-    def _rotate_x(self, wavefunction: np.ndarray) -> np.ndarray:
-        """Helper method to rotate a wavefunction along the x axis.
-
-        Uses a rotation cirq circuit constructed from Hadamard gates to perform the transformation.
-
-        Parameters
-        ---------
-        wavefunction: numpy.ndarray
-            Wavefunction to rotate around the x axis
-
-        Returns
-        ---------
-        numpy.ndarray
-            Rotated wavefunction of the same size as the input wavefunction
-        """
-        return self._rotate(wavefunction, ["X" for k in range(self._model.n[0] * self._model.n[1])])
+        if self._combined_objective_fct is None:
+            if isinstance(self._objectives, List):
+                _tmp = 0
+                for i in range(len(self._objectives)):
+                    _tmp += self._objectives[i].evaluate(wavefunctions[i])
+                return _tmp
+            else:
+                return self._objectives.evaluate(wavefunctions)
+        else:
+            raise NotImplementedError()  # pragma: no cover
     
-    def _rotate_y(self, wavefunction: np.ndarray) -> np.ndarray:
-        return self._rotate(wavefunction, ["Y" for k in range(self._model.n[0] * self._model.n[1])])
-    
-    def _rotate(self, wavefunction: np.ndarray, bases: List[str]) -> np.ndarray:
-        assert len(wavefunction) == 2**(len(bases)), "List of bases does not fit dimension of wavefunction"
-        rotation_circuit = cirq.Circuit()
-        hadamard = lambda q: cirq.H(q)
-        s_dagger = lambda q: cirq.Z(q)**(3/2)
-        i=0
-        for row in self._model.qubits:
-            for qubit in row:
-                if(bases[i] == "X"):
-                    rotation_circuit.append(hadamard(qubit))
-                elif(bases[i] == "Y"):
-                    rotation_circuit.append(s_dagger(qubit))
-                    rotation_circuit.append(hadamard(qubit))
-                elif(bases[i] == "Z"):
-                    pass
-                else:
-                    raise NotImplementedError()
-                i += 1
-
-        return self._model.simulator.simulate(
-            rotation_circuit,
-            # Start off at the given wavefunction
-            initial_state=wavefunction,
-        ).state_vector()
-    
-    @abc.abstractmethod
     def __repr__(self) -> str:
         """
             Representation function.
 
-            Use here the __repr__ function of the models and objectives themselves
-
-    
+            Use here the __repr__ function of the models and objectives themselves    
         """
         repr_string= "<ObjectiveSum:\n"
+        for objective in self._objectives:
+            repr_string += repr(objective)
+        return repr_string
 
-        return "<ObjectiveSum: {}>".format(self.__energy_fields)
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "objectives": self._objectives,
+                "combined_objective_fct": self._combined_objective_fct,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])   
+        return inst
