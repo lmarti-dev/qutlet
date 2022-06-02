@@ -165,7 +165,7 @@ def _UC_layer(self, gamma):
                 for j in range(self.n[1]):
                     if(self.h[i][j][g] != 0):
                         yield gate(self.qubits[i][j], gamma * self.h[i][j][g])
-    elif(isinstance(self, Ising)):
+    elif(isinstance(self, Ising) and hasattr(self, 'field') and self.field == "Z"):
         for k in range(2):
             if self.n[0] > 1:
                 for j in np.arange(0, self.n[1]-1+0.1, 1, dtype=int):
