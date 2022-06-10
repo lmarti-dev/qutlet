@@ -16,6 +16,7 @@ from fauvqe import models, objectives, optimisers
 from fauvqe.models import (
     AbstractModel,
     Adiabatic,
+    CooledAdiabatic,
     CoolingModel,
     Ising,
     IsingXY,

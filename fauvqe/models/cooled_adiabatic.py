@@ -11,7 +11,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.coolingmodel import CoolingModel
-from fauvqe.models.Adiabatic import Adiabatic
+from fauvqe.models.adiabatic import Adiabatic
 import fauvqe
 
 
@@ -22,12 +22,13 @@ class CooledAdiabatic(CoolingModel):
     def __init__(self, 
                  H0: Union[SpinModelFC, SpinModel],
                  H1: Union[SpinModelFC, SpinModel],
-                 sweep: Callable[Real] = None,
-                 t: Real = 0,
-                 T: Real = 1,
                  m_anc: AbstractModel,
                  int_gates: List[cirq.PauliSum],
-                 j_int: np.array):
+                 j_int: np.array,
+                 sweep: Callable[Real] = None,
+                 t: Real = 0,
+                 T: Real = 1
+                ):
         """
         H0: initial Hamiltonian (t=0)
         H1: final Hamiltonian (t=T)
@@ -47,18 +48,18 @@ class CooledAdiabatic(CoolingModel):
                  m_anc,
                  int_gates,
                  j_int,
-                 t):
+                 t)
     
     def copy(self) -> CooledAdiabatic:
         self_copy = CooledAdiabatic( 
                 self.m_sys._H0,
                 self.m_sys._H1,
-                self.m_sys._sweep,
-                self.m_sys.t,
-                self.m_sys.T,
                 self.m_anc,
                 self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
-                self.j_int
+                self.j_int,
+                self.m_sys._sweep,
+                self.m_sys.t,
+                self.m_sys.T
         )
         
         self_copy.circuit = self.circuit.copy()
@@ -136,12 +137,12 @@ class CooledAdiabatic(CoolingModel):
             "constructor_params": {
                 "H0": self.m_sys._H0,
                 "H1": self.m_sys._H1,
-                "sweep": self.m_sys._sweep,
-                "t": self.m_sys.t,
-                "T": self.m_sys.T,
                 "m_anc": self.m_anc,
                 "int_gates": self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
-                "j_int": self.j_int
+                "j_int": self.j_int,
+                "sweep": self.m_sys._sweep,
+                "t": self.m_sys.t,
+                "T": self.m_sys.T
             },
             "params": {
                 "circuit": self.circuit,

@@ -1,4 +1,5 @@
 from fauvqe.models.adiabatic import Adiabatic
+from fauvqe.models.cooled_adiabatic import CooledAdiabatic
 from fauvqe.models.coolingmodel import CoolingModel
 from fauvqe.models.ising import Ising
 from fauvqe.models.isingxy import IsingXY
