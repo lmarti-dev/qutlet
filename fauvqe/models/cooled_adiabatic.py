@@ -72,6 +72,50 @@ class CooledAdiabatic(CoolingModel):
 
         return self_copy
     
+    #Overrides CoolingModel's function
+    def _set_hamiltonian(self, reset: bool = True) -> None:
+        if reset:
+            self.hamiltonian = cirq.PauliSum()
+        self.hamiltonian += self._get_hamilltonian_at_time(self.t)
+        
+    def _get_hamilltonian_at_time(self, time: Real):
+        """
+        Append or Reset Hamiltonian; Combine Hamiltonians:
+            (1 - sweep(t)) * H0 + sweep(t) * H1
+            + m_anc.hamiltonian
+            + interaction term
+        
+        Parameters
+        ----------
+        self
+        reset: bool, indicates whether to reset or append Hamiltonian
+        
+        Returns
+        -------
+        void 
+        """
+        ham = cirq.PauliSum()
+        
+        self.m_sys.t = time
+        self.m_sys._set_hamiltonian()
+        self.m_anc.t = time
+        self.m_anc._set_hamiltonian()
+        
+        ham = self.m_sys.hamiltonian + self.m_anc.hamiltonian
+        int_gates = self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q]
+        for g in range(len(int_gates)):
+            for i in range(self.n[0]):
+                for j in range(self.n[1]):
+                    #k==i, l>j
+                    for l in range(j+1, self.n[1], 1):
+                        if(self.j_int[i][j][i][l][g] != 0):
+                            ham -= self.j_int[i][j][i][l][g] * int_gates[g](self.qubits[i][j], self.qubits[i][l])
+                    #k>i
+                    for k in range(i+1, self.n[0], 1):
+                        for l in range(self.n[1]):
+                            if(self.j_int[i][j][k][l][g] != 0):
+                                ham -= self.j_int[i][j][k][l][g] * int_gates[g](self.qubits[i][j], self.qubits[k][l])
+    
     #Only Trotterization with adiabatic assumption possible -> alternative Integrate Schrödinger equation directly
     def set_Uts(self, trotter_steps: int = 0):
         if(trotter_steps == 0):
@@ -80,7 +124,7 @@ class CooledAdiabatic(CoolingModel):
         
         self._Uts = []
         for m in range(trotter_steps):
-            hamiltonian = ((1 - self._sweep(m*delta_t)) * self._H0.hamiltonian + self._sweep(m*delta_t) * self._H1.hamiltonian).matrix()
+            hamiltonian = self._get_hamilltonian_at_time(m*delta_t).matrix()
             eig_val, eig_vec =  np.linalg.eigh(hamiltonian)
             self._Uts.append( 
                 np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
