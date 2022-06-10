@@ -320,24 +320,6 @@ def _reset_layer(self) -> cirq.Moment:
         for j in range(self.m_anc.n[1]):
             yield cirq.reset(self.qubits[self.m_sys.n[0]+i][j])
 
-def orth_norm(A: np.array) -> Real:
-    """
-        Calculates the orthogonal norm of A
-        
-        Parameters
-        ----------
-        self
-        A: np.array
-            matrix of which orthogonal norm is calculated
-        
-        Returns
-        -------
-        ||A||_\perp
-    """
-    eig_val = scipy.linalg.eigvalsh(A)
-    #print((eig_val[-1] - eig_val[0])/2)
-    return (eig_val[-1] - eig_val[0])/2
-
 #Backup Code, if we decide to insert variable parameters into the trotter ansatz
 """
 def _get_param_resolver(self, c):
