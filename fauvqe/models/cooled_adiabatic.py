@@ -44,6 +44,8 @@ class CooledAdiabatic(CoolingModel):
                           t,
                           T)
         
+        self._Uts: Optional[np.ndarray] = None
+        
         super().__init__(m_sys,
                  m_anc,
                  int_gates,
@@ -78,7 +80,7 @@ class CooledAdiabatic(CoolingModel):
         if reset:
             self.hamiltonian = cirq.PauliSum()
         self.hamiltonian += self._get_hamilltonian_at_time(self.t)
-        
+    
     def _get_hamilltonian_at_time(self, time: Real):
         """
         Append or Reset Hamiltonian; Combine Hamiltonians:
@@ -102,26 +104,26 @@ class CooledAdiabatic(CoolingModel):
         self.m_anc.t = time
         self.m_anc._set_hamiltonian()
         
-        ham = self.m_sys.hamiltonian + self.m_anc.hamiltonian
+        sys_rows = self.m_sys.n[0]
+        new_qubits = [self.qubits[i][j] for i in range(sys_rows, self.n[0], 1) for j in range(self.n[1])]
+        ham = self.m_sys.hamiltonian + self.m_anc.hamiltonian.with_qubits(*new_qubits)
         int_gates = self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q]
         for g in range(len(int_gates)):
-            for i in range(self.n[0]):
-                for j in range(self.n[1]):
-                    #k==i, l>j
-                    for l in range(j+1, self.n[1], 1):
-                        if(self.j_int[i][j][i][l][g] != 0):
-                            ham -= self.j_int[i][j][i][l][g] * int_gates[g](self.qubits[i][j], self.qubits[i][l])
-                    #k>i
-                    for k in range(i+1, self.n[0], 1):
-                        for l in range(self.n[1]):
-                            if(self.j_int[i][j][k][l][g] != 0):
-                                ham -= self.j_int[i][j][k][l][g] * int_gates[g](self.qubits[i][j], self.qubits[k][l])
+            for i in range(self.m_sys.n[0]):
+                for j in range(self.m_sys.n[1]):
+                    if(self.j_int[g][i][j] != 0):
+                        if self.cooling_type == "NA":
+                            ham -= self.j_int[g][i][j] * cirq.PauliSum.from_pauli_strings(int_gates[g](self.qubits[i][j], self.qubits[i+sys_rows][j]))
+                        else:
+                            ham -= self.j_int[g][i][j] * cirq.PauliSum.from_pauli_strings(int_gates[g](self.qubits[i][j], self.qubits[sys_rows][j]))
+        
+        return ham
     
     #Only Trotterization with adiabatic assumption possible -> alternative Integrate Schrödinger equation directly
     def set_Uts(self, trotter_steps: int = 0):
         if(trotter_steps == 0):
-            trotter_steps = int(self.T)
-        delta_t = self.T / trotter_steps
+            trotter_steps = int(self.m_sys.T)
+        delta_t = self.m_sys.T / trotter_steps
         
         self._Uts = []
         for m in range(trotter_steps):
