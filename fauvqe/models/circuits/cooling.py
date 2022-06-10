@@ -320,24 +320,6 @@ def _reset_layer(self) -> cirq.Moment:
         for j in range(self.m_anc.n[1]):
             yield cirq.reset(self.qubits[self.m_sys.n[0]+i][j])
 
-def commutator(A: np.array, B:np.array) -> np.array:
-    """
-        Commutator of A and B
-        
-        Parameters
-        ----------
-        self
-        A: np.array
-            Matrix 1
-        B: np.array
-            Matrix 2
-        
-        Returns
-        -------
-        [A, B]
-    """
-    return np.dot(A,B) - np.dot(B,A)
-
 def orth_norm(A: np.array) -> Real:
     """
         Calculates the orthogonal norm of A

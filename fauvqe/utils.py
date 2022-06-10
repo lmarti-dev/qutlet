@@ -250,3 +250,40 @@ def ptrace(A: np.array, ind: List[np.uint]) -> np.array:
     else:
         #Reshape back into two-index shape
         return np.trace(temp, axis1=ind, axis2=n+ind).reshape(2**(n-1), 2**(n-1))
+
+
+def commutator(A: np.array, B:np.array) -> np.array:
+    """
+        Commutator of A and B
+        
+        Parameters
+        ----------
+        self
+        A: np.array
+            Matrix 1
+        B: np.array
+            Matrix 2
+        
+        Returns
+        -------
+        [A, B]
+    """
+    return A @ B - B @ A
+
+def orth_norm(A: np.array) -> Real:
+    """
+        Calculates the orthogonal norm of A
+        
+        Parameters
+        ----------
+        self
+        A: np.array
+            matrix of which orthogonal norm is calculated
+        
+        Returns
+        -------
+        ||A||_\perp
+    """
+    eig_val = scipy.linalg.eigvalsh(A)
+    #print((eig_val[-1] - eig_val[0])/2)
+    return (eig_val[-1] - eig_val[0])/2
