@@ -209,3 +209,44 @@ def index_bits(a: str,ones=True) -> list:
 
 def unitary_transpose(M):
     return np.conj(np.transpose(np.array(M)))
+
+
+############################################################################################
+#                                                                                          #
+#                    Utilities for Quantum Mechanics                                       #
+#                                                                                          #
+############################################################################################
+
+def ptrace(A: np.array, ind: List[np.uint]) -> np.array:
+    """
+        Calculates partial trace of A over the indices indicated by ind
+        
+        Parameters
+        ----------
+        self
+        A: np.array
+            matrix which is partially traced over
+        ind: List[np.uint]
+            indices which are being traced 
+        
+        Returns
+        -------
+        Tr_ind(A): np.array
+    """
+    #number of qubits
+    n = np.log2(len(A))
+    assert abs(n - int(n)) < 1e-13, "Wrong matrix size. Required 2^n, Received {}".format(n)
+    n = int(n)
+    #Reshape into qubit indices
+    temp = A.reshape(*[2 for dummy in range(2*n)])
+    count = 0
+    if hasattr(ind, '__len__'):
+        for i in sorted(ind, reverse=True):
+            #Trace over the correct axes
+            temp = np.trace(temp, axis1=i-count, axis2=n+i-2*count)
+            count +=1
+        #Reshape back into two-index shape
+        return temp.reshape(2**(n-count), 2**(n-count))
+    else:
+        #Reshape back into two-index shape
+        return np.trace(temp, axis1=ind, axis2=n+ind).reshape(2**(n-1), 2**(n-1))
