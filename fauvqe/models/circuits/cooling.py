@@ -356,56 +356,6 @@ def orth_norm(A: np.array) -> Real:
     #print((eig_val[-1] - eig_val[0])/2)
     return (eig_val[-1] - eig_val[0])/2
 
-def flatten(list_of_lists: List[List[object]]) -> List[object]: 
-    """
-        Flattens a list of lists of objects into a list of objects by row-major ordering
-        
-        Parameters
-        ----------
-        self
-        list_of_lists: List[List[object]]
-            List of Lists that should be flattened
-        
-        Returns
-        -------
-        List[object]
-    """
-    return list(chain(*list_of_lists))
-
-def ptrace(A: np.array, ind: List[np.uint]) -> np.array:
-    """
-        Calculates partial trace of A over the indices indicated by ind
-        
-        Parameters
-        ----------
-        self
-        A: np.array
-            matrix which is partially traced over
-        ind: List[np.uint]
-            indices which are being traced 
-        
-        Returns
-        -------
-        Tr_ind(A): np.array
-    """
-    #number of qubits
-    n = np.log2(len(A))
-    assert abs(n - int(n)) < 1e-13, "Wrong matrix size. Required 2^n, Received {}".format(n)
-    n = int(n)
-    #Reshape into qubit indices
-    temp = A.reshape(*[2 for dummy in range(2*n)])
-    count = 0
-    if hasattr(ind, '__len__'):
-        for i in sorted(ind, reverse=True):
-            #Trace over the correct axes
-            temp = np.trace(temp, axis1=i-count, axis2=n+i-2*count)
-            count +=1
-        #Reshape back into two-index shape
-        return temp.reshape(2**(n-count), 2**(n-count))
-    else:
-        #Reshape back into two-index shape
-        return np.trace(temp, axis1=ind, axis2=n+ind).reshape(2**(n-1), 2**(n-1))
-
 #Backup Code, if we decide to insert variable parameters into the trotter ansatz
 """
 def _get_param_resolver(self, c):
