@@ -1,8 +1,11 @@
 from typing import Iterable,Union
 import numpy as np
+import scipy
 from itertools import chain
 import collections
 import sys 
+from typing import List
+from numbers import Real
 
 def pi_kron(*args):
 	R=np.kron(args[0],args[1])
