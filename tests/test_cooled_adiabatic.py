@@ -7,6 +7,7 @@ import sympy
 
 # internal imports
 from fauvqe import CooledAdiabatic, Ising, Heisenberg, HeisenbergFC, ExpectationValue
+from fauvqe.utils import ptrace
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]
@@ -275,7 +276,7 @@ def test_set_uts(qubittype, n, j_v, j_h, h, T, field):
         H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
     
     m_anc = Ising("GridQubit", [1,n[1]], np.zeros((1,n[1])), np.zeros((1,n[1])), np.ones((1,n[1])), 'Z')
-    j_int = np.ones((1, *n))
+    j_int = 0*np.ones((1, *n))
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     model.set_Uts()
@@ -286,8 +287,10 @@ def test_set_uts(qubittype, n, j_v, j_h, h, T, field):
         res = model._Uts[i] @ res
     H0.diagonalise(solver="numpy")
     initial = H0.eig_vec.transpose()[0]
-    out = res @ initial
+    initial = np.kron(initial, np.array([1, 0, 0, 0]))
+    out_vec = res @ initial
+    result = ptrace( out_vec.reshape(N, 1) @ out_vec.conjugate().reshape(1, N), [2, 3])
     H1.diagonalise(solver="numpy")
-    print(out)
     print(H1.eig_vec.transpose()[0])
-    assert 1-abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ out ) < 1e-3
+    print(result)
+    assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-3

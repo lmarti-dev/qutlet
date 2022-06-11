@@ -79,9 +79,9 @@ class CooledAdiabatic(CoolingModel):
     def _set_hamiltonian(self, reset: bool = True) -> None:
         if reset:
             self.hamiltonian = cirq.PauliSum()
-        self.hamiltonian += self._get_hamilltonian_at_time(self.t)
+        self.hamiltonian += self._get_hamiltonian_at_time(self.t)
     
-    def _get_hamilltonian_at_time(self, time: Real):
+    def _get_hamiltonian_at_time(self, time: Real):
         """
         Append or Reset Hamiltonian; Combine Hamiltonians:
             (1 - sweep(t)) * H0 + sweep(t) * H1
@@ -127,12 +127,11 @@ class CooledAdiabatic(CoolingModel):
         
         self._Uts = []
         for m in range(trotter_steps):
-            hamiltonian = self._get_hamilltonian_at_time(m*delta_t).matrix()
+            hamiltonian = self._get_hamiltonian_at_time(m*delta_t).matrix()
             eig_val, eig_vec =  np.linalg.eigh(hamiltonian)
             self._Uts.append( 
-                np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
+                np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * delta_t * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
             )
-        #returns into self._Uts the Trotter factors to further use and single time execution
     
     def to_json_dict(self) -> Dict:
         return {

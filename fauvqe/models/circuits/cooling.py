@@ -12,8 +12,7 @@ import sympy
 import scipy
 from typing import List
 from numbers import Real
-from itertools import chain
-#import fauvqe.CoolingModel
+from fauvqe.utils import commutator, orth_norm, flatten
 
 def set_K(self, K: np.uint) -> None:
     """

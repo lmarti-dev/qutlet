@@ -368,48 +368,6 @@ def test_get_default_e_m():
     e_min, e_max, spectral_spread = model.cooling.__get_default_e_m(model)
     assert abs(spectral_spread + 2*model.m_sys.eig_val[0]) < 1e-7
 
-@pytest.mark.parametrize(
-    "rho, ind, solution",
-    [
-        (
-            1/4*np.eye(4),
-            1,
-            1/2*np.eye(2)
-        ),
-        (
-            0.25*np.array(
-                        [[1, 1, 0, 0], 
-                        [1, 1, 0, 0], 
-                        [0, 0, 1, 1], 
-                        [0, 0, 1, 1]]
-            ),
-            0,
-            0.5*np.array(
-                        [[1, 1], 
-                        [1, 1]]
-            ),
-        ),
-        (
-            1/8*np.eye(8),
-            range(1, 3),
-            1/2*np.eye(2)
-        ),
-    ]
-)
-def test_ptrace(rho, ind, solution):
-    n=[2,1]
-    boundaries=[1,1]
-    m_sys = Ising("GridQubit", n)
-    m_anc = Ising("GridQubit", [1, n[1]])
-    j_int = np.ones((1, n[0], n[1]))
-    model = CoolingModel(
-                    m_sys,
-                    m_anc,
-                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
-                    j_int
-    )
-    assert np.linalg.norm(model.cooling.ptrace(rho, ind) - solution) < 1e-7
-
 def test_errors():
     n=[1, 2]
     m_sys = HeisenbergFC("GridQubit", n, np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])), np.ones((n[0], n[1], n[0], n[1])) )
