@@ -59,15 +59,13 @@ def pi_matmul(*args):
             R=np.matmul(R,M) 
     return R
 
-def print_non_zero(M,name: str=None, eq_tol: float=1E-15):
-	if name is not None:
-		print(name)
-	print((abs(M)>eq_tol).astype(int))
+def print_non_zero(M,name: str=None,eq_tol: float=1E-15): # pragma: no cover
+    if name is not None:
+        print(name)
+    print(get_non_zero(M=M,eq_tol=eq_tol))
 
-def check_type_and_convert(M):
-    if not isinstance(M,np.ndarray):
-        return np.array(M)
-    return M
+def get_non_zero(M,eq_tol: float=1E-15):
+	return (abs(np.array(M))>eq_tol).astype(int)
 
 def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     """This function takes a matrix and reorders so that the even index basis vectors 
@@ -85,7 +83,7 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
         M (np.ndarray): the matrix to be reordered
         even_first: whether the even vectors go in the first sector or the last (0 is the first index)
     """
-    M=check_type_and_convert(M)
+    M=np.array(M)
     dims = M.shape
     if even_first:
         a=0
@@ -97,18 +95,23 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     return M[np.ix_(*idxs)]
 
 def interweave(a, b)-> np.ndarray:
-    """This function interweaves to arrays, creating an array c whose even indices contain a's items and odd indices contain b's items
+    """This function interweaves to arrays, creating an array c whose even indices contain a's items and odd indices contain b's items.
+    When one array is shorter than the other, the function will simply keep using the longer array's items, i.e. stop interweaving
 
     Args:
         a (np.ndarray): the even-index array
         b (np.ndarray): the odd-index array
 
     Returns:
-        c (np.ndarray): the array maded of interwoven a and b
+        c (np.ndarray): the array made of interwoven a and b
     """
-    c = np.empty((a.size + b.size,), dtype=a.dtype)
-    c[0::2] = a
-    c[1::2] = b
+    
+    c=[]
+    for i in range(max(len(a),len(b))):
+        if i < len(a):
+            c.append(a[i])
+        if i < len(b):
+            c.append(b[i])
     return c
 
 def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
@@ -134,7 +137,7 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     Returns:
         M (np.ndarray): reordered matrix
     """
-    M=check_type_and_convert(M)
+    M=np.array(M)
     dims = M.shape
     if even_first:
         idxs = (np.array(interweave(np.arange(0,np.floor(ii/2)),np.arange(np.floor(ii/2),ii))).astype(int) for ii in dims)
@@ -158,6 +161,8 @@ def flip_cross_rows(M,flip_odd=True):
     else:
         a=0
     M_tmp[a::2,:] = M_tmp[a::2,::-1]
+    if isinstance(M,list):
+        return M_tmp.tolist()
     return M_tmp
 
 def lists_have_same_elements(a: list,b: list):
@@ -165,19 +170,19 @@ def lists_have_same_elements(a: list,b: list):
 
 
 ## Use np.isclose instead
-def lists_almost_have_same_elements(a: list,b: list,decimals:int):
-    rounded_a=np.round(np.array(a),decimals=decimals)
-    rounded_b=np.round(np.array(b),decimals=decimals)
-    return lists_have_same_elements(rounded_a,rounded_b)
+# def lists_almost_have_same_elements(a: list,b: list,decimals:int):
+#     rounded_a=np.round(np.array(a),decimals=decimals)
+#     rounded_b=np.round(np.array(b),decimals=decimals)
+#     return lists_have_same_elements(rounded_a,rounded_b)
 
 def round_small_to_zero(l: list,eq_tol: float = 1E-15):
     zl=[0 if abs(x) < eq_tol else x for x in l]
     return zl
 
-def flatten_qubits(gridqubits):
+def flatten_qubits(gridqubits): # pragma: no cover
     return list(flatten(gridqubits))
 
-def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: int=sys.maxsize):
+def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: int=sys.maxsize): #pragma: no cover
     """This function nicely prints a numpy array without truncation to desired precision
 
     Args:
@@ -203,7 +208,8 @@ def hamming_weight(n: Union[int,str])-> int:
     if isinstance(n,int):
         n=bin(n)
     elif isinstance(n,str):
-        pass
+        if bin(int(n,2)) != n:
+            raise TypeError("Expected a valid binary number string, but got {}".format(n))
     else:
         raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
     return sum((1 for j in n if j == '1'))
@@ -229,3 +235,61 @@ def index_bits(a: str,ones=True) -> list:
 
 def unitary_transpose(M):
     return np.conj(np.transpose(np.array(M)))
+
+def arg_alternating_index_to_sector(index: int,N: int):
+    """This takes in an index and length of the array and returns the index of
+    the equivalent sectorized matrix. The argsort equivalent to alternating_indices_to_sectors
+
+    Args:
+        index (int): the index to be sectorized
+        N (tuple): the vector length
+
+    Returns:
+        int: The sectorized index
+    """
+    return int((np.ceil(N/2).astype(int)-1 + (index+1)/2)*(index%2) + (1-index%2)*(index/2))
+
+def arg_alternating_indices_to_sectors(indices: tuple,N: Union[tuple,int]):
+    if isinstance(N,tuple): 
+        if len(N) != len(indices):
+            raise TypeError("The length of N is not equal to the length of the indices vector")
+        return tuple(map(arg_alternating_index_to_sector,indices,N))
+    elif isinstance(N,int):
+        return tuple(map(arg_alternating_index_to_sector,indices,[N]*len(indices)))
+    else:
+        raise TypeError("Expected N to be either a tuple or an int, got a {}".format(type(N)))
+
+def arg_flip_cross_row(x:int,y:int,dimy:int,flip_odd:bool=True):
+    """The arg equivalent of flip cross rows
+
+    Args:
+        x (int): the x index of the matrix
+        y (int): the y index of the matrix
+        dimy (int): the y dimension of the matrix
+        flip_odd (bool, optional): Whether to flip the odd or even row indices. Defaults to True.
+    """ 
+    if x < 0 or y < 0 or y >= dimy or dimy <= 0:
+        raise ValueError("Expected positives indices and dimension, got x:{x},y:{y},dimy:{dimy}".format(x=x,y=y,dimy=dimy)) 
+    if flip_odd:
+        a=1
+        b=0
+    else:
+        a=0
+        b=1
+    if x%2 == a:
+        return x,dimy-1-y
+    elif x%2 == b:
+        return x,y
+
+def grid_to_linear(x,y,dimx,dimy,horizontal=True):
+    if horizontal:
+        return x*dimy+y
+    else:
+        return y*dimx+x
+
+def linear_to_grid(n,dimx,dimy,horizontal=True):
+    if horizontal:
+        return np.unravel_index((n),(dimx,dimy),order="C")
+    else:
+        return np.unravel_index((n),(dimx,dimy),order="F")
+
