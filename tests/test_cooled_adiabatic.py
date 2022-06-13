@@ -6,7 +6,7 @@ from scipy.linalg import expm
 import sympy
 
 # internal imports
-from fauvqe import CooledAdiabatic, Ising, Heisenberg, HeisenbergFC, ExpectationValue
+from fauvqe import CooledAdiabatic, Adiabatic, Ising, Heisenberg, HeisenbergFC, ExpectationValue
 from fauvqe.utils import ptrace
 
 def test__eq__():
@@ -243,32 +243,28 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
 
 
 @pytest.mark.parametrize(
-    "qubittype, n, j_v, j_h, h, T, field",
+    "field",
     [
         (
-            "GridQubit",
-            [1, 2],
-            np.ones((0, 2)),
-            np.ones((1, 1)),
-            np.ones((1, 2)),
-            100,
-            'X',
+            'X'
         ),
         (
-            "GridQubit",
-            [1, 2],
-            np.ones((0, 2)),
-            np.ones((1, 1)),
-            np.ones((1, 2)),
-            100,
             'Z'
         )
     ]
 )
-def test_set_uts(qubittype, n, j_v, j_h, h, T, field):
+def test_set_uts_wo_cooling(field):
+    qubittype= "GridQubit"
+    n=[1, 2]
+    j_v=np.ones((0, 2))
+    j_h=np.ones((1, 1))
+    h= np.ones((1, 2))
+    T=10
+    
     zeros_v = np.zeros((n[0]-1, n[1]))
     zeros_h = np.zeros((n[0], n[1]-1))
     zeros = np.zeros((n[0], n[1]))
+    
     H0 = Ising(qubittype, n, j_v, j_h, h, field)
     if(field == 'X'):
         H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, h, zeros)
@@ -276,21 +272,28 @@ def test_set_uts(qubittype, n, j_v, j_h, h, T, field):
         H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
     
     m_anc = Ising("GridQubit", [1,n[1]], np.zeros((1,n[1])), np.zeros((1,n[1])), np.ones((1,n[1])), 'Z')
-    j_int = 0*np.ones((1, *n))
+    j_int = np.zeros((1, *n))
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     model.set_Uts()
+    admodel = Adiabatic(H0, H1, T=T)
+    admodel.set_Uts()
     
     N=2**(2*n[0]*n[1])
+    adN=2**(n[0]*n[1])
     res = np.eye(N)
+    adres = np.eye(adN)
     for i in range(len(model._Uts)):
         res = model._Uts[i] @ res
+        adres = admodel._Uts[i] @ adres
     H0.diagonalise(solver="numpy")
     initial = H0.eig_vec.transpose()[0]
+    adout_vec = adres @ initial
     initial = np.kron(initial, np.array([1, 0, 0, 0]))
     out_vec = res @ initial
     result = ptrace( out_vec.reshape(N, 1) @ out_vec.conjugate().reshape(1, N), [2, 3])
     H1.diagonalise(solver="numpy")
     print(H1.eig_vec.transpose()[0])
-    print(result)
+    print(adout_vec)
+    assert 1 - abs(( adout_vec ).transpose().conjugate() @ result @ ( adout_vec ) ) < 1e-3
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-3
