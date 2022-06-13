@@ -134,7 +134,7 @@ class Adiabatic(SpinModelFC):
         self._Uts = []
         for m in range(trotter_steps):
             hamiltonian = ((1 - self._sweep(m*delta_t)) * self._H0.hamiltonian + self._sweep(m*delta_t) * self._H1.hamiltonian)
-            print(hamiltonian)
+            #print(hamiltonian)
             hamiltonian = hamiltonian.matrix()
             eig_val, eig_vec =  np.linalg.eigh(hamiltonian)
             self._Uts.append( 
