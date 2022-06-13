@@ -190,6 +190,19 @@ def test_indexbits(a,correct):
             range(1, 3),
             1/2*np.eye(2)
         ),
+        (
+            0.5*np.array(
+                        [[1, 0, 1, 0], 
+                        [0, 0, 0, 0], 
+                        [1, 0, 1, 0], 
+                        [0, 0, 0, 0]]
+            ),
+            [1,],
+            0.5*np.array(
+                        [[1, 1], 
+                        [1, 1]]
+            ),
+        ),
     ]
 )
 def test_ptrace(rho, ind, solution):
