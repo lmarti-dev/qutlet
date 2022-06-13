@@ -220,9 +220,10 @@ def unitary_transpose(M):
 #                                                                                          #
 ############################################################################################
 
-def ptrace(A: np.array, ind: List[np.uint]) -> np.array:
+def ptrace(Q, ind):
     """
-        Calculates partial trace of A over the indices indicated by ind
+        Calculates partial trace of A over the indices indicated by ind. 
+        Major parts of this function are copied from qutip 4.7's _ptrace_dense function.
         
         Parameters
         ----------
@@ -236,24 +237,37 @@ def ptrace(A: np.array, ind: List[np.uint]) -> np.array:
         -------
         Tr_ind(A): np.array
     """
-    #number of qubits
-    n = np.log2(len(A))
+    n = np.log2(len(Q))
     assert abs(n - int(n)) < 1e-13, "Wrong matrix size. Required 2^n, Received {}".format(n)
     n = int(n)
-    #Reshape into qubit indices
-    temp = A.reshape(*[2 for dummy in range(2*n)])
-    count = 0
-    if hasattr(ind, '__len__'):
-        for i in sorted(ind, reverse=True):
-            #Trace over the correct axes
-            temp = np.trace(temp, axis1=i-count, axis2=n+i-2*count)
-            count +=1
-        #Reshape back into two-index shape
-        return temp.reshape(2**(n-count), 2**(n-count))
+    
+    if isinstance(ind, int):
+        ind = np.array([ind])
     else:
-        #Reshape back into two-index shape
-        return np.trace(temp, axis1=ind, axis2=n+ind).reshape(2**(n-1), 2**(n-1))
-
+        ind = np.asarray(ind)
+    sel = np.asarray([i for i in range(n) if i not in ind])
+    rd = np.asarray([2]*n, dtype=np.int32).ravel()
+    sel = list(np.sort(sel))
+    for x in sel:
+        if not 0 <= x < len(rd):
+            raise IndexError("Invalid selection index in ptrace.")
+    dkeep = (rd[sel]).tolist()
+    qtrace = list(set(np.arange(n)) - set(sel))
+    dtrace = (rd[qtrace]).tolist()
+    if len(dkeep) + len(dtrace) != len(rd):
+        raise ValueError("Duplicate selection index in ptrace.")
+    if not dtrace:
+        # If we are keeping all dimensions, no need to construct an ndarray.
+        return Q.copy()
+    rd = list(rd)
+    return np.trace(Q
+                    .reshape(rd + rd)
+                    .transpose(qtrace + [n + q for q in qtrace] +
+                            sel + [n + q for q in sel])
+                    .reshape([np.prod(dtrace, dtype=np.int32),
+                            np.prod(dtrace, dtype=np.int32),
+                            np.prod(dkeep, dtype=np.int32),
+                            np.prod(dkeep, dtype=np.int32)]))
 
 def commutator(A: np.array, B:np.array) -> np.array:
     """
