@@ -2,8 +2,6 @@
 import pytest
 import numpy as np
 import cirq
-from scipy.linalg import expm
-import sympy
 
 # internal imports
 from fauvqe import CooledAdiabatic, Adiabatic, Ising, Heisenberg, HeisenbergFC, ExpectationValue
@@ -243,17 +241,23 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
 
 
 @pytest.mark.parametrize(
-    "field",
+    "field, epsilon",
     [
         (
-            'X'
+            'X', 0
         ),
         (
-            'Z'
+            'Z', 0
+        ),
+        (
+            'X', 1e-5
+        ),
+        (
+            'Z', 1e-5
         )
     ]
 )
-def test_set_uts_wo_cooling(field):
+def test_set_uts_w_little_cooling(field, epsilon):
     qubittype= "GridQubit"
     n=[1, 2]
     j_v=np.ones((0, 2))
@@ -272,7 +276,7 @@ def test_set_uts_wo_cooling(field):
         H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
     
     m_anc = Ising("GridQubit", [1,n[1]], np.zeros((1,n[1])), np.zeros((1,n[1])), np.ones((1,n[1])), 'Z')
-    j_int = np.zeros((1, *n))
+    j_int = epsilon * np.ones((1, *n))
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     model.set_Uts()
@@ -291,9 +295,12 @@ def test_set_uts_wo_cooling(field):
     adout_vec = adres @ initial
     initial = np.kron(initial, np.array([1, 0, 0, 0]))
     out_vec = res @ initial
+    print(out_vec)
+    print(adout_vec)
     result = ptrace( out_vec.reshape(N, 1) @ out_vec.conjugate().reshape(1, N), [2, 3])
     H1.diagonalise(solver="numpy")
-    print(H1.eig_vec.transpose()[0])
-    print(adout_vec)
+    #print(H1.eig_vec.transpose()[0])
+    #print(adout_vec)
+    print("Purity: {}".format(np.trace(result @ result)))
     assert 1 - abs(( adout_vec ).transpose().conjugate() @ result @ ( adout_vec ) ) < 1e-3
-    assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-3
+    assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1

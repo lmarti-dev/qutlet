@@ -127,7 +127,9 @@ class CooledAdiabatic(CoolingModel):
         
         self._Uts = []
         for m in range(trotter_steps):
-            hamiltonian = self._get_hamiltonian_at_time(m*delta_t).matrix()
+            hamiltonian = self._get_hamiltonian_at_time(m*delta_t)
+            #print(hamiltonian)
+            hamiltonian = hamiltonian.matrix()
             eig_val, eig_vec =  np.linalg.eigh(hamiltonian)
             self._Uts.append( 
                 np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * delta_t * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
