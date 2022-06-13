@@ -245,17 +245,15 @@ def ptrace(Q, ind):
         ind = np.array([ind])
     else:
         ind = np.asarray(ind)
+    for x in ind:
+        if not 0 <= x < n:
+            raise IndexError("Invalid selection index in ptrace.")
     sel = np.asarray([i for i in range(n) if i not in ind])
     rd = np.asarray([2]*n, dtype=np.int32).ravel()
     sel = list(np.sort(sel))
-    for x in sel:
-        if not 0 <= x < len(rd):
-            raise IndexError("Invalid selection index in ptrace.")
     dkeep = (rd[sel]).tolist()
     qtrace = list(set(np.arange(n)) - set(sel))
     dtrace = (rd[qtrace]).tolist()
-    if len(dkeep) + len(dtrace) != len(rd):
-        raise ValueError("Duplicate selection index in ptrace.")
     if not dtrace:
         # If we are keeping all dimensions, no need to construct an ndarray.
         return Q.copy()

@@ -250,10 +250,10 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
             'Z', 0
         ),
         (
-            'X', 1e-5
+            'X', 1e-1
         ),
         (
-            'Z', 1e-5
+            'Z', 1e-1
         )
     ]
 )
@@ -302,5 +302,6 @@ def test_set_uts_w_little_cooling(field, epsilon):
     #print(H1.eig_vec.transpose()[0])
     #print(adout_vec)
     print("Purity: {}".format(np.trace(result @ result)))
-    assert 1 - abs(( adout_vec ).transpose().conjugate() @ result @ ( adout_vec ) ) < 1e-3
+    if(epsilon == 0):
+        assert 1 - abs(( adout_vec ).transpose().conjugate() @ result @ ( adout_vec ) ) < 1e-3
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1
