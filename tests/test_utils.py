@@ -203,11 +203,30 @@ def test_indexbits(a,correct):
                         [1, 1]]
             ),
         ),
+        (
+            0.5*np.array(
+                        [[1, 0, 1, 0], 
+                        [0, 0, 0, 0], 
+                        [1, 0, 1, 0], 
+                        [0, 0, 0, 0]]
+            ),
+            [],
+            0.5*np.array(
+                        [[1, 0, 1, 0], 
+                        [0, 0, 0, 0], 
+                        [1, 0, 1, 0], 
+                        [0, 0, 0, 0]]
+            ),
+        ),
     ]
 )
 def test_ptrace(rho, ind, solution):
     assert np.linalg.norm(ptrace(rho, ind) - solution) < 1e-7
     assert (ptrace(rho, ind) == solution).all()
+
+def test_ptrace_errors():
+    with pytest.raises(IndexError):
+        ptrace(np.eye(2), 5)
 
 @pytest.mark.parametrize(
     "A, B, solution",

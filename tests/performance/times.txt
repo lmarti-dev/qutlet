@@ -2374,3 +2374,111 @@ Test Adam + ExpectationValue
 Sequential Time: 12.336233615875244
 Parallel Time: 4.244959592819214
 
+===Mon, 13 Jun 2022 16:24:59 +0000===
+Test No Indices 
+
+Sequential Time: 2.79068660736084
+Parallel Time: 0.9217629432678223
+
+===Mon, 13 Jun 2022 16:25:22 +0000===
+Test Indices 
+
+Sequential Time: 16.046142578125
+Parallel Time: 6.303751468658447
+
+===Mon, 13 Jun 2022 16:25:34 +0000===
+Test Indices 
+
+Sequential Time: 8.524155139923096
+Parallel Time: 3.40254807472229
+
+===Mon, 13 Jun 2022 16:25:59 +0000===
+Test Indices 
+
+Sequential Time: 18.684563159942627
+Parallel Time: 6.2006895542144775
+
+===Mon, 13 Jun 2022 16:26:12 +0000===
+Test Indices 
+
+Sequential Time: 9.702378273010254
+Parallel Time: 3.6786983013153076
+
+===Mon, 13 Jun 2022 16:26:36 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.70498561859131
+Parallel Time: 5.704111099243164
+
+===Mon, 13 Jun 2022 16:26:50 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 10.054205656051636
+Parallel Time: 3.3610105514526367
+
+===Mon, 13 Jun 2022 16:27:21 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.33395290374756
+Parallel Time: 7.5563037395477295
+
+===Mon, 13 Jun 2022 16:27:38 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.440340280532837
+Parallel Time: 4.346492528915405
+
+===Mon, 13 Jun 2022 16:39:28 +0000===
+Test No Indices 
+
+Sequential Time: 3.024367332458496
+Parallel Time: 1.0137546062469482
+
+===Mon, 13 Jun 2022 16:39:50 +0000===
+Test Indices 
+
+Sequential Time: 16.77142858505249
+Parallel Time: 5.387041330337524
+
+===Mon, 13 Jun 2022 16:40:02 +0000===
+Test Indices 
+
+Sequential Time: 8.596735954284668
+Parallel Time: 3.3955795764923096
+
+===Mon, 13 Jun 2022 16:40:27 +0000===
+Test Indices 
+
+Sequential Time: 18.535038232803345
+Parallel Time: 6.174964189529419
+
+===Mon, 13 Jun 2022 16:40:40 +0000===
+Test Indices 
+
+Sequential Time: 9.641455173492432
+Parallel Time: 3.6878440380096436
+
+===Mon, 13 Jun 2022 16:41:06 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 19.922178030014038
+Parallel Time: 5.708543539047241
+
+===Mon, 13 Jun 2022 16:41:20 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 9.949641466140747
+Parallel Time: 3.3477795124053955
+
+===Mon, 13 Jun 2022 16:41:51 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.220735549926758
+Parallel Time: 7.542908191680908
+
+===Mon, 13 Jun 2022 16:42:08 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.712554931640625
+Parallel Time: 4.316100597381592
+
