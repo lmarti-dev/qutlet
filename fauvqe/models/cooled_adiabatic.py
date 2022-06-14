@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import importlib
 from collections.abc import Callable
-from typing import Tuple, Dict, Literal, Union
+from typing import Dict, Union
 from numbers import Real
 from scipy.integrate import quad
 import scipy
@@ -25,7 +24,7 @@ class CooledAdiabatic(CoolingModel):
                  m_anc: AbstractModel,
                  int_gates: List[cirq.PauliSum],
                  j_int: np.array,
-                 sweep: Callable[Real] = None,
+                 sweep: Callable = None,
                  t: Real = 0,
                  T: Real = 1
                 ):
@@ -120,7 +119,7 @@ class CooledAdiabatic(CoolingModel):
         return ham
     
     #Only Trotterization with adiabatic assumption possible -> alternative Integrate Schrödinger equation directly
-    def set_Uts(self, trotter_steps: int = 0):
+    def set_Uts(self, trotter_steps: int = 0) -> None:
         if(trotter_steps == 0):
             trotter_steps = int(self.m_sys.T)
         delta_t = self.m_sys.T / trotter_steps
@@ -134,6 +133,17 @@ class CooledAdiabatic(CoolingModel):
             self._Uts.append( 
                 np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * delta_t * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
             )
+    
+    def _get_default_trotter_steps(self):
+        return 0 
+
+    def perform_sweep(self, nbr_resets: int) -> np.ndarray:
+        if self._Uts is None or (len(self._Uts % nbr_resets != 0 )):
+            self.set_Uts(self._get_default_trotter_steps())
+        steps = len(self._Uts)
+        # Do the sweep with intermediate resets
+        final = 0
+        return final
     
     def to_json_dict(self) -> Dict:
         return {
