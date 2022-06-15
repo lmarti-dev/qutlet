@@ -134,14 +134,20 @@ class CooledAdiabatic(CoolingModel):
                 np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * delta_t * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
             )
     
-    def _get_default_trotter_steps(self):
-        return 0 
+    def _get_default_trotter_steps(self, nbr_resets):
+        return int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets
 
-    def perform_sweep(self, nbr_resets: int) -> np.ndarray:
-        if self._Uts is None or (len(self._Uts % nbr_resets != 0 )):
-            self.set_Uts(self._get_default_trotter_steps())
+    def perform_sweep(self, nbr_resets: int = None) -> np.ndarray:
+        if self.m_sys.eig_val is None:
+            self.m_sys.diagonalise()
+        if nbr_resets is None:
+            dt = 2 * np.pi / (self.m_sys.eig_val[1] - self.m_sys.eig_val[0])
+            nbr_resets = int(self.m_sys.T) / dt
+        if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
+            self.set_Uts(self._get_default_trotter_steps(nbr_resets))
         steps = len(self._Uts)
         # Do the sweep with intermediate resets
+        
         final = 0
         return final
     
