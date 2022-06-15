@@ -138,6 +138,8 @@ class CooledAdiabatic(CoolingModel):
         return int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets
 
     def perform_sweep(self, nbr_resets: int = None) -> np.ndarray:
+        _n = np.size(self.qubits)
+        _N = 2**(_n)
         #Set number of resets
         if nbr_resets is None:
             dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
@@ -145,14 +147,17 @@ class CooledAdiabatic(CoolingModel):
         #Get initial state from groundstate of m_sys.hamiltonian(t=0)
         if(self.initial is None):
             self.m_sys._set_initial_state_for_sweep()
+        fridge_gs = np.zeros(_N)
+        fridge_gs[0] = 1.0
         initial = self.m_sys.initial #TODO Tensorate with fridge qubits
         #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
             self.set_Uts(self._get_default_trotter_steps(nbr_resets))
         steps = len(self._Uts)
         # Do the sweep with intermediate resets
-        
-        final = 0
+        final = self.initial
+        for step in range(steps):
+            final = self._Uts @ final
         return final
     
     def to_json_dict(self) -> Dict:
