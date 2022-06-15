@@ -11,8 +11,7 @@ import cirq
 
 from fauvqe.models.coolingmodel import CoolingModel
 from fauvqe.models.adiabatic import Adiabatic
-import fauvqe
-
+from fauvqe.utils import ptrace
 
 class CooledAdiabatic(CoolingModel):
     """
@@ -137,9 +136,19 @@ class CooledAdiabatic(CoolingModel):
     def _get_default_trotter_steps(self, nbr_resets):
         return int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets
 
-    def perform_sweep(self, nbr_resets: int = None) -> np.ndarray:
-        _n = np.size(self.qubits)
+    def _reset_qubits(self, state):
+        _n = np.size(self.m_anc.qubits)
         _N = 2**(_n)
+        _n_full = np.size(self.qubits)
+        fridge_gs = np.zeros(shape=(_N, _N))
+        fridge_gs[0, 0] = 1.0
+        return np.kron( ptrace(state, range(_n_full - _n, _n_full, 1)), fridge_gs)
+
+    def perform_sweep(self, nbr_resets: int = None) -> np.ndarray:
+        _n = np.size(self.m_anc.qubits)
+        _N = 2**(_n)
+        _n_full = np.size(self.qubits)
+        _N_full = 2**(_n_full)
         #Set number of resets
         if nbr_resets is None:
             dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
@@ -149,15 +158,19 @@ class CooledAdiabatic(CoolingModel):
             self.m_sys._set_initial_state_for_sweep()
         fridge_gs = np.zeros(_N)
         fridge_gs[0] = 1.0
-        initial = self.m_sys.initial #TODO Tensorate with fridge qubits
+        initial = np.kron(self.m_sys.initial, fridge_gs)
         #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
             self.set_Uts(self._get_default_trotter_steps(nbr_resets))
         steps = len(self._Uts)
+        steps_between_resets = int( steps / nbr_resets )
         # Do the sweep with intermediate resets
-        final = self.initial
+        final = initial.reshape(_N_full, 1) @ initial.conjugate().reshape(1, _N_full)
         for step in range(steps):
-            final = self._Uts @ final
+            final = self._Uts @ final @ self._Uts.getH()
+            if((step+1) % steps_between_resets == 0):
+                final = self._reset_qubits(final)
+        #TODO Calculate figures of interest along the way
         return final
     
     def to_json_dict(self) -> Dict:
