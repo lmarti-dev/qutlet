@@ -21,7 +21,7 @@ class Adiabatic(SpinModelFC):
     def __init__(self, 
                  H0: Union[SpinModelFC, SpinModel],
                  H1: Union[SpinModelFC, SpinModel],
-                 sweep: Callable[Real] = None,
+                 sweep: Callable = None,
                  t: Real = 0,
                  T: Real = 1):
         """
@@ -68,6 +68,8 @@ class Adiabatic(SpinModelFC):
                 t
         )
         self.min_gap = None
+        self.initial = None
+        self.output = None
     
     def get_interactions(self) -> List[list]:
         self.energy_fields = [*self._H0.energy_fields, *self._H1.energy_fields]
@@ -147,14 +149,32 @@ class Adiabatic(SpinModelFC):
         if self.min_gap is not None:
             return self.min_gap
         if times is None:
-            times = np.linspace(0, self.m_sys.T, 1)
+            times = np.linspace(0, self.T, 1)
         gaps = []
         for t in times:
             self.t = t
             self.diagonalise("scipy")
             gaps.append(self.eig_val[1] - self.eig_val[0])
+            if t == 0:
+                self.initial = self.eig_vec.transpose()[0]
+            if t == self.T:
+                self.output = self.eig_vec.transpose()[0]
         self.min_gap = min(gaps)
         return self.min_gap
+
+    def _get_groundstate_at_time(self, time):
+        if(self.t != time):
+            self.t = time
+            self.diagonalise("scipy")
+        elif(self.eig_vec is None):
+            self.diagonalise("scipy")
+        return self.eig_vec.transpose()[0]
+    
+    def _set_initial_state_for_sweep(self):
+        self.initial = self._get_groundstate_at_time(0)
+        
+    def _set_output_state_for_sweep(self):
+        self.output = self._get_groundstate_at_time(self.T)
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         return [*((1 - self._sweep(self.t)) * np.array( self._H0.energy())),

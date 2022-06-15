@@ -142,6 +142,10 @@ class CooledAdiabatic(CoolingModel):
         if nbr_resets is None:
             dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
             nbr_resets = int(self.m_sys.T) / dt
+        #Get initial state from groundstate of m_sys.hamiltonian(t=0)
+        if(self.initial is None):
+            self.m_sys._set_initial_state_for_sweep()
+        initial = self.m_sys.initial #TODO Tensorate with fridge qubits
         #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
             self.set_Uts(self._get_default_trotter_steps(nbr_resets))
