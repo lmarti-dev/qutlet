@@ -3,6 +3,7 @@
 """
 from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
+import wave
 
 import numpy as np
 
@@ -55,7 +56,13 @@ class Fidelity(Objective):
     
     def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
         if(isinstance(wavefunction, np.ndarray)):
-            q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            #q = qutip.Qobj(wavefunction, dims=[[2 for k in range(self._n)], [1 for k in range(self._n)]])
+            if(np.size(wavefunction) == 2**self._n):
+                return abs(wavefunction.transpose() @ self._target_state.full().conjugate())
+            elif(np.size(wavefunction) == 2**(2*self._n)):
+                return abs(self._target_state.full().transpose().conjugate() @ wavefunction @ self._target_state.full().conjugate())
+            else:
+                assert False, "State vector or density matrix expected got dimensions: {}".format(np.size(wavefunction))
         elif(isinstance(wavefunction, qutip.Qobj)):
             q = wavefunction
         else:
