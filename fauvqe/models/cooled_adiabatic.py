@@ -138,11 +138,11 @@ class CooledAdiabatic(CoolingModel):
         return int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets
 
     def perform_sweep(self, nbr_resets: int = None) -> np.ndarray:
-        if self.m_sys.eig_val is None:
-            self.m_sys.diagonalise()
+        #Set number of resets
         if nbr_resets is None:
-            dt = 2 * np.pi / (self.m_sys.eig_val[1] - self.m_sys.eig_val[0])
+            dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
             nbr_resets = int(self.m_sys.T) / dt
+        #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
             self.set_Uts(self._get_default_trotter_steps(nbr_resets))
         steps = len(self._Uts)

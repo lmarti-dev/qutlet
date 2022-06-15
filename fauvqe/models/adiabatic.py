@@ -67,6 +67,7 @@ class Adiabatic(SpinModelFC):
                 SingleQubitGates,
                 t
         )
+        self.min_gap = None
     
     def get_interactions(self) -> List[list]:
         self.energy_fields = [*self._H0.energy_fields, *self._H1.energy_fields]
@@ -142,6 +143,19 @@ class Adiabatic(SpinModelFC):
             )
         #returns into self._Uts the Trotter factors to further use and single time execution
     
+    def _get_minimal_energy_gap(self, times: np.ndarray = None):
+        if self.min_gap is not None:
+            return self.min_gap
+        if times is None:
+            times = np.linspace(0, self.m_sys.T, 1)
+        gaps = []
+        for t in times:
+            self.t = t
+            self.diagonalise("scipy")
+            gaps.append(self.eig_val[1] - self.eig_val[0])
+        self.min_gap = min(gaps)
+        return self.min_gap
+
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
         return [*((1 - self._sweep(self.t)) * np.array( self._H0.energy())),
                   *(self._sweep(self.t) * np.array(self._H1.energy()))]
