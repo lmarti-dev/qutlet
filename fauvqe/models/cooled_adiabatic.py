@@ -133,33 +133,33 @@ class CooledAdiabatic(CoolingModel):
                 np.matmul(np.matmul(eig_vec, np.diag( np.exp( -1j * delta_t * eig_val ) ), dtype = np.complex64), eig_vec.conjugate().transpose())
             )
     
-    def _get_default_trotter_steps(self, nbr_resets):
-        return int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets
+    def _get_default_trotter_steps(self, nbr_resets: int):
+        return int( int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets )
 
     def perform_sweep(self, nbr_resets: int = None, calc_O: bool = True, calc_E: bool = True) -> List[np.ndarray]:
         _n = np.size(self.m_anc.qubits)
         _N = 2**(_n)
         _n_full = np.size(self.qubits)
-        _N_full = 2**(_n_full)
+        _N_sys = 2**(_n_full - _n)
         #Instantiate figures of interest if desired
         if(calc_O):
             if(self.m_sys.output is None):
                 self.m_sys._set_output_state_for_sweep()
             fid = Fidelity(self.m_sys, self.m_sys.output)
-            fids = []
+        fids = []
         if(calc_E):
             energy = AbstractExpectationValue(self.m_sys)
-            energies = []
+        energies = []
         #Set number of resets
         if nbr_resets is None:
             dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
             nbr_resets = int(self.m_sys.T) / dt
         #Get initial state from groundstate of m_sys.hamiltonian(t=0)
-        if(self.initial is None):
+        if(self.m_sys.initial is None):
             self.m_sys._set_initial_state_for_sweep()
         fridge_gs = np.zeros(shape=(_N, _N))
         fridge_gs[0, 0] = 1.0
-        initial = np.kron(self.m_sys.initial.reshape(_N_full, 1) @ self.m_sys.initial.reshape(1, _N_full),
+        initial = np.kron(self.m_sys.initial.reshape(_N_sys, 1) @ self.m_sys.initial.reshape(1, _N_sys),
                          fridge_gs)
         #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
@@ -169,15 +169,15 @@ class CooledAdiabatic(CoolingModel):
         # Do the sweep with intermediate resets
         final = initial
         for step in range(steps):
-            final = self._Uts @ final @ self._Uts.getH()
+            final = self._Uts[step] @ final @ self._Uts[step].transpose().conjugate()
             if((step+1) % steps_between_resets == 0):
-                sys_state = ptrace(state, range(_n_full - _n, _n_full, 1))
+                sys_state = ptrace(final, range(_n_full - _n, _n_full, 1))
                 if(calc_O):
-                    fids.append(fid.evaluate(sys_state))
+                    fids.append(fid.evaluate(sys_state)[0][0])
                 if(calc_E):
                     energies.append(energy.evaluate(sys_state))
                 final =  np.kron( sys_state, fridge_gs)
-        return final
+        return final, fids, energies
     
     def to_json_dict(self) -> Dict:
         return {

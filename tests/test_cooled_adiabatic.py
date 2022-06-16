@@ -305,3 +305,45 @@ def test_set_uts_w_little_cooling(field, epsilon):
     if(epsilon == 0):
         assert 1 - abs(( adout_vec ).transpose().conjugate() @ result @ ( adout_vec ) ) < 1e-3
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1
+
+@pytest.mark.parametrize(
+    "field, epsilon",
+    [
+        (
+            'X', 1e-5
+        ),
+        (
+            'Z', 1e-5
+        )
+    ]
+)
+def test_perform_sweep(field, epsilon):
+    qubittype= "GridQubit"
+    n=[2, 1]
+    j_v=np.ones((1, 1))
+    j_h=np.ones((2, 0))
+    h= np.ones((2, 1))
+    T=10
+    
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    zeros = np.zeros((n[0], n[1]))
+    
+    H0 = Ising(qubittype, n, j_v, j_h, h, field)
+    if(field == 'X'):
+        H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, h, zeros)
+    else:
+        H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
+    
+    m_anc = Ising("GridQubit", [1,1], np.zeros((1,1)), np.zeros((1,1)), np.ones((1,1)), 'Z')
+    j_int = epsilon * np.ones((1, 2, 1))
+    int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
+    model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
+    
+    res, fids, energies = model.perform_sweep()
+    print(fids)
+    print(energies)
+    result = ptrace( res, [2])
+    
+    print("Purity: {}".format(np.trace(result @ result)))
+    assert 1 - abs(model.m_sys.output.transpose().conjugate() @ result @ model.m_sys.output ) < 1e-1
