@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from sre_parse import State
 from typing import Dict, Union, List
 from numbers import Real
 from fauvqe.objectives.fidelity import Fidelity
@@ -161,7 +162,7 @@ class CooledAdiabatic(CoolingModel):
             self.m_sys._set_initial_state_for_sweep()
         fridge_gs = np.zeros(shape=(_N, _N))
         fridge_gs[0, 0] = 1.0
-        initial = np.kron(self.m_sys.initial.reshape(_N_sys, 1) @ self.m_sys.initial.reshape(1, _N_sys),
+        initial = np.kron(self.m_sys.initial.reshape(_N_sys, 1) @ self.m_sys.initial.conjugate().reshape(1, _N_sys),
                          fridge_gs)
         #Set Uts for sweep
         if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):

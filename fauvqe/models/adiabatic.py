@@ -165,6 +165,7 @@ class Adiabatic(SpinModelFC):
     def _get_groundstate_at_time(self, time):
         if(self.t != time):
             self.t = time
+            self._set_hamiltonian()
             self.diagonalise(solver="numpy")
         elif(self.eig_vec is None):
             self.diagonalise(solver="numpy")

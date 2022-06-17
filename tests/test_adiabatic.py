@@ -263,6 +263,44 @@ def test_set_uts(qubittype, n, j_v, j_h, h, T, field):
     print(H1.eig_vec.transpose()[0])
     assert 1-abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ out ) < 1e-3
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        (
+            'X'
+        ),
+        (
+            'Z'
+        )
+    ]
+)
+def test_set_initial_and_output_state(field):
+    qubittype = "GridQubit"
+    n = [1, 2]
+    j_v = np.ones((0, 2))
+    j_h = np.ones((1, 1))
+    h = np.ones((1, 2))
+    T = 100
+            
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    zeros = np.zeros((n[0], n[1]))
+    H0 = Ising(qubittype, n, j_v, j_h, h, field)
+    if(field == 'X'):
+        H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, h, zeros)
+    else:
+        H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
+    
+    model = Adiabatic(H0, H1, T=T)
+    model._set_initial_state_for_sweep()
+    H0.diagonalise(solver="numpy")
+    initial = H0.eig_vec.transpose()[0]
+    assert 1-abs(model.initial.conjugate().transpose() @ initial) < 1e-7
+    
+    model._set_output_state_for_sweep()
+    H1.diagonalise(solver="numpy")
+    output = H1.eig_vec.transpose()[0]
+    assert 1-abs(model.output.conjugate().transpose() @ output) < 1e-7
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, T, field",
