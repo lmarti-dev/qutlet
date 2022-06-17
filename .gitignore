@@ -68,7 +68,7 @@ coverage.xml
 *pytest.json
 *pytest.txt
 #time measurements
-tests/performance/times.txt
+times.txt
 
 # Translations
 *.mo
