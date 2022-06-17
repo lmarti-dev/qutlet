@@ -153,7 +153,9 @@ class CooledAdiabatic(CoolingModel):
         #Set number of resets
         if nbr_resets is None:
             dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
-            nbr_resets = int(self.m_sys.T) / dt
+            nbr_resets = int(self.m_sys.T / dt)
+            if(nbr_resets == 0):
+                nbr_resets = 1
         #Get initial state from groundstate of m_sys.hamiltonian(t=0)
         if(self.m_sys.initial is None):
             self.m_sys._set_initial_state_for_sweep()
@@ -166,6 +168,7 @@ class CooledAdiabatic(CoolingModel):
             self.set_Uts(self._get_default_trotter_steps(nbr_resets))
         steps = len(self._Uts)
         steps_between_resets = int( steps / nbr_resets )
+        print("Perform sweep with {} steps, {} resets and {} steps between resets".format(steps, nbr_resets, steps_between_resets))
         # Do the sweep with intermediate resets
         final = initial
         for step in range(steps):

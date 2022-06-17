@@ -153,7 +153,7 @@ class Adiabatic(SpinModelFC):
         gaps = []
         for t in times:
             self.t = t
-            self.diagonalise("scipy")
+            self.diagonalise(solver="numpy")
             gaps.append(self.eig_val[1] - self.eig_val[0])
             if t == 0:
                 self.initial = self.eig_vec.transpose()[0]
@@ -165,9 +165,9 @@ class Adiabatic(SpinModelFC):
     def _get_groundstate_at_time(self, time):
         if(self.t != time):
             self.t = time
-            self.diagonalise("scipy")
+            self.diagonalise(solver="numpy")
         elif(self.eig_vec is None):
-            self.diagonalise("scipy")
+            self.diagonalise(solver="numpy")
         return self.eig_vec.transpose()[0]
     
     def _set_initial_state_for_sweep(self):

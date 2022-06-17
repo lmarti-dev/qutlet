@@ -336,14 +336,14 @@ def test_perform_sweep(field, epsilon):
         H1 = Heisenberg(qubittype, n, zeros_v, zeros_h, zeros_v, zeros_h, j_v, j_h, zeros, zeros, h)
     
     m_anc = Ising("GridQubit", [1,1], np.zeros((1,1)), np.zeros((1,1)), np.ones((1,1)), 'Z')
-    j_int = epsilon * np.ones((1, 2, 1))
+    j_int = epsilon * np.ones((1, *n))
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     
     res, fids, energies = model.perform_sweep()
     print(fids)
     print(energies)
-    result = ptrace( res, [2])
+    result = ptrace(res, [2])
     
     print("Purity: {}".format(np.trace(result @ result)))
     assert 1 - abs(model.m_sys.output.transpose().conjugate() @ result @ model.m_sys.output ) < 1e-1
