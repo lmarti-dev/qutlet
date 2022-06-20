@@ -307,20 +307,26 @@ def test_set_uts_w_little_cooling(field, epsilon):
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1
 
 @pytest.mark.parametrize(
-    "field, nbr_resets",
+    "field, nbr_resets, calc_O",
     [
         (
-            'X', None
+            'X', None, True
         ),
         (
-            'X', 10
+            'X', 10, True
         ),
         (
-            'Z', None
+            'X', None, False
+        ),
+        (
+            'X', 10, False
+        ),
+        (
+            'Z', None, True
         )
     ]
 )
-def test_perform_sweep(field, nbr_resets):
+def test_perform_sweep(field, nbr_resets, calc_O):
     qubittype= "GridQubit"
     n=[2, 1]
     j_v=np.ones((1, 1))
@@ -344,10 +350,12 @@ def test_perform_sweep(field, nbr_resets):
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     
-    res, fids, energies = model.perform_sweep(nbr_resets)
+    res, fids, energies = model.perform_sweep(nbr_resets, calc_O)
     print(fids)
     print(energies)
     result = ptrace(res, [2])
     
     print("Purity: {}".format(np.trace(result @ result)))
+    if model.m_sys.output is None:
+        model.m_sys._set_output_state_for_sweep()
     assert 1 - abs(model.m_sys.output.transpose().conjugate() @ result @ model.m_sys.output ) < 1e-1

@@ -9,7 +9,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.spinModel_fc import SpinModelFC
-
+from fauvqe.models.abstractmodel import AbstractModel
 
 class CoolingModel(SpinModelFC):
     """
