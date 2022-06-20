@@ -307,23 +307,27 @@ def test_set_uts_w_little_cooling(field, epsilon):
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1
 
 @pytest.mark.parametrize(
-    "field, epsilon",
+    "field, nbr_resets",
     [
         (
-            'X', 1e-5
+            'X', None
         ),
         (
-            'Z', 1e-5
+            'X', 10
+        ),
+        (
+            'Z', None
         )
     ]
 )
-def test_perform_sweep(field, epsilon):
+def test_perform_sweep(field, nbr_resets):
     qubittype= "GridQubit"
     n=[2, 1]
     j_v=np.ones((1, 1))
     j_h=np.ones((2, 0))
     h= np.ones((2, 1))
     T=10
+    epsilon = 1e-2
     
     zeros_v = np.zeros((n[0]-1, n[1]))
     zeros_h = np.zeros((n[0], n[1]-1))
@@ -340,7 +344,7 @@ def test_perform_sweep(field, epsilon):
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     
-    res, fids, energies = model.perform_sweep()
+    res, fids, energies = model.perform_sweep(nbr_resets)
     print(fids)
     print(energies)
     result = ptrace(res, [2])

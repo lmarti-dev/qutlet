@@ -319,6 +319,10 @@ def test_get_minimal_energy_gap():
     model._get_minimal_energy_gap()
     print(model.gaps)
     assert abs(model.min_gap - np.sqrt(2)) < 1e-7
+    #Test whether it does not change anything a second time
+    model._get_minimal_energy_gap()
+    assert abs(model.min_gap - np.sqrt(2)) < 1e-7
+    
     
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, T, field",

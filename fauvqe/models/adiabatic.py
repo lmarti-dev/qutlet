@@ -150,7 +150,7 @@ class Adiabatic(SpinModelFC):
             return self.min_gap
         if times is None:
             times = np.linspace(0, self.T, int(self.T+1))
-        print(times)
+        #print(times)
         gaps = []
         for t in times:
             self.t = t
