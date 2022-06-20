@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Callable
-from typing import Tuple, Dict, Literal, Union
+from typing import Tuple, Dict, Union, List
 from numbers import Real
 from scipy.integrate import quad
-import scipy
 
 import numpy as np
 import cirq
 
 from fauvqe.models.spinModel_fc import SpinModelFC
+from fauvqe.models.spinModel import SpinModel
 import fauvqe
 
 

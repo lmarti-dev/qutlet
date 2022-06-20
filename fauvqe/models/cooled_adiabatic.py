@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from sre_parse import State
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Optional
 from numbers import Real
 from fauvqe.objectives.fidelity import Fidelity
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
@@ -12,6 +11,10 @@ import cirq
 
 from fauvqe.models.coolingmodel import CoolingModel
 from fauvqe.models.adiabatic import Adiabatic
+from fauvqe.models.spinModel_fc import SpinModelFC
+from fauvqe.models.spinModel import SpinModel
+from fauvqe.models.abstractmodel import AbstractModel
+
 from fauvqe.utils import ptrace
 
 class CooledAdiabatic(CoolingModel):
