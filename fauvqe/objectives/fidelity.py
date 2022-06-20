@@ -60,7 +60,7 @@ class Fidelity(Objective):
             if(np.size(wavefunction) == 2**self._n):
                 return abs(wavefunction.transpose() @ self._target_state.full().conjugate())
             elif(np.size(wavefunction) == 2**(2*self._n)):
-                return abs(self._target_state.full().transpose().conjugate() @ wavefunction @ self._target_state.full().conjugate())
+                return abs(self._target_state.full().transpose().conjugate() @ wavefunction @ self._target_state.full())
             else:
                 assert False, "State vector or density matrix expected got dimensions: {}".format(np.size(wavefunction))
         elif(isinstance(wavefunction, qutip.Qobj)):
