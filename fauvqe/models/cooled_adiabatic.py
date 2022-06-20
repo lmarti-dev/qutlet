@@ -138,25 +138,28 @@ class CooledAdiabatic(CoolingModel):
             )
     
     def _get_default_trotter_steps(self, nbr_resets: int):
-        return int( int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) + nbr_resets )
+        return int( int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) ) #+ nbr_resets )
 
     def perform_sweep(self, nbr_resets: int = None, calc_O: bool = True, calc_E: bool = True) -> List[np.ndarray]:
         _n = np.size(self.m_anc.qubits)
-        _N = 2**(_n)
+        _N = 2**( _n )
         _n_full = np.size(self.qubits)
         _N_sys = 2**(_n_full - _n)
+        min_gap = 0
         #Instantiate figures of interest if desired
         if(calc_O):
             if(self.m_sys.output is None):
-                self.m_sys._set_output_state_for_sweep()
+                min_gap = self.m_sys._get_minimal_energy_gap()
             fid = Fidelity(self.m_sys, self.m_sys.output)
         fids = []
         if(calc_E):
-            energy = AbstractExpectationValue(self.m_sys)
+            energy = AbstractExpectationValue(self.m_sys._H1)
         energies = []
         #Set number of resets
         if nbr_resets is None:
-            dt = 2 * np.pi / self.m_sys._get_minimal_energy_gap()
+            if min_gap == 0:
+                min_gap = self.m_sys._get_minimal_energy_gap()
+            dt = 2 * np.pi / min_gap
             nbr_resets = int(self.m_sys.T / dt)
             if(nbr_resets == 0):
                 nbr_resets = 1
@@ -180,6 +183,7 @@ class CooledAdiabatic(CoolingModel):
             if((step+1) % steps_between_resets == 0):
                 sys_state = ptrace(final, range(_n_full - _n, _n_full, 1))
                 if(calc_O):
+                    fid = Fidelity(self.m_sys, self.m_sys.groundstates[step+1])
                     fids.append(fid.evaluate(sys_state)[0][0])
                 if(calc_E):
                     energies.append(energy.evaluate(sys_state))
