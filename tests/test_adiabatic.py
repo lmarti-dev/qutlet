@@ -302,6 +302,24 @@ def test_set_initial_and_output_state(field):
     output = H1.eig_vec.transpose()[0]
     assert 1-abs(model.output.conjugate().transpose() @ output) < 1e-7
 
+def test_get_minimal_energy_gap():
+    qubittype = "GridQubit"
+    n = [1, 1]
+    h = np.ones(shape=(1, 1))
+    T = 100
+    
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    
+    H0 = Ising(qubittype, n, zeros_v, zeros_h, h, 'Z')
+    H1 = Ising(qubittype, n, zeros_v, zeros_h, h, 'X')
+    
+    model = Adiabatic(H0, H1, T=T)
+    
+    model._get_minimal_energy_gap()
+    print(model.gaps)
+    assert abs(model.min_gap - np.sqrt(2)) < 1e-7
+    
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, T, field",
     [

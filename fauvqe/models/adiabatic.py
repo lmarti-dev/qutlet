@@ -149,10 +149,12 @@ class Adiabatic(SpinModelFC):
         if self.min_gap is not None:
             return self.min_gap
         if times is None:
-            times = np.linspace(0, self.T, 1)
+            times = np.linspace(0, self.T, int(self.T+1))
+        print(times)
         gaps = []
         for t in times:
             self.t = t
+            self._set_hamiltonian()
             self.diagonalise(solver="numpy")
             gaps.append(self.eig_val[1] - self.eig_val[0])
             if t == 0:
@@ -160,6 +162,7 @@ class Adiabatic(SpinModelFC):
             if t == self.T:
                 self.output = self.eig_vec.transpose()[0]
         self.min_gap = min(gaps)
+        self.gaps = gaps
         return self.min_gap
 
     def _get_groundstate_at_time(self, time):
