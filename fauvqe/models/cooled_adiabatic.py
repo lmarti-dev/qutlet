@@ -225,6 +225,7 @@ class CooledAdiabatic(CoolingModel):
             nbr_resets = int(self.m_sys.T / dt)
             if(nbr_resets == 0):
                 nbr_resets = 1
+        self.nbr_resets = nbr_resets
         #Get initial state from groundstate of m_sys.hamiltonian(t=0)
         if(self.m_sys.initial is None):
             self.m_sys._set_initial_state_for_sweep()
