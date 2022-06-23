@@ -44,6 +44,11 @@ from fauvqe.optimisers import (
     Optimiser
 )
 
+from fauvqe.utilities  import (
+    haar,
+    haar_1qubit,
+    uniform,
+)
 """
 All within fauvqe imported libaries:
 #Standard libaries
