@@ -3769,3 +3769,57 @@ Test Indices
 Sequential Time: 9.983402252197266
 Parallel Time: 4.156698226928711
 
+===Do, 23 Jun 2022 17:52:37 +0000===
+Test No Indices 
+
+Sequential Time: 2.6416056156158447
+Parallel Time: 0.9237115383148193
+
+===Do, 23 Jun 2022 17:52:54 +0000===
+Test Indices 
+
+Sequential Time: 11.75027871131897
+Parallel Time: 5.075548887252808
+
+===Do, 23 Jun 2022 17:53:04 +0000===
+Test Indices 
+
+Sequential Time: 6.318061113357544
+Parallel Time: 3.2813665866851807
+
+===Do, 23 Jun 2022 17:53:29 +0000===
+Test Indices 
+
+Sequential Time: 18.760883808135986
+Parallel Time: 6.709664821624756
+
+===Do, 23 Jun 2022 17:53:43 +0000===
+Test Indices 
+
+Sequential Time: 10.006697177886963
+Parallel Time: 3.956221580505371
+
+===Do, 23 Jun 2022 17:54:02 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.30774474143982
+Parallel Time: 4.841315746307373
+
+===Do, 23 Jun 2022 17:54:14 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.827834606170654
+Parallel Time: 3.1683707237243652
+
+===Do, 23 Jun 2022 17:54:45 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.15870761871338
+Parallel Time: 7.735769748687744
+
+===Do, 23 Jun 2022 17:55:02 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.410654306411743
+Parallel Time: 4.459846496582031
+

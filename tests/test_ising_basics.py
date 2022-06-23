@@ -2967,6 +2967,7 @@ def test_permute_state_vector(wf_in, permutation, wf_out):
 # Add in ExpevationValue evaluate/Optimiser from sample functionality? Or convert sample to wf first?
 # Implement perfect sampling strategy in simulation file
 # in test take Ising close to phase transition for square lattice, equal sampling budget and check variance + mean better?
+"""
 @pytest.mark.parametrize(
     "n, HA_options, HB_options",
     [
@@ -2994,7 +2995,7 @@ def test_energy_from_energy_filter_sample(n, subsystem_qubits):
 
     print(ising.circuit)
     assert False
-
+"""
 
 
 def test_set_circuit_errors():
