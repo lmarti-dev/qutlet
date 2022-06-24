@@ -9,22 +9,38 @@
     Test question: who to vertify that some sample is drawn from a certain distribution
 """
 import cirq
+import math
 import numpy as np
 import qsimcirq
 
-#def get_haar_circuit( int: n, int: p): #-> cirq.Circuit()
-#    circuit = cirq.Circuit()
-#
-#    return circuit
+def get_haar_circuit(   n: int,
+                        p: int): #-> cirq.Circuit()
+    circuit = cirq.Circuit()
+    _qubits=cirq.LineQubit.range(n)
+    for i_p in range(p):
+        circuit.append(get_haar_1QubitLayer(_qubits))
+        circuit.append(get_haar_2QubitLayer(_qubits, i_p))
 
-def get_haar_1QubitLayer(n: int):
-    pass
+    return circuit
 
-def get_haar_2QubitLayer(n: int):
+def get_haar_1QubitLayer(_qubits):
+    for qubit in _qubits:
+        yield cirq.MatrixGate(  cirq.testing.random_unitary(2),
+                                unitary_check_rtol=1e-12,
+                                unitary_check_atol=1e-12,
+                                ).on(qubit)
+
+def get_haar_2QubitLayer(_qubits, i_p):
     """
         s
     """
-    pass
+    for i_q in range(math.floor(len(qubits)/2)):
+        yield cirq.MatrixGate(  cirq.testing.random_unitary(4),
+                                unitary_check_rtol=1e-12,
+                                unitary_check_atol=1e-12,
+                                ).on(_qubits[2*i_q+np.mod(i_p,2)],_qubits[2*i_q+1+np.mod(i_p,2)])
+
+    
 
 def haar(n: int,
         m: int = 1,
@@ -58,12 +74,40 @@ def haar(n: int,
     # Test for Porter–Thomas distribution
     #Kolmogorov-Smirnov test
     # Resolution: implement 20 layer pseudorandom circuit
+    ###############################################################################
+    #TODO use joblib to generate m different circuits? 
+    # or is it sufficent to use m different initial states? -> Need to test this
     haar_circuit = get_haar_circuit(n, p)
     rnd_initis = np.random.randint(m)
 
 def haar_1qubit(n: int,
-                m: int = 1): #-> np.ndarray
-    pass
+                m: int = 1,
+                simulator = None): #-> np.ndarray
+    '''
+        Generates m Single Qubit Haar random product state vectors
+
+                Parameters:
+                        n (int): Number of qubits
+                        m (int): Number of Haar random state vectors, default 1
+
+                Returns:
+                        random_states (np.array): 2D numpy array of m Single Qubit Haar random product state vectors
+    '''
+    #TODO use joblib to generate m different circuits?
+    # Round m to 8 devidible 
+    haar_1qubit_circuit = cirq.Circuit(
+                            get_haar_1QubitLayer(cirq.LineQubit.range(n))
+                            )
+    print(haar_1qubit_circuit)
+    rnd_initis = np.random.randint(2**n, size=m)
+    print(rnd_initis[0])
+
+    if simulator is None:
+        #simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
+        simulator = cirq.Simulator()
+
+    return simulator.simulate(  haar_1qubit_circuit,
+                                initial_state=int(rnd_initis[0])).state_vector()
 
 def uniform(n: int,
             m: int = 1): #-> np.ndarray
