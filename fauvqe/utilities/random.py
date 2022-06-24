@@ -112,6 +112,7 @@ def haar(n: int,
     # or is it sufficent to use m different initial states? -> Need to test this
     # Note: For haar() using qsim or joblib barely makes a diiference 
     # Note: Reusing the circuit ruther does not pay off
+    # Note: Using np.complex128 is nbarely slower
     if n_jobs == -1 and n > 16:
         n_jobs = 1
     else:
@@ -122,7 +123,8 @@ def haar(n: int,
 
     if n_jobs>1:
         if simulator is None:
-            simulator = cirq.Simulator(dtype=np.complex64)
+            #Here using np.complex128 makes a lot of a difference in precision
+            simulator = cirq.Simulator(dtype=np.complex128)
         m_rounded = math.ceil(m/n_jobs)*n_jobs
         random_states = joblib.Parallel(n_jobs=n_jobs, backend="loky")(
             joblib.delayed(_single_haar)(n, p, simulator, reuse_circuit)
@@ -134,7 +136,8 @@ def haar(n: int,
         for i_m in range(m):
             random_states.append(_single_haar(n, p, simulator, reuse_circuit))
 
-    return np.array(random_states[0:m])
+    #Renormalise all random state
+    return np.array(random_states[0:m])*(1/np.linalg.norm(np.array(random_states[0:m]), axis=1)[:,None])
 
 def _single_haar(   n: int,
                     p: int,
@@ -172,20 +175,20 @@ def haar_1qubit(n: int,
 
     if n_jobs>1:
         if simulator is None:
-            simulator = cirq.Simulator(dtype=np.complex64)
+            simulator = cirq.Simulator(dtype=np.complex128)
         m_rounded = math.ceil(m/n_jobs)*n_jobs
         random_states = joblib.Parallel(n_jobs=n_jobs, backend="loky")(
             joblib.delayed(_single_haar_1qubit)(n, simulator)
             for j in range(m_rounded))
     else:
         if simulator is None:
-            simulator = qsimcirq.QSimSimulator({"t": 8})
+            simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
         random_states = []
         for i_m in range(m):
             random_states.append(_single_haar_1qubit(n, simulator))
 
-    return np.array(random_states[0:m])
-    #random_states[:m]
+    #Renormalise all random state
+    return np.array(random_states[0:m])*(1/np.linalg.norm(np.array(random_states[0:m]), axis=1)[:,None])
 
 def _single_haar_1qubit(n: int,
                         simulator):
@@ -209,8 +212,5 @@ def uniform(n: int,
                         random_states (np.array): 2D numpy array of m many Uniform random 2^n state vectors
     '''
     random_states=2*np.random.rand(m,2**n).astype(np.complex128) - 1 + 2j*np.random.rand(m,2**n) - 1j
-    norms = 1/np.linalg.norm(random_states, axis=1)
-    random_states =np.squeeze(random_states)*norms[:,None]
-    #random_states=np.squeeze(random_states)/np.linalg.norm(random_states, axis=1)
-    #random_states=np.dot((1/np.linalg.norm(random_states, axis=1)),random_states)
-    return random_states
+    #Renormalise all random state
+    return np.array(random_states[0:m])*(1/np.linalg.norm(np.array(random_states[0:m]), axis=1)[:,None])
