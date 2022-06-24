@@ -68,10 +68,11 @@ def _get_haar_2QubitLayer(_qubits, i_p):
                                         _qubits[np.mod(2*i_q+1+np.mod(i_p,2), len(_qubits))])
 
     
-
+# Note for the future maybe merge haar and haar_1qubit
 def haar(n: int,
         m: int = 1,
         p: int = 20,
+        reuse_circuit: bool = False,
         n_jobs: int = -1,
         simulator = None): #-> np.ndarray
     '''
@@ -109,31 +110,38 @@ def haar(n: int,
     ###############################################################################
     #TODO use joblib to generate m different circuits? 
     # or is it sufficent to use m different initial states? -> Need to test this
+    # Note: For haar() using qsim or joblib barely makes a diiference 
+    # Note: Reusing the circuit ruther does not pay off
     if n_jobs == -1 and n > 16:
         n_jobs = 1
     else:
         n_jobs = 8
+
+    if reuse_circuit:
+        reuse_circuit= _get_haar_circuit(n,p)
 
     if n_jobs>1:
         if simulator is None:
             simulator = cirq.Simulator(dtype=np.complex64)
         m_rounded = math.ceil(m/n_jobs)*n_jobs
         random_states = joblib.Parallel(n_jobs=n_jobs, backend="loky")(
-            joblib.delayed(_single_haar)(n, p, simulator)
+            joblib.delayed(_single_haar)(n, p, simulator, reuse_circuit)
             for j in range(m_rounded))
     else:
         if simulator is None:
             simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
         random_states = []
         for i_m in range(m):
-            random_states.append(_single_haar(n, p, simulator))
+            random_states.append(_single_haar(n, p, simulator, reuse_circuit))
 
     return np.array(random_states[0:m])
 
 def _single_haar(   n: int,
                     p: int,
-                    simulator):
-    haar_circuit = _get_haar_circuit(n,p)
+                    simulator,
+                    haar_circuit = False):
+    if haar_circuit is False:
+        haar_circuit = _get_haar_circuit(n,p)
     rnd_int = np.random.randint(2**n)
     return simulator.simulate(  haar_circuit,
                                 initial_state=rnd_int).state_vector()
