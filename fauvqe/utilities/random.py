@@ -9,6 +9,7 @@
     Test question: who to vertify that some sample is drawn from a certain distribution
 """
 import cirq
+import joblib
 import math
 import numpy as np
 import qsimcirq
@@ -82,6 +83,7 @@ def haar(n: int,
 
 def haar_1qubit(n: int,
                 m: int = 1,
+                n_jobs: int = -1,
                 simulator = None): #-> np.ndarray
     '''
         Generates m Single Qubit Haar random product state vectors
@@ -95,19 +97,36 @@ def haar_1qubit(n: int,
     '''
     #TODO use joblib to generate m different circuits?
     # Round m to 8 devidible 
+    if n_jobs == -1 and n > 16:     
+        n_jobs = 1
+    else:
+        n_jobs = 8
+
+    if n_jobs>1:
+        if simulator is None:
+            simulator = cirq.Simulator(dtype=np.complex64)
+        m_rounded = math.ceil(m/n_jobs)*n_jobs
+        random_states = joblib.Parallel(n_jobs=n_jobs, backend="loky")(
+            joblib.delayed(_single_haar_1qubit)(n, simulator)
+            for j in range(m_rounded))
+    else:
+        if simulator is None:
+            simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
+        random_states = []
+        for i_m in range(m):
+            random_states.append(_single_haar_1qubit(n, simulator))
+
+    return np.array(random_states[0:m])
+    #random_states[:m]
+
+def _single_haar_1qubit(n: int,
+                        simulator):
     haar_1qubit_circuit = cirq.Circuit(
                             get_haar_1QubitLayer(cirq.LineQubit.range(n))
-                            )
-    print(haar_1qubit_circuit)
-    rnd_initis = np.random.randint(2**n, size=m)
-    print(rnd_initis[0])
-
-    if simulator is None:
-        #simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
-        simulator = cirq.Simulator()
-
+    )
+    rnd_int = np.random.randint(2**n)
     return simulator.simulate(  haar_1qubit_circuit,
-                                initial_state=int(rnd_initis[0])).state_vector()
+                                initial_state=rnd_int).state_vector()
 
 def uniform(n: int,
             m: int = 1): #-> np.ndarray
