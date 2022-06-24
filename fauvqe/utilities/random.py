@@ -14,45 +14,76 @@ import math
 import numpy as np
 import qsimcirq
 
-def get_haar_circuit(   n: int,
+def _get_haar_circuit(  n: int,
                         p: int): #-> cirq.Circuit()
+    """
+        Helper function to generate pseudo Haar random p-layer scrabling circuit for n qubits
+
+                Parameters:
+                        n           (int): Number of qubits
+                        p           (int): depth of pseudorandom circuit
+
+                Returns:
+                        circuit (cirq.Circuit): Pseudorandom scrambling object as cirq Circuit
+    """
     circuit = cirq.Circuit()
     _qubits=cirq.LineQubit.range(n)
     for i_p in range(p):
-        circuit.append(get_haar_1QubitLayer(_qubits))
-        circuit.append(get_haar_2QubitLayer(_qubits, i_p))
+        circuit.append(_get_haar_1QubitLayer(_qubits))
+        circuit.append(_get_haar_2QubitLayer(_qubits, i_p))
 
     return circuit
 
-def get_haar_1QubitLayer(_qubits):
+def _get_haar_1QubitLayer(_qubits):
+    """
+        Helper function to generate 1-qubite SU(2) layer of pseudo Haar random p-layer scrabling circuit for n qubits
+
+                Parameters:
+                        _qubits  (cirq.Linequbits?): cirq qubits in a list on which the gates should act on
+
+                Returns:
+                        cirq.MatrixGates generated from random SU(2) matrices
+    """
     for qubit in _qubits:
         yield cirq.MatrixGate(  cirq.testing.random_unitary(2),
                                 unitary_check_rtol=1e-12,
                                 unitary_check_atol=1e-12,
                                 ).on(qubit)
 
-def get_haar_2QubitLayer(_qubits, i_p):
+def _get_haar_2QubitLayer(_qubits, i_p):
     """
-        s
+        Helper function to generate 2-qubite SU($) layer of pseudo Haar random p-layer scrabling circuit for n qubits
+
+                Parameters:
+                        _qubits  (cirq.Linequbits?): cirq qubits in a list on which the gates should act on
+
+                Returns:
+                        cirq.MatrixGates generated from random SU(4) matrices
     """
-    for i_q in range(math.floor(len(qubits)/2)):
+    for i_q in range(math.floor(len(_qubits)/2)):
         yield cirq.MatrixGate(  cirq.testing.random_unitary(4),
                                 unitary_check_rtol=1e-12,
                                 unitary_check_atol=1e-12,
-                                ).on(_qubits[2*i_q+np.mod(i_p,2)],_qubits[2*i_q+1+np.mod(i_p,2)])
+                                ).on(   _qubits[2*i_q+np.mod(i_p,2)],
+                                        _qubits[np.mod(2*i_q+1+np.mod(i_p,2), len(_qubits))])
 
     
 
 def haar(n: int,
         m: int = 1,
-        p: int = 20): #-> np.ndarray
+        p: int = 20,
+        n_jobs: int = -1,
+        simulator = None): #-> np.ndarray
     '''
         Generates m Haar random 2^n dim state vectors
 
                 Parameters:
-                        n (int): Number of qubits
-                        m (int): Number of Haar random state vectors, default 1
-                        p (int): depth of pseudorandom circuit
+                        n           (int): Number of qubits
+                        m           (int): Number of Haar random state vectors, default 1
+                        p           (int): depth of pseudorandom circuit
+                        n_jobs      (int): Number of joblib jobs to run in parallel, 
+                                        default -1 to us joblib parallisation for n< 17 and qsim parallisation for n>16
+                        simulator   (cirq.Simuator): Cirq Simulator object, default None, then use cirq Simulator with joblib and qsim otherwise
 
                 Returns:
                         random_states (np.array): 2D numpy array of m many Haar random 2^n state vectors
@@ -78,8 +109,34 @@ def haar(n: int,
     ###############################################################################
     #TODO use joblib to generate m different circuits? 
     # or is it sufficent to use m different initial states? -> Need to test this
-    haar_circuit = get_haar_circuit(n, p)
-    rnd_initis = np.random.randint(m)
+    if n_jobs == -1 and n > 16:
+        n_jobs = 1
+    else:
+        n_jobs = 8
+
+    if n_jobs>1:
+        if simulator is None:
+            simulator = cirq.Simulator(dtype=np.complex64)
+        m_rounded = math.ceil(m/n_jobs)*n_jobs
+        random_states = joblib.Parallel(n_jobs=n_jobs, backend="loky")(
+            joblib.delayed(_single_haar)(n, p, simulator)
+            for j in range(m_rounded))
+    else:
+        if simulator is None:
+            simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
+        random_states = []
+        for i_m in range(m):
+            random_states.append(_single_haar(n, p, simulator))
+
+    return np.array(random_states[0:m])
+
+def _single_haar(   n: int,
+                    p: int,
+                    simulator):
+    haar_circuit = _get_haar_circuit(n,p)
+    rnd_int = np.random.randint(2**n)
+    return simulator.simulate(  haar_circuit,
+                                initial_state=rnd_int).state_vector()
 
 def haar_1qubit(n: int,
                 m: int = 1,
@@ -89,15 +146,18 @@ def haar_1qubit(n: int,
         Generates m Single Qubit Haar random product state vectors
 
                 Parameters:
-                        n (int): Number of qubits
-                        m (int): Number of Haar random state vectors, default 1
+                        n           (int): Number of qubits
+                        m           (int): Number of Haar random state vectors, default 1
+                        n_jobs      (int): Number of joblib jobs to run in parallel, 
+                                        default -1 to us joblib parallisation for n< 17 and qsim parallisation for n>16
+                        simulator   (cirq.Simuator): Cirq Simulator object, default None, then use cirq Simulator with joblib and qsim otherwise
 
                 Returns:
                         random_states (np.array): 2D numpy array of m Single Qubit Haar random product state vectors
     '''
     #TODO use joblib to generate m different circuits?
     # Round m to 8 devidible 
-    if n_jobs == -1 and n > 16:     
+    if n_jobs == -1 and n > 16:
         n_jobs = 1
     else:
         n_jobs = 8
@@ -111,7 +171,7 @@ def haar_1qubit(n: int,
             for j in range(m_rounded))
     else:
         if simulator is None:
-            simulator = qsimcirq.QSimSimulator({"t": 8, "f": 4})
+            simulator = qsimcirq.QSimSimulator({"t": 8})
         random_states = []
         for i_m in range(m):
             random_states.append(_single_haar_1qubit(n, simulator))
@@ -122,7 +182,7 @@ def haar_1qubit(n: int,
 def _single_haar_1qubit(n: int,
                         simulator):
     haar_1qubit_circuit = cirq.Circuit(
-                            get_haar_1QubitLayer(cirq.LineQubit.range(n))
+                            _get_haar_1QubitLayer(cirq.LineQubit.range(n))
     )
     rnd_int = np.random.randint(2**n)
     return simulator.simulate(  haar_1qubit_circuit,
