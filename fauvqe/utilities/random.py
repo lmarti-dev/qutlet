@@ -71,7 +71,7 @@ def _get_haar_2QubitLayer(_qubits, i_p):
 # Note for the future maybe merge haar and haar_1qubit
 def haar(n: int,
         m: int = 1,
-        p: int = 20,
+        p: int = -1,
         reuse_circuit: bool = False,
         n_jobs: int = -1,
         simulator = None): #-> np.ndarray
@@ -81,7 +81,7 @@ def haar(n: int,
                 Parameters:
                         n           (int): Number of qubits
                         m           (int): Number of Haar random state vectors, default 1
-                        p           (int): depth of pseudorandom circuit
+                        p           (int): depth of pseudorandom circuit,default = n
                         n_jobs      (int): Number of joblib jobs to run in parallel, 
                                         default -1 to us joblib parallisation for n< 17 and qsim parallisation for n>16
                         simulator   (cirq.Simuator): Cirq Simulator object, default None, then use cirq Simulator with joblib and qsim otherwise
@@ -113,6 +113,9 @@ def haar(n: int,
     # Note: For haar() using qsim or joblib barely makes a diiference 
     # Note: Reusing the circuit ruther does not pay off
     # Note: Using np.complex128 is nbarely slower
+    if p == -1:
+        p = n
+    
     if n_jobs == -1 and n > 16:
         n_jobs = 1
     else:
