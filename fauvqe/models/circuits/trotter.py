@@ -2,15 +2,10 @@
 This is a submodule for instances of AbstractModel and for the UtCost objective
 Include here methods that help generating Trotterized time evolutions
 """
-from fauvqe.models.abstractmodel import AbstractModel
-
 # external import
 import numpy as np
 import cirq
 from numbers import Real
-import sympy
-
-from fauvqe.models.spinModel import SpinModel
 
 def set_circuit(self) -> None:
     """
@@ -128,10 +123,18 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
 
 def get_parameters(self, name: str='', delim: str = ','):
     if(name == ''):
-        return np.genfromtxt(name, delimiter=delim)
-    else:
+        if(self.trotter.options['q'] > 2):
+            raise NotImplementedError
+        t_number = self.trotter.options['m']
         parameters = []
-        for pstr in hamiltonian._linear_dict:
-            parameters.append(pstr.coefficient)
+        for m in range(t_number):
+            for pstr in self.hamiltonian._linear_dict:
+                #print(self.hamiltonian._linear_dict[pstr])
+                parameters.append(self.hamiltonian._linear_dict[pstr] / t_number)
         parameters = np.array(parameters) * np.real(2/np.pi * self.t)
-        return parameters
+        if(self.trotter.options['q']==2):
+            return 0.5*np.concatenate((parameters, parameters[-1::-1]))
+        else:
+            return parameters
+    else:
+        return np.genfromtxt(name, delimiter=delim) #pragma: no cover
