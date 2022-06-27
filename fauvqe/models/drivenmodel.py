@@ -2,6 +2,7 @@
     This class implements time-dependent models based on time-independent AbstractModels
 
 """
+from cirq import Circuit, PauliSum
 from numbers import Real
 import numpy as np
 from sympy  import Symbol
@@ -52,7 +53,10 @@ class DrivenModel(AbstractModel):
         self._drives = drives
         self._t = t
 
-        self.circuit = cirq.Circuit()
+        #For the moment require every model to act on same qubits
+        self._init_qubits()
+
+        self.circuit = Circuit()
         self.circuit_param: List[Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
 
@@ -61,11 +65,63 @@ class DrivenModel(AbstractModel):
     
 
 
-    def energy(self, t):
+    def energy(self, t: Real):
+        """
+            This function leverages the energy() functions of self._models
+            in order to define an energy filter function for Driven Model
+            
+            Parameters
+            ----------
+            self._models:     Union[List[AbstractModel], AbstractModel]
+                            The driven models
+
+            Returns
+            -------
+            self.qubits = self._models[0].qubits
+        """
         pass
 
-    def _set_hamiltonian(self):
-        self.hamiltonian = 
+    def _init_qubits(self):
+        """
+            This function checks whether all models act on the same qubits.
+            if so, it sets self.qubits = self._models[0].qubits
+            
+            Parameters
+            ----------
+            self._models:     Union[List[AbstractModel], AbstractModel]
+                        The driven models
+
+            Sets
+            -------
+            self.qubits = self._models[0].qubits
+        """
+
+    def get_hamiltonian(self, t: Real) -> PauliSum:
+        """
+            This function returns a cirq.PauliSum for a specific time t
+            in order to define an energy filter function for Driven Model
+            
+            Parameters
+            ----------
+            self._models:     Union[List[AbstractModel], AbstractModel]
+                            The driven models
+
+            t:              Time for witch to return the hamiltonian
+
+            Returns
+            -------
+            hamiltonian:    cirq.PauliSum
+
+            Note that unfortunately cannot define a cirq.PauliSum with function dependencies
+            https://quantumai.google/reference/python/cirq/PauliSum
+        """
+        hamiltonian = PauliSum()
+        for i in range(len(self._models)):
+            hamiltonian += self._drives(t)*self._models.hamiltonian
+        return hamiltonian
+
+    def _set_hamiltonian(self, t: Real):
+        self.hamiltonian = self.get_hamiltonian(t)
 
     """
     def copy(self) -> DrivenModel:

@@ -218,6 +218,7 @@ class UtCost(Objective):
         if options['indices'] is None:
             options['indices'] = range(self.batch_size)
 
+        #TODO This might be wrong
         for step in range(len(self._time_steps)):
             cost += np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*
                                             self._output_wavefunctions[step][options['indices']], axis=1)))
