@@ -2859,4 +2859,3 @@ Test Adam + ExpectationValue
 
 Sequential Time: 12.56375002861023
 Parallel Time: 4.314713001251221
-
