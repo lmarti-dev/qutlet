@@ -133,7 +133,7 @@ def _TwoQubit_layer(self, i, g):
         1. Generate array variables dependent on boundary conditions
         2. Call _partial_TwoQubit_layer(), hand over variables array
     """
-    print(self.hea.options["parametrisation"])
+    #print(self.hea.options["parametrisation"])
     if self.hea.options["parametrisation"] == "joint":
         gate_variables = [0 for dummy in self.hea.options["TwoQubitVariables"][g]]
         j = 0

@@ -197,8 +197,16 @@ class UtCost(Objective):
             
     def evaluate_op(self, wavefunction: np.ndarray) -> np.float64:
         cost = 0
+
+        # This assumes that wavefunction is a unitary
+        # There is the situation where one wants the unitary cost of batched wavefunctions
+        # Then one needs to produce the circuit unitary as wavefunction
+        assert np.shape(wavefunction) == (self._N, self._N)
+
         for step in range(len(self._time_steps)):
-            cost = cost + 1 - abs(np.trace( np.linalg.matrix_power( np.matrix.getH(self._Ut), self._time_steps[step]) @ np.linalg.matrix_power(wavefunction, self._time_steps[step]))) / self._N
+            cost += 1 - abs(np.trace( 
+                np.linalg.matrix_power( np.matrix.getH(self._Ut), self._time_steps[step]) @ \
+                np.linalg.matrix_power( wavefunction, self._time_steps[step]))) / self._N
         return 1 / len(self._time_steps) * cost
     
     def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {'indices': None}) -> np.float64:
@@ -206,18 +214,34 @@ class UtCost(Objective):
         #assert wavefunction.size == (len(self._time_steps) * len(options['indices']) * self._N), 'Please provide one wavefunction for each time step. Expected: {} Received: {}'.\
         #    format( len(self._time_steps), wavefunction.size / self._N )
         cost = 0
+
+        if options['indices'] is None:
+            options['indices'] = range(self.batch_size)
+
         for step in range(len(self._time_steps)):
-            cost += 1/len(options['indices']) * np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*self._output_wavefunctions[step][options['indices']], axis=1)))
-        return 1 / len(self._time_steps) * cost
+            cost += np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*
+                                            self._output_wavefunctions[step][options['indices']], axis=1)))
+        return 1 / len(self._time_steps) * 1/len(options['indices']) * cost
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
+        #TODO Rewrite this!
         #return unitary if self.batch_size == 0
         if self.batch_size == 0:
             return cirq.resolve_parameters(self._model.circuit, param_resolver).unitary()
         else:
+            if initial_state is None:
+                #Set all initial batch states as initial states
+                initial_state = self._initial_wavefunctions
+            
             output_state = np.empty(shape=(len(self._time_steps), *initial_state.shape), dtype = self._dtype)
-            ini = initial_state
+            #print(np.shape(output_state))
+            
+            if len(initial_state) == self._N:
+                ini = initial_state
+            else:
+                ini = initial_state[0]
+
             mul = self._time_steps[0]
             wf = self._model.simulator.simulate(
                     mul * self._model.circuit,
@@ -225,6 +249,18 @@ class UtCost(Objective):
                     initial_state=ini,
                     ).state_vector()
             output_state[0] = wf/np.linalg.norm(wf)
+
+            #Run through all states given in initial state
+            for i_state in range(1,round(len(initial_state)/self._N)):
+                wf = self._model.simulator.simulate(
+                    mul * self._model.circuit,
+                    param_resolver=param_resolver,
+                    initial_state=initial_state[i_state],
+                    ).state_vector()
+                output_state[0, i_state] = wf/np.linalg.norm(wf)
+
+            #Calculate output_state for more time steps if len(self._time_steps > 0)
+            #TODO adapt this in case both time_steps and batch wavefunctions are used
             for step in range(1, len(self._time_steps)):
                 ini = output_state[step-1]
                 mul = self._time_steps[step] - self._time_steps[step-1]
@@ -234,7 +270,10 @@ class UtCost(Objective):
                     initial_state=ini,
                     ).state_vector()
                 output_state[step] = wf/np.linalg.norm(wf)
-            return output_state
+
+            # remove not used extra dimensions
+            #return np.squeeze(output_state)
+            return np.squeeze(output_state)
             
     def to_json_dict(self) -> Dict:
         return {
