@@ -49,6 +49,10 @@ class DrivenModel(AbstractModel):
                     drives: Union[  List[Callable[float, float]], 
                                     Callable[float, float]],
                     t: Real = None):
+        assert len(models) == len(drives)\
+            , "Error in DrivenModel initialisation: len(models) needs to be len(drives), {} != {}".format(
+                len(models), len(drives)
+            )
         self._models = models
         self._drives = drives
         self._t = t
@@ -73,13 +77,29 @@ class DrivenModel(AbstractModel):
             Parameters
             ----------
             self._models:     Union[List[AbstractModel], AbstractModel]
-                            The driven models
+                                The driven models
+            self._drives:   Union[  List[Callable[float, float]], 
+                                            Callable[float, float]]
+                            The drive functions
+            t:          Time at which to provide energy_filter of the DrivenModel
 
             Returns
             -------
-            self.qubits = self._models[0].qubits
+            energy_filter: List[np.ndarray]
         """
-        pass
+        energy_filter = []
+
+        #Need to treat first instance differently to creat list
+        _tmp = self._models[0].energy()
+        for i_filter in range(len(_tmp)):
+            energy_filter.append(self._drives[0](t)*_tmp[i_filter])
+
+        for i_model in range(1,len(self._models)):
+            _tmp = self._models[i_model].energy()
+            for i_filter in range(len(_tmp)):
+                energy_filter[i_filter] += self._drives[i_model](t)*_tmp[i_filter]
+
+        return energy_filter
 
     def _init_qubits(self):
         """
@@ -117,17 +137,30 @@ class DrivenModel(AbstractModel):
         """
         hamiltonian = PauliSum()
         for i in range(len(self._models)):
-            hamiltonian += self._drives(t)*self._models.hamiltonian
+            hamiltonian += self._drives[i](t)*self._models[i].hamiltonian
         return hamiltonian
+
+    def set_circuit(self, qalgorithm, options: dict = {}):
+        """
+            Possibly adapt from SpinModel
+
+            To be implemented:
+                -   Trotter
+                -   Matchgate (for 1D TFIM)
+                -   Kick operator VFF
+                -   Floquet normalform
+        """
+        raise NotImplementedError()
 
     def _set_hamiltonian(self, t: Real):
         self.hamiltonian = self.get_hamiltonian(t)
 
-    """
+    
     def copy(self) -> DrivenModel:
-
+        raise NotImplementedError()
 
     def to_json_dict(self) -> Dict:
+        raise NotImplementedError()
         return {
             "constructor_params": {
                 "qubittype": self.qubittype,
@@ -145,6 +178,7 @@ class DrivenModel(AbstractModel):
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
+        raise NotImplementedError()
         inst = cls(**dct["constructor_params"])
 
         inst.circuit = dct["params"]["circuit"]
@@ -152,4 +186,3 @@ class DrivenModel(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
         
         return inst
-    """
