@@ -10,6 +10,8 @@ import cirq
 from numbers import Real
 import sympy
 
+from fauvqe.models.spinModel import SpinModel
+
 def set_circuit(self) -> None:
     """
         Sets the circuit for Trotter-Suzuki sequence of order q and with Trotter number m
@@ -123,3 +125,13 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
         #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
         res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
     return res
+
+def get_parameters(self, name: str='', delim: str = ','):
+    if(name == ''):
+        return np.genfromtxt(name, delimiter=delim)
+    else:
+        parameters = []
+        for pstr in hamiltonian._linear_dict:
+            parameters.append(pstr.coefficient)
+        parameters = np.array(parameters) * np.real(2/np.pi * self.t)
+        return parameters
