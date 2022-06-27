@@ -252,7 +252,12 @@ class SpinModel(AbstractModel):
         self.eig_vec = None
         self._Ut = None
     
-    def energy_2q(self, j_v, j_h) -> np.ndarray:
+    def energy_2q(  self, 
+                    j_v = None, 
+                    j_h = None) -> np.ndarray:
+        if j_v is None: self.j_v = j_v
+        if j_h is None: self.j_h = j_h
+
         n_sites = self.n[0] * self.n[1]
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
         
@@ -287,13 +292,22 @@ class SpinModel(AbstractModel):
         
         return ZZ_filter
     
-    def energy_1q(self, h) -> np.ndarray:
+    def energy_1q(  self, 
+                    h = None) -> np.ndarray:
+        if h is None: self.h = h
+        
         n_sites = self.n[0] * self.n[1]
         Z = np.array([(-1) ** (np.arange(2 ** n_sites) >> i) for i in range(n_sites - 1, -1, -1)])
         
         return h.reshape(n_sites).dot(Z)
     
-    def energy(self, j_v, j_h, h) -> np.ndarray:
+    def energy( self, 
+                j_v = None, 
+                j_h = None, 
+                h = None) -> np.ndarray:
+        if j_v is None: self.j_v = j_v
+        if j_h is None: self.j_h = j_h
+        if h is None: self.h = h
         return self.energy_1q(h) + self.energy_2q(j_v, j_h)
     
     def copy(self) -> SpinModel:
