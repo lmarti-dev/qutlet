@@ -69,7 +69,7 @@ class OptimisationStep:
             The objective value
         """
         if self.__objective is None:
-            self.__objective = self._parent.objective.evaluate(self.wavefunction)
+            self.__objective = self._parent.objective.evaluate(self.wavefunction())
 
         return self.__objective
     
