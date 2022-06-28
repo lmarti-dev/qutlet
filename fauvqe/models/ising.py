@@ -26,6 +26,8 @@ class Ising(SpinModel):
         h  strength external field
         field: basis of external field X or Z
         """
+        self.__name__ = "IsingModel"
+
         # convert all input to np array to be sure
         if j_v is None:
             j_v = np.zeros((n[0], n[1]))
@@ -228,3 +230,6 @@ class Ising(SpinModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
         
         return inst
+
+#    def __repr__(self) -> str:
+#        return "<IsingModel, Hamiltonian=" + str(self.hamiltonian) + " >"

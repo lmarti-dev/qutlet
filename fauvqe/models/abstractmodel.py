@@ -65,6 +65,9 @@ class AbstractModel(Restorable):
         self.eig_vec: Optional[np.ndarray] = None
         self._Ut: Optional[np.ndarray] = None
 
+    def __repr__(self) -> str:
+        return "< " + str(self.__name__) + ", Hamiltonian=" + str(self.hamiltonian) + " >"
+    
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
 
