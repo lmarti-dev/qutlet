@@ -7,7 +7,7 @@ import sympy
 
 # internal imports
 from fauvqe import IsingXY, ExpectationValue
-from tests.test_isings import IsingTester
+from tests.test_models_isings import IsingTester
 
 def test__eq__():
     n = [1,3]; boundaries = [1, 0]

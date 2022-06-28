@@ -50,9 +50,9 @@ class DrivenModel(AbstractModel):
      Typ hinting Functions:
      https://stackoverflow.com/questions/37835179/how-can-i-specify-the-function-type-in-my-type-hints
     """
-    basics  = import_module("fauvqe.models.circuits.basics")
-    hea  = import_module("fauvqe.models.circuits.hea")
-    qaoa = import_module("fauvqe.models.circuits.qaoa")
+    basics  = import_module("fauvqe.circuits.basics")
+    hea  = import_module("fauvqe.circuits.hea")
+    qaoa = import_module("fauvqe.circuits.qaoa")
 
     def __init__(   self,
                     models: Union[  List[AbstractModel], AbstractModel],

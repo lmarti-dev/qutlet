@@ -10,10 +10,10 @@ import itertools
 
 # internal imports
 from fauvqe import Ising, SpinModel, Converter
-from fauvqe.models.circuits.basics import SpinModelDummy
+from fauvqe.circuits.basics import SpinModelDummy
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from fauvqe.objectives.expectationvalue import ExpectationValue
-from .test_isings import IsingTester
+from .test_models_isings import IsingTester
 
 """
 What to test:

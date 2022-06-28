@@ -19,9 +19,9 @@ class SpinModel(AbstractModel):
     2D SpinModel class inherits AbstractModel
     is mother of different quantum circuit methods
     """
-    basics  = importlib.import_module("fauvqe.models.circuits.basics")
-    hea  = importlib.import_module("fauvqe.models.circuits.hea")
-    qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
+    basics  = importlib.import_module("fauvqe.circuits.basics")
+    hea  = importlib.import_module("fauvqe.circuits.hea")
+    qaoa = importlib.import_module("fauvqe.circuits.qaoa")
 
     def __init__(self, 
                  qubittype, 

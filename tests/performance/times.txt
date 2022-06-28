@@ -4069,3 +4069,57 @@ Test Adam + ExpectationValue
 Sequential Time: 9.30093789100647
 Parallel Time: 3.320531129837036
 
+===Mi, 29 Jun 2022 01:43:59 +0000===
+Test No Indices 
+
+Sequential Time: 2.6697001457214355
+Parallel Time: 0.9326930046081543
+
+===Mi, 29 Jun 2022 01:44:16 +0000===
+Test Indices 
+
+Sequential Time: 12.031818628311157
+Parallel Time: 5.2382447719573975
+
+===Mi, 29 Jun 2022 01:44:26 +0000===
+Test Indices 
+
+Sequential Time: 6.374034404754639
+Parallel Time: 3.3983991146087646
+
+===Mi, 29 Jun 2022 01:44:52 +0000===
+Test Indices 
+
+Sequential Time: 18.95788288116455
+Parallel Time: 6.854907989501953
+
+===Mi, 29 Jun 2022 01:45:06 +0000===
+Test Indices 
+
+Sequential Time: 9.689907789230347
+Parallel Time: 4.034008264541626
+
+===Mi, 29 Jun 2022 01:45:26 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 15.240098476409912
+Parallel Time: 4.93817400932312
+
+===Mi, 29 Jun 2022 01:45:37 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.6857099533081055
+Parallel Time: 3.266646385192871
+
+===Mi, 29 Jun 2022 01:46:09 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 23.591344833374023
+Parallel Time: 7.87644362449646
+
+===Mi, 29 Jun 2022 01:46:25 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.285321950912476
+Parallel Time: 4.550952196121216
+
