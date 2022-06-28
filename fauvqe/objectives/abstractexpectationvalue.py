@@ -34,7 +34,7 @@ class AbstractExpectationValue(Objective):
         super().__init__(model)
         self._N = 2**np.size(model.qubits)
         if(observable is None):
-            self._observable = model.hamiltonian
+            self._observable = model.hamiltonian()
         else:
             self._observable = observable
     

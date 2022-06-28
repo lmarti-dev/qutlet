@@ -64,8 +64,8 @@ def test_IsingDummy(qubittype, n, j_v, j_h, h, field):
     assert ising.simulator.__class__ == ising_dummy.simulator.__class__
 
     #These are the important asserts:
-    assert ising.hamiltonian == ising_dummy.hamiltonian
-    assert (ising.hamiltonian.matrix() == ising_dummy.hamiltonian.matrix()).all()
+    assert ising._hamiltonian == ising_dummy._hamiltonian
+    assert (ising._hamiltonian.matrix() == ising_dummy._hamiltonian.matrix()).all()
 
 @pytest.mark.parametrize(
     "qubittype, n, j_v, j_h, h, field, n_exact, location",
@@ -1433,7 +1433,7 @@ def test_get_energy_filter_from_subsystem1(n):
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
 
     converter_obj = Converter()
-    scipy_sparse_matrix=converter_obj.cirq_paulisum2scipy_crsmatrix(ising.hamiltonian, dtype=np.float64)
+    scipy_sparse_matrix=converter_obj.cirq_paulisum2scipy_crsmatrix(ising.hamiltonian(), dtype=np.float64)
     ising.diagonalise(  solver = "scipy", 
                         solver_options={"subset_by_index": [0, 2**(n[0]*n[1]) - 1]},
                         matrix=scipy_sparse_matrix.toarray())
@@ -1501,9 +1501,9 @@ def test_get_energy_filter_from_subsystem2(n,HA_options,HB_options):
 
     # Calculate ground state and first excited state by exact diagonalisation
     converter_obj = Converter()
-    scipy_sparse_matrix=converter_obj.cirq_paulisum2scipy_crsmatrix(ising.hamiltonian, dtype=np.float64)
+    scipy_sparse_matrix=converter_obj.cirq_paulisum2scipy_crsmatrix(ising._hamiltonian, dtype=np.float64)
     ising.diagonalise( matrix=scipy_sparse_matrix)
-    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+    print("Hamiltonian:\n{}\n".format(ising._hamiltonian))
     #print("Exact energies: {}".format(ising.eig_val))
     E0 = ising.eig_val[0],
     phi0 = np.copy(ising.eig_vec[:,0].astype(np.complex64))
@@ -1658,7 +1658,7 @@ def test_get_energy_filter_from_subsystem3(n,HA_options,HB_options):
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
     
     #Assert H = H_A + H_B
-    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    assert(ising._hamiltonian == (hamiltonian_HA+hamiltonian_HB))
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("E: {}\tEA: {}\tEB: {}".format(E,E_A, E_B))
     assert(abs(E -(E_A+E_B)) < 1e-7)
@@ -1749,7 +1749,7 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     #h0 = h*np.arange(1, 1+ n[1]*n[0]).reshape((n[0],n[1]))
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_simulator("cirq", {"dtype": np.complex128})
-    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+    print("Hamiltonian:\n{}\n".format(ising.hamiltonian()))
 
 
     # Calculate energy of random state
@@ -1860,8 +1860,8 @@ def test_get_energy_filter_from_subsystem4(n,HA_options,HB_options):
     E_B = np.vdot(energy_filter_B, abs(wf_HB_basis)**2)
    
     #Assert H = H_A + H_B
-    print("H - (H_A + H_B):\n{}".format(ising.hamiltonian -(hamiltonian_HA+hamiltonian_HB)))
-    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    print("H - (H_A + H_B):\n{}".format(ising.hamiltonian() -(hamiltonian_HA+hamiltonian_HB)))
+    assert(ising.hamiltonian() == (hamiltonian_HA+hamiltonian_HB))
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}".format(E_A,E_A_AEV, E_B, E_B_AEV,E, E -(E_A+E_B), E -(E_A_AEV+E_B_AEV)))
     assert(abs(E -(E_A+E_B)) < 1e-7)
@@ -1893,7 +1893,7 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
     h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_simulator("cirq", {"dtype": np.complex128})
-    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+    print("Hamiltonian:\n{}\n".format(ising.hamiltonian()))
 
     # Calculate energy of random state
     expval_obj = ExpectationValue(ising)
@@ -1995,7 +1995,7 @@ def test_get_energy_filter_from_subsystem5(n,HA_options,HB_options):
     .format(qubit_order_B_tmp,ordering, E_B, abs(abs(E_B_AEV)-abs(E_B))))    
 
     #Assert H = H_A + H_B
-    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    assert(ising.hamiltonian() == (hamiltonian_HA+hamiltonian_HB))
 
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}"
@@ -2161,7 +2161,7 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     h0 = np.arange(1, 1+ n[1]*n[0]).reshape((n[0],n[1]))
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_simulator("cirq", {"dtype": np.complex128})
-    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+    print("Hamiltonian:\n{}\n".format(ising.hamiltonian()))
 
     # Calculate energy of random state
     expval_obj = ExpectationValue(ising)
@@ -2275,7 +2275,7 @@ def test_get_energy_filter_from_subsystem6(n,HA_options,HB_options):
     #print("qubit_order_B: {}\nE_B: {}\tabs(E_B_AEV-E_B): {}\n".format(qubit_order_B, E_B, abs(E_B_AEV-E_B)))
 
     #Assert H = H_A + H_B
-    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    assert(ising.hamiltonian() == (hamiltonian_HA+hamiltonian_HB))
 
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}"
@@ -2454,7 +2454,7 @@ def test_get_energy_filter_from_subsystem7(n,HA_options,HB_options):
     h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
     ising = Ising("GridQubit", n, j_v0, j_h0, h0, "X")
     ising.set_simulator("cirq", {"dtype": np.complex128})
-    print("Hamiltonian:\n{}\n".format(ising.hamiltonian))
+    print("Hamiltonian:\n{}\n".format(ising.hamiltonian()))
 
     # Calculate energy of random state
     expval_obj = ExpectationValue(ising)
@@ -2537,7 +2537,7 @@ def test_get_energy_filter_from_subsystem7(n,HA_options,HB_options):
                                    wavefunction=state)/(n[0]*n[1])
 
     #Assert H = H_A + H_B
-    assert(ising.hamiltonian == (hamiltonian_HA+hamiltonian_HB))
+    assert(ising.hamiltonian() == (hamiltonian_HA+hamiltonian_HB))
 
     #Assert ising.eig_val = <\phi|H_A|phi> + <\phi|H_B|phi>
     print("\nEA: {} \t EA_AEV: {}\nEB: {} \tEB_AEV: {}\nE: \t\t\t{}\nE-(EA+EB): \t\t{}\nE -(E_A_AEV+E_B_AEV): \t{}"

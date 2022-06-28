@@ -93,7 +93,7 @@ class SpinModel(AbstractModel):
             Create a cirq.PauliSum object fitting to j_v, j_h, h  
         """
         if reset:
-            self.hamiltonian = cirq.PauliSum()
+            self._hamiltonian = cirq.PauliSum()
 
         #Conversion currently necessary as numpy type * cirq.PauliSum fails
         j_v = self.j_v.tolist()
@@ -105,37 +105,37 @@ class SpinModel(AbstractModel):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
+                    self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         for g in range(len(self._TwoQubitGates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
+                self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
         
         for g in range(len(self._TwoQubitGates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
+                self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for g in range(len(self._TwoQubitGates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][0])
+                    self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
             for g in range(len(self._TwoQubitGates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[0][j])
+                    self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
         for g in range(len(self._SingleQubitGates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
+                    self._hamiltonian -= h[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
@@ -323,7 +323,7 @@ class SpinModel(AbstractModel):
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
 
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()

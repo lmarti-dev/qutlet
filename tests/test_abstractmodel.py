@@ -31,7 +31,7 @@ class MockAbstractModel(AbstractModel):
         return {}
 
     def _set_hamiltonian(self, reset: bool = True):
-        self.hamiltonian = cirq.PauliSum()
+        self._hamiltonian = cirq.PauliSum()
 
 def test__eq__():
     model1 = MockAbstractModel("GridQubit", [2, 2])
@@ -198,13 +198,13 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
     for i in range(np.size(gates)):
         gate = gates[i]
         if qubittype == "GridQubit":
-            np_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
-            scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
-            sparse_scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            np_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            scipy_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            sparse_scipy_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
         else:
-            np_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
-            scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
-            sparse_scipy_sol.hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+            np_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+            scipy_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
+            sparse_scipy_sol._hamiltonian += coefficients[i]*gate(np_sol.qubits[qubits[i]])
 
     #Calculate analytic results by different methods
     np_sol.diagonalise(solver = 'numpy')

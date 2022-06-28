@@ -231,11 +231,11 @@ def _exact_layer(self):
                                     n_offset=[i*n_exact[0],j*n_exact[1]])
 
                 #Store cirq PauliSums of subsystem Hamiltonians
-                self.subsystem_hamiltonians.append(temp_model.hamiltonian)
+                self.subsystem_hamiltonians.append(temp_model._hamiltonian)
 
                 if self.basics.options.get("subsystem_diagonalisation") is not False:
                     #To not loose qubits with no gates/ 0 qubits
-                    temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+                    temp_matrix = temp_model._hamiltonian.matrix(flatten(temp_model.qubits))
 
                     temp_model.diagonalise( solver = "scipy", 
                                             solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
@@ -336,12 +336,12 @@ def _exact_layer(self):
                                     
             #Store cirq PauliSums of subsystem Hamiltonians
             #print(temp_model.hamiltonian)
-            self.subsystem_hamiltonians.append(temp_model.hamiltonian)
+            self.subsystem_hamiltonians.append(temp_model._hamiltonian)
             
             #To not loose qubits with no gates/ 0 qubits
             #TO DO: this can be much mor efficent by using converter class and scipy sparse
             if self.basics.options.get("subsystem_diagonalisation") is not False:
-                temp_matrix = temp_model.hamiltonian.matrix(flatten(temp_model.qubits))
+                temp_matrix = temp_model._hamiltonian.matrix(flatten(temp_model.qubits))
                 temp_model.diagonalise( solver = "scipy", 
                                         solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                         matrix= temp_matrix)
@@ -712,7 +712,7 @@ class SpinModelDummy(AbstractModel):
             Create a cirq.PauliSum object fitting to j_v, j_h, h  
         """
         if reset:
-            self.hamiltonian = cirq.PauliSum()
+            self._hamiltonian = cirq.PauliSum()
 
         #Conversion currently necessary as numpy type * cirq.PauliSum fails
         j_v = self.j_v.tolist()
@@ -724,37 +724,37 @@ class SpinModelDummy(AbstractModel):
             for i in range(self.n[0] - 1):
                 for j in range(self.n[1] - 1):
                     #print("i: \t{}, j: \t{}".format(i,j))
-                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
-                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
+                    self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
+                    self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         for g in range(len(self._TwoQubitGates)):
             for i in range(self.n[0] - 1):
                 j = self.n[1] - 1
-                self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
+                self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i+1][j])
         
         for g in range(len(self._TwoQubitGates)):
             for j in range(self.n[1] - 1):
                 i = self.n[0] - 1
-                self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
+                self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][j+1])
         
         #2. Sum periodic boundaries
         if self.boundaries[1] == 0:
             for g in range(len(self._TwoQubitGates)):
                 for i in range(self.n[0]):
                     j = self.n[1] - 1
-                    self.hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][0])
+                    self._hamiltonian -= j_h[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][0])
         
         if self.boundaries[0] == 0:
             for g in range(len(self._TwoQubitGates)):
                 for j in range(self.n[1]):
                     i = self.n[0] - 1
-                    self.hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[0][j])
+                    self._hamiltonian -= j_v[i][j][g]*self._TwoQubitGates[g](self.qubits[i][j], self.qubits[0][j])
         
         # 3. Add external field
         for g in range(len(self._SingleQubitGates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
-                    self.hamiltonian -= h[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
+                    self._hamiltonian -= h[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
 
     def copy(self): pass
     def energy(self): pass 

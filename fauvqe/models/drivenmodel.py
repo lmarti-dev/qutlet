@@ -4,9 +4,12 @@
 """
 from __future__ import annotations
 
+import numpy as np
+
+import cirq
 from cirq import Circuit, PauliSum
 from numbers import Real
-import numpy as np
+from importlib import import_module
 from sympy  import Symbol
 from typing import Callable, List, Optional, Union
 
@@ -47,6 +50,9 @@ class DrivenModel(AbstractModel):
      Typ hinting Functions:
      https://stackoverflow.com/questions/37835179/how-can-i-specify-the-function-type-in-my-type-hints
     """
+    basics  = import_module("fauvqe.models.circuits.basics")
+    hea  = import_module("fauvqe.models.circuits.hea")
+    qaoa = import_module("fauvqe.models.circuits.qaoa")
 
     def __init__(   self,
                     models: Union[  List[AbstractModel], AbstractModel],
@@ -64,16 +70,38 @@ class DrivenModel(AbstractModel):
         self.models = models
         self.drives = drives
         self._t = t
+
+        #Alternative set hamiltonian for t=0
+        self._hamiltonian = PauliSum()
         if t is not None: self._set_hamiltonian(t)
 
         #For the moment require every model to act on same qubits
         self._init_qubits()
+        self.n=self.models[0].n
 
         self.circuit = Circuit()
         self.circuit_param: List[Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
+    
+    def _init_qubits(self):
+        """
+            This function checks whether all models act on the same qubits.
+            if so, it sets self.qubits = self.models[0].qubits
+            
+            Parameters
+            ----------
+            self.models:     Union[List[AbstractModel], AbstractModel]
+                        The driven models
 
-        
+            Sets
+            -------
+            self.qubits = self.models[0].qubits
+        """
+        _qubits = self.models[0].qubits
+        for i_model in range(1,len(self.models)):
+            assert _qubits == self.models[i_model].qubits , "Error in DrivenModel initialisation: All models need to act on same qubits"
+        self.qubits = _qubits 
+
     def energy(self, t: Real):
         """
             This function leverages the energy() functions of self.models
@@ -106,27 +134,7 @@ class DrivenModel(AbstractModel):
 
         return energy_filter
 
-    def _init_qubits(self):
-        """
-            This function checks whether all models act on the same qubits.
-            if so, it sets self.qubits = self.models[0].qubits
-            
-            Parameters
-            ----------
-            self.models:     Union[List[AbstractModel], AbstractModel]
-                        The driven models
-
-            Sets
-            -------
-            self.qubits = self.models[0].qubits
-        """
-        _qubits = self.models[0].qubits
-        for i_model in range(1,len(self.models)):
-            assert _qubits == self.models[i_model].qubits , "Error in DrivenModel initialisation: All models need to act on same qubits"
-        self.qubits = _qubits 
-
-
-    def get_hamiltonian(self, t: Real) -> PauliSum:
+    def hamiltonian(self, t: Real = 0) -> PauliSum:
         """
             This function returns a cirq.PauliSum for a specific time t
             in order to define an energy filter function for Driven Model
@@ -155,7 +163,7 @@ class DrivenModel(AbstractModel):
             Possibly adapt from SpinModel
 
             To be implemented:
-                -   Trotter
+                -   Trotter -> Use potentially set trotter circuit from Model classes
                 -   Matchgate (for 1D TFIM)
                 -   Kick operator VFF
                 -   Floquet normalform
@@ -163,7 +171,7 @@ class DrivenModel(AbstractModel):
         raise NotImplementedError()
 
     def _set_hamiltonian(self, t: Real):
-        self.hamiltonian = self.get_hamiltonian(t)
+        self.hamiltonian = self.hamiltonian(t)
 
     def set_Ut( self, 
                 t: Real,
@@ -174,14 +182,11 @@ class DrivenModel(AbstractModel):
         raise NotImplementedError()
 
     def to_json_dict(self) -> Dict:
-        raise NotImplementedError()
         return {
             "constructor_params": {
-                "qubittype": self.qubittype,
-                "n": self.n,
-                "j_v": self.j_v[:,:,0],
-                "j_h": self.j_h[:,:,0],
-                "h": self.h[:,:,0],
+                "models": self.models,
+                "drives": self.drives,
+                "t": self._t,
             },
             "params": {
                 "circuit": self.circuit,
@@ -192,7 +197,6 @@ class DrivenModel(AbstractModel):
 
     @classmethod
     def from_json_dict(cls, dct: Dict):
-        raise NotImplementedError()
         inst = cls(**dct["constructor_params"])
 
         inst.circuit = dct["params"]["circuit"]
@@ -208,8 +212,8 @@ class DrivenModel(AbstractModel):
             drive0 = lambda t : 1
             drive0.__name__ = 'f(t) = 1'
         """
-        _str = "<DrivenModel\n"
+        _str = "< DrivenModel\n"
         for i in range(len(self.models)):
-            _str += "Model " + str(i) + " " + repr(self.models[i]) + "|"
+            _str += "Model " + str(i) + " " + repr(self.models[i]) + "\n"
             _str += "Drive " + str(i) + " " + self.drives[i].__name__ + "\n"
-        return _str
+        return _str[:-1] + " >"

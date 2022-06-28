@@ -20,7 +20,7 @@ class MockAbstractModel(AbstractModel):
         return {}
 
     def _set_hamiltonian(self, reset: bool = True):
-        self.hamiltonian = cirq.PauliSum()
+        self._hamiltonian = cirq.PauliSum()
 
 @pytest.mark.parametrize(
     "state, observables, variances, n",
@@ -419,8 +419,8 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options1, basics_options2):
     ising2.set_circuit("basics", basics_options2)
 
     #Assert that subsystem partition match Hamiltonian
-    assert(ising1.hamiltonian == sum(ising1.subsystem_hamiltonians))
-    assert(ising1.hamiltonian == sum(ising2.subsystem_hamiltonians))
+    assert(ising1.hamiltonian() == sum(ising1.subsystem_hamiltonians))
+    assert(ising1.hamiltonian() == sum(ising2.subsystem_hamiltonians))
     
     #Init variance object
     variance_obj = Variance(ising1)
@@ -430,7 +430,7 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options1, basics_options2):
     #Also consider 2. Excited state as for J>h GS ~ 1.ES
     #Use converter + scipy sparse solver
     converter_obj = Converter()
-    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(ising1.hamiltonian , dtype=np.float64)
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(ising1.hamiltonian() , dtype=np.float64)
     k_excited_states = 3
     ising1.diagonalise(solver = "scipy.sparse", 
                         solver_options= { "k": k_excited_states},
@@ -542,8 +542,8 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
     ising2.set_circuit("basics", basics_options2)
 
     #Assert that subsystem partition match Hamiltonian
-    assert(ising1.hamiltonian == sum(ising1.subsystem_hamiltonians))
-    assert(ising1.hamiltonian == sum(ising2.subsystem_hamiltonians))
+    assert(ising1.hamiltonian() == sum(ising1.subsystem_hamiltonians))
+    assert(ising1.hamiltonian() == sum(ising2.subsystem_hamiltonians))
     
     #Init variance object
     variance_obj = Variance(ising1)
@@ -553,7 +553,7 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
     #Also consider 2. Excited state as for J>h GS ~ 1.ES
     #Use converter + scipy sparse solver
     converter_obj = Converter()
-    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(ising1.hamiltonian , dtype=np.float64)
+    scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(ising1.hamiltonian() , dtype=np.float64)
     k_excited_states = 3
     ising1.diagonalise(solver = "scipy.sparse", 
                         solver_options= { "k": k_excited_states},

@@ -125,7 +125,7 @@ def test_evaluate_from_energy_filter0(n,b):
     print("j_v: {}\nj_h {}\nh {}".format(j_v, j_h, h))
     ising= Ising("GridQubit", n, j_v, j_h, h, "X")
 
-    temp_matrix = ising.hamiltonian.matrix(ising.basics.flatten(ising.qubits))
+    temp_matrix = ising._hamiltonian.matrix(ising.basics.flatten(ising.qubits))
 
     ising.diagonalise( solver = "scipy", 
                        solver_options={"subset_by_index": [0, 2**(n[0]*n[1]) - 1]},
@@ -339,7 +339,7 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options):
     #Assert that subsystem partition match Hamiltonian
     #print(ising.hamiltonian)
     #print(ising.subsystem_hamiltonians[1])
-    assert(ising.hamiltonian == sum(ising.subsystem_hamiltonians))
+    assert(ising.hamiltonian() == sum(ising.subsystem_hamiltonians))
 
     #Use a random state vector for the asserts
     state=np.random.rand(2**(n[0]*n[1])).astype(np.complex128)

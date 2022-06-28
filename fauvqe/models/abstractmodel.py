@@ -14,19 +14,17 @@
 from __future__ import annotations
 
 import abc
-from typing import Tuple, List,Optional
-from numbers import Number, Real
-
-import numpy as np
-import sympy
 import cirq
+import numpy as np
 import qsimcirq
+import sympy
 import timeit
-#import fastmat
 
+from numbers import Number, Real
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 from scipy.sparse import dia_matrix as scipy_dia_matrix 
+from typing import Tuple, List,Optional
 
 from fauvqe.restorable import Restorable
 
@@ -56,7 +54,7 @@ class AbstractModel(Restorable):
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
-        self.hamiltonian = cirq.PauliSum()
+        self._hamiltonian = cirq.PauliSum()
         self.init_qubits(qubittype, n)
         self.set_simulator()
         self.t : Real = 0
@@ -66,7 +64,7 @@ class AbstractModel(Restorable):
         self._Ut: Optional[np.ndarray] = None
 
     def __repr__(self) -> str:
-        return "< " + str(self.__name__) + ", Hamiltonian=" + str(self.hamiltonian) + " >"
+        return "< " + str(self.__name__) + ", Hamiltonian=" + str(self._hamiltonian) + " >"
     
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
@@ -152,6 +150,11 @@ class AbstractModel(Restorable):
             frozenset({cirq.GridQubit(0, 5), cirq.GridQubit(0, 6),..})
             Issue: cannot handle this quite as GridQubits, LineQubits or NameQubits
         """
+
+    # Add time dependent Hamiltonian Function
+    # This ensures that UtCost can be adaped to time-dependent hamiltonians
+    def hamiltonian(self, t: Real = 0) -> cirq.PauliSum():
+        return self._hamiltonian
 
     # set simualtor to be written better, aka more general
     def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}):
@@ -249,7 +252,7 @@ class AbstractModel(Restorable):
                 e.g. k = 2
         """
         if matrix is None:
-            matrix = self.hamiltonian.matrix()
+            matrix = self._hamiltonian.matrix()
 
         __n = np.size(self.qubits)
         if solver == "numpy":

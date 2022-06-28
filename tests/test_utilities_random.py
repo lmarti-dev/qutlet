@@ -9,6 +9,7 @@ from timeit import default_timer
 from fauvqe import haar, haar_1qubit, uniform
 from fauvqe.utilities.random import _single_haar
 
+@pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, m, atol, args",
     [
@@ -45,6 +46,7 @@ def test__single_haar():
     probabilities = abs(random_state)**2
     assert (abs(np.sum(probabilities) - 1) < 1e-13)
 
+@pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, m",
     [
@@ -69,6 +71,7 @@ def test_haar_1qubit(n, m):
     #TODO Add speed test -> new test 
     #TODO test for distribution
 
+@pytest.mark.higheffort
 @pytest.mark.parametrize(
     "n, m, n_jobs_slow",
     [
