@@ -32,7 +32,6 @@ class OptimisationStep:
         self.__wavefunction: Optional[np.ndarray] = wavefunction
         self.__objective: Optional[Real] = objective
 
-    #@property
     def wavefunction(   self,
                         objective: Optional[Objective] = None) -> np.ndarray:
         """Get the wavefunction after the circuit of this step.
@@ -50,6 +49,7 @@ class OptimisationStep:
                     param_resolver=self._parent.objective.model.get_param_resolver(self.params),
                 )
             else:
+                #print(objective.__dict__)
                 self.__wavefunction = objective.simulate(
                     param_resolver=self._parent.objective.model.get_param_resolver(self.params),
                 )

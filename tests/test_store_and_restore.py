@@ -142,12 +142,12 @@ def test_continue_at():
             None, 0, "# ExpectationValue \t\n"
         ),
         (
-            ExpectationValue(   Ising(  "GridQubit",
-                                        [2, 2],
-                                        0.1 * np.ones((1, 2)),
-                                        0.5 * np.ones((2, 1)),
-                                        0.2 * np.ones((2, 2)),
-                                        "Z")),
+            [ExpectationValue(   Ising(  "GridQubit",
+                                            [2, 2],
+                                            0.1 * np.ones((1, 2)),
+                                            0.5 * np.ones((2, 1)),
+                                            0.2 * np.ones((2, 2)),
+                                            field="Z"))],
             1, 
             "# ExpectationValue \tExpectationValue \t\n"
         ),
@@ -157,13 +157,13 @@ def test_continue_at():
                                         0.1 * np.ones((1, 2)),
                                         0.5 * np.ones((2, 1)),
                                         0.2 * np.ones((2, 2)),
-                                        "Z")),
+                                        field="Z")),
              ExpectationValue(   Ising(  "GridQubit",
                                         [2, 2],
                                         0.1 * np.ones((1, 2)),
                                         0.5 * np.ones((2, 1)),
                                         0.2 * np.ones((2, 2)),
-                                        "Z"))],
+                                        field="Z"))],
             #This fails but should not!:
             #CVaR(   Ising(  "GridQubit",
             #                            [2, 2],
@@ -179,11 +179,24 @@ def test_continue_at():
 @pytest.mark.higheffort
 def test_storetxt(additional_objective, n_objectives,header_string):
     res = get_simple_result()
+    #print(res.objective.__dict__)
+    #print(additional_objective[0].__dict__)
+    #ising = Ising(  "GridQubit",
+    #                                    [2, 2],
+    #                                    0.1 * np.ones((1, 2)),
+    #                                    0.5 * np.ones((2, 1)),
+    #                                    0.2 * np.ones((2, 2)),
+    #                                    field="Z")
+    #additional_objective = ExpectationValue(ising)
+
     temp_path = os.path.dirname(os.path.abspath(__file__)) + "/fauvqe-pytest.txt"
 
     res.storetxt(   temp_path, 
                     overwrite=True,
                     additional_objectives=additional_objective)
+    #res.storetxt(   temp_path, 
+    #                overwrite=True,
+    #                additional_objectives=[res.objective, res.objective])
 
     temp_data = np.loadtxt(temp_path)
 
@@ -199,9 +212,9 @@ def test_storetxt(additional_objective, n_objectives,header_string):
         assert temp_data.shape == (25,n_objectives+1)
         for i in range(n_objectives+1):
             print("i: {}".format(i))
-            print(res.get_objectives())
-            print(temp_data[:,i])
-            print(res.get_objectives()/temp_data[:,i])
+            print("res.get_objectives():\n{}".format(res.get_objectives()))
+            print("temp_data[:,i]:\n{}".format(temp_data[:,i]))
+            print("res.get_objectives()/temp_data[:,i]:\n{}".format(res.get_objectives()/temp_data[:,i]))
             np.testing.assert_allclose(res.get_objectives(), temp_data[:,i], rtol=1e-15, atol=1e-15)
 
 @pytest.mark.higheffort
