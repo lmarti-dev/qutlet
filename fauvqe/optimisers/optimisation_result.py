@@ -291,7 +291,7 @@ class OptimisationResult:
         list of numpy.ndarray
         """
         # Todo: optimise with joblib?
-        return [step.wavefunction for step in self.__steps]
+        return [step.wavefunction() for step in self.__steps]
 
 
     def _get_wf_from_i( self, 

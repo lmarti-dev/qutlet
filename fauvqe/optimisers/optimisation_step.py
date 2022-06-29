@@ -119,7 +119,7 @@ class OptimisationStep:
             return self.params
 
         if column == "wavefunction":
-            return self.wavefunction
+            return self.wavefunction()
 
         if column == "objective":
             return self.objective
