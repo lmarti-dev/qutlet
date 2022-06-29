@@ -314,18 +314,25 @@ class OptimisationResult:
         _n_jobs = 8     
         pool = Pool(_n_jobs-1)
 
+        #Somehow parallel execution started to fail here
+        #TODO Fix it!!
         if objective == None:
             objective=self.objective
-            _wfs = pool.map(self._get_wf_from_i, range(self.__index))
+
+            #_wfs = pool.map(self._get_wf_from_i, range(self.__index))
+            _wfs=[self.__steps[i].wavefunction() for i in range(self.__index)]
         else:
             #Compare https://python.omics.wiki/multiprocessing_map/multiprocessing_partial_function_multiple_arguments
             objective_get_wf_from_i=partial(self._get_wf_from_i, objective=objective) 
             _wfs = pool.map(objective_get_wf_from_i, range(self.__index))
+        
+            #_wfs=[self.__steps[i].wavefunction(objective) for i in range(self.__index)]
 
         _objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
             joblib.delayed(objective.evaluate)(_wfs[i])
             for i in range(len(_wfs))
         )
+        #print("in Optimisation_result:{} ".format(_objective_values))
 
         return _objective_values
         
