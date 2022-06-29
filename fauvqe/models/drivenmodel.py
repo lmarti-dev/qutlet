@@ -5,12 +5,12 @@
 from __future__ import annotations
 
 import numpy as np
+import sympy
 
-import cirq
 from cirq import Circuit, PauliSum
 from numbers import Real
 from importlib import import_module
-from sympy  import Symbol
+from itertools import chain
 from typing import Callable, List, Optional, Union
 
 from fauvqe.models.abstractmodel import AbstractModel
@@ -33,9 +33,11 @@ class DrivenModel(AbstractModel):
     drives:     Union[  List[Callable[float, float]], 
                         Callable[float, float]]
                 The drive functions
+    T:          Periodicity of the drives/expansion time/frequency for Magnus series
+    t0:         Initial time, default 0
     t:          Optional[Number]
                 Fix the time of the DrivenModel, e.g. for variational optimisation
-
+    j_max:      Trunction order for Fourier Series in Magnus expension
 
     Methods
     ----------
@@ -58,7 +60,10 @@ class DrivenModel(AbstractModel):
                     models: Union[  List[AbstractModel], AbstractModel],
                     drives: Union[  List[Callable[[float], float]], 
                                     Callable[[float], float]],
-                    t: Real = None):
+                    T: Real = 2*sympy.pi,
+                    t0: Real = 0,
+                    t: Real = None,
+                    j_max: int = 10):
         #If an AbstractModel and a function are given -> convert those to lists
         if not isinstance(models, list): models = [models]
         if not isinstance(drives, list): drives = [drives]
@@ -69,6 +74,9 @@ class DrivenModel(AbstractModel):
             )
         self.models = models
         self.drives = drives
+        self.T = T
+        self.t0 = t0
+        self.j_max = j_max
         self._t = t
 
         #Alternative set hamiltonian for t=0
@@ -80,8 +88,10 @@ class DrivenModel(AbstractModel):
         self.n=self.models[0].n
 
         self.circuit = Circuit()
-        self.circuit_param: List[Symbol] = []
+        self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
+
+        self._set_Vjs()
     
     def _init_qubits(self):
         """
@@ -158,6 +168,17 @@ class DrivenModel(AbstractModel):
             hamiltonian += self.drives[i](t)*self.models[i].hamiltonian
         return hamiltonian
 
+    def K(  self,
+            t: Real) -> PauliSum:
+        """
+            This implements the Kick-operator:
+                K(t) = 
+
+            Parameters
+            ----------
+        """
+        raise NotImplementedError 
+
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
             Possibly adapt from SpinModel
@@ -172,6 +193,28 @@ class DrivenModel(AbstractModel):
 
     def _set_hamiltonian(self, t: Real):
         self.hamiltonian = self.hamiltonian(t)
+
+    def _get_Vj(    self,
+                    j: int, 
+                    drive: Callable[[Real], Real]):
+        """
+            TODO docstring
+        """
+        s = sympy.Symbol('s', real=True)
+        return sympy.integrate( drive(s)*sympy.exp((sympy.I*2*sympy.pi * j * s)/self.T),
+                            (s, self.t0, self.t0 + self.T))/self.T/sympy.I
+
+    def _set_Vjs(self):
+        """
+            TODO docstring
+
+            Parameters
+            ----------
+            j_max:      Truncation order for Fourier series
+        """
+        self.Vjs = []
+        for i_drive in range(len(self.drives)):
+            self.Vjs.append([self._get_Vj(j,self.drives[i_drive]) for j in chain(range(-self.j_max,0), range(1, self.j_max+1))])
 
     def set_Ut( self, 
                 t: Real,
@@ -209,8 +252,8 @@ class DrivenModel(AbstractModel):
         """
         
             Note that for this to work properly need to set __name__ of drive
-            drive0 = lambda t : 1
-            drive0.__name__ = 'f(t) = 1'
+            drive0 = lambda t : sympy.sin((2*sympy.pi/T)*t)
+            drive0.__name__ = 'f(t) = sin((2pi/T)*t)'
         """
         _str = "< DrivenModel\n"
         for i in range(len(self.models)):
