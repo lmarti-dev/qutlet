@@ -11,6 +11,7 @@ from cirq import Circuit, PauliSum
 from numbers import Real, Number
 from importlib import import_module
 from itertools import chain
+from openfermion.utils import commutator
 from typing import Callable, List, Optional, Union
 
 from fauvqe.models.abstractmodel import AbstractModel
@@ -60,7 +61,7 @@ class DrivenModel(AbstractModel):
                     models: Union[  List[AbstractModel], AbstractModel],
                     drives: Union[  List[Callable[[float], float]], 
                                     Callable[[float], float]],
-                    T: Real = 2*sympy.pi,
+                    T: Real = 0.1*2*sympy.pi,
                     t0: Real = 0,
                     t: Real = None,
                     j_max: int = 10):
@@ -91,7 +92,9 @@ class DrivenModel(AbstractModel):
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
 
-        self._set_Vjs()
+        self.Vjs=self.get_Vjs()
+        self.H0 = self.get_H0()
+        self.Heff = self.get_Heff()
     
     def _init_qubits(self):
         """
@@ -181,14 +184,7 @@ class DrivenModel(AbstractModel):
         for i_drive in range(len(self.drives)):
             _tmp = sum(self.Vjs[i_drive][i_j]*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
             _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
-            #print(sympy.N(_tmp))
             K_t += sympy.N(_tmp, 16)*self.models[i_drive]._hamiltonian
-
-            #i_j = 0
-            #for j in chain(range(-self.j_max,0), range(1,self.j_max)):
-                #sum(c(n, f, T, t, t0)*sympy.exp(sympy.I*2*sympy.pi*n*t/T) for n in range(-N, N+1)).expand(complex=True).simplify()
-            #    K_t += (self.T/(2*sympy.pi*j*sympy.I))*sympy.exp(2*sympy.pi*j*sympy.I/self.T)*self.Vjs[i_drive][i_j]#*self.models[i_drive]._hamiltonian
-            #    i_j += 1
         return K_t
 
     def set_circuit(self, qalgorithm, options: dict = {}):
@@ -206,6 +202,96 @@ class DrivenModel(AbstractModel):
     def _set_hamiltonian(self, t: Real):
         self.hamiltonian = self.hamiltonian(t)
 
+    def get_H0(self) -> PauliSum:
+        """
+            This implements uses the given drives and models to calculate the time independent Hamiltonian H0
+
+            Parameters
+            ----------
+            self.models:    List[AbstractModel]
+                            The driven models
+
+            self.Vjs:       List[List[Number]]
+                            The coefficents of the Fourier Series of the drive functions
+
+            Returns
+            ----------
+            H0:           cirq.PauliSum
+                            The time-independent Hamiltonian as given in the formular above
+        """
+        H0 = PauliSum()
+        for i in range(len(self.models)):
+            if all([self.Vjs[i][i_j] == 0 for i_j in range(2*self.j_max)]): 
+                H0 += self.models[i]._hamiltonian
+        return H0
+
+    def get_Heff(self):
+        """
+            This implements the effective Hamiltonian (see PRX 4, ..):
+                Heff = H_0  + \frac{1}{\omega} \sum_{j=1}^\infty \frac{1}{j} [\hat V^{(j)},\hat V^{(-j)}]
+					        + \frac{1}{2\omega^2} \sum_{j=1}^\infty [ [\hat V^{(j)}, \hat H_0],\hat V^{(-j)} ] + 
+                                                                    [ [\hat V^{(-j)}, \hat H_0],\hat V^{(j)} ] + \mathcal O(T^3)
+
+            By first determining H0 as the sum of models where sum(self.Vjs) == 0 
+            Note that we defined Vjs jsut as the Fourier coefficent while here they include the submodel hamiltonian
+
+            Parameters
+            ----------
+            self.models:    List[AbstractModel]
+                            The driven models
+            
+            self.drives:    List[Callable[float, float]]
+                            The drive functions
+
+            self.Vjs:       List[List[Number]]
+                            The coefficents of the Fourier Series of the drive functions
+
+            self.H0:        cirq.PauliSum()
+                            The time-independent part of the driven model
+
+            self.T          Real
+                            The periodicity of the time-dependent driving
+
+            Returns
+            ----------
+            Heff:           cirq.PauliSum
+                            The effective Hamiltonian as given in the formular above
+        """
+        Heff = self.H0
+
+        _non_H0_indices = []
+        for i in range(len(self.models)):
+            if not all([self.Vjs[i][i_j] == 0 for i_j in range(2*self.j_max)]): 
+                _non_H0_indices.append(i)
+
+        # First get cobined V^(j) s
+        # e.g. V(t) = V1(t) + V2(t) => V^(j) = V1^(j) + V2^(j)
+        #   => [V^(j), V^(-j)] = [V1^(j) + V2^(j), V1^(-j) + V2^(-j)]
+        _Vjs_combined = []
+        for i_j in range(len(self.Vjs[0])):
+            #print(sympy.N(self.Vjs[i][i_j],16).expand(complex=True))
+            _Vjs_combined.append(sum([  np.complex(self.Vjs[i][i_j]) * \
+                                        self.models[i]._hamiltonian for i in _non_H0_indices]))
+            #print("self.Vjs[:][i_j]: {}\t_Vjs_combined[i_j]: {}".format(self.Vjs[1][i_j], _Vjs_combined[i_j]))
+
+        #for i_j in range(self.j_max):
+        #    print("[V^({}), V^({})] = {}".format(-i_j+self.j_max, i_j-self.j_max, commutator(_Vjs_combined[-i_j-1], _Vjs_combined[i_j]) ))
+
+        # Calculate O(T) commutators truncated at self.j_max
+        # \frac{1}{\omega} \sum_{j=1}^\infty \frac{1}{j} [\hat V^{(j)},\hat V^{(-j)}]
+        Heff += sympy.N(self.T/(2*sympy.pi),16) * sum([commutator(_Vjs_combined[-i_j-1], _Vjs_combined[i_j]) 
+                     for i_j in range(self.j_max)])
+
+        # Calculate O(T²) commutators
+        #\frac{1}{2\omega^2} \sum_{j=1}^\infty [ [\hat V^{(j)}, \hat H_0],\hat V^{(-j)} ] + 
+        #                                      [ [\hat V^{(-j)}, \hat H_0],\hat V^{(j)} ]
+        Heff += 0.5*sympy.N(self.T/(2*sympy.pi),16)**2 * \
+                sum([   commutator(commutator(_Vjs_combined[-i_j-1], self.H0),  _Vjs_combined[i_j]) + \
+                        commutator(commutator(_Vjs_combined[i_j], self.H0),  _Vjs_combined[-i_j-1])
+                     for i_j in range(self.j_max)])
+
+        return Heff
+
     def _get_Vj(    self,
                     j: int, 
                     drive: Callable[[Real], Real]):
@@ -216,7 +302,7 @@ class DrivenModel(AbstractModel):
         return sympy.integrate( drive(s)*sympy.exp((sympy.I*2*sympy.pi * j * s)/self.T),
                             (s, self.t0, self.t0 + self.T))/self.T
 
-    def _set_Vjs(self):
+    def get_Vjs(self):
         """
             TODO docstring
 
@@ -224,9 +310,10 @@ class DrivenModel(AbstractModel):
             ----------
             j_max:      Truncation order for Fourier series
         """
-        self.Vjs = []
+        Vjs = []
         for i_drive in range(len(self.drives)):
-            self.Vjs.append([self._get_Vj(j,self.drives[i_drive]) for j in chain(range(-self.j_max,0), range(1, self.j_max+1))])
+            Vjs.append([self._get_Vj(j,self.drives[i_drive]) for j in chain(range(-self.j_max,0), range(1, self.j_max+1))])
+        return Vjs
 
     def set_Ut( self, 
                 t: Real,
