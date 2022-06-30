@@ -114,6 +114,124 @@ def test_constructor(models, drives, T, t0, t, j_max, dv_hamiltonian):
     assert driven_model.circuit_param == []
     assert driven_model.circuit_param_values == None
 
+@pytest.mark.parametrize(
+    "models, drives, t, equivalent_model",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: t
+            ],
+            1,
+            Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: t
+            ],
+            0,
+            Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "Z" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: t
+            ],
+            0,
+            Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t: t,
+                lambda t: t
+            ],
+            0.5,
+            Ising(  "GridQubit",
+                        [1,2],
+                        0.5*np.ones((1-1,2)),
+                        0.5*np.ones((1,2-1)),
+                        0.5*np.ones((1,2)),
+                        "X" ),
+         ),
+    ],
+)           
+def test_energy_filter(models, drives, t, equivalent_model):
+    driven_model = DrivenModel( models, 
+                                drives)
+    assert (np.array(driven_model.energy(t)) == np.array(equivalent_model.energy())).all()
+
 def test_H0():
     #assert driven_model.H0 == models[0]._hamiltonian
     pass
