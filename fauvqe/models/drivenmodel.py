@@ -8,7 +8,7 @@ import numpy as np
 import sympy
 
 from cirq import Circuit, PauliSum
-from numbers import Real
+from numbers import Real, Number
 from importlib import import_module
 from itertools import chain
 from typing import Callable, List, Optional, Union
@@ -177,7 +177,19 @@ class DrivenModel(AbstractModel):
             Parameters
             ----------
         """
-        raise NotImplementedError 
+        K_t =  PauliSum()
+        for i_drive in range(len(self.drives)):
+            _tmp = sum(self.Vjs[i_drive][i_j]*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
+            _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+            #print(sympy.N(_tmp))
+            K_t += sympy.N(_tmp, 16)*self.models[i_drive]._hamiltonian
+
+            #i_j = 0
+            #for j in chain(range(-self.j_max,0), range(1,self.j_max)):
+                #sum(c(n, f, T, t, t0)*sympy.exp(sympy.I*2*sympy.pi*n*t/T) for n in range(-N, N+1)).expand(complex=True).simplify()
+            #    K_t += (self.T/(2*sympy.pi*j*sympy.I))*sympy.exp(2*sympy.pi*j*sympy.I/self.T)*self.Vjs[i_drive][i_j]#*self.models[i_drive]._hamiltonian
+            #    i_j += 1
+        return K_t
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
@@ -202,7 +214,7 @@ class DrivenModel(AbstractModel):
         """
         s = sympy.Symbol('s', real=True)
         return sympy.integrate( drive(s)*sympy.exp((sympy.I*2*sympy.pi * j * s)/self.T),
-                            (s, self.t0, self.t0 + self.T))/self.T/sympy.I
+                            (s, self.t0, self.t0 + self.T))/self.T
 
     def _set_Vjs(self):
         """
