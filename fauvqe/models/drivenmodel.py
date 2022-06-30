@@ -115,6 +115,19 @@ class DrivenModel(AbstractModel):
             assert _qubits == self.models[i_model].qubits , "Error in DrivenModel initialisation: All models need to act on same qubits"
         self.qubits = _qubits 
 
+    def __repr__(self) -> str:
+        """
+        
+            Note that for this to work properly need to set __name__ of drive
+            drive0 = lambda t : sympy.sin((2*sympy.pi/T)*t)
+            drive0.__name__ = 'f(t) = sin((2pi/T)*t)'
+        """
+        _str = "< DrivenModel\n"
+        for i in range(len(self.models)):
+            _str += "Model " + str(i) + " " + repr(self.models[i]) + "\n"
+            _str += "Drive " + str(i) + " " + self.drives[i].__name__ + "\n"
+        return _str[:-1] + " >"
+    
     def energy(self, t: Real):
         """
             This function leverages the energy() functions of self.models
@@ -168,10 +181,10 @@ class DrivenModel(AbstractModel):
         """
         hamiltonian = PauliSum()
         for i in range(len(self.models)):
-            hamiltonian += self.drives[i](t)*self.models[i].hamiltonian
+            hamiltonian += self.drives[i](t)*self.models[i]._hamiltonian
         return hamiltonian
 
-    def K(  self,
+    def K(self,
             t: Real) -> PauliSum:
         """
             This implements the Kick-operator:
@@ -199,8 +212,10 @@ class DrivenModel(AbstractModel):
         """
         raise NotImplementedError()
 
-    def _set_hamiltonian(self, t: Real):
-        self.hamiltonian = self.hamiltonian(t)
+    def _set_hamiltonian(self,t):
+        #Not that this is an abstact method in AbstractModel
+        #   This is why it needs to be overwritten here
+        self._hamiltonian=self.hamiltonian(t)
 
     def get_H0(self) -> PauliSum:
         """
@@ -223,6 +238,7 @@ class DrivenModel(AbstractModel):
         for i in range(len(self.models)):
             if all([self.Vjs[i][i_j] == 0 for i_j in range(2*self.j_max)]): 
                 H0 += self.models[i]._hamiltonian
+                print(H0)
         return H0
 
     def get_Heff(self):
@@ -257,12 +273,13 @@ class DrivenModel(AbstractModel):
             Heff:           cirq.PauliSum
                             The effective Hamiltonian as given in the formular above
         """
-        Heff = self.H0
+        Heff = self.H0.copy()
 
         _non_H0_indices = []
         for i in range(len(self.models)):
             if not all([self.Vjs[i][i_j] == 0 for i_j in range(2*self.j_max)]): 
                 _non_H0_indices.append(i)
+        if _non_H0_indices == []: return Heff
 
         # First get cobined V^(j) s
         # e.g. V(t) = V1(t) + V2(t) => V^(j) = V1^(j) + V2^(j)
@@ -272,7 +289,7 @@ class DrivenModel(AbstractModel):
             #print(sympy.N(self.Vjs[i][i_j],16).expand(complex=True))
             _Vjs_combined.append(sum([  np.complex(self.Vjs[i][i_j]) * \
                                         self.models[i]._hamiltonian for i in _non_H0_indices]))
-            #print("self.Vjs[:][i_j]: {}\t_Vjs_combined[i_j]: {}".format(self.Vjs[1][i_j], _Vjs_combined[i_j]))
+            #print("self.Vjs[:][i_j]: {}\t_Vjs_combined[i_j]: {}".format([self.Vjs[i][i_j] for i in _non_H0_indices], _Vjs_combined[i_j]))
 
         #for i_j in range(self.j_max):
         #    print("[V^({}), V^({})] = {}".format(-i_j+self.j_max, i_j-self.j_max, commutator(_Vjs_combined[-i_j-1], _Vjs_combined[i_j]) ))
@@ -347,15 +364,4 @@ class DrivenModel(AbstractModel):
         
         return inst
 
-    def __repr__(self) -> str:
-        """
-        
-            Note that for this to work properly need to set __name__ of drive
-            drive0 = lambda t : sympy.sin((2*sympy.pi/T)*t)
-            drive0.__name__ = 'f(t) = sin((2pi/T)*t)'
-        """
-        _str = "< DrivenModel\n"
-        for i in range(len(self.models)):
-            _str += "Model " + str(i) + " " + repr(self.models[i]) + "\n"
-            _str += "Drive " + str(i) + " " + self.drives[i].__name__ + "\n"
-        return _str[:-1] + " >"
+    
