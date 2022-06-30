@@ -322,8 +322,96 @@ def test_H0(models, drives, H0):
     #print(driven_model.Vjs[0])
     assert driven_model.H0 == H0
 
-def test_Heff():
-    pass
+@pytest.mark.parametrize(
+    "models, drives, Heff",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        1*np.ones((2,2)),
+                        "Z" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.sin(10*t),
+            ],
+            Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" )._hamiltonian
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.sin(10*t),
+            ],
+            cirq.PauliSum.from_pauli_strings( \
+                -(1-2*0.01)*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)) \
+                -2*0.01*cirq.Y.on(cirq.GridQubit(0,0))*cirq.Y.on(cirq.GridQubit(0,1)))
+         ),
+          (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.sin(100*t),
+            ],
+            cirq.PauliSum.from_pauli_strings( \
+                -(1-2*0.01)*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)) \
+                -2*0.01*cirq.Y.on(cirq.GridQubit(0,0))*cirq.Y.on(cirq.GridQubit(0,1)))
+         ),
+    ],
+)    
+def test_Heff(models, drives, Heff):
+    # For 1 TFIM:
+    # Heff =  -J\left(\sum_{k=1}^n (1- 2\frac{h^2}{\omega^2}) Z_kZ_{k+1} +2 \frac{h^2}{\omega^2} Y_kY_{k+1}) \right)
+    driven_model = DrivenModel( models, 
+                                drives)
+    if driven_model.Heff == Heff:
+        assert True
+    else:
+        print(Heff.matrix())
+        print(driven_model.Heff.matrix())
+        np.testing.assert_allclose( Heff.matrix().conj()*driven_model.Heff.matrix(),
+                                    np.identity(2**np.product(driven_model.n)),rtol=1e-15,atol=1e-15)
+    
 
 def test_Kt():
     pass

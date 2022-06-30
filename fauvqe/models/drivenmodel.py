@@ -238,7 +238,6 @@ class DrivenModel(AbstractModel):
         for i in range(len(self.models)):
             if all([self.Vjs[i][i_j] == 0 for i_j in range(2*self.j_max)]): 
                 H0 += self.models[i]._hamiltonian
-                print(H0)
         return H0
 
     def get_Heff(self):
@@ -306,6 +305,14 @@ class DrivenModel(AbstractModel):
                 sum([   commutator(commutator(_Vjs_combined[-i_j-1], self.H0),  _Vjs_combined[i_j]) + \
                         commutator(commutator(_Vjs_combined[i_j], self.H0),  _Vjs_combined[-i_j-1])
                      for i_j in range(self.j_max)])
+
+        #Round PauliSum Coefficents to 1e-16 for numerical stability
+        for key,value in Heff._linear_dict._terms.items():
+            #print("key: {}\tvalue: {}".format(key,value))
+            Heff._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+
+        #for key,value in Heff._linear_dict._terms.items():
+        #    print("key: {}\tvalue: {}".format(key,value))
 
         return Heff
 
