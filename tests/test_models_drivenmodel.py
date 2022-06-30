@@ -232,9 +232,95 @@ def test_energy_filter(models, drives, t, equivalent_model):
                                 drives)
     assert (np.array(driven_model.energy(t)) == np.array(equivalent_model.energy())).all()
 
-def test_H0():
-    #assert driven_model.H0 == models[0]._hamiltonian
-    pass
+@pytest.mark.parametrize(
+    "models, drives, H0",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        1*np.ones((2,2)),
+                        "Z" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: t
+            ],
+             Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" )._hamiltonian
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        1*np.ones((2,2)),
+                        "X" ),
+            ],
+            [
+                lambda t: sympy.sin(t),
+                lambda t: t
+            ],
+             Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" )._hamiltonian
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        1*np.ones((2,2)),
+                        "Z" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: 1
+            ],
+             Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        1*np.ones((2,2)),
+                        "Z" )._hamiltonian
+         ),
+    ],
+)        
+def test_H0(models, drives, H0):
+    driven_model = DrivenModel( models, 
+                                drives)
+    #print("driven_model.H0: {}\nH0:{}".format(driven_model.H0 , H0))
+    #print(driven_model.Vjs[0])
+    assert driven_model.H0 == H0
 
 def test_Heff():
     pass

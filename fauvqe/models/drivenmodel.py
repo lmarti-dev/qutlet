@@ -316,7 +316,10 @@ class DrivenModel(AbstractModel):
             TODO docstring
         """
         s = sympy.Symbol('s', real=True)
-        return sympy.integrate( drive(s)*sympy.exp((sympy.I*2*sympy.pi * j * s)/self.T),
+        if drive(s) == 1:
+            return 0
+        else:
+            return sympy.integrate( drive(s)*sympy.exp((sympy.I*2*sympy.pi * j * s)/self.T),
                             (s, self.t0, self.t0 + self.T))/self.T
 
     def get_Vjs(self):
