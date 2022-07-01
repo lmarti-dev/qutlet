@@ -181,7 +181,7 @@ class CooledAdiabatic(CoolingModel):
         """
         return int( int(self.m_sys.T) - (int(self.m_sys.T) % nbr_resets) ) #+ nbr_resets )
 
-    def perform_sweep(self, nbr_resets: int = None, calc_O: bool = True, calc_E: bool = True) -> List[np.ndarray]:
+    def perform_sweep(self, nbr_resets: int = None, t_steps: int = None, calc_O: bool = True, calc_E: bool = True) -> List[np.ndarray]:
         """
         Calculate the whole sweep:
             - Configures Uts and nbr_resets
@@ -208,24 +208,45 @@ class CooledAdiabatic(CoolingModel):
         _n_full = np.size(self.qubits)
         _N_sys = 2**(_n_full - _n)
         min_gap = 0
-        #Instantiate figures of interest if desired
-        if(calc_O):
-            if(self.m_sys.output is None):
-                min_gap = self.m_sys._get_minimal_energy_gap()
-            fid = Fidelity(self.m_sys, self.m_sys.output)
-        fids = []
-        if(calc_E):
-            energy = AbstractExpectationValue(self.m_sys._H1)
-        energies = []
+        
         #Set number of resets
         if nbr_resets is None:
             if min_gap == 0:
-                min_gap = self.m_sys._get_minimal_energy_gap()
+                if t_steps is None:
+                    min_gap = self.m_sys._get_minimal_energy_gap()
+                else:
+                    min_gap = self.m_sys._get_minimal_energy_gap(
+                        np.linspace(0, self.m_sys.T, t_steps+1)
+                    )
             dt = 2 * np.pi / min_gap
             nbr_resets = int(self.m_sys.T / dt)
             if(nbr_resets == 0):
                 nbr_resets = 1
         self.nbr_resets = nbr_resets
+        if(t_steps is None):
+            t_steps = self._get_default_trotter_steps(nbr_resets)
+        assert t_steps % nbr_resets == 0, "Need to have a multiple of reset number for trotter number, received: {} and {}".format(nbr_resets, t_steps)
+
+        #Set Uts for sweep
+        if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
+            self.set_Uts(t_steps)
+        else:
+            t_steps = len(self._Uts)
+        steps_between_resets = int( t_steps / nbr_resets )
+        print("Perform sweep with {} steps, {} resets and {} steps between resets".format(t_steps, nbr_resets, steps_between_resets))
+        
+        #Instantiate figures of interest if desired
+        if(calc_O):
+            if(self.m_sys.output is None):
+                min_gap = self.m_sys._get_minimal_energy_gap(
+                    np.linspace(0, self.m_sys.T, t_steps+1), 
+                    reset = True
+                )
+            fid = Fidelity(self.m_sys, self.m_sys.output)
+        fids = []
+        if(calc_E):
+            energy = AbstractExpectationValue(self.m_sys._H1)
+        energies = []
         #Get initial state from groundstate of m_sys.hamiltonian(t=0)
         if(self.m_sys.initial is None):
             self.m_sys._set_initial_state_for_sweep()
@@ -233,15 +254,9 @@ class CooledAdiabatic(CoolingModel):
         fridge_gs[0, 0] = 1.0
         initial = np.kron(self.m_sys.initial.reshape(_N_sys, 1) @ self.m_sys.initial.conjugate().reshape(1, _N_sys),
                          fridge_gs)
-        #Set Uts for sweep
-        if self._Uts is None or (len(self._Uts) % nbr_resets != 0 ):
-            self.set_Uts(self._get_default_trotter_steps(nbr_resets))
-        steps = len(self._Uts)
-        steps_between_resets = int( steps / nbr_resets )
-        print("Perform sweep with {} steps, {} resets and {} steps between resets".format(steps, nbr_resets, steps_between_resets))
         # Do the sweep with intermediate resets
         final = initial
-        for step in range(steps):
+        for step in range(t_steps):
             final = self._Uts[step] @ final @ self._Uts[step].transpose().conjugate()
             if((step+1) % steps_between_resets == 0):
                 sys_state = ptrace(final, range(_n_full - _n, _n_full, 1))

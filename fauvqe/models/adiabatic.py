@@ -195,7 +195,7 @@ class Adiabatic(SpinModelFC):
             )
         #returns into self._Uts the Trotter factors to further use and single time execution
     
-    def _get_minimal_energy_gap(self, times: np.ndarray = None) -> float:
+    def _get_minimal_energy_gap(self, times: np.ndarray = None, reset: bool = False) -> float:
         """
         Calculates the energy gaps in a scan through the adiabatic sweep, saves them to self.gaps and returns the minimum:
         
@@ -209,7 +209,7 @@ class Adiabatic(SpinModelFC):
         float
             Minimum Energy Gap
         """
-        if self.min_gap is not None:
+        if self.min_gap is not None and not reset:
             return self.min_gap
         if times is None:
             times = self._default_time_grid
