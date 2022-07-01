@@ -57,13 +57,15 @@ class DrivenModel(AbstractModel):
     basics  = import_module("fauvqe.circuits.basics")
     hea  = import_module("fauvqe.circuits.hea")
     qaoa = import_module("fauvqe.circuits.qaoa")
+    trotter  = import_module("fauvqe.circuits.trotter")
 
     def __init__(   self,
                     models: Union[  List[AbstractModel], AbstractModel],
                     drives: Union[  List[Callable[[float], float]], 
                                     Callable[[float], float]],
                     T: Real = 0.1*2*sympy.pi,
-                    t0: Real = 0,
+                    t0: Real = 0, #potentially introduce tf here as well
+                    tf: Real = None,
                     t: Real = None,
                     j_max: int = 10):
         #If an AbstractModel and a function are given -> convert those to lists
@@ -78,6 +80,7 @@ class DrivenModel(AbstractModel):
         self.drives = drives
         self.T = T
         self.t0 = t0
+        if tf is None: self.tf=T
         self.j_max = j_max
         self._t = t
 
@@ -220,7 +223,18 @@ class DrivenModel(AbstractModel):
                 -   Kick operator VFF
                 -   Floquet normalform
         """
-        raise NotImplementedError()
+        if qalgorithm == "trotter":
+            self.trotter.options = {    "append": False,
+                                    "return": False,
+                                    "hamiltonian": self.hamiltonian,
+                                    "trotter_number" : int(10*round((self.tf-self.t0)/self.T)),
+                                    "trotter_order" : 1,
+                                    "t0": self.t0, 
+                                    "tf": self.tf}
+            self.trotter.options.update(options)
+            self.trotter.set_circuit(self)
+        else:
+            raise NotImplementedError()
 
     def _set_hamiltonian(self,t):
         #Not that this is an abstact method in AbstractModel
