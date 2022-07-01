@@ -409,12 +409,52 @@ def test_Heff(models, drives, Heff):
     else:
         print(Heff.matrix())
         print(driven_model.Heff.matrix())
-        np.testing.assert_allclose( Heff.matrix().conj()*driven_model.Heff.matrix(),
-                                    np.identity(2**np.product(driven_model.n)),rtol=1e-15,atol=1e-15)
+        np.testing.assert_allclose( Heff.matrix() - driven_model.Heff.matrix(),
+                                    np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
     
-
-def test_Kt():
-    pass
+@pytest.mark.parametrize(
+    "models, drives, integrated_Vt",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        #np.ones((2,2)),
+                        2*(np.random.rand(2,2)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            lambda t: (1/10)*np.sin(10*t),
+         ),
+    ],
+)    
+def test_Kt(models, drives, integrated_Vt):
+    # make t random, make hamiltian random
+    # give correctly integrated v(t) w.o. Hamiltonian to test
+    driven_model = DrivenModel( models, 
+                                drives)
+    t = np.random.random_sample()
+    H_V = (sum([models[i]._hamiltonian for i in range(len(models))]) - driven_model.H0)
+    print(H_V.matrix())
+    print(integrated_Vt(t))
+    print(driven_model.K(t))
+    print(driven_model.K(t) - integrated_Vt(t) * H_V)
+    if driven_model.K(t) == integrated_Vt(t) * H_V:
+        assert True
+    else:
+        np.testing.assert_allclose( driven_model.K(t).matrix() - integrated_Vt(t) * H_V.matrix(),
+                                    np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
 
 def test_Vjs():
     pass
