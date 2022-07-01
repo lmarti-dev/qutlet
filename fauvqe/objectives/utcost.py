@@ -103,8 +103,24 @@ class UtCost(Objective):
             self._init_batch_wfcts()
             self.evaluate = self.evaluate_batch
 
-    def _init_trotter_circuit(self):
-        self.trotter_circuit = self.trotter.get_trotter_circuit_from_hamiltonian(self,  self.model.hamiltonian(), self.t, self._q, self._m)
+    def _init_trotter_circuit(  self,
+                                options: Dict = {}):
+        """
+            This function initialises the trotter circuit.
+
+            Make sure that hamiltonian is potentially a time-dependent function
+
+            Also potentially allow for t0 != 0
+        """
+        self.trotter.options = {    "append": False,
+                                    "return": True,
+                                    "hamiltonian": self.model.hamiltonian(),
+                                    "trotter_number" : self._m,
+                                    "trotter_order" : self._q,
+                                    "t0": 0, 
+                                    "tf": self.t}
+        self.trotter.options.update(options)
+        self.trotter_circuit = self.trotter.set_circuit(self)
     
     def _init_batch_wfcts(self):
         """

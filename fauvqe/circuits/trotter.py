@@ -1,8 +1,21 @@
 import cirq
 import numpy as np
 
-def get_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q, m):
-        return m * self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t/m, q)
+def set_circuit(self):
+        hamiltonian = self.trotter.options.get('hamiltonian')
+        tf = self.trotter.options.get('tf')
+        q = self.trotter.options.get('trotter_order')
+        m = self.trotter.options.get('trotter_number')
+
+        _circuit = m * self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, tf/m, q)
+
+        if self.trotter.options.get('return'):
+            return _circuit
+        elif self.trotter.options.get('return'):
+            self.circuit.append(_circuit)
+        else:
+            self.circuit = _circuit
+
     
 def get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, t, q):
     if(q == 1):
