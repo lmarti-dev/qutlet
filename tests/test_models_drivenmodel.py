@@ -512,6 +512,49 @@ def test__repr(models, drives, drive_names, true_repr):
                                 drives)
     print(repr(driven_model) )
     assert repr(driven_model) == true_repr
+
+@pytest.mark.parametrize(
+    "models, drives, drive_names, T, t0, t, j_max",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        2*(np.random.rand(2-1,2)- 0.5),
+                        2*(np.random.rand(2,2-1)- 0.5),
+                        2*(np.random.rand(2,2)- 0.5),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        2*(np.random.rand(2-1,2)- 0.5),
+                        2*(np.random.rand(2,2-1)- 0.5),
+                        2*(np.random.rand(2,2)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t:   1,
+                lambda t:   sympy.sin((10)*t)
+            ],
+             [
+                "f(t) = 1",
+                "f(t) = sin(10*t)"
+            ],
+            11,1,21,9
+        ),
+    ],
+)
+def test_copy(models, drives, drive_names, T, t0, t, j_max):
+    for i in range(len(drives)): drives[i].__name__ = drive_names[i]
+    driven_model = DrivenModel( models, 
+                                drives,
+                                T,t0,t,j_max)
+    driven_model2 = DrivenModel( models, 
+                                drives,
+                                T,t0,t,j_max)
+    copy_driven_model = driven_model.copy()
+    driven_model = 0
+    assert copy_driven_model == driven_model2
+
 #####################################
 #                                   #
 #           Asssert tests           #

@@ -8,6 +8,7 @@ import numpy as np
 import sympy
 
 from cirq import Circuit, PauliSum
+from copy import deepcopy
 from numbers import Real, Number
 from importlib import import_module
 from itertools import chain
@@ -91,6 +92,10 @@ class DrivenModel(AbstractModel):
         self.circuit = Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
+
+        self.eig_val=None
+        self.eig_vec=None
+        self._Ut = None
 
         self.Vjs=self.get_Vjs()
         self.H0 = self.get_H0()
@@ -181,7 +186,7 @@ class DrivenModel(AbstractModel):
         """
         hamiltonian = PauliSum()
         for i in range(len(self.models)):
-            hamiltonian += self.drives[i](t)*self.models[i]._hamiltonian
+            hamiltonian += sympy.N(self.drives[i](t), 20)*self.models[i]._hamiltonian
         return hamiltonian
 
     def K(self,
@@ -353,7 +358,26 @@ class DrivenModel(AbstractModel):
         raise NotImplementedError()
     
     def copy(self) -> DrivenModel:
-        raise NotImplementedError()
+        models_copy =[model.copy() for model in self.models]
+        drives_copy =[deepcopy(drive) for drive in self.drives]
+        
+        self_copy = DrivenModel( models_copy,
+                                drives_copy, 
+                                deepcopy(self.T),
+                                deepcopy(self.t0),
+                                deepcopy(self._t),
+                                deepcopy(self.j_max))
+
+        self_copy.circuit = self.circuit.copy()
+        if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
+        if self.circuit_param_values is not None: self_copy.circuit_param_values = self.circuit_param_values.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
+
+        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
+        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
+        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
+
+        return self_copy
 
     def to_json_dict(self) -> Dict:
         return {
