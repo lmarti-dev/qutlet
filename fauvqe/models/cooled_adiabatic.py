@@ -261,7 +261,7 @@ class CooledAdiabatic(CoolingModel):
             if((step+1) % steps_between_resets == 0):
                 sys_state = ptrace(final, range(_n_full - _n, _n_full, 1))
                 if(calc_O):
-                    fid = Fidelity(self.m_sys, self.m_sys.groundstates[step+1])
+                    #fid = Fidelity(self.m_sys, self.m_sys.groundstates[step+1])
                     fids.append(fid.evaluate(sys_state)[0][0])
                 if(calc_E):
                     energies.append(energy.evaluate(sys_state))
