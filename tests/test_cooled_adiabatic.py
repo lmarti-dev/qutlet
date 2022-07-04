@@ -350,7 +350,7 @@ def test_perform_sweep(field, nbr_resets, calc_O):
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     
-    res, fids, energies = model.perform_sweep(nbr_resets, calc_O)
+    res, fids, energies = model.perform_sweep(nbr_resets, calc_O=calc_O)
     print(fids)
     print(energies)
     result = ptrace(res, [2])
@@ -359,3 +359,44 @@ def test_perform_sweep(field, nbr_resets, calc_O):
     if model.m_sys.output is None:
         model.m_sys._set_output_state_for_sweep()
     assert 1 - abs(model.m_sys.output.transpose().conjugate() @ result @ model.m_sys.output ) < 1e-1
+
+
+def test_theory_bounds():
+    qubittype= "GridQubit"
+    n=[2, 1]
+    j_v=np.ones((1, 1))
+    j_h=np.ones((2, 0))
+    h= np.ones((2, 1))
+    T=10
+    epsilon = 1e-2
+    
+    zeros_v = np.zeros((n[0]-1, n[1]))
+    zeros_h = np.zeros((n[0], n[1]-1))
+    zeros = np.zeros((n[0], n[1]))
+    
+    H0 = Ising(qubittype, n, j_v, j_h, h, 'X')
+    H1 = Heisenberg(qubittype, n, j_v, j_h, zeros_v, zeros_h, zeros_v, zeros_h, zeros, h, zeros)
+    
+    m_anc = Ising("GridQubit", [1,1], np.zeros((1,1)), np.zeros((1,1)), 
+        0.5*0.475767210333732*np.ones((1,1)), 'Z')
+    j_int = epsilon * np.ones((1, *n))
+    int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
+    model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
+    model.m_sys._get_minimal_energy_gap()
+    model.m_anc.diagonalise()
+    
+    bound_dict = model.get_theory_bounds()
+    sol = {
+            'alpha_benchmark': 5,#__n * np.sqrt(epsilon*(1-epsilon))/(4*np.pi*epsilon) \
+                #/ self.m_sys.T / self.m_sys.min_gap / S,
+            'alpha_high': 2*model.m_sys.min_gap,
+            'gap_difference_benchmark': 0,
+            'gap_difference_high': 2*model.m_sys.min_gap,
+            'dt_between_resets_benchmark': 2*np.pi/model.m_sys.min_gap,
+            'dt_between_resets_high': 10
+            }
+    
+    print(bound_dict)
+    for key in bound_dict:
+        if not (key == 'alpha_benchmark'):
+            assert abs(bound_dict[key] - sol[key]) < 1e-7

@@ -271,6 +271,7 @@ class CooledAdiabatic(CoolingModel):
     def get_theory_bounds(self, epsilon: float = None) -> Dict:
         if epsilon is None:
             epsilon = 1 - np.exp(-0.5* np.pi / self.m_sys.T )
+            print(epsilon)
         omega_anc = self.m_anc.eig_val[1] - self.m_anc.eig_val[0]
         omega_sys = self.m_sys.min_gap
         __n = self.m_sys.n[0] * self.m_sys.n[1]
@@ -281,7 +282,7 @@ class CooledAdiabatic(CoolingModel):
             self.m_sys.first_excited[self.m_sys.min_gap_t]
         ]
         for pauli in [cirq.X, cirq.Y, cirq.Z]:
-            S += 1/3 * abs(eig_vec[1].transpose() @ pauli.matrix(qubits) @ eig_vec[0])
+            S += 1/3 * abs(eig_vec[1].transpose() @ (cirq.IdentityGate(__n).on(*qubits) * pauli.on(qubits[0])).matrix(qubits) @ eig_vec[0])
         return {
             'alpha_benchmark': __n * np.sqrt(epsilon*(1-epsilon))/(4*np.pi*epsilon) \
                 / self.m_sys.T / self.m_sys.min_gap / S,
