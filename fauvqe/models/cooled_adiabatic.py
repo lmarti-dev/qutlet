@@ -268,6 +268,31 @@ class CooledAdiabatic(CoolingModel):
                 final =  np.kron( sys_state, fridge_gs)
         return final, fids, energies
     
+    def get_theory_bounds(self, epsilon: float = None) -> Dict:
+        if epsilon is None:
+            epsilon = 1 - np.exp(-0.5* np.pi / self.m_sys.T )
+        omega_anc = self.m_anc.eig_val[1] - self.m_anc.eig_val[0]
+        omega_sys = self.m_sys.min_gap
+        __n = self.m_sys.n[0] * self.m_sys.n[1]
+        qubits = [cirq.GridQubit(0, j) for j in range(__n)]
+        S = 0
+        eig_vec = [
+            self.m_sys.groundstates[self.m_sys.min_gap_t], 
+            self.m_sys.first_excited[self.m_sys.min_gap_t]
+        ]
+        for pauli in [cirq.X, cirq.Y, cirq.Z]:
+            S += 1/3 * abs(eig_vec[1].transpose() @ pauli.matrix(qubits) @ eig_vec[0])
+        return {
+            'alpha_benchmark': __n * np.sqrt(epsilon*(1-epsilon))/(4*np.pi*epsilon) \
+                / self.m_sys.T / self.m_sys.min_gap / S,
+            'alpha_high': 2*omega_anc,
+            'gap_difference_benchmark': 0,
+            'gap_difference_high': omega_anc + omega_sys,
+            'dt_between_resets_benchmark': 2*np.pi/omega_anc,
+            'dt_between_resets_high': self.m_sys.T
+        }
+
+
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {

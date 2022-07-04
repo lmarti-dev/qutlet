@@ -216,20 +216,24 @@ class Adiabatic(SpinModelFC):
         #print(times)
         gaps = []
         groundstates = []
+        first_excited = []
         for t in times:
             self.t = t
             self._set_hamiltonian()
             self.diagonalise(solver="numpy")
             gaps.append(self.eig_val[1] - self.eig_val[0])
             groundstates.append(self.eig_vec.transpose()[0])
+            first_excited.append(self.eig_vec.transpose()[1])
             if t == 0:
                 self.initial = self.eig_vec.transpose()[0]
             if t == self.T:
                 self.output = self.eig_vec.transpose()[0]
                 self.gs_energy = self.eig_val[0]
         self.min_gap = min(gaps)
+        self.min_gap_t = np.where(gaps == self.min_gap)
         self.gaps = gaps
         self.groundstates = groundstates
+        self.first_excited = first_excited
         return self.min_gap
 
     def _get_groundstate_at_time(self, time: float) -> np.array:
