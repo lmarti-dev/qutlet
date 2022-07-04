@@ -207,21 +207,21 @@ class CooledAdiabatic(CoolingModel):
         _N = 2**( _n )
         _n_full = np.size(self.qubits)
         _N_sys = 2**(_n_full - _n)
-        min_gap = 0
         
         #Set number of resets
         if nbr_resets is None:
-            if min_gap == 0:
-                if t_steps is None:
-                    min_gap = self.m_sys._get_minimal_energy_gap()
-                else:
-                    min_gap = self.m_sys._get_minimal_energy_gap(
-                        np.linspace(0, self.m_sys.T, t_steps+1)
-                    )
+            if t_steps is None:
+                min_gap = self.m_sys._get_minimal_energy_gap()
+            else:
+                min_gap = self.m_sys._get_minimal_energy_gap(
+                    np.linspace(0, self.m_sys.T, t_steps+1)
+                )
             dt = 2 * np.pi / min_gap
             nbr_resets = int(self.m_sys.T / dt)
             if(nbr_resets == 0):
                 nbr_resets = 1
+            if t_steps is not None:
+                t_steps = t_steps - t_steps % nbr_resets
         self.nbr_resets = nbr_resets
         if(t_steps is None):
             t_steps = self._get_default_trotter_steps(nbr_resets)

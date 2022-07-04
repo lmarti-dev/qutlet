@@ -307,26 +307,32 @@ def test_set_uts_w_little_cooling(field, epsilon):
     assert 1 - abs((H1.eig_vec.transpose()[0]).transpose().conjugate() @ result @ (H1.eig_vec.transpose()[0]) ) < 1e-1
 
 @pytest.mark.parametrize(
-    "field, nbr_resets, calc_O",
+    "field, nbr_resets, t_steps, calc_O",
     [
         (
-            'X', None, True
+            'X', None,None, True
         ),
         (
-            'X', 10, True
+            'X', 10,None, True
         ),
         (
-            'X', None, False
+            'X', 10,20, True
         ),
         (
-            'X', 10, False
+            'X', None,20, True
         ),
         (
-            'Z', None, True
+            'X', None,None, False
+        ),
+        (
+            'X', 10,None, False
+        ),
+        (
+            'Z', None,None, True
         )
     ]
 )
-def test_perform_sweep(field, nbr_resets, calc_O):
+def test_perform_sweep(field, nbr_resets, t_steps, calc_O):
     qubittype= "GridQubit"
     n=[2, 1]
     j_v=np.ones((1, 1))
@@ -350,7 +356,9 @@ def test_perform_sweep(field, nbr_resets, calc_O):
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
     
-    res, fids, energies = model.perform_sweep(nbr_resets, calc_O=calc_O)
+    if t_steps is not None:
+        model.set_Uts(t_steps)
+    res, fids, energies = model.perform_sweep(nbr_resets, t_steps=t_steps, calc_O=calc_O)
     print(fids)
     print(energies)
     result = ptrace(res, [2])
