@@ -271,7 +271,6 @@ class CooledAdiabatic(CoolingModel):
     def get_theory_bounds(self, epsilon: float = None) -> Dict:
         if epsilon is None:
             epsilon = 1 - np.exp(-0.5* np.pi / self.m_sys.T )
-            print(epsilon)
         omega_anc = self.m_anc.eig_val[1] - self.m_anc.eig_val[0]
         omega_sys = self.m_sys.min_gap
         __n = self.m_sys.n[0] * self.m_sys.n[1]
@@ -286,7 +285,7 @@ class CooledAdiabatic(CoolingModel):
         return {
             'alpha_benchmark': __n * np.sqrt(epsilon*(1-epsilon))/(4*np.pi*epsilon) \
                 / self.m_sys.T / self.m_sys.min_gap / S,
-            'alpha_high': 2*omega_anc,
+            'alpha_high': omega_anc,
             'gap_difference_benchmark': 0,
             'gap_difference_high': omega_anc + omega_sys,
             'dt_between_resets_benchmark': 2*np.pi/omega_anc,

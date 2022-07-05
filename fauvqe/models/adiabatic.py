@@ -230,7 +230,6 @@ class Adiabatic(SpinModelFC):
                 self.output = self.eig_vec.transpose()[0]
                 self.gs_energy = self.eig_val[0]
         self.min_gap = min(gaps)
-        print(np.where(gaps == self.min_gap))
         self.min_gap_t = int(np.where(gaps == self.min_gap)[0][0])
         self.gaps = gaps
         self.groundstates = groundstates
