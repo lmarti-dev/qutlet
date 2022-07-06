@@ -7,7 +7,7 @@ from __future__ import annotations
 import numpy as np
 import sympy
 
-from cirq import Circuit, PauliSum
+from cirq import Circuit, FSimGate, PauliSum, PhasedXZGate
 from copy import deepcopy
 from numbers import Real, Number
 from importlib import import_module
@@ -80,7 +80,10 @@ class DrivenModel(AbstractModel):
         self.drives = drives
         self.T = T
         self.t0 = t0
-        if tf is None: self.tf=T
+        if tf is None: 
+            self.tf=T
+        else:
+            self.tf = tf
         self.j_max = j_max
         self._t = t
 
@@ -205,7 +208,8 @@ class DrivenModel(AbstractModel):
         for i_drive in range(len(self.drives)):
             _tmp = sum(self.Vjs[i_drive][i_j]*(1/((i_j-self.j_max)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
             _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*(1/((i_j)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
-            K_t += sympy.N(_tmp, 16)*self.models[i_drive]._hamiltonian
+            print(_tmp)
+            K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
 
         #Round PauliSum Coefficents to 1e-16 for numerical stability
         for key,value in K_t._linear_dict._terms.items():
@@ -223,7 +227,33 @@ class DrivenModel(AbstractModel):
                 -   Kick operator VFF
                 -   Floquet normalform
         """
-        if qalgorithm == "trotter":
+        if qalgorithm == "hea":
+            # Defaults for 1 and 2 qubit gates
+            _SingleQubitVariables = [['a' , 'x', 'z']]
+            _TwoQubitVariables = [['phi', 'theta']]
+
+            self.hea.options = {"append": False,
+                                "p": 1,
+                                "parametrisation" : 'joint',
+                                "SingleQubitVariables": _SingleQubitVariables,
+                                "TwoQubitVariables": _TwoQubitVariables,
+                                "SingleQubitGates": [lambda a, x, z:  PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a)],
+                                "TwoQubitGates" : [lambda phi, theta: FSimGate(phi=phi, theta=theta)],
+                               }
+            
+            # Convert options input to correct format
+            for key, nested_level in [  ["SingleQubitVariables", 2], 
+                                        ["TwoQubitVariables", 2],
+                                        ["SingleQubitGates", 1],
+                                        ["TwoQubitGates", 1]]:
+                options = self._update2nestedlist(options, key, nested_level)
+
+            self.hea.options.update(options)
+            self.hea.set_symbols(self)
+            self.hea.set_circuit(self)
+            self.basics.rm_unused_cpv(self)  
+            self.basics.add_missing_cpv(self)
+        elif qalgorithm == "trotter":
             self.trotter.options = {    "append": False,
                                     "return": False,
                                     "hamiltonian": self.hamiltonian,
