@@ -77,6 +77,19 @@ class UtCost(Objective):
         self._time_steps = time_steps
         self._dtype = dtype
         
+        #Set appropiate evaluate function either state or unitary based
+        if (initial_wavefunctions is None):
+            self.batch_size = 0
+            self.evaluate = self.evaluate_op
+        else:
+            assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
+                "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
+                    format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
+            self.batch_size = np.size(initial_wavefunctions[:,0])
+            #self._init_batch_wfcts()
+            self.evaluate = self.evaluate_batch
+
+        #Init Ut
         if self._m == 0 or self._q == 0:
             if t != model.t:
                 model.t = t
@@ -89,21 +102,22 @@ class UtCost(Objective):
                 except:
                     model.set_Ut()
                     self._Ut = model._Ut.view()
+            self._Ut_error = 0
+            if initial_wavefunctions is not None:  self._init_batch_wfcts()
         else:
-            assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
-            self._init_trotter_circuit()
-        if (initial_wavefunctions is None):
-            self.batch_size = 0
-            self.evaluate = self.evaluate_op
-        else:
-            assert(np.size(initial_wavefunctions[0,:]) == 2**np.size(model.qubits)),\
-                "Dimension of given batch_wavefunctions do not fit to provided model; n from wf: {}, n qubits: {}".\
-                    format(np.log2(np.size(initial_wavefunctions[0,:])), np.size(model.qubits))
-            self.batch_size = np.size(initial_wavefunctions[:,0])
-            self._init_batch_wfcts()
-            self.evaluate = self.evaluate_batch
+            self.trotter_circuit = self.get_trotter_circuit()
+            #assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
+            if initial_wavefunctions is None:
+                self._Ut = cirq.unitary(self.trotter_circuit)
+                self._Ut_error = self.get_Ut_error()
+            else:
+                self._init_batch_wfcts()
+                self._Ut_error = self.get_Ut_error()
 
-    def _init_trotter_circuit(  self,
+
+        
+
+    def get_trotter_circuit(  self,
                                 options: Dict = {}):
         """
             This function initialises the trotter circuit.
@@ -114,13 +128,13 @@ class UtCost(Objective):
         """
         self.trotter.options = {    "append": False,
                                     "return": True,
-                                    "hamiltonian": self.model.hamiltonian(),
+                                    "hamiltonian": self.model.hamiltonian,
                                     "trotter_number" : self._m,
                                     "trotter_order" : self._q,
                                     "t0": 0, 
-                                    "tf": self.t}
+                                    "tf": float(self.t)}
         self.trotter.options.update(options)
-        self.trotter_circuit = self.trotter.set_circuit(self)
+        return self.trotter.set_circuit(self)
     
     def _init_batch_wfcts(self):
         """
@@ -135,6 +149,7 @@ class UtCost(Objective):
         void
         """
         self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
+        print("test123")
         if(self._m < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
@@ -156,6 +171,30 @@ class UtCost(Objective):
                     self._output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
             if(self._use_progress_bar):
                 pbar.close()
+
+    def get_Ut_error(self):
+        """
+            This function approximates the error of the ground truth Ut 
+            by comparing it to the trotter_numer self._m +1 circuit on the batch wavefunctions
+
+
+        """
+        self.trotter.options.update({"trotter_number" : self._m+1})
+        mp1_trotter_circuit = self.trotter.set_circuit(self)
+        self.trotter.options.update({"trotter_number" : self._m})
+
+        if self.batch_size == 0:
+            _mp1_final_states = cirq.unitary(mp1_trotter_circuit)
+        else:
+            tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
+                        delayed(self.model.simulator.simulate)( mp1_trotter_circuit, 
+                                                            initial_state=self._initial_wavefunctions[k]) for k in range(self.batch_size)
+                        )
+            _mp1_final_states = []
+            for k in range(self._initial_wavefunctions.shape[0]):
+                _mp1_final_states.append(tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector()))
+
+        return self.evaluate(_mp1_final_states)
 
     def evaluate(self):
         raise NotImplementedError
