@@ -103,7 +103,7 @@ class UtCost(Objective):
                     model.set_Ut()
                     self._Ut = model._Ut.view()
             self._Ut_error = 0
-            if initial_wavefunctions is not None:  self._init_batch_wfcts()
+            if initial_wavefunctions is not None:  self._output_wavefunctions = self.get_output_wavefunctions()
         else:
             self.trotter_circuit = self.get_trotter_circuit()
             #assert initial_wavefunctions is not None, 'Please provide batch wavefunctions for Trotter Approximation'
@@ -111,7 +111,7 @@ class UtCost(Objective):
                 self._Ut = cirq.unitary(self.trotter_circuit)
                 self._Ut_error = self.get_Ut_error()
             else:
-                self._init_batch_wfcts()
+                self._output_wavefunctions = self.get_output_wavefunctions()
                 self._Ut_error = self.get_Ut_error()
 
 
@@ -136,7 +136,7 @@ class UtCost(Objective):
         self.trotter.options.update(options)
         return self.trotter.set_circuit(self)
     
-    def _init_batch_wfcts(self):
+    def get_output_wavefunctions(self):
         """
         This function initialises the initial and output batch wavefunctions as sampling data and sets self._output_wavefunctions.
         
@@ -148,17 +148,17 @@ class UtCost(Objective):
         ---------
         void
         """
-        self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
+        _output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
         if(self._m < 1):
             for step in range(len(self._time_steps)):
-                self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
+                _output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
         else:
             pbar = self.create_range(self.batch_size, self._use_progress_bar)
             #Didn't find any cirq function which accepts a batch of initials
             # TODO: replace mul*self.trotter_circuit with get_trotter_circuit() to allow for time dependent hamiltonian 
             for step in range(len(self._time_steps)):
                 if(step != 0):
-                    ini = self._output_wavefunctions[step - 1]
+                    ini = _output_wavefunctions[step - 1]
                     mul = self._time_steps[step] - self._time_steps[step - 1]
                 else:
                     ini = self._initial_wavefunctions
@@ -168,9 +168,10 @@ class UtCost(Objective):
                 delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in pbar
                 )
                 for k in range(self._initial_wavefunctions.shape[0]):
-                    self._output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
+                    _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
             if(self._use_progress_bar):
                 pbar.close()
+        return _output_wavefunctions
 
     def get_Ut_error(self):
         """
