@@ -284,14 +284,19 @@ def set_circuit(self):
     if np.size(self.circuit_param_values) != np.size(self.circuit_param):
         self.circuit_param_values = np.zeros(np.size(self.circuit_param))
 
+    _tmp_circuit = cirq.Circuit()
     for i in range(self.p):
         if self.hea.options["SingleQubitGates"] is not None:
             for g in range(len(self.hea.options["SingleQubitGates"])):
-                self.circuit.append(cirq.Moment(self.hea._SingleQubit_layer(self, i, g)))
+                _tmp_circuit.append(cirq.Moment(self.hea._SingleQubit_layer(self, i, g)))
                 #self.circuit.append(cirq.Moment(self.hea._PhXZ_layer(self, i)))
         if self.hea.options["TwoQubitGates"] is not None:
             for g in range(len(self.hea.options["TwoQubitGates"])):
-                self.circuit.append(self.hea._TwoQubit_layer(self, i, g))
+                _tmp_circuit.append(self.hea._TwoQubit_layer(self, i, g))
+    
+    if self.hea.options.get('invert') == True: _tmp_circuit = cirq.inverse(_tmp_circuit)
+
+    self.circuit.append(_tmp_circuit)
     #Erase hea circuit parameters, that are not used
     # e.g. in 1D case
     # Can should be more general/basic function

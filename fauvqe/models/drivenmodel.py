@@ -125,6 +125,7 @@ class DrivenModel(AbstractModel):
         for i_model in range(1,len(self.models)):
             assert _qubits == self.models[i_model].qubits , "Error in DrivenModel initialisation: All models need to act on same qubits"
         self.qubits = _qubits 
+        self.boundaries =self.models[0].boundaries
 
     def __repr__(self) -> str:
         """
@@ -227,7 +228,16 @@ class DrivenModel(AbstractModel):
                 -   Kick operator VFF
                 -   Floquet normalform
         """
-        if qalgorithm == "hea":
+        if qalgorithm == "basics":
+            self.basics.options = { "append": True,
+                                    "start": None,
+                                    "end": None,
+                                    "n_exact" : [1, 2],
+                                    "b_exact" : [0, 0],
+                                    "cc_exact": False}
+            self.basics.options.update(options)
+            self.basics.set_circuit(self)
+        elif qalgorithm == "hea":
             # Defaults for 1 and 2 qubit gates
             _SingleQubitVariables = [['a' , 'x', 'z']]
             _TwoQubitVariables = [['phi', 'theta']]
