@@ -81,6 +81,6 @@ def _first_order_trotter_circuit(self, hamiltonian, t: Number):
             temp = temp * pauli[1](pauli[0])
         #   Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. 
         # The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
-        res.append(temp**np.real(2/np.pi * float(t) * np.real(hamiltonian._linear_dict[pstr])))
+        res.append(temp**np.real(2/np.pi * float(t) * float(np.real(hamiltonian._linear_dict[pstr]))))
     #Copy the Trotter layer *m times.
     return res

@@ -20,6 +20,7 @@ import qsimcirq
 import sympy
 import timeit
 
+from collections.abc import Iterable
 from numbers import Number, Real
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver

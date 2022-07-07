@@ -9,6 +9,7 @@ from joblib import delayed, Parallel
 from multiprocessing import cpu_count
 from numbers import Integral, Real
 from typing import Literal, Dict, Optional, List
+from fauvqe.models.drivenmodel import DrivenModel
 
 from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
@@ -146,7 +147,7 @@ class UtCost(Objective):
         
         Returns
         ---------
-        void
+        _output_wavefunctions
         """
         _output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
         if(self._m < 1):
@@ -156,19 +157,35 @@ class UtCost(Objective):
             pbar = self.create_range(self.batch_size, self._use_progress_bar)
             #Didn't find any cirq function which accepts a batch of initials
             # TODO: replace mul*self.trotter_circuit with get_trotter_circuit() to allow for time dependent hamiltonian 
-            for step in range(len(self._time_steps)):
-                if(step != 0):
-                    ini = _output_wavefunctions[step - 1]
-                    mul = self._time_steps[step] - self._time_steps[step - 1]
-                else:
-                    ini = self._initial_wavefunctions
-                    mul = self._time_steps[step]
-                #Use multiprocessing
-                tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
-                delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in pbar
-                )
-                for k in range(self._initial_wavefunctions.shape[0]):
-                    _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
+            if not isinstance(self.model, DrivenModel):
+                for step in range(len(self._time_steps)):
+                    if(step != 0):
+                        ini = _output_wavefunctions[step - 1]
+                        mul = self._time_steps[step] - self._time_steps[step - 1]
+                    else:
+                        ini = self._initial_wavefunctions
+                        mul = self._time_steps[step]
+                    #Use multiprocessing
+                    tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
+                    delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in pbar
+                    )
+                    for k in range(self._initial_wavefunctions.shape[0]):
+                        _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
+            else:
+                for step in range(len(self._time_steps)):
+                    tmp = Parallel( n_jobs=min(cpu_count(), 
+                                    self.batch_size))
+                    (
+                        delayed(self.model.simulator.simulate)
+                                ( 
+                                    self.get_trotter_circuit({  "trotter_number" : self._time_steps[step]*self._m,
+                                                                "tf": self._time_steps[step]*float(self.t)}), 
+                                    initial_state=self._initial_wavefunctions[k]
+                                ) for k in pbar
+                    )
+                    for k in range(self._initial_wavefunctions.shape[0]):
+                        _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
+            
             if(self._use_progress_bar):
                 pbar.close()
         return _output_wavefunctions

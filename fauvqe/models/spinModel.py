@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # External imports
 import cirq
-from collections.abc import Iterable
 import importlib
 import itertools
 from numbers import Real
@@ -359,25 +358,3 @@ class SpinModel(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
-
-    def _update2nestedlist(self, options: dict(), key, new_nested_level: int = 1):
-        if options.get(key) is not None:
-            if isinstance(options.get(key), Iterable):
-                _tmp = list(options.get(key))
-                Is_nested_level = self._nest_level(_tmp) - 1
-            else:
-                _tmp = [options.get(key) ]
-                Is_nested_level=0
-
-            for i in range(1, new_nested_level-Is_nested_level):
-                _tmp = [_tmp]
-            options.update({key: _tmp})
-
-        return options
-
-    def _nest_level(self, lst):
-        if not isinstance(lst, list):
-            return 0
-        if not lst:
-            return 1
-        return max(self._nest_level(item) for item in lst) + 1
