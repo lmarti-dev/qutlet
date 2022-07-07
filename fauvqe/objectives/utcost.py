@@ -137,7 +137,8 @@ class UtCost(Objective):
         self.trotter.options.update(options)
         return self.trotter.set_circuit(self)
     
-    def get_output_wavefunctions(self):
+    def get_output_wavefunctions(self,
+                                initial_wavefunctions=None):
         """
         This function initialises the initial and output batch wavefunctions as sampling data and sets self._output_wavefunctions.
         
@@ -149,10 +150,13 @@ class UtCost(Objective):
         ---------
         _output_wavefunctions
         """
-        _output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
+        if initial_wavefunctions is None:
+            initial_wavefunctions=self._initial_wavefunctions.view()
+
+        _output_wavefunctions = np.empty(shape=( len(self._time_steps), *initial_wavefunctions.shape), dtype=self._dtype)
         if(self._m < 1):
             for step in range(len(self._time_steps)):
-                _output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
+                _output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ initial_wavefunctions.T).T
         else:
             pbar = self.create_range(self.batch_size, self._use_progress_bar)
             #Didn't find any cirq function which accepts a batch of initials
@@ -163,13 +167,13 @@ class UtCost(Objective):
                         ini = _output_wavefunctions[step - 1]
                         mul = self._time_steps[step] - self._time_steps[step - 1]
                     else:
-                        ini = self._initial_wavefunctions
+                        ini = initial_wavefunctions
                         mul = self._time_steps[step]
                     #Use multiprocessing
                     tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
                     delayed(self.model.simulator.simulate)( mul * self.trotter_circuit, initial_state=ini[k]) for k in pbar
                     )
-                    for k in range(self._initial_wavefunctions.shape[0]):
+                    for k in range(initial_wavefunctions.shape[0]):
                         _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
             else:
                 for step in range(len(self._time_steps)):
@@ -195,9 +199,10 @@ class UtCost(Objective):
             This function approximates the error of the ground truth Ut 
             by comparing it to the trotter_numer self._m +1 circuit on the batch wavefunctions
 
-
+            Note that for timestep x m*x is compared with trotter step (m+1)*x
         """
         # this does not (yet) work for multiple timesteps
+        # TODO: Make it work, use get_output_states
         if len(self._time_steps) > 1:
             return -1
 
