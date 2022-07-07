@@ -177,15 +177,13 @@ class UtCost(Objective):
                         _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
             else:
                 for step in range(len(self._time_steps)):
-                    tmp = Parallel( n_jobs=min(cpu_count(), 
-                                    self.batch_size))
-                    (
-                        delayed(self.model.simulator.simulate)
-                                ( 
-                                    self.get_trotter_circuit({  "trotter_number" : self._time_steps[step]*self._m,
-                                                                "tf": self._time_steps[step]*float(self.t)}), 
-                                    initial_state=self._initial_wavefunctions[k]
-                                ) for k in pbar
+                    tmp = Parallel( n_jobs=min(cpu_count(), self.batch_size))(
+                    delayed(self.model.simulator.simulate)
+                            ( 
+                                self.get_trotter_circuit({  "trotter_number" : self._time_steps[step]*self._m,
+                                                            "tf": self._time_steps[step]*float(self.t)}), 
+                                initial_state=self._initial_wavefunctions[k]
+                            ) for k in pbar
                     )
                     for k in range(self._initial_wavefunctions.shape[0]):
                         _output_wavefunctions[step][k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())

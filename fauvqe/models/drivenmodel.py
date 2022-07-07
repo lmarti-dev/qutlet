@@ -98,6 +98,7 @@ class DrivenModel(AbstractModel):
         self.circuit = Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
+        self.simulator = self.models[0].simulator
 
         self.eig_val=None
         self.eig_vec=None

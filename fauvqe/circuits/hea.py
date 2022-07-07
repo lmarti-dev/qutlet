@@ -255,18 +255,20 @@ def set_symbols(self):
 
         elif self.hea.options['parametrisation'] == 'individual':
             #enforce alphabetic order
-            for variable in sorted(sum(self.hea.options["SingleQubitVariables"], [])):
-                #1qubit cases
-                for j in range(np.size(self.qubits)):
-                    temp1Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
-                        #sympy.Symbol(variable + str(i) + "_" + str(j)))
+            if self.hea.options.get("SingleQubitGates") is not None:
+                for variable in sorted(sum(self.hea.options["SingleQubitVariables"], [])):
+                    #1qubit cases
+                    for j in range(np.size(self.qubits)):
+                        temp1Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                            #sympy.Symbol(variable + str(i) + "_" + str(j)))
             
-            for variable in sorted(sum(self.hea.options["TwoQubitVariables"], [])):
-                #2qubit cases
-                #Here: only count number of parameters. 
-                for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
-                    temp2Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
-                        #sympy.Symbol(variable + str(i) + "_" + str(j)))
+            if self.hea.options.get("TwoQubitGates") is not None:
+                for variable in sorted(sum(self.hea.options["TwoQubitVariables"], [])):
+                    #2qubit cases
+                    #Here: only count number of parameters. 
+                    for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
+                        temp2Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
+                            #sympy.Symbol(variable + str(i) + "_" + str(j)))
         else:
             assert (False), "Invalid hea parametrisation option, received: '{}', allowed is \n \
                 'joint', 'layerwise' and 'individual'".format(self.hea.options['parametrisation'] )

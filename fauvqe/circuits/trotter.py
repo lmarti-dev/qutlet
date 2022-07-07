@@ -29,7 +29,7 @@ def set_circuit(self):
 
         if self.trotter.options.get('return'):
             return _circuit
-        elif self.trotter.options.get('return'):
+        elif self.trotter.options.get('append'):
             self.circuit.append(_circuit)
         else:
             self.circuit = _circuit
