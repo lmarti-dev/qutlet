@@ -149,13 +149,13 @@ class UtCost(Objective):
         void
         """
         self._output_wavefunctions = np.empty(shape=( len(self._time_steps), *self._initial_wavefunctions.shape), dtype=self._dtype)
-        print("test123")
         if(self._m < 1):
             for step in range(len(self._time_steps)):
                 self._output_wavefunctions[step] = (np.linalg.matrix_power(self._Ut, self._time_steps[step]) @ self._initial_wavefunctions.T).T
         else:
             pbar = self.create_range(self.batch_size, self._use_progress_bar)
             #Didn't find any cirq function which accepts a batch of initials
+            # TODO: replace mul*self.trotter_circuit with get_trotter_circuit() to allow for time dependent hamiltonian 
             for step in range(len(self._time_steps)):
                 if(step != 0):
                     ini = self._output_wavefunctions[step - 1]
@@ -179,6 +179,10 @@ class UtCost(Objective):
 
 
         """
+        # this does not (yet) work for multiple timesteps
+        if len(self._time_steps) > 1:
+            return -1
+
         self.trotter.options.update({"trotter_number" : self._m+1})
         mp1_trotter_circuit = self.trotter.set_circuit(self)
         self.trotter.options.update({"trotter_number" : self._m})
@@ -191,6 +195,7 @@ class UtCost(Objective):
                                                             initial_state=self._initial_wavefunctions[k]) for k in range(self.batch_size)
                         )
             _mp1_final_states = []
+
             for k in range(self._initial_wavefunctions.shape[0]):
                 _mp1_final_states.append(tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector()))
 
@@ -219,14 +224,14 @@ class UtCost(Objective):
         #    format( len(self._time_steps), wavefunction.size / self._N )
         cost = 0
 
-        if options['indices'] is None:
+        if options.get('indices') is None:
             options['indices'] = range(self.batch_size)
 
         #TODO This might be wrong
         for step in range(len(self._time_steps)):
             cost += np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*
-                                            self._output_wavefunctions[step][options['indices']], axis=1)))
-        return 1 / len(self._time_steps) * 1/len(options['indices']) * cost
+                                            self._output_wavefunctions[step][options.get('indices')], axis=1)))
+        return 1 / len(self._time_steps) * 1/len(options.get('indices')) * cost
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:

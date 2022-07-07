@@ -140,8 +140,7 @@ def test_simulate_batch(t, m, q, times):
     
     params = -(2/np.pi)*t*(np.ones(2*ex)/ex)
     objective = UtCost(ising, t, m, q, initial_wavefunctions = initials, time_steps=times, use_progress_bar=True, dtype=np.complex64)
-    print(objective)
-    
+
     op = objective.simulate(
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
