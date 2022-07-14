@@ -210,7 +210,7 @@ class DrivenModel(AbstractModel):
         for i_drive in range(len(self.drives)):
             _tmp = sum(self.Vjs[i_drive][i_j]*(1/((i_j-self.j_max)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
             _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*(1/((i_j)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
-            print(_tmp)
+            #print(_tmp)
             K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
 
         #Round PauliSum Coefficents to 1e-16 for numerical stability
