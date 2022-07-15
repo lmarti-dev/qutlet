@@ -408,19 +408,24 @@ class DrivenModel(AbstractModel):
         return Vjs
 
     def set_Ut( self, 
-                t: Real = -1,
-                m: int = -1):
+                t: Real = None,
+                m: int = None,
+                q: int = None):
         #TODO: Allow for t0 != 0
-        if t == -1: t = self.tf
+        if t is None: t = self.tf
         #m0 = max(25, round(5*t*max(2,1/self.T)*max(np.log(max(h,J)),1)))
-        if m == -1: m = max(25, round(5*t*max(2,1/self.T)))
-        self.trotter.options.update({"return":True,
-                                    "trotter_number": m,
-                                    "trotter_order": 2,
-                                    "tf":t,   })
+        if m is None: m = max(25, round(5*t*max(2,1/self.T)))
+        if q is None: q = 2
+        
+        self.trotter.options={  "return":True,
+                                "hamiltonian": self.hamiltonian,
+                                "trotter_number": m,
+                                "trotter_order": 2,
+                                "t0": 0,
+                                "tf":t,   }
         #print(self.trotter.set_circuit(self))
         self._Ut = unitary(self.trotter.set_circuit(self))
-        print(self.n, np.shape(self._Ut))
+        #print(self.n, np.shape(self._Ut))
     
     def copy(self) -> DrivenModel:
         models_copy =[model.copy() for model in self.models]

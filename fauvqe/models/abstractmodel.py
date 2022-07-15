@@ -289,7 +289,8 @@ class AbstractModel(Restorable):
                 solver
             )
 
-    def set_Ut(self, use_dense: bool = False):
+    def set_Ut( self, 
+                use_dense: bool = False):
         #https://docs.sympy.org/latest/modules/numeric-computation.html
         #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
