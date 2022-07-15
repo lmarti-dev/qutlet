@@ -210,6 +210,7 @@ class UtCost(Objective):
 
         if self.batch_size == 0:
             _mp1_final_states = cirq.unitary(mp1_trotter_circuit)
+            return self.evaluate(_mp1_final_states)
         else:
             tmp = Parallel(n_jobs=min(cpu_count(), self.batch_size))(
                         delayed(self.model.simulator.simulate)( mp1_trotter_circuit, 
@@ -220,7 +221,9 @@ class UtCost(Objective):
             for k in range(self._initial_wavefunctions.shape[0]):
                 _mp1_final_states.append(tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector()))
 
-        return self.evaluate(_mp1_final_states)
+            # Need to do this here explicitly as otherwise self.batch_size from previous instance is used
+            # This seems to be one of that very odd python behaviour
+            return self.evaluate(_mp1_final_states, {"indices": range(self.batch_size)})
 
     def evaluate(self):
         raise NotImplementedError
@@ -247,6 +250,7 @@ class UtCost(Objective):
 
         if options.get('indices') is None:
             options['indices'] = range(self.batch_size)
+        #print("options['indices']: {}".format(options['indices']))
 
         #TODO This might be wrong
         for step in range(len(self._time_steps)):
