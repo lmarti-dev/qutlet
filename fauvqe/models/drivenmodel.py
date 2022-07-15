@@ -7,7 +7,7 @@ from __future__ import annotations
 import numpy as np
 import sympy
 
-from cirq import Circuit, FSimGate, PauliSum, PhasedXZGate
+from cirq import Circuit, FSimGate, PauliSum, PhasedXZGate, unitary
 from copy import deepcopy
 from numbers import Real, Number
 from importlib import import_module
@@ -269,7 +269,7 @@ class DrivenModel(AbstractModel):
                                     "return": False,
                                     "hamiltonian": self.hamiltonian,
                                     "trotter_number" : int(10*round((self.tf-self.t0)/self.T)),
-                                    "trotter_order" : 1,
+                                    "trotter_order" : 2,
                                     "t0": self.t0, 
                                     "tf": self.tf}
             self.trotter.options.update(options)
@@ -408,9 +408,19 @@ class DrivenModel(AbstractModel):
         return Vjs
 
     def set_Ut( self, 
-                t: Real,
-                m: int = 1000):
-        raise NotImplementedError()
+                t: Real = -1,
+                m: int = -1):
+        #TODO: Allow for t0 != 0
+        if t == -1: t = self.tf
+        #m0 = max(25, round(5*t*max(2,1/self.T)*max(np.log(max(h,J)),1)))
+        if m == -1: m = max(25, round(5*t*max(2,1/self.T)))
+        self.trotter.options.update({"return":True,
+                                    "trotter_number": m,
+                                    "trotter_order": 2,
+                                    "tf":t,   })
+        #print(self.trotter.set_circuit(self))
+        self._Ut = unitary(self.trotter.set_circuit(self))
+        print(self.n, np.shape(self._Ut))
     
     def copy(self) -> DrivenModel:
         models_copy =[model.copy() for model in self.models]
