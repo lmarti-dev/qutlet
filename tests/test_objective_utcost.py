@@ -508,8 +508,9 @@ def test_consistency_exact_Ut(model, n_states, get_states_metod, t_final, tol):
                         m = 0,
                         q= 0,
                         initial_wavefunctions=cost_states)
+    print(np.shape(cost_states), np.shape(ut_cost_batch._output_wavefunctions), ut_cost_batch.batch_size)
 
-    assert abs(ut_cost.evaluate(test_states) - ut_cost_batch.evaluate(test_states)) < tol
+    assert ut_cost.evaluate(test_states) == ut_cost_batch.evaluate(test_states, {"state_indices": range(2**(model.n[0]*model.n[1]))})
 #############################################################
 #                                                           #
 #                     Test errors                           #
