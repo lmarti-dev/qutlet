@@ -21,6 +21,7 @@ class SpinModel(AbstractModel):
     basics  = importlib.import_module("fauvqe.circuits.basics")
     hea  = importlib.import_module("fauvqe.circuits.hea")
     qaoa = importlib.import_module("fauvqe.circuits.qaoa")
+    trotter = importlib.import_module("fauvqe.circuits.trotter")
 
     def __init__(self, 
                  qubittype, 
@@ -221,6 +222,16 @@ class SpinModel(AbstractModel):
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
             self.qaoa.set_circuit(self)
+        elif qalgorithm == "trotter":
+            self.trotter.options = {    "append": False,
+                                    "return": False,
+                                    "hamiltonian": self.hamiltonian,
+                                    "trotter_number" : 1,
+                                    "trotter_order" : 1,
+                                    "t0": 0, 
+                                    "tf": self.t}
+            self.trotter.options.update(options)
+            self.trotter.set_circuit(self)
         else:
             assert (
                 False
