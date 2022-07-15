@@ -1,10 +1,13 @@
 import pytest
+import joblib
+from multiprocessing import cpu_count
 import numpy as np
 import scipy
 import scipy.linalg
+import sympy
 import cirq
 
-from fauvqe import UtCost, Ising
+from fauvqe import UtCost, Ising, DrivenModel, haar, haar_1qubit, uniform
 
 def hamiltonian():
     Z = np.array([[1, 0],
@@ -171,7 +174,342 @@ def test_json(t, m):
     
     assert (objective == objective2)
 
+@pytest.mark.parametrize(
+    "model, n_states, get_states_metod, m_trotter, q_trotter, t_final",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    1 * np.ones((0, 2)), 
+                    1 * np.ones((1, 1)), 
+                    1 * np.ones((1, 2)),
+                    "X"),
+            8,
+            uniform,
+            1,
+            1,
+            np.pi/3
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    1 * np.ones((0, 2)), 
+                    1 * np.ones((1, 1)), 
+                    1 * np.ones((1, 2)),
+                    "X"),
+            4,
+            haar,
+            2,
+            1,
+            2.747
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [1,3], 
+                    1 * np.ones((0, 3)), 
+                    1 * np.ones((1, 2)), 
+                    1 * np.ones((1, 3)),
+                    "X"),
+            4,
+            haar_1qubit,
+            2,
+            2,
+            2.747
+        ),
+        
+        (
+            Ising(  "GridQubit", 
+                    [2,4], 
+                    0.24 * np.ones((1, 4)), 
+                    1 * np.ones((2, 3)), 
+                    1.6 * np.ones((2, 4)),
+                    "X"),
+            4,
+            haar,
+            2,
+            4,
+            2.747
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [3,2], 
+                    1 * np.ones((2, 2)), 
+                    1 * np.ones((3, 1)), 
+                    1 * np.ones((3, 2)),
+                    "X"),
+            2,
+            uniform,
+            3,
+            2,
+            np.pi/3
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [3,3], 
+                    1 * np.ones((2, 3)), 
+                    np.pi * np.ones((3, 2)), 
+                    1 * np.ones((3, 3)),
+                    "X"),
+            4,
+            haar_1qubit,
+            2,
+            2,
+            2.747
+        ),
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [1,3], 
+                                    1 * np.ones((0, 3)), 
+                                    1 * np.ones((1, 2)), 
+                                    0 * np.ones((1, 3)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [1,3], 
+                                    0 * np.ones((0, 3)), 
+                                    0 * np.ones((1, 2)), 
+                                    1 * np.ones((1, 3)),
+                                    "X")],
+                        [lambda t : 1, lambda t : sympy.sin((2*sympy.pi/0.2)*t)],
+                        T = 0.2,
+                        tf = 2.747),
+            4,
+            haar_1qubit,
+            2,
+            2,
+            2.747
+        ),
+    ],
+)
+@pytest.mark.higheffort
+def test_vec_cost(  model, 
+                    n_states, 
+                    get_states_metod,
+                    m_trotter, 
+                    q_trotter,
+                    t_final):
+    model.set_simulator("cirq", {"dtype": np.complex128 })
+    
+    cost_states=get_states_metod(model.n[0]*model.n[1],
+                                n_states)
+    print(n_states)
+    print(np.size(cost_states[:,0]))
 
+    ut_cost = UtCost(   model,
+                        t = t_final,
+                        m = m_trotter,
+                        q= q_trotter)
+
+    ut_cost_vec = UtCost(   model,
+                        t = t_final,
+                        m = m_trotter,
+                        q= q_trotter,
+                        initial_wavefunctions=cost_states)
+
+    model.set_circuit("trotter",
+                        {"trotter_number" : m_trotter,
+                        "trotter_order" : q_trotter,
+                        "tf": t_final})
+
+    cost_unitary_final_states = np.empty(shape=( cost_states.shape), dtype=np.complex128)
+    for k in range(n_states): cost_unitary_final_states[k] = ut_cost._Ut @ cost_states[k]
+
+    cost_utcost_vec_final_states = np.squeeze(ut_cost_vec._output_wavefunctions)
+    
+    tmp = joblib.Parallel( n_jobs=min(cpu_count(), n_states))(
+                    joblib.delayed(model.simulator.simulate)
+                            ( 
+                                model.circuit, 
+                                initial_state=cost_states[k]
+                            ) for k in range(n_states)
+                    )
+    cost_model_final_states = np.empty(shape=( cost_states.shape), dtype=np.complex128)
+    for k in range(n_states): cost_model_final_states[k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
+
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
+                                                                    cost_utcost_vec_final_states,
+                                                                    rtol=1e-7, atol=1e-7)
+                                                                
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
+                                                                    cost_model_final_states,
+                                                                    rtol=1e-7, atol=1e-7)
+
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_utcost_vec_final_states, 
+                                                                    cost_model_final_states,
+                                                                    rtol=1e-7, atol=1e-7)
+
+
+@pytest.mark.parametrize(
+    "model, n_states, get_states_metod, m_trotter, q_trotter, t_final, rtol, atol",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    1 * np.ones((1, 2)), 
+                    1 * np.ones((2, 1)), 
+                    1 * np.ones((2, 2)),
+                    "X"),
+            2,
+            uniform,
+            250,
+            2,
+            np.pi/3,
+            1e-5,
+            1e-4
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [1,3], 
+                    1 * np.ones((0, 3)), 
+                    1 * np.ones((1, 2)), 
+                    0.1 * np.ones((1, 3)),
+                    "X"),
+            2,
+            haar,
+            150,
+            2,
+            np.pi/3,
+            1e-6,
+            1e-5
+        ),
+    ],
+)
+@pytest.mark.ultrahigheffort
+def test_high_order_vec_cost(   model, 
+                                n_states, 
+                                get_states_metod, 
+                                m_trotter, 
+                                q_trotter, 
+                                t_final,
+                                rtol,
+                                atol):
+    model.set_simulator("cirq", {"dtype": np.complex128 })
+    
+    cost_states=get_states_metod(model.n[0]*model.n[1],
+                                n_states)
+
+    test_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
+    #test_states = cost_states
+
+    ut_cost = UtCost(   model,
+                        t = t_final,
+                        m = 0,
+                        q= 0,
+                        initial_wavefunctions=cost_states)
+    cost_unitary_final_states = np.empty(shape=( cost_states.shape), dtype=np.complex128)
+    for k in range(n_states): cost_unitary_final_states[k] = ut_cost._Ut @ cost_states[k]
+
+    ut_cost_vec = UtCost(   model,
+                        t = t_final,
+                        m = m_trotter,
+                        q= q_trotter,
+                        initial_wavefunctions=cost_states)
+    cost_utcost_vec_final_states = np.squeeze(ut_cost_vec._output_wavefunctions)
+
+    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
+                                                                    cost_utcost_vec_final_states,
+                                                                    rtol=rtol, atol=atol)
+
+    assert abs(ut_cost.evaluate(test_states) - ut_cost_vec.evaluate(test_states)) < rtol
+
+@pytest.mark.parametrize(
+    "model, n_states, get_states_metod, t_final, tol",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    1 * np.ones((0, 2)), 
+                    1 * np.ones((1, 1)), 
+                    1 * np.ones((1, 2)),
+                    "X"),
+            16,
+            uniform,
+            np.pi/3,
+            1e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    1 * np.ones((0, 2)), 
+                    1 * np.ones((1, 1)), 
+                    0 * np.ones((1, 2)),
+                    "X"),
+            16,
+            uniform,
+            np.pi/3,
+            1e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    0 * np.ones((0, 2)), 
+                    0 * np.ones((1, 1)), 
+                    1 * np.ones((1, 2)),
+                    "X"),
+            16,
+            uniform,
+            np.pi/3,
+            1e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    1 * np.ones((1, 2)), 
+                    1 * np.ones((2, 1)), 
+                    1 * np.ones((2, 2)),
+                    "X"),
+            16,
+            haar,
+            np.pi/3,
+            1e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    1 * np.ones((1, 2)), 
+                    1 * np.ones((2, 1)), 
+                    0 * np.ones((2, 2)),
+                    "X"),
+            16,
+            haar,
+            np.pi/3,
+            1e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    0 * np.ones((1, 2)), 
+                    0 * np.ones((2, 1)), 
+                    1 * np.ones((2, 2)),
+                    "X"),
+            16,
+            haar,
+            np.pi/3,
+            1e-5,
+        ),
+    ],
+)
+@pytest.mark.ultrahigheffort
+def test_consistency_exact_Ut(model, n_states, get_states_metod, t_final, tol):
+    model.set_simulator("cirq", {"dtype": np.complex128 })
+    
+    #cost_states=get_states_metod(model.n[0]*model.n[1],
+    #                            n_states)
+
+    cost_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
+    test_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
+
+    ut_cost = UtCost(   model,
+                        t = t_final,
+                        m = 0,
+                        q= 0)
+
+    ut_cost_batch = UtCost(   model,
+                        t = t_final,
+                        m = 0,
+                        q= 0,
+                        initial_wavefunctions=cost_states)
+
+    assert abs(ut_cost.evaluate(test_states) - ut_cost_batch.evaluate(test_states)) < tol
 #############################################################
 #                                                           #
 #                     Test errors                           #
