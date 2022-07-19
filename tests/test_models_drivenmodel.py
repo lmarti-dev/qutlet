@@ -555,6 +555,125 @@ def test_copy(models, drives, drive_names, T, t0, t, j_max):
     driven_model = 0
     assert copy_driven_model == driven_model2
 
+
+@pytest.mark.parametrize(
+    "driven_model, non_driven_model",
+    [
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [3,2], 
+                                    1 * np.ones((2, 2)), 
+                                    1 * np.ones((3, 1)), 
+                                    0 * np.ones((3, 2)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [3,2], 
+                                    0 * np.ones((2, 2)), 
+                                    0 * np.ones((3, 1)), 
+                                    1 * np.ones((3, 2)),
+                                    "X")],
+                        [lambda t : 1, lambda t : 1]),
+            Ising(  "GridQubit", 
+                        [3,2], 
+                        1 * np.ones((2, 2)), 
+                        1 * np.ones((3, 1)), 
+                        1 * np.ones((3, 2)),
+                        "X")
+        ),
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [1,2], 
+                                    1 * np.ones((0, 2)), 
+                                    1 * np.ones((1, 1)), 
+                                    0 * np.ones((1, 2)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [1,2], 
+                                    0 * np.ones((0, 2)), 
+                                    0 * np.ones((1, 1)), 
+                                    1 * np.ones((1, 2)),
+                                    "X")],
+                        [lambda t : 1, lambda t : 2*t]),
+            Ising(  "GridQubit", 
+                        [1,2], 
+                        1 * np.ones((0, 2)), 
+                        1 * np.ones((1, 1)), 
+                        2 * np.ones((1, 2)),
+                        "X")
+        ),
+    ],
+)
+def test_hamiltonian(driven_model, non_driven_model):
+    #print(driven_model.__dict__)
+    #print("non_driven_model.hamiltonian: \t{}\ndriven_model.hamiltonian(t=1):\t{}".format(non_driven_model.hamiltonian(), driven_model.hamiltonian(t=1)))
+    assert non_driven_model.hamiltonian() == driven_model.hamiltonian(t=1)
+
+@pytest.mark.parametrize(
+    "driven_model, non_driven_model, m,q,tf",
+    [
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [3,2], 
+                                    1 * np.ones((2, 2)), 
+                                    1 * np.ones((3, 1)), 
+                                    0 * np.ones((3, 2)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [3,2], 
+                                    0 * np.ones((2, 2)), 
+                                    0 * np.ones((3, 1)), 
+                                    1 * np.ones((3, 2)),
+                                    "X")],
+                        [lambda t : 1, lambda t : 1]),
+            Ising(  "GridQubit", 
+                        [3,2], 
+                        1 * np.ones((2, 2)), 
+                        1 * np.ones((3, 1)), 
+                        1 * np.ones((3, 2)),
+                        "X"),
+            3,
+            1,
+            1.352
+        ),
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [1,2], 
+                                    1 * np.ones((0, 2)), 
+                                    1 * np.ones((1, 1)), 
+                                    0 * np.ones((1, 2)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [1,2], 
+                                    0 * np.ones((0, 2)), 
+                                    0 * np.ones((1, 1)), 
+                                    1 * np.ones((1, 2)),
+                                    "X")],
+                        [lambda t : 1, lambda t : 1.352]),
+            Ising(  "GridQubit", 
+                        [1,2], 
+                        1 * np.ones((0, 2)), 
+                        1 * np.ones((1, 1)), 
+                        1.352 * np.ones((1, 2)),
+                        "X"),
+            3,
+            2,
+            1.352
+        ),
+    ],
+)
+def test_trotter(driven_model, non_driven_model, m,q,tf):
+    driven_model.set_circuit("trotter",
+                                {"trotter_number": m,
+                                "trotter_order": q,
+                                "tf": tf})
+    non_driven_model.set_circuit("trotter",
+                                {"trotter_number": m,
+                                "trotter_order": q,
+                                "tf": tf})
+    print("driven_model.circuit:\n{}\n\nnon_driven_model.circuit:\n{}".format(driven_model.circuit, non_driven_model.circuit))
+    assert driven_model.circuit == non_driven_model.circuit
+
+
 #####################################
 #                                   #
 #           Asssert tests           #
