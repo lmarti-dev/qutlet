@@ -55,7 +55,8 @@ class UtCost(Objective):
                     initial_wavefunctions: Optional[np.ndarray] = None,
                     time_steps: List[int] = [1],
                     use_progress_bar: bool = False,
-                    dtype: np.dtype = np.complex128):
+                    dtype: np.dtype = np.complex128,
+                    exponent: Real = 1):
         #Idea of using variable "method" her instead of boolean is that 
         #This allows for more than 2 Calculation methods like:
         #   Cost via exact unitary
@@ -77,6 +78,7 @@ class UtCost(Objective):
         self._N = 2**np.size(model.qubits)
         self._time_steps = time_steps
         self._dtype = dtype
+        self._exponent = exponent
         
         #Set appropiate evaluate function either state or unitary based
         if (initial_wavefunctions is None):
@@ -223,7 +225,7 @@ class UtCost(Objective):
 
             # Need to do this here explicitly as otherwise self.batch_size from previous instance is used
             # This seems to be one of that very odd python behaviour
-            return self.evaluate(_mp1_final_states, {"indices": range(self.batch_size)})
+            return self.evaluate(np.array(_mp1_final_states), {"indices": range(self.batch_size)})
 
     def evaluate(self):
         raise NotImplementedError
@@ -237,9 +239,9 @@ class UtCost(Objective):
         assert np.shape(wavefunction) == (self._N, self._N)
 
         for step in range(len(self._time_steps)):
-            cost += 1 - abs(np.trace( 
+            cost += 1 - (abs(np.trace( 
                 np.linalg.matrix_power( np.matrix.getH(self._Ut), self._time_steps[step]) @ \
-                np.linalg.matrix_power( wavefunction, self._time_steps[step]))) / self._N
+                np.linalg.matrix_power( wavefunction, self._time_steps[step]))) / self._N)**self._exponent
         return 1 / len(self._time_steps) * cost
     
     def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
@@ -266,13 +268,24 @@ class UtCost(Objective):
             #print("np.shape(wavefunction): {}\tnp.shape(self._output_wavefunctions[0][options.get('state_indices')]): {}\t"\
             #    .format(np.shape(wavefunction), np.shape(self._output_wavefunctions[0][options.get('state_indices')])))
             #print(np.einsum('ij,ij->j', wavefunction, self._output_wavefunctions[0][options.get('state_indices')]))
-            return  1 - abs(np.sum(np.einsum('ij,ij->j', wavefunction,
+            
+            #print(np.shape(wavefunction))
+            #print(np.size(np.array(wavefunction)[:,0]))
+            _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
+            return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
+            #print(len(wavefunction[:,0]))
+            print("1- abs(np.sum(_tmp))/len(wavefunction[:,0]): {}".format(1- abs(np.sum(_tmp))/len(wavefunction[:,0])))
+            #print(1 - abs(np.sum(np.einsum('ij,ij->j', np.conjugate(wavefunction),
+            #                                            self._output_wavefunctions[0][options.get('state_indices')])))/4)
+            
+            return  1 - abs(np.sum(np.einsum('ij,ij->j', np.conjugate(wavefunction),
                                                         self._output_wavefunctions[0][options.get('state_indices')])))/len(options.get('state_indices'))
         #TODO This almost certainly is wrong
         else:
             for step in options.get('time_indices'):
-                cost += np.sum(1 - abs(np.sum(np.conjugate(wavefunction[step])*
-                                            self._output_wavefunctions[step][options.get('state_indices')], axis=1))/len(options.get('state_indices')) )
+                cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
+                                            self._output_wavefunctions[step][options.get('state_indices')], 
+                                            axis=1))/len(options.get('state_indices')))**self._exponent )
                 return 1 / len(self._time_steps) * cost
 
             #print(np.einsum('ij,ij->j', wavefunction[step],self._output_wavefunctions[step][options.get('indices')]))
