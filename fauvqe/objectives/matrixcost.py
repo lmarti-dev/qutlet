@@ -31,13 +31,15 @@ class MatrixCost(Objective):
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    matrix: np.ndarray):
+                    matrix: np.ndarray,
+                    exponent: Real = 1):
         super().__init__(model)
         self._matrix = matrix
         self._N = matrix.shape[0]  
         assert(np.log2(self._N).is_integer()),\
             "MatrixCostError in __init__: matrix dimension not 2^n, received {}".format(self._N)
         self._n=np.log2(self._N)
+        self._exponent=exponent
 
         if len(matrix.shape) == 2:
             assert(matrix.shape[0] == matrix.shape[1]),\
@@ -52,11 +54,11 @@ class MatrixCost(Objective):
         if self.__IsVec == False:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is also a unitary matrix
-            return 1 - abs(np.trace(np.matrix.getH(self._matrix) @ wavefunction)) / self._N
+            return 1 - (abs(np.trace(np.matrix.getH(self._matrix) @ wavefunction)) / self._N)**self._exponent
         else:
             #Calculation of the overlap of the given wavefunction with
             #vector self._matrix
-            return 1 - abs( np.vdot(self._matrix, wavefunction))
+            return 1 - (abs( np.vdot(self._matrix, wavefunction)))**self._exponent
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
