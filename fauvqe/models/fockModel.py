@@ -3,9 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Callable, Optional, Tuple
 
-from grpc import Call
 
-# Internal import
 from fauvqe.models.abstractmodel import AbstractModel
 import fauvqe.utils as utils
 import openfermion as of 
@@ -89,10 +87,6 @@ class FockModel(AbstractModel):
 
     @abc.abstractmethod
     def _get_initial_state(self):
-        raise NotImplementedError()# pragma: no cover
-
-    @abc.abstractmethod
-    def set_circuit(self):
         raise NotImplementedError()# pragma: no cover
     
     @abc.abstractmethod

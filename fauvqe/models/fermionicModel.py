@@ -1,15 +1,10 @@
 from __future__ import annotations
 from ctypes import Union
-from curses import has_key
-
-# External import
-
 import openfermion as of
 import cirq
 import numpy as np
 from typing import Callable, Tuple
 
-# Internal import
 from fauvqe.models.fockModel import FockModel
 import fauvqe.utils as utils
 
@@ -30,13 +25,16 @@ class FermionicModel(FockModel):
                 fock_maps: Tuple=None,
                 Z_snake: Tuple=None
                 ):
-        self.Z_snake=Z_snake
+
+        #flatten it in case it's given as [[1 2][4 3]]
+        self.Z_snake=tuple(utils.flatten(Z_snake))
+
         super().__init__(qubittype=qubittype,
                         n=n,
                         encoding_name=encoding_name,
                         qubit_maps=qubit_maps,
                         fock_maps=fock_maps)
-        
+
         # this is a reminder of how up and down fermions are spread on the grid
         # the default value is the one given by the fermi_hubbard function, ie
         # u d u d
@@ -86,10 +84,12 @@ class FermionicModel(FockModel):
         actions = fermion_hamiltonian.actions
         new_fermion_operator=of.FermionOperator()
         for terms,coeff in fermion_hamiltonian.terms.items():
-            new_term = " ".join((str(fock_map(term[0],**fock_map_kwargs)) + action_strings[actions[term[1]]]
+            new_term = " ".join(
+                                (str(fock_map(term[0],**fock_map_kwargs)) + action_strings[actions[term[1]]]
                                 if fock_map_kwargs is not None 
                                 else str(fock_map(term[0])) + action_strings[actions[term[1]]]
-                                for term in terms))
+                                for term in terms)
+                                )
             new_fermion_operator+=(of.FermionOperator(new_term,coeff))
         return sum(new_fermion_operator)
     @staticmethod
@@ -113,7 +113,8 @@ class FermionicModel(FockModel):
             new_term = " ".join(
                                 (str(flat_fock_map_arr.index(term[0]))
                                  + action_strings[actions[term[1]]] 
-                                 for term in terms))
+                                 for term in terms)
+                                )
             new_fermion_operator+=(of.FermionOperator(new_term,coeff))
         return sum(new_fermion_operator)
     
@@ -159,19 +160,17 @@ class FermionicModel(FockModel):
         # exactly how the Z-snake moves
         # ie, given your fermion operator, which is "flat"
         # you can give a map to have your Z string follow a certain path
-        # for example, the defualt Z string goes along
+        # for example, the default Z string goes along
         #       0 1 2 3 4
         #       5 6 7 8 9
         #   but we want something like
         #       0 3 4 7 8
         #       1 2 5 6 9
-        # you can supply the Z string array reordeing
+        # you can supply the Z string array (the seocnd matrix) reordering
         # the Z_snake array follows the indices 
         # original code belongs to openfermion
 
-        #flatten it in case it's given as [[1 2][4 3]]
-        flat_Z_snake = tuple(utils.flatten(Z_snake))
-        FermionicModel.assert_map_matches_operator(flat_Z_snake,operator)
+        FermionicModel.assert_map_matches_operator(Z_snake,operator)
         transformed_operator = of.QubitOperator()
         for term in operator.terms:
             # Initialize identity matrix.
@@ -179,7 +178,7 @@ class FermionicModel(FockModel):
             # Loop through operators, transform and multiply.
             for ladder_operator in term:
                 z_factors = tuple(
-                    (index, 'Z') for index in flat_Z_snake[:flat_Z_snake.index(ladder_operator[0])])
+                    (int(index), 'Z') for index in np.nonzero(np.array(Z_snake)<Z_snake[ladder_operator[0]])[0])
                 pauli_x_component = of.QubitOperator(
                     z_factors + ((ladder_operator[0], 'X'),), 0.5)
                 if ladder_operator[1]:

@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-# External import
-
 import openfermion as of
 from typing import Callable, Dict, Tuple,Union,Sequence,Optional
-from typing import get_origin
 import cirq
 import numpy as np
 
-
-# Internal import
 
 from fauvqe.models.fermionicModel import FermionicModel
 import fauvqe.utils as utils
@@ -24,22 +19,21 @@ class FermiHubbardModel(FermionicModel):
                 y_dimension: int,
                 tunneling: float,
                 coulomb: float,
-                hamiltonian_options: Dict={},
-                hv_grid_qubits=0,
+                hamiltonian_options: Dict={"periodic":False},
+                hv_grid_qubits=2,
                 encoding_name: str="jordan_wigner",
                 qubit_maps: Tuple[Callable]= None,
                 fock_maps: Tuple= None,
                 Z_snake: Tuple=None
                 ):
         
+
         self.x_dimension=x_dimension
         self.y_dimension=y_dimension
         self.tunneling=tunneling
         self.coulomb=coulomb
         self.hv_grid_qubits = hv_grid_qubits
         self.hamiltonian_options=hamiltonian_options
-
-
         # decide whether to stack the spins horizontally or vertically
         # ie
         #
@@ -49,19 +43,44 @@ class FermiHubbardModel(FermionicModel):
         # or
         # 
         # u d
-        # d u
         # u d
-        # d u
+        # u d
+        # u d
         #
-
         if self.hv_grid_qubits==0:
-            # horizontally by default
+            # horizontally
             n=(x_dimension,2*y_dimension)
         elif self.hv_grid_qubits==1:
-            (2*x_dimension,y_dimension)
+            # vertically
+            n=(2*x_dimension,y_dimension)
+        elif self.hv_grid_qubits==2:
+            # automatically
+            if x_dimension >= y_dimension:
+                n=(x_dimension,2*y_dimension)
+            else:
+                n=(2*x_dimension,y_dimension)
         else:
             raise ValueError("Invalid value for hv_grid_qubit. expected 0 or 1 but got {}".format(hv_grid_qubits))
-        
+
+        # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
+        if encoding_name == "jordan_wigner":
+            if Z_snake is None:
+                # create canonical snake split between up and down regions
+                # the two sectors are concatenated along the long edge
+                # the snake covers the grid weaving along short edges
+                do_transpose = x_dimension<y_dimension
+                short,long = sorted((x_dimension,y_dimension))
+                Z_snake_up = utils.flip_cross_rows(np.reshape(np.arange(short*long),(long,short)),flip_odd=bool(long%2))
+                Z_snake_down = utils.flip_cross_rows(np.reshape(np.arange(short*long,2*short*long),(long,short)),flip_odd=1)
+                Z_snake_down=np.flip(Z_snake_down,axis=0)
+                Z_snake = np.concatenate((Z_snake_up,Z_snake_down),axis=1)
+                if do_transpose: 
+                    Z_snake = np.transpose(Z_snake)
+            # moves the spins into sectors ududud -> uuuddd
+            if fock_maps is None:
+                fock_maps = utils.alternating_indices_to_sectors(np.reshape(np.arange(2*x_dimension*y_dimension),n),axis=1).tolist()
+            # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
+
         super().__init__(n=n,
                         qubittype="GridQubit",
                         encoding_name=encoding_name,
@@ -69,8 +88,6 @@ class FermiHubbardModel(FermionicModel):
                         fock_maps=fock_maps,
                         Z_snake=Z_snake)
         
-
-
 
     def copy(self):
         self_copy = FermiHubbardModel(x_dimension=self.x_dimension,
@@ -110,9 +127,6 @@ class FermiHubbardModel(FermionicModel):
                                                 tunneling=self.tunneling,
                                                 coulomb=self.coulomb,
                                                 **self.hamiltonian_options)
-        class_name=self.fock_hamiltonian.__class__.__name__
-        assert (class_name == "FermionOperator"
-        ), "fock_hamiltonian should be a FermionOperator, but is a {}".format(class_name)
 
     def _get_initial_state(self,
                         name: str,
@@ -212,13 +226,29 @@ class FermiHubbardModel(FermionicModel):
         (x,y) = utils.linear_to_grid(n=n,dimx=dimx,dimy=dimy)
         yp = utils.arg_alternating_index_to_sector(index=y,N=dimy)
         return utils.grid_to_linear(x=x,y=yp,dimx=dimx,dimy=dimy)
+    
+    @staticmethod
+    def common_Z_snakes(name,dimx,dimy):
+        # start up left and snake row-major
+        indices=np.arange(start=0,stop=dimx*dimy)
+        if name == "rowmajor":
+            indices = np.reshape(indices,(dimx,dimy),order="C")
+            indices = utils.flip_cross_rows(indices)
+        elif name == "columnmajor":
+            indices=np.reshape(indices,(dimx,dimy),order="F")
+            indices=utils.flip_cross_cols(indices)
         
+        return list(utils.flatten(indices))
+
+
     def pretty_print_jw_order(self,pauli_string: cirq.PauliString): #pragma: no cover
         last_qubit = max(self.flattened_qubits)
         mat = np.array([["0" 
                         for y in range(last_qubit.col+1)] 
                         for x in range(last_qubit.row+1)])
+        
         for k,v in pauli_string.items():
             mat[(k.row,k.col)]=v
         mat=mat.tolist()
+        print(pauli_string)
         print("\n".join(["".join(row) for row in mat]))

@@ -67,7 +67,7 @@ def print_non_zero(M,name: str=None,eq_tol: float=1E-15): # pragma: no cover
 def get_non_zero(M,eq_tol: float=1E-15):
 	return (abs(np.array(M))>eq_tol).astype(int)
 
-def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
+def alternating_indices_to_sectors(M,even_first: bool = True,axis=None) -> np.ndarray:
     """This function takes a matrix and reorders so that the even index basis vectors 
     are put at the beginning and the odd are put at the end. Mostly useful for
     openfermion stuff, as the matrices usually set up alternating rows of up and 
@@ -91,7 +91,10 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     else:
         a=1
         b=0
-    idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
+    if axis is None:
+        idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
+    else:
+        idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) if axis == ind else np.arange(ii) for ind,ii in enumerate(dims))
     return M[np.ix_(*idxs)]
 
 def interweave(a, b)-> np.ndarray:
@@ -145,6 +148,23 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
         idxs = (np.array(interweave(np.arange(np.floor(ii/2),ii),np.arange(0,np.floor(ii/2)))).astype(int) for ii in dims)
     return M[np.ix_(*idxs)]
 
+def flip_cross(M,rc="r",flip_odd=True):
+    if rc=="r":
+        return flip_cross_rows(M=M,flip_odd=flip_odd)
+    if rc=="c":
+        return flip_cross_cols(M=M,flip_odd=flip_odd)
+    else:
+        raise ValueError("Expected rc to be r or c, got: {}".format(rc))
+def flip_cross_cols(M,flip_odd=True):
+    M_tmp = np.array(M)
+    if flip_odd==True:
+        a=1
+    else:
+        a=0
+    M_tmp[:,a::2] = M_tmp[::-1,a::2]
+    if isinstance(M,list):
+        return M_tmp.tolist()
+    return M_tmp
 def flip_cross_rows(M,flip_odd=True):
     """Reverses the order of the elements in odd or even rows.
 
@@ -165,7 +185,7 @@ def flip_cross_rows(M,flip_odd=True):
         return M_tmp.tolist()
     return M_tmp
 
-def lists_have_same_elements(a: list,b: list):
+def lists_have_same_elements(a: Iterable,b: Iterable):
     return collections.Counter(a) == collections.Counter(b)
 
 
