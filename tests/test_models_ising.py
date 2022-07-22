@@ -1057,7 +1057,10 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(2, 0), cirq.GridQubit(3, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(5, 0), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(1, 0), cirq.GridQubit(2, 0)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(4, 0), cirq.GridQubit(5, 0)),),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(4, 0), cirq.GridQubit(5, 0)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(1, 0)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(2, 0)), (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(3, 0)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(4, 0)), (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(5, 0)),),
             [sympy.Symbol('b0_g0'),sympy.Symbol('g0_g0'),sympy.Symbol('b0_g1'),sympy.Symbol('g0_g1')]
         ),
         (
@@ -1078,7 +1081,10 @@ def test_diagonalise(qubittype, n, j_v, j_h, h, field, val_exp, vec_exp):
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 3)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 5), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 4), cirq.GridQubit(0, 5)),),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 4), cirq.GridQubit(0, 5)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g0'))).on(cirq.GridQubit(0, 2)), (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 3)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 4)), (cirq.Z**(1.0*sympy.Symbol('g0_g1'))).on(cirq.GridQubit(0, 5)),),
             [sympy.Symbol('b0_g0'),sympy.Symbol('g0_g0'),sympy.Symbol('b0_g1'),sympy.Symbol('g0_g1')]
         ),
     ]
@@ -1103,6 +1109,7 @@ def test_glues_circuit(qubittype, n, j_v, j_h, h, field, glue_axis, sol_circuit,
     #print(sol_circuit)
 
     #print("ising.circuit == ising2.circuit: \t {}".format(ising.circuit == ising2.circuit))
+    print("ising.circuit:{} \n ising2.circuit: \n {}".format(ising.circuit, ising2.circuit))
     #print("ising.hamiltonian == ising2.hamiltonian: \t {}".format(ising.hamiltonian == ising2.hamiltonian))
     #print("ising.circuit_param_values: \t{}".format(ising.circuit_param_values))
     #print("ising2.circuit_param_values: \t{}".format(ising2.circuit_param_values))
