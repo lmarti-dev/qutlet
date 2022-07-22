@@ -1,3 +1,7 @@
+from fauvqe.utilities.converter import (
+    Converter
+)
+
 from fauvqe.utilities.generic import (
     alternating_indices_to_sectors,
     check_type_and_convert,

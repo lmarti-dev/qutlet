@@ -3,12 +3,6 @@
 # ..level for the moment until better solution
 # .. import global to use them also in submodule
 # https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
-
-# imports within package
-from fauvqe.converter import (
-    Converter
-)
-
 # subpackages
 from fauvqe import models, objectives, optimisers
 
@@ -54,6 +48,7 @@ from fauvqe.utilities  import (
     alternating_indices_to_sectors,
     check_type_and_convert,
     commutator,
+    Converter,
     direct_sum,
     flatten,
     flatten_qubits,
