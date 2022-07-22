@@ -93,7 +93,9 @@ def test_set_circuit_wf():
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), 
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1))),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1))),
+                        
         ),
         (
             [1, 3], 
@@ -105,7 +107,9 @@ def test_set_circuit_wf():
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2))),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2))),
         ),
          (
             [1, 3], 
@@ -118,7 +122,9 @@ def test_set_circuit_wf():
                                     (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2))),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2))),
                         
         ),
         (
@@ -133,12 +139,17 @@ def test_set_circuit_wf():
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)),
                         cirq.Moment((cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 0)),
                                     (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 1)),
                                     (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2))),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 2)), 
+                        ),
                         
         ),
         (
@@ -274,8 +285,8 @@ def test__UC_layer():
         np.array(
             [
                 [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
                 [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
             ]
         ),
@@ -291,8 +302,8 @@ def test__UC_layer():
         np.array(
             [
                 [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j],
                 [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j],
             ]
         ),

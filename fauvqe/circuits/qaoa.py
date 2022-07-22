@@ -8,6 +8,7 @@ or functions are handed over to classical optimiser
 """
 import cirq
 import numpy as np
+from importlib import import_module
 import itertools
 import sympy
 
@@ -148,6 +149,7 @@ def _UC_layer(self, gamma):
             #elif self.field =="X":
             #    yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
     """
+    Ising = getattr(import_module('fauvqe.models.ising'), 'Ising')
     if self.qaoa.options.get("is_fully_connected") == True:
         #2-qubit gates
         for g in range(len(self.qaoa.options.get("TwoQubitGates"))):

@@ -9,7 +9,6 @@ import cirq
 
 from fauvqe.models.spinmodel import SpinModel
 
-
 class IsingXY(SpinModel):
     """
     2D Ising XY class inherits SpinModel

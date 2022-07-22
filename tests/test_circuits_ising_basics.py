@@ -1,18 +1,13 @@
 # external imports
-from turtle import rt
-from unicodedata import decimal
-from xmlrpc.client import boolean
-import pytest
-import numpy as np
 import cirq
-import sympy
 import itertools
+import numpy as np
+import pytest
+import sympy
 
 # internal imports
-from fauvqe import Ising, SpinModel, Converter
+from fauvqe import AbstractExpectationValue, ExpectationValueIsing, SpinModel, Converter
 from fauvqe.circuits.basics import SpinModelDummy
-from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
-from fauvqe.objectives.expectationvalue import ExpectationValue
 from .test_models_isings import IsingTester
 
 """
