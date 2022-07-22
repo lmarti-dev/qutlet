@@ -213,7 +213,7 @@ def test_json():
         )
     ]
 )
-def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
+def test_set_hamiltonian_overwrite(qubittype, n, j_v, j_h, h, t, field, sol):
     zeros_v = np.zeros((n[0]-1, n[1]))
     zeros_h = np.zeros((n[0], n[1]-1))
     zeros = np.zeros((n[0], n[1]))
@@ -234,10 +234,10 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, t=t)
     
-    solution = np.kron(sol, np.eye(N)) + np.kron(np.eye(N), m_anc.hamiltonian.matrix()) - np.kron(np.eye(2), np.kron(X, np.kron(np.eye(2), X))) - np.kron(X, np.kron(np.eye(2), np.kron(X, np.eye(2))))
-    print(solution - (model.hamiltonian.matrix()))
-    print(model.hamiltonian)
-    assert np.linalg.norm(model.hamiltonian.matrix() - solution ) < 1e-13
+    solution = np.kron(sol, np.eye(N)) + np.kron(np.eye(N), m_anc._hamiltonian.matrix()) - np.kron(np.eye(2), np.kron(X, np.kron(np.eye(2), X))) - np.kron(X, np.kron(np.eye(2), np.kron(X, np.eye(2))))
+    print(solution - (model._hamiltonian.matrix()))
+    print(model._hamiltonian)
+    assert np.linalg.norm(model._hamiltonian.matrix() - solution ) < 1e-13
 
 
 @pytest.mark.parametrize(
