@@ -29,11 +29,12 @@ def test_evaluate_pure(state1, state2, res):
     "state1, state2, res",
     [
         (Qobj(0.5*np.array([[1, 1], [1, 1]])), Qobj(0.5*np.array([[1, -1], [-1, 1]])), 0),
+        (np.array([[1, 0]]).transpose(), 0.5*np.array([[1, -1], [-1, 1]]), 0.5),
         (Qobj(0.5*np.array([[1, 0], [0, 1]])), Qobj(0.5*np.array([[1, 1], [1, 1]])), 1/np.sqrt(2))
     ],
 )
 def test_evaluate_mixed(state1, state2, res):
-    model = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
+    model = Ising("GridQubit", [1, 1], np.ones((0, 1)), np.ones((1, 0)), np.ones((1, 1)))
     model.set_circuit("qaoa", {"p": 5})
     
     objective = Fidelity(model, state1)
@@ -76,3 +77,6 @@ def test_exceptions():
     objective = Fidelity(model, np.zeros(2))
     with pytest.raises(NotImplementedError):
         assert objective.evaluate("Foo")
+    
+    with pytest.raises(AssertionError):
+        assert objective.evaluate(np.array([0, 1]))
