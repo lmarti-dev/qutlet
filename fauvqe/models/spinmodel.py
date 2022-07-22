@@ -11,8 +11,6 @@ from typing import Tuple, Dict, List
 # Internal import
 from fauvqe.models.abstractmodel import AbstractModel
 
-
-
 class SpinModel(AbstractModel):
     """
     2D SpinModel class inherits AbstractModel
