@@ -200,7 +200,7 @@ def test_json():
         )
     ]
 )
-def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
+def test_set_hamiltonian_overwrite(qubittype, n, j_v, j_h, h, t, field, sol):
     zeros_v = np.zeros((n[0]-1, n[1]))
     zeros_h = np.zeros((n[0], n[1]-1))
     zeros = np.zeros((n[0], n[1]))
@@ -212,8 +212,8 @@ def test_set_hamiltonian_override(qubittype, n, j_v, j_h, h, t, field, sol):
     
     model = Adiabatic(H0, H1, t=t)
         
-    print(model.hamiltonian.matrix())
-    assert np.linalg.norm(model.hamiltonian.matrix() - sol) < 1e-13
+    print(model._hamiltonian.matrix())
+    assert np.linalg.norm(model._hamiltonian.matrix() - sol) < 1e-13
 
 
 @pytest.mark.parametrize(
@@ -316,11 +316,11 @@ def test_get_minimal_energy_gap():
     
     model = Adiabatic(H0, H1, T=T)
     
-    model._get_minimal_energy_gap()
+    model.get_minimal_energy_gap()
     print(model.gaps)
     assert abs(model.min_gap - np.sqrt(2)) < 1e-7
     #Test whether it does not change anything a second time
-    model._get_minimal_energy_gap()
+    model.get_minimal_energy_gap()
     assert abs(model.min_gap - np.sqrt(2)) < 1e-7
     
     
