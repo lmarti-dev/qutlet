@@ -6,7 +6,7 @@ import pytest
 import sympy
 
 # internal imports
-from fauvqe import AbstractExpectationValue, ExpectationValueIsing, SpinModel, Converter
+from fauvqe import AbstractExpectationValue, Converter, ExpectationValue, Ising, SpinModel
 from fauvqe.circuits.basics import SpinModelDummy
 from .test_models_isings import IsingTester
 
@@ -892,7 +892,7 @@ def test__exact_layer_subsystem_h(n,n_exact,j_v, j_h, h, subsystem_qubits, subsy
         #use nan to num to mitigate dividing by 0
         #print("max: {}".format(np.amax(abs(ising.circuit.unitary()) - abs(ising2.circuit.unitary()))))
         #Use abs to mitigate that eigen vector sign is not defined
-        np.testing.assert_allclose( np.zeros((2**(n[0]*n[1]),2**(n[0]*n[1])), dtype=boolean),
+        np.testing.assert_allclose( np.zeros((2**(n[0]*n[1]),2**(n[0]*n[1])), dtype=bool),
                                     abs(ising.circuit.unitary()) - abs(ising2.circuit.unitary()), 
                                     rtol=1e-7, atol=1e-7)
 

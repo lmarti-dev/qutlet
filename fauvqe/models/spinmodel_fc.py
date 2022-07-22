@@ -205,6 +205,7 @@ class SpinModelFC(AbstractModel):
         void 
         """
         if qalgorithm == "cooling":
+            CoolingModel = getattr(importlib.import_module('fauvqe.models.coolingmodel'), 'CoolingModel')
             assert isinstance(self, CoolingModel)
             self.cooling.options = { "append": False,
                                     "K":1,

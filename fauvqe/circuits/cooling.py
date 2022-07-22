@@ -62,6 +62,7 @@ def set_circuit(self) -> None:
     print("Circuit depth:", len(self.circuit))
 
 #LogSweep
+#TODO Rename: Captial letters are reserved for classes
 def LogSweepProtocol(self) -> None:
     """
         Sets the LogSweep cooling circuit
@@ -78,7 +79,7 @@ def LogSweepProtocol(self) -> None:
     K = self.cooling.options["K"]
     m = self.cooling.options["m"]
     q = self.cooling.options["q"]
-    self.m_sys.normalise()
+    self.m_sys.set_spectrum_scale()
     if(self.cooling.options["emin"] is None or self.cooling.options["emax"] is None):
         #Use optimal emax and emin if nothing is handed
         e_min, e_max, spectral_spread = self.cooling.__get_default_e_m(self)
@@ -107,7 +108,19 @@ def LogSweepProtocol(self) -> None:
             #... and Hamiltonian
             self._set_hamiltonian()
             #Trotter Layer
-            c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
+            if hasattr(self.trotter, "options"):
+                _tmp_trotter_options = self.trotter.options.copy()
+            else:
+                _tmp_trotter_options = {}
+            self.trotter.options = {    "append": False,
+                        "return": True,
+                        "hamiltonian": self._hamiltonian,
+                        "trotter_number" : m,
+                        "trotter_order" : q,
+                        "t0": 0, 
+                        "tf": self.t}
+            c.append( self.trotter.set_circuit(self) )
+            self.trotter.options = _tmp_trotter_options
             #Reset Layer
             c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
@@ -123,7 +136,19 @@ def LogSweepProtocol(self) -> None:
                         #--- and Hamiltonian
                         self._set_hamiltonian()
                         #Trotter Layer
-                        c.append( self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, q, m) )
+                        if hasattr(self.trotter, "options"):
+                            _tmp_trotter_options = self.trotter.options.copy()
+                        else:
+                            _tmp_trotter_options = {}
+                        self.trotter.options = {    "append": False,
+                                    "return": True,
+                                    "hamiltonian": self._hamiltonian,
+                                    "trotter_number" : m,
+                                    "trotter_order" : q,
+                                    "t0": 0, 
+                                    "tf": self.t}
+                        c.append( self.trotter.set_circuit(self) )
+                        self.trotter.options = _tmp_trotter_options
                         #Reset Layer
                         c.append( self.cooling._reset_layer(self) )
             yield c * self.cooling.options["time_steps"]
@@ -156,7 +181,7 @@ def __get_default_e_m(self) -> List[Real]:
     e_max = max( self.cooling.orth_norm(1.j*
         self.cooling.commutator(
             np.array(pauli(self.m_sys.qubits[i][j]).matrix(self.cooling.flatten(self.m_sys.qubits))),
-            np.array(self.m_sys.hamiltonian.matrix())
+            np.array(self.m_sys._hamiltonian.matrix())
         )) for pauli in [cirq.X, cirq.Y, cirq.Z] for i in range(self.m_sys.n[0]) for j in range(self.m_sys.n[1]) )
     return e_min, e_max, spectral_spread
 
@@ -197,6 +222,7 @@ def __get_Log_Sweep_parameters(self, e_min: Real, e_max: Real, k: np.uint) -> Li
     return e, gamma, tau
 
 #BangBang
+#TODO: Rename Captial letters are classes
 def BangBangProtocol(self) -> None:
     """
         Sets the BangBang cooling circuit
@@ -242,7 +268,19 @@ def BangBangProtocol(self) -> None:
                     #--- and Hamiltonian
                     system._set_hamiltonian()
                     #Trotter Layer
-                    c.append( system.trotter.get_trotter_circuit_from_hamiltonian(system, system.hamiltonian, system.t, q, m) )
+                    if hasattr(system.trotter, "options"):
+                        _tmp_trotter_options = system.trotter.options.copy()
+                    else:
+                        _tmp_trotter_options = {}
+                    system.trotter.options = {    "append": False,
+                                "return": True,
+                                "hamiltonian": system._hamiltonian,
+                                "trotter_number" : m,
+                                "trotter_order" : q,
+                                "t0": 0, 
+                                "tf": system.t}
+                    c.append( system.trotter.set_circuit(system) )
+                    system.trotter.options = _tmp_trotter_options
                     #Reset Layer
                     c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]
@@ -266,7 +304,7 @@ def __get_Bang_Bang_parameters(self, pauli: cirq.Gate) -> List[Real]:
         tau: Real
             Simulation time
     """
-    e = self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys.hamiltonian.matrix())) #Free Spin precession
+    e = self.cooling.orth_norm(self.cooling.commutator(pauli(self.m_sys.qubits[0][0]).matrix(self.cooling.flatten(self.m_sys.qubits)), self.m_sys._hamiltonian.matrix())) #Free Spin precession
     #gamma and tau coming from Fermi's golden rule argument
     gamma = 2/np.sqrt(3) * e #Interaction constants
     tau = np.pi / gamma #Simulation time

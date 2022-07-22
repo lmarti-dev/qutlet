@@ -390,7 +390,7 @@ def test_theory_bounds():
     j_int = epsilon * np.ones((1, *n))
     int_gates = [lambda q1, q2: cirq.X(q1)*cirq.X(q2)]
     model = CooledAdiabatic(H0, H1, m_anc, int_gates, j_int, T=T)
-    model.m_sys._get_minimal_energy_gap()
+    model.m_sys.get_minimal_energy_gap()
     model.m_anc.diagonalise()
     
     bound_dict = model.get_theory_bounds()

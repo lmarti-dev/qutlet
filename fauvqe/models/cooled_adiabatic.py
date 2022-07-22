@@ -85,7 +85,7 @@ class CooledAdiabatic(CoolingModel):
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
         
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
@@ -96,9 +96,11 @@ class CooledAdiabatic(CoolingModel):
     #Overrides CoolingModel's function
     def _set_hamiltonian(self, reset: bool = True) -> None:
         if reset:
-            self.hamiltonian = cirq.PauliSum()
-        self.hamiltonian += self._get_hamiltonian_at_time(self.t)
+            self._hamiltonian = cirq.PauliSum()
+        self._hamiltonian += self._get_hamiltonian_at_time(self.t)
     
+    #TODO Rename; in DrivenModel this is simply called hamiltonian(self, t:Real)?
+    #Why is the return type np.ndarray? Shouldn't it be cirq.PauliSum
     def _get_hamiltonian_at_time(self, time: Real) -> np.ndarray:
         """
         Append or Reset Hamiltonian; Combine Hamiltonians:
@@ -125,7 +127,7 @@ class CooledAdiabatic(CoolingModel):
         
         sys_rows = self.m_sys.n[0]
         new_qubits = [self.qubits[i][j] for i in range(sys_rows, self.n[0], 1) for j in range(self.n[1])]
-        ham = self.m_sys.hamiltonian + self.m_anc.hamiltonian.with_qubits(*new_qubits)
+        ham = self.m_sys._hamiltonian + self.m_anc._hamiltonian.with_qubits(*new_qubits)
         int_gates = self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q]
         for g in range(len(int_gates)):
             for i in range(self.m_sys.n[0]):
@@ -212,9 +214,9 @@ class CooledAdiabatic(CoolingModel):
         #Set number of resets
         if nbr_resets is None:
             if t_steps is None:
-                min_gap = self.m_sys._get_minimal_energy_gap()
+                min_gap = self.m_sys.get_minimal_energy_gap()
             else:
-                min_gap = self.m_sys._get_minimal_energy_gap(
+                min_gap = self.m_sys.get_minimal_energy_gap(
                     np.linspace(0, self.m_sys.T, t_steps+1)
                 )
             dt = 2 * np.pi / min_gap
@@ -239,7 +241,7 @@ class CooledAdiabatic(CoolingModel):
         #Instantiate figures of interest if desired
         if(calc_O):
             if(self.m_sys.output is None):
-                min_gap = self.m_sys._get_minimal_energy_gap(
+                min_gap = self.m_sys.get_minimal_energy_gap(
                     np.linspace(0, self.m_sys.T, t_steps+1), 
                     reset = True
                 )

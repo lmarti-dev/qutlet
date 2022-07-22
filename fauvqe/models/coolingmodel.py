@@ -297,7 +297,7 @@ class CoolingModel(SpinModelFC):
         self_copy.circuit = self.circuit.copy()
         if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
         
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
