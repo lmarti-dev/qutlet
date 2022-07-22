@@ -117,9 +117,6 @@ class UtCost(Objective):
                 self._output_wavefunctions = self.get_output_wavefunctions()
                 self._Ut_error = self.get_Ut_error()
 
-
-        
-
     def get_trotter_circuit(  self,
                                 options: Dict = {}):
         """
