@@ -15,11 +15,16 @@ from fauvqe import models, objectives, optimisers
 # Flattened sub-modules
 from fauvqe.models import (
     AbstractModel,
+    Adiabatic,
     DrivenModel,
+    CooledAdiabatic,
+    CoolingModel,
     Ising,
     IsingXY,
     Heisenberg,
-    SpinModel
+    HeisenbergFC,
+    SpinModel,
+    SpinModelFC
 )
 from fauvqe.objectives import (
     AbstractExpectationValue,
@@ -46,9 +51,31 @@ from fauvqe.optimisers import (
 )
 
 from fauvqe.utilities  import (
+    alternating_indices_to_sectors,
+    check_type_and_convert,
+    commutator,
+    direct_sum,
+    flatten,
+    flatten_qubits,
+    flip_cross_rows,
     haar,
     haar_1qubit,
+    hamming_weight,
+    index_bits,
+    interweave,
+    lists_almost_have_same_elements,
+    lists_have_same_elements,
+    niceprint,
+    orth_norm,
+    pi_direct_sum,
+    pi_kron,
+    pi_matmul,
+    ptrace,
+    print_non_zero,
+    round_small_to_zero,
+    sectors_to_alternating_indices,
     uniform,
+    unitary_transpose,
 )
 """
 All within fauvqe imported libaries:
