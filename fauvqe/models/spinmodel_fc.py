@@ -159,7 +159,7 @@ class SpinModelFC(AbstractModel):
         void 
         """
         if reset:
-            self.hamiltonian = cirq.PauliSum()
+            self._hamiltonian = cirq.PauliSum()
 
         #Conversion currently necessary as numpy type * cirq.PauliSum fails
         js = self.j.tolist()
@@ -172,19 +172,19 @@ class SpinModelFC(AbstractModel):
                     #k==i, l>j
                     for l in range(j+1, self.n[1], 1):
                         if(js[i][j][i][l][g] != 0):
-                            self.hamiltonian -= js[i][j][i][l][g] * self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][l])
+                            self._hamiltonian -= js[i][j][i][l][g] * self._TwoQubitGates[g](self.qubits[i][j], self.qubits[i][l])
                     #k>i
                     for k in range(i+1, self.n[0], 1):
                         for l in range(self.n[1]):
                             if(js[i][j][k][l][g] != 0):
-                                self.hamiltonian -= js[i][j][k][l][g] * self._TwoQubitGates[g](self.qubits[i][j], self.qubits[k][l])
+                                self._hamiltonian -= js[i][j][k][l][g] * self._TwoQubitGates[g](self.qubits[i][j], self.qubits[k][l])
                     
         # 2. Add external field
         for g in range(len(self._SingleQubitGates)):
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     if(hs[i][j][g]!=0):
-                        self.hamiltonian -= hs[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
+                        self._hamiltonian -= hs[i][j][g]*self._SingleQubitGates[g](self.qubits[i][j])
     
     def set_circuit(self, qalgorithm: str, options: dict = {}) -> None:
         """
@@ -306,12 +306,17 @@ class SpinModelFC(AbstractModel):
         
         Overrides AbstractModel's set_spectrum_scale() function
         '''
+        #TODO here only eigen values are needed calculating eigen vectors as well is not needed
+        # further here rather scipy sparse solver should be used to get largest and smallest eigenvalue
         _n = np.size(self.qubits)
         _N = 2**_n
+        #print("_n: {}, _N: {}".format(_n, _N))
         if np.size(self.eig_val) != _N or \
         (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
             self.diagonalise(solver = "numpy")
         previous_spread = (self.eig_val[-1] - self.eig_val[0])
+        #print(previous_spread)
+        #print(self.eig_val)
         scale = spread / previous_spread
         super().set_spectrum_scale(spread)
         self.j *= scale
@@ -329,7 +334,7 @@ class SpinModelFC(AbstractModel):
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
 
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()

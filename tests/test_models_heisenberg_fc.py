@@ -182,7 +182,9 @@ def test_energy(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z, sol):
             np.ones((2, 2))
         )]
 )
-def test_normalise(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z):
+def test_set_spectrum_scale(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z):
     model = HeisenbergFC(qubittype, n, j_x, j_y, j_z, h_x, h_y, h_z)
-    model.normalise()
+    #model.diagonalise(solver = "numpy")
+    #print("model.eig_val: {}".format(model.eig_val))
+    model.set_spectrum_scale()
     assert abs((model.eig_val[0] - model.eig_val[-1]) + 2) < 1e-7

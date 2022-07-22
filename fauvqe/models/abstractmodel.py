@@ -341,7 +341,7 @@ class AbstractModel(Restorable):
         '''
         previous_spread = (self.eig_val[-1] - self.eig_val[0])
         scale = spread / previous_spread
-        self.hamiltonian = scale * self.hamiltonian
+        self._hamiltonian = scale * self._hamiltonian
         self.eig_val *= scale
     
     def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
