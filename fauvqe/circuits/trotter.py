@@ -33,11 +33,11 @@ def set_circuit(self):
         q=2: symmetrized
         q=2k: see https://arxiv.org/abs/1912.08854
     """
-    hamiltonian = self.trotter.options.get('hamiltonian')
-    t0 = self.trotter.options.get('t0')
-    tf = self.trotter.options.get('tf')
-    q = self.trotter.options.get('trotter_order')
-    m = self.trotter.options.get('trotter_number')
+    hamiltonian = self.trotter.options.get("hamiltonian")
+    t0 = self.trotter.options.get("t0")
+    tf = self.trotter.options.get("tf")
+    q = self.trotter.options.get("trotter_order")
+    m = self.trotter.options.get("trotter_number")
 
     #assert Trotter order and Trotter number are Integers
     assert isinstance(q, int), "Trotter order q must be Integer. Received: {}".format(q)
@@ -141,17 +141,19 @@ def _first_order_trotter_circuit(   self,
     return res
 
 def get_parameters(self, name: str='', delim: str = ','):
+    #TODO extend this to time dependent models
     if(name == ''):
-        if(self.trotter.options['q'] > 2):
+        if(self.trotter.options.get("trotter_order") > 2):
             raise NotImplementedError
-        t_number = self.trotter.options['m']
+        t_number = self.trotter.options.get("trotter_number")
         parameters = []
         for m in range(t_number):
-            for pstr in self.hamiltonian._linear_dict:
+            #TODO Replace this with self.hamiltonian(tf)?
+            for pstr in self._hamiltonian._linear_dict:
                 #print(self.hamiltonian._linear_dict[pstr])
-                parameters.append(self.hamiltonian._linear_dict[pstr] / t_number)
+                parameters.append(self._hamiltonian._linear_dict[pstr] / t_number)
         parameters = np.array(parameters) * np.real(2/np.pi * self.t)
-        if(self.trotter.options['q']==2):
+        if(self.trotter.options.get("trotter_order")==2):
             return 0.5*np.concatenate((parameters, parameters[-1::-1]))
         else:
             return parameters

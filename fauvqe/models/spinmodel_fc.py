@@ -204,7 +204,19 @@ class SpinModelFC(AbstractModel):
         -------
         void 
         """
-        if qalgorithm == "hea":
+        if qalgorithm == "cooling":
+            assert isinstance(self, CoolingModel)
+            self.cooling.options = { "append": False,
+                                    "K":1,
+                                    "emin":None,
+                                    "emax":None,
+                                    "m":None,
+                                    "q":1,
+                                    "time_steps":1,
+                                  }
+            self.cooling.options.update(options)
+            self.cooling.set_circuit(self)
+        elif qalgorithm == "hea":
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
@@ -219,25 +231,6 @@ class SpinModelFC(AbstractModel):
             self.hea.set_circuit(self)
             self.basics.rm_unused_cpv(self)  
             self.basics.add_missing_cpv(self)
-        elif qalgorithm == "trotter":
-            self.trotter.options = { "append": False,
-                                    "q":1,
-                                    "m":1
-                                  }
-            self.trotter.options.update(options)
-            self.trotter.set_circuit(self)
-        elif qalgorithm == "cooling":
-            assert isinstance(self, CoolingModel)
-            self.cooling.options = { "append": False,
-                                    "K":1,
-                                    "emin":None,
-                                    "emax":None,
-                                    "m":None,
-                                    "q":1,
-                                    "time_steps":1,
-                                  }
-            self.cooling.options.update(options)
-            self.cooling.set_circuit(self)
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             #This needs some further revisions as some parts are not very general yet
@@ -252,6 +245,16 @@ class SpinModelFC(AbstractModel):
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
             self.qaoa.set_circuit(self)
+        elif qalgorithm == "trotter":
+            self.trotter.options = {    "append": False,
+                                    "return": False,
+                                    "hamiltonian": self.hamiltonian,
+                                    "trotter_number" : 1,
+                                    "trotter_order" : 1,
+                                    "t0": 0, 
+                                    "tf": self.t}
+            self.trotter.options.update(options)
+            self.trotter.set_circuit(self)
         else:
             assert (
                 False
