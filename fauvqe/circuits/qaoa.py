@@ -11,7 +11,10 @@ import numpy as np
 import itertools
 import sympy
 
-from fauvqe.models.ising import Ising
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fauvqe.models.ising import Ising
 
 def set_p(self, p):
     if self.qaoa.options.get("p") != p:
@@ -145,10 +148,10 @@ def _UC_layer(self, gamma):
             #elif self.field =="X":
             #    yield cirq.X(self.qubits[i][j]) ** (gamma * self.h[i, j])
     """
-    if self.qaoa.options.get("fully_connected") == True:
+    if self.qaoa.options.get("is_fully_connected") == True:
         #2-qubit gates
-        for g in range(len(self.qaoa.options.get("TwoQubitGates")):
-            gate = self.qaoa.options["TwoQubitGates"][g]
+        for g in range(len(self.qaoa.options.get("TwoQubitGates"))):
+            gate = self.qaoa.options.get("TwoQubitGates")[g]
             for i in range(self.n[0]):
                 for j in range(self.n[1]):
                     for l in range(j+1, self.n[1], 1):

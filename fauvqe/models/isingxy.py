@@ -7,7 +7,7 @@ from numbers import Real
 import numpy as np
 import cirq
 
-from fauvqe.models.spinModel import SpinModel
+from fauvqe.models.spinmodel import SpinModel
 
 
 class IsingXY(SpinModel):

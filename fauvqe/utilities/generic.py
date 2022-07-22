@@ -44,16 +44,13 @@ def direct_sum(a,b):
     """
         Missing docstring
     """
-	ax=a.shape[0]
-	ay=a.shape[1]
-	
-	bx=b.shape[0]
-	by=b.shape[1]
-	
-	R=np.block(
-		[[a,np.zeros((ax,by))],
-		[np.zeros((bx,ay)),b]])
-	return R
+    ax=a.shape[0]
+    ay=a.shape[1]
+    
+    bx=b.shape[0]
+    by=b.shape[1]
+    return np.block(    [[a,np.zeros((ax,by))],
+                        [np.zeros((bx,ay)),b]])
 
 def flatten(a) -> Iterable:
     """This function takes in a list of list or another nested iterable object and flattens it
@@ -167,21 +164,21 @@ def pi_direct_sum(*args):
     """
         Missing docstring
     """
-	R=direct_sum(args[0],args[1])
-	if len(args)>2:
-		for M in args[2:]:
-			R=direct_sum(R,M)
-	return R
+    R=direct_sum(args[0],args[1])
+    if len(args) > 2:
+        for M in args[2:]:
+            R=direct_sum(R,M)
+    return R
 
 def pi_kron(*args):
     """
         Missing docstring
     """
-	R=np.kron(args[0],args[1])
-	if len(args)>2:
-		for M in args[2:]:
-			R=np.kron(R,M)
-	return R
+    R=np.kron(args[0],args[1])
+    if len(args)>2:
+        for M in args[2:]:
+            R=np.kron(R,M)
+    return R
 
 def pi_matmul(*args):
     """This function takes in multiple matrices (as different arguments) and multiplies them together
@@ -194,20 +191,18 @@ def pi_matmul(*args):
             R=np.matmul(R,M) 
     return R
 
-def print_non_zero(M,name: str=None, eq_tol: float=1E-15):
-	"""
-        Missing docstring
-    """
-    if name is not None:
-		print(name)
-	print((abs(M)>eq_tol).astype(int))
+def print_non_zero( M,
+                    name: str=None, 
+                    eq_tol: float=1E-15):
+    if name is not None: 
+        print(name)
+    print((abs(M)>eq_tol).astype(int))
 
 def round_small_to_zero(l: list,eq_tol: float = 1E-15):
     """
         Missing docstring
     """
-    zl=[0 if abs(x) < eq_tol else x for x in l]
-    return zl
+    return [0 if abs(x) < eq_tol else x for x in l]
 
 def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     """This function turns a matrix which has two "sectors" into an interwoven one
