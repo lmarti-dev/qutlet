@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import cirq
-import importlib
 from numbers import Real
 import numpy as np
 from typing import Dict, Literal, Optional, Tuple, Union
@@ -26,20 +25,20 @@ class ANNNI(SpinModelFC):
                     The qubit layout of the lattice
                     If int given n -> [n, 1]
 
-        J:          Union[Real, np.ndarray]
+        J:          Union[Union[int, float], np.ndarray]
                     The nearest neighbour coupling
 
-        k:          Union[Real, np.ndarray]
+        k:          Union[Union[int, float], np.ndarray]
                     The next nearest neighbour coupling
 
-        h:          Union[Real, np.ndarray]
+        h:          Union[Union[int, float], np.ndarray]
                     The external field strength in X-direction
 
         boundaries: Optional[np.ndarray]
                     boundary conditions of the model calc if J or k are nd.arrays
                     Otherwise require to be provided
 
-        t:          Optional[Number]
+        t:          Optional[Union[int, float]]
                     Final simulation time; likely not used so much when ANNNI is used with DrivenModel
 
         Methods
@@ -61,7 +60,7 @@ class ANNNI(SpinModelFC):
                     k: Union[Union[int, float], np.ndarray, Tuple[np.ndarray,np.ndarray]], 
                     h: Union[Union[int, float], np.ndarray], 
                     boundaries: Optional[Union[int, np.ndarray]],
-                    t: Union[int, float] = 0):
+                    t: Optional[Union[int, float]] = 0):
         """
             Parameters
             ----------
@@ -69,22 +68,22 @@ class ANNNI(SpinModelFC):
                         The qubit layout of the lattice
                         If int given n -> [n, 1]
 
-            J:          Union[Real, np.ndarray, Tuple[np.ndarray,np.ndarray]]
+            J:          Union[Union[int, float], np.ndarray, Tuple[np.ndarray,np.ndarray]]
                         The nearest neighbour coupling
                         Tuple[np.ndarray,np.ndarray] in case of n being 2D for vertical and horizontal
 
-            k:          Union[Real, np.ndarray, Tuple[np.ndarray,np.ndarray]]
+            k:          Union[Union[int, float], np.ndarray, Tuple[np.ndarray,np.ndarray]]
                         The next nearest neighbour coupling
                         Tuple[np.ndarray,np.ndarray] in case of n being 2D for vertical and horizontal
 
-            h:          Union[Real, np.ndarray]
+            h:          Union[Union[int, float], np.ndarray]
                         The external field strength in X-direction
 
             boundaries: Optional[Union[int, np.ndarray]]
                         boundary conditions of the model calc if J or k are nd.arrays
                         Otherwise require to be provided
 
-            t:          Optional[Number]
+            t:          Optional[Union[int, float]]
                         Final simulation time; likely not used so much when ANNNI is used with DrivenModel
         """
         self.__name__ = "ANNNI"
@@ -136,12 +135,14 @@ class ANNNI(SpinModelFC):
     def _get_boundaries(self,J,k, boundaries):
         if boundaries is not None:
             if isinstance(boundaries, int):
-                assert(self.n[0] == 1 or self.n[1] == 1),\
-                    "Error in ANNNI _get_boundaries: arbitraryto which direct boundary condition should be applied, given n not 1D"
+                #assert(self.n[0] == 1 or self.n[1] == 1),\
+                #    "Error in ANNNI _get_boundaries: arbitraryto which direct boundary condition should be applied, given n not 1D"
                 if self.n[0] == 1:
                     return np.array([1, boundaries])
-                else:
+                elif self.n[1] == 1:
                     return np.array([boundaries, 1])
+                else:
+                    return boundaries*np.array([1, 1])
             else:
                 return np.array(boundaries)
         else:
@@ -189,7 +190,7 @@ class ANNNI(SpinModelFC):
             1. get all of them as arrays
             2. return _J_array = NN_array + NNN_array
         """
-        if isinstance(J, Real):
+        if isinstance(J, (float,int)):
             _NN_array = J*self._get_neighbour_graph(1)         
         elif isinstance(J, (list, tuple)): 
             # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
@@ -204,7 +205,7 @@ class ANNNI(SpinModelFC):
             #J.ndim == 5 and isinstance(J, np.ndarray)
             _NN_array = J 
             
-        if isinstance(k, Real):
+        if isinstance(k, (float,int)):
             _NNN_array = k*self._get_neighbour_graph(2)         
         elif isinstance(k, (list, tuple)): 
             # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
@@ -219,11 +220,17 @@ class ANNNI(SpinModelFC):
             #k.ndim == 5 and isinstance(k, np.ndarray)
             _NNN_array = k
 
-        if isinstance(h, Real):
+        if isinstance(h, (float,int)):
             _h_array = h * np.ones((1,
                                     self.n[0],
                                     self.n[1]))
-        elif h.dim == 2:
+        elif h.ndim == 1:
+            if self.n[0] == 1:
+                _h_array = h[np.newaxis,np.newaxis, :]
+            else:
+                #self.n[1] == 1
+                _h_array = h[np.newaxis, :, np.newaxis]       
+        elif h.ndim == 2:
             _h_array = h[np.newaxis,:, :, ]
         else:
             #h.ndim == 3
@@ -241,7 +248,7 @@ class ANNNI(SpinModelFC):
         if coefficents is None:
             print("self.n: {}".format(self.n))
             print("self.boundaries: {}".format(self.boundaries))
-            print(neighbour_distance)
+            print("neighbour_distance: {}".format(neighbour_distance))
             print("int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])): {}".format(int(max(1, self.n[0]-neighbour_distance*self.boundaries[0]))))
             _tmp0 = np.ones((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
                                 self.n[1]))
@@ -262,19 +269,20 @@ class ANNNI(SpinModelFC):
                                 int(max(1, self.n[1]-neighbour_distance*self.boundaries[1]))))
                 coefficents = [coefficents[:, np.newaxis], _tmp1]
 
-        print("coefficents[0][0,0]: {}".format(coefficents[1][0,0]))
+        print("coefficents:\n{}\n".format(coefficents))
+        
         #bulk terms
+        #n0 direction
         for n0 in range(max(1, self.n[0]-neighbour_distance)):
-            for n1 in range(max(1,self.n[1]-neighbour_distance)):
-                
-                print("n0: {},n1: {}".format(n0,n1))
+            for n1 in range(max(1,self.n[1])):
                 if self.n[0]-neighbour_distance > 0:
-                    print("test")
                     _neighbour_array[n0,n1,n0+neighbour_distance, n1] = coefficents[0][n0,n1]
                     _neighbour_array[n0+neighbour_distance,n1,n0, n1] = coefficents[0][n0,n1]
 
+        #n1 direction
+        for n0 in range(max(1, self.n[0])):
+            for n1 in range(max(1,self.n[1]-neighbour_distance)):
                 if self.n[1]-neighbour_distance > 0:
-                    print("test2")
                     _neighbour_array[n0,n1,n0, n1+neighbour_distance] = coefficents[1][n0,n1]
                     _neighbour_array[n0,n1+neighbour_distance,n0, n1] = coefficents[1][n0,n1]
 
@@ -283,12 +291,13 @@ class ANNNI(SpinModelFC):
         # Prevents us from double counting the same coupling
         if self.boundaries[0] == 0 and 2*neighbour_distance < self.n[0]:
             for n0 in range(neighbour_distance):
-                for n1 in range(self.n[1]-neighbour_distance):
+                for n1 in range(max(1, self.n[1])):
                     _neighbour_array[n0,n1,n0-neighbour_distance, n1] = coefficents[0][-n0,n1]
                     _neighbour_array[n0-neighbour_distance,n1,n0, n1] = coefficents[0][-n0,n1]
 
+        print("self.boundaries[1]: {}\t2*neighbour_distance: {}\tself.n[1]: {}".format(self.boundaries[1], 2*neighbour_distance, self.n[1]) )
         if self.boundaries[1] == 0 and 2*neighbour_distance < self.n[1]:
-            for n0 in range(self.n[0]-neighbour_distance):
+            for n0 in range(max(1, self.n[0])):
                 for n1 in range(neighbour_distance):
                     _neighbour_array[n0,n1-neighbour_distance,n0, n1] = coefficents[1][n0, -n1]
                     _neighbour_array[n0,n1,n0, n1-neighbour_distance] = coefficents[1][n0, -n1]
@@ -321,7 +330,8 @@ class ANNNI(SpinModelFC):
         return self_copy
     """
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        return [super().energy( self.j[:,:,:,:,0], self.h[:,:,0])]
+        return [super().energy( self.j[:,:,:,:,0]                   , np.zeros(self.h[:,:,0].shape)),
+                super().energy( np.zeros(self.j[:,:,:,:,0].shape)   , self.h[:,:,0])]
     """
     def to_json_dict(self) -> Dict:
         return {
