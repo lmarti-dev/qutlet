@@ -120,6 +120,7 @@ class ANNNI(SpinModelFC):
         print("boundaries: {}".format(boundaries))
         self.boundaries = self._get_boundaries(J,k, boundaries)
         print("self.boundaries: {}".format(self.boundaries))
+        assert (self.boundaries is not None),"Error in ANNNI constructor: Retrieving boundary conditions from J or k failed"
         _interations, _external_fields= self._get_Jh(J, k, h)
 
         # convert all input to np array to be sure
@@ -154,28 +155,32 @@ class ANNNI(SpinModelFC):
                     else:
                         #self.n[1] == 1
                         return np.array((self.n[0] - np.size(J), 1))
-                else:
-                    return np.array((self.n[0] - J.shape[0], self.n[1] - J.shape[1]))
+                #else:
+                    #J.ndim == 5
+                    #This is not so trivial as J needs to be always (1, n.shape, n.shape)
+                    #return np.array((self.n[0] - J.shape[1], self.n[1] - J.shape[2]))
+                    
             elif isinstance(J, (list, tuple)):
                 # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
                 # 2D case
                 return np.array((self.n[0] - J[0].shape[0], self.n[1] - J[1].shape[1]))
-            else:
+
                 # J is Number and boundaries is None so that the 
                 # boundaries information needs to be given in k
-                if isinstance(k, np.ndarray):
-                    if k.ndim == 1:
-                        if self.n[0] == 1:
-                            return np.array((1,(self.n[1] - np.size(k))/2))
-                        else:
-                            #self.n[1] == 1
-                            return np.array(((self.n[0] - np.size(k))/2, 1))
+            if isinstance(k, np.ndarray):
+                if k.ndim == 1:
+                    if self.n[0] == 1:
+                        return np.array((1,(self.n[1] - np.size(k))/2))
                     else:
-                        #k.ndim = 5
-                        return np.array(((self.n[0] -k.shape[0])/2, (self.n[1] - k.shape[1])/2))
-                else:
-                    # 2D case
-                    return np.array(((self.n[0] - k[0].shape[0])/2, (self.n[1] - k[1].shape[1])/2))
+                        #self.n[1] == 1
+                        return np.array(((self.n[0] - np.size(k))/2, 1))
+                #else:
+                #k.ndim = 5
+                # See above this case is not so trivial
+                # This would require checking whether any of the boundary spanning terms is non zero
+            elif isinstance(k, (list, tuple)):
+                # 2D case
+                return np.array(((self.n[0] - k[0].shape[0])/2, (self.n[1] - k[1].shape[1])/2))
 
     def _get_Jh(self, J, k, h):
         """
@@ -201,7 +206,7 @@ class ANNNI(SpinModelFC):
             
         if isinstance(k, Real):
             _NNN_array = k*self._get_neighbour_graph(2)         
-        elif isinstance(k, tuple): 
+        elif isinstance(k, (list, tuple)): 
             # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
             #_NN_filter = self._get_neighbour_graph(1) 
             #Multiply elementwise the coeeficents in j_v, j_h tuple

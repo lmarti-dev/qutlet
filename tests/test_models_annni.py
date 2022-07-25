@@ -118,7 +118,24 @@ def test_constructor_hamiltonian(n, J, k, h, boundaries, hamiltonian):
             None,
             np.array([0,1]),
         ),
+        
         # Set boundaries by shape of k
+        (
+            5,
+            1,
+            np.ones((3)),
+            1,
+            None,
+            np.array([1,1]),
+        ),
+        (
+            [5,1],
+            1,
+            np.ones((5)),
+            1,
+            None,
+            np.array([0,1]),
+        ),
         (
             [1,5],
             1,
@@ -131,6 +148,14 @@ def test_constructor_hamiltonian(n, J, k, h, boundaries, hamiltonian):
             [1,5],
             1,
             np.ones((5)),
+            1,
+            None,
+            np.array([1,0]),
+        ),
+        (
+            [2,5],
+            1,
+            [np.ones((0,5)),np.ones((2,5))],
             1,
             None,
             np.array([1,0]),
@@ -156,6 +181,13 @@ def test_converter():
         (
             2,
             1,
+            1,
+            1,
+            None,
+        ),
+        (
+            [2,3],
+            np.ones((1,2,3,2,3)),
             1,
             1,
             None,
