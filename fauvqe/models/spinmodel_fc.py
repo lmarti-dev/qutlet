@@ -132,7 +132,7 @@ class SpinModelFC(AbstractModel):
         j = np.array(j)
         assert (
             j.shape == (len(_TwoQubitGates), *self.n, *self.n)
-        ), "Error in SpinModel._set_jh(): j.shape != (len(_TwoQubitGates), n, n ), {} != {}".format(
+        ), "Error in SpinModelFC._set_jh(): j.shape != (len(_TwoQubitGates), n, n ), {} != {}".format(
             j.shape, (len(_TwoQubitGates), *(self.n), *(self.n))
         )
         assert self._check_symmetric(j), "Interaction graph is not symmetric: " + str(j)
@@ -142,7 +142,7 @@ class SpinModelFC(AbstractModel):
         h = np.array(h)
         assert (
             h.shape == (len(_SingleQubitGates), *self.n)
-        ), "Error in SpinModel._set_jh():: h.shape != (len(_SingleQubitGates), n), {} != {}".format(h.shape, (len(_SingleQubitGates), *self.n))
+        ), "Error in SpinModelFC._set_jh():: h.shape != (len(_SingleQubitGates), n), {} != {}".format(h.shape, (len(_SingleQubitGates), *self.n))
         self.h = np.transpose(h, (1, 2, 0))
 
     def _set_hamiltonian(self, reset: bool = True) -> None:

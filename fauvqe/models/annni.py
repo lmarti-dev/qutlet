@@ -57,11 +57,11 @@ class ANNNI(SpinModelFC):
     """
     def __init__(   self,
                     n: Union[int, np.ndarray], 
-                    J: Union[Real, np.ndarray, Tuple[np.ndarray,np.ndarray]], 
-                    k: Union[Real, np.ndarray, Tuple[np.ndarray,np.ndarray]], 
-                    h: Union[Real, np.ndarray], 
+                    J: Union[Union[int, float], np.ndarray, Tuple[np.ndarray,np.ndarray]], 
+                    k: Union[Union[int, float], np.ndarray, Tuple[np.ndarray,np.ndarray]], 
+                    h: Union[Union[int, float], np.ndarray], 
                     boundaries: Optional[Union[int, np.ndarray]],
-                    t: Real = 0):
+                    t: Union[int, float] = 0):
         """
             Parameters
             ----------
@@ -87,8 +87,13 @@ class ANNNI(SpinModelFC):
             t:          Optional[Number]
                         Final simulation time; likely not used so much when ANNNI is used with DrivenModel
         """
-        assert(boundaries is not None and isinstance(J, Real) and isinstance(k, Real)),\
-            "Error in ANNNI constructor: both J and k are provided as Numbers but no boundary condition was given"
+        self.__name__ = "ANNNI"
+        
+        if boundaries is None:
+            print("isinstance(J, (int, float)): {}".format(isinstance(J, (int, float))) )
+            print("isinstance(k, (int, float)): {}".format(isinstance(k, (int, float)) ))
+            assert not (isinstance(J, (int, float)) and isinstance(k, (int, float))),\
+                "Error in ANNNI constructor: both J = {} and k = {} are provided as Numbers but no boundary condition was given".format(J,k)
 
         # TODO ?: Assert whether given information fits together
         # On the other hand cannot write assert for everything
@@ -97,8 +102,9 @@ class ANNNI(SpinModelFC):
                 "Error in ANNNI constructor: J must be Number, Tuple[np.array, np.array] or np.ndarray with ndim 1 or 5, ndim of provided J is {}".format(J.ndim)
 
         if isinstance(k, np.ndarray):
+            print("k: {}\nk.ndim: {}".format(k, k.ndim))
             assert(k.ndim == 1 or k.ndim == 5),\
-                "Error in ANNNI constructor: k must be Number, Tuple[np.array, np.array] or np.ndarray with ndim 2 or 5, ndim of provided k is {}".format(k.ndim)
+                "Error in ANNNI constructor: k must be Number, Tuple[np.array, np.array] or np.ndarray with ndim 1 or 5, ndim of provided k is {}".format(k.ndim)
 
         if isinstance(h, np.ndarray):
             assert(h.ndim == 1 or h.ndim == 2 or h.ndim == 3),\
@@ -107,7 +113,7 @@ class ANNNI(SpinModelFC):
         if isinstance(n, int):
             n = [n,1]
 
-        self.n = np.ndarray(n)
+        self.n = np.array(n, dtype=int)
 
         ## Set boundaries:
         #self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
@@ -115,29 +121,39 @@ class ANNNI(SpinModelFC):
         _interations, _external_fields= self._get_Jh(J, k, h)
 
         # convert all input to np array to be sure
-        #super().__init__(   "GridQubit", 
-        #                    self.n,
-        #                    _interations,
-        #                    _external_fields,
-        #                    [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-        #                    [cirq.X],
-        #                    t)
+        super().__init__(   "GridQubit", 
+                            self.n,
+                            _interations,
+                            _external_fields,
+                            [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
+                            [cirq.X],
+                            t)
         self.energy_fields = ["X"]
     
     def _get_boundaries(self,J,k, boundaries):
         if boundaries is not None:
             if isinstance(boundaries, int):
-                return [boundaries, 1]
+                assert(self.n[0] == 1 or self.n[1] == 1),\
+                    "Error in ANNNI _get_boundaries: arbitraryto which direct boundary condition should be applied, given n not 1D"
+                if self.n[0] == 1:
+                    return np.array([1, boundaries])
+                else:
+                    return np.array([boundaries, 1])
             else:
-                boundaries
+                np.array(boundaries)
         else:
             if isinstance(J, np.ndarray):
                 # 1D case or generic J.ndim = 5 case
                 if J.ndim == 1:
-                    return np.array((self.n[0] - np.size(J), 1))
+                    if self.n[0] == 1:
+                        return np.array((1,self.n[1] - np.size(J)))
+                    else:
+                        #self.n[1] == 1
+                        return np.array((self.n[0] - np.size(J), 1))
                 else:
                     return np.array((self.n[0] - J.shape[0], self.n[1] - J.shape[1]))
-            elif isinstance(J, Tuple[np.ndarray,np.ndarray]):
+            elif isinstance(J, tuple):
+                # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
                 # 2D case
                 return np.array((self.n[0] - J[0].shape[0], self.n[1] - J[1].shape[1]))
             else:
@@ -145,12 +161,17 @@ class ANNNI(SpinModelFC):
                 # boundaries information needs to be given in k
                 if isinstance(k, np.ndarray):
                     if k.ndim == 1:
-                        return np.array((self.n[0] - np.size(k), 1))
+                        if self.n[0] == 1:
+                            return np.array((1,(self.n[1] - np.size(k))/2))
+                        else:
+                            #self.n[1] == 1
+                            return np.array(((self.n[0] - np.size(k))/2, 1))
                     else:
-                        return np.array((self.n[0] -k.shape[0], self.n[1] - k.shape[1]))
+                        #k.ndim = 5
+                        return np.array(((self.n[0] -k.shape[0])/2, (self.n[1] - k.shape[1])/2))
                 else:
                     # 2D case
-                    return np.array((self.n[0] - k[0].shape[0], self.n[1] - k[1].shape[1]))
+                    return np.array(((self.n[0] - k[0].shape[0])/2, (self.n[1] - k[1].shape[1])/2))
 
     def _get_Jh(self, J, k, h):
         """
@@ -161,22 +182,40 @@ class ANNNI(SpinModelFC):
         """
         if isinstance(J, Real):
             _NN_array = J*self._get_neighbour_graph(1)         
-        elif isinstance(J, Real): 
-            _NN_array = J 
+        elif isinstance(J, tuple): 
+            # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
+            #_NN_filter = self._get_neighbour_graph(1) 
+            #Multiply elementwise the coeeficents in j_v, j_h tuple
+            _NN_array = self._get_neighbour_graph(1, coefficents=J)
+        elif J.ndim == 1:
+            #_NN_filter = self._get_neighbour_graph(1) 
+            #Multiply elementwise the coeeficents in j_v, j_h tuple
+            _NN_array = self._get_neighbour_graph(1, coefficents=J)
         else:
             #J.ndim == 5 and isinstance(J, np.ndarray)
             _NN_array = J 
-        
-        if k.ndim == 5:
-            _NNN_array = k
+            
+        if isinstance(k, Real):
+            _NNN_array = k*self._get_neighbour_graph(2)         
+        elif isinstance(k, tuple): 
+            # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
+            #_NN_filter = self._get_neighbour_graph(1) 
+            #Multiply elementwise the coeeficents in j_v, j_h tuple
+            _NNN_array = self._get_neighbour_graph(2, coefficents=k)
+        elif k.ndim == 1:
+            #_NN_filter = self._get_neighbour_graph(1) 
+            #Multiply elementwise the coeeficents in j_v, j_h tuple
+            _NNN_array = self._get_neighbour_graph(2, coefficents=k)
         else:
+            #k.ndim == 5 and isinstance(k, np.ndarray)
+            _NNN_array = k
 
         if isinstance(h, Real):
-            _h_array = h * np.ones((self.n[0]-self.boundaries[0],
-                                    self.n[1]-self.boundaries[1],
-                                    1))
+            _h_array = h * np.ones((1,
+                                    self.n[0],
+                                    self.n[1]))
         elif h.dim == 2:
-            _h_array = h[:, :, np.newaxis]
+            _h_array = h[np.newaxis,:, :, ]
         else:
             #h.ndim == 3
             _h_array = h
@@ -184,10 +223,64 @@ class ANNNI(SpinModelFC):
         return [_NN_array+_NNN_array, _h_array]
             
     def _get_neighbour_graph(   self,
-                                neighbour_distance: int) -> np.ndarray:
-        _neighbour_array = np.zeros((self.n[0]-self.boundaries[0],
-        1))
+                                neighbour_distance: int,
+                                coefficents: Optional[np.ndarray] = None) -> np.ndarray:
+        _neighbour_array = np.zeros((   self.n[0],
+                                        self.n[1],
+                                        self.n[0],
+                                        self.n[1]))
+        if coefficents is None:
+            _tmp0 = np.ones((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
+                                self.n[1]))
+            _tmp1 = np.ones((   self.n[0],
+                                int(max(1, self.n[1]-neighbour_distance*self.boundaries[1]))))
+            coefficents = [_tmp0, _tmp1]
+        elif isinstance(coefficents, tuple):
+            coefficents = np.array(coefficents)
+        elif coefficents.ndim == 1:
+            if self.n[0] == 1:
+                _tmp0 = np.zeros((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
+                                self.n[1]))
+                coefficents = [_tmp0, coefficents[np.newaxis, :]]
+            else:
+                #self.n[1] == 1
+                _tmp1 = np.zeros((   self.n[0],
+                                int(max(1, self.n[1]-neighbour_distance*self.boundaries[1]))))
+                coefficents = [coefficents[:, np.newaxis], _tmp1]
 
+        print("coefficents[0][0,0]: {}".format(coefficents[1][0,0]))
+        #bulk terms
+        for n0 in range(max(1, self.n[0]-neighbour_distance)):
+            for n1 in range(max(1,self.n[1]-neighbour_distance)):
+                
+                print("n0: {},n1: {}".format(n0,n1))
+                if self.n[0]-neighbour_distance > 0:
+                    print("test")
+                    _neighbour_array[n0,n1,n0+neighbour_distance, n1] = coefficents[0][n0,n1]
+                    _neighbour_array[n0+neighbour_distance,n1,n0, n1] = coefficents[0][n0,n1]
+
+                if self.n[1]-neighbour_distance > 0:
+                    print("test2")
+                    _neighbour_array[n0,n1,n0, n1+neighbour_distance] = coefficents[1][n0,n1]
+                    _neighbour_array[n0,n1+neighbour_distance,n0, n1] = coefficents[1][n0,n1]
+
+        #periodic boundary 
+        # The condition 2*neighbour_distance < self.n[0]
+        # Prevents us from double counting the same coupling
+        if self.boundaries[0] == 0 and 2*neighbour_distance < self.n[0]:
+            for n0 in range(neighbour_distance):
+                for n1 in range(self.n[1]-neighbour_distance):
+                    _neighbour_array[n0,n1,n0-neighbour_distance, n1] = coefficents[0, -n0,n1]
+                    _neighbour_array[n0-neighbour_distance,n1,n0, n1] = coefficents[0, -n0,n1]
+
+        if self.boundaries[1] == 0 and 2*neighbour_distance < self.n[1]:
+            for n0 in range(self.n[0]-neighbour_distance):
+                for n1 in range(neighbour_distance):
+                    _neighbour_array[n0,n1-neighbour_distance,n0, n1] = coefficents[1, n0, -n1]
+                    _neighbour_array[n0,n1,n0, n1-neighbour_distance] = coefficents[1, n0, -n1]
+
+        print(_neighbour_array.shape)
+        return _neighbour_array[np.newaxis, :,:,:,:]
 
 
     """
