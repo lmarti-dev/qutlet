@@ -253,7 +253,21 @@ def BangBangProtocol(self) -> None:
     if(self.cooling_type == "NA"):
         for system in [cool_x, cool_y, cool_z]:
             #Trotter Layer
-            c.append( system.trotter.get_trotter_circuit_from_hamiltonian(system, system.hamiltonian, system.t, q, m) )
+            if hasattr(system.trotter, "options"):
+                _tmp_trotter_options = system.trotter.options.copy()
+            else:
+                _tmp_trotter_options = {}
+            system.trotter.options = {    "append": False,
+                        "return": True,
+                        "hamiltonian": system._hamiltonian,
+                        "trotter_number" : m,
+                        "trotter_order" : q,
+                        "t0": 0, 
+                        "tf": system.t}
+            c.append( system.trotter.set_circuit(system) )
+            system.trotter.options = _tmp_trotter_options
+            #Trotter Layer
+            #c.append( system.trotter.get_trotter_circuit_from_hamiltonian(system, system.hamiltonian, system.t, q, m) )
             #Reset Layer
             c.append( self.cooling._reset_layer(self) )
         yield c * self.cooling.options["time_steps"]

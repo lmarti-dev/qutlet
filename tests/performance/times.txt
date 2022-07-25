@@ -8027,3 +8027,33 @@ Test Adam + ExpectationValue
 Sequential Time: 12.407718420028687
 Parallel Time: 4.433701038360596
 
+===Sa, 23 Jul 2022 01:51:52 +0000===
+Test No Indices 
+
+Sequential Time: 2.570213556289673
+Parallel Time: 3.728102922439575
+
+===Sa, 23 Jul 2022 01:52:11 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.128859758377075
+Parallel Time: 4.804260730743408
+
+===Sa, 23 Jul 2022 01:52:22 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.417205572128296
+Parallel Time: 3.211602210998535
+
+===Sa, 23 Jul 2022 01:52:53 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 22.98495864868164
+Parallel Time: 7.668239593505859
+
+===Sa, 23 Jul 2022 01:53:10 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 12.21536922454834
+Parallel Time: 4.448323726654053
+
