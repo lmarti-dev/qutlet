@@ -89,8 +89,8 @@ class ANNNI(SpinModelFC):
         self.__name__ = "ANNNI"
         
         if boundaries is None:
-            print("isinstance(J, (int, float)): {}".format(isinstance(J, (int, float))) )
-            print("isinstance(k, (int, float)): {}".format(isinstance(k, (int, float)) ))
+            #print("isinstance(J, (int, float)): {}".format(isinstance(J, (int, float))) )
+            #print("isinstance(k, (int, float)): {}".format(isinstance(k, (int, float)) ))
             assert not (isinstance(J, (int, float)) and isinstance(k, (int, float))),\
                 "Error in ANNNI constructor: both J = {} and k = {} are provided as Numbers but no boundary condition was given".format(J,k)
 
@@ -101,7 +101,7 @@ class ANNNI(SpinModelFC):
                 "Error in ANNNI constructor: J must be Number, Tuple[np.array, np.array] or np.ndarray with ndim 1 or 5, ndim of provided J is {}".format(J.ndim)
 
         if isinstance(k, np.ndarray):
-            print("k: {}\nk.ndim: {}".format(k, k.ndim))
+            #print("k: {}\nk.ndim: {}".format(k, k.ndim))
             assert(k.ndim == 1 or k.ndim == 5),\
                 "Error in ANNNI constructor: k must be Number, Tuple[np.array, np.array] or np.ndarray with ndim 1 or 5, ndim of provided k is {}".format(k.ndim)
 
@@ -116,9 +116,9 @@ class ANNNI(SpinModelFC):
 
         ## Set boundaries:
         #self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
-        print("boundaries: {}".format(boundaries))
+        #print("boundaries: {}".format(boundaries))
         self.boundaries = self._get_boundaries(J,k, boundaries)
-        print("self.boundaries: {}".format(self.boundaries))
+        #print("self.boundaries: {}".format(self.boundaries))
         assert (self.boundaries is not None),"Error in ANNNI constructor: Retrieving boundary conditions from J or k failed"
         _interations, _external_fields= self._get_Jh(J, k, h)
 
@@ -146,8 +146,8 @@ class ANNNI(SpinModelFC):
             else:
                 return np.array(boundaries)
         else:
-            print("J: {}\nk: {}".format(J,k))
-            print("type(J): {}\ntype(k): {}".format(type(J),type(k)))
+            #print("J: {}\nk: {}".format(J,k))
+            #print("type(J): {}\ntype(k): {}".format(type(J),type(k)))
             if isinstance(J, np.ndarray):
                 # 1D case or generic J.ndim = 5 case
                 if J.ndim == 1:
@@ -246,10 +246,10 @@ class ANNNI(SpinModelFC):
                                         self.n[0],
                                         self.n[1]))
         if coefficents is None:
-            print("self.n: {}".format(self.n))
-            print("self.boundaries: {}".format(self.boundaries))
-            print("neighbour_distance: {}".format(neighbour_distance))
-            print("int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])): {}".format(int(max(1, self.n[0]-neighbour_distance*self.boundaries[0]))))
+            #print("self.n: {}".format(self.n))
+            #print("self.boundaries: {}".format(self.boundaries))
+            #print("neighbour_distance: {}".format(neighbour_distance))
+            #print("int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])): {}".format(int(max(1, self.n[0]-neighbour_distance*self.boundaries[0]))))
             _tmp0 = np.ones((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
                                 self.n[1]))
             _tmp1 = np.ones((   self.n[0],
@@ -269,7 +269,7 @@ class ANNNI(SpinModelFC):
                                 int(max(1, self.n[1]-neighbour_distance*self.boundaries[1]))))
                 coefficents = [coefficents[:, np.newaxis], _tmp1]
 
-        print("coefficents:\n{}\n".format(coefficents))
+        #print("coefficents:\n{}\n".format(coefficents))
         
         #bulk terms
         #n0 direction
@@ -295,14 +295,14 @@ class ANNNI(SpinModelFC):
                     _neighbour_array[n0,n1,n0-neighbour_distance, n1] = coefficents[0][-n0,n1]
                     _neighbour_array[n0-neighbour_distance,n1,n0, n1] = coefficents[0][-n0,n1]
 
-        print("self.boundaries[1]: {}\t2*neighbour_distance: {}\tself.n[1]: {}".format(self.boundaries[1], 2*neighbour_distance, self.n[1]) )
+        #print("self.boundaries[1]: {}\t2*neighbour_distance: {}\tself.n[1]: {}".format(self.boundaries[1], 2*neighbour_distance, self.n[1]) )
         if self.boundaries[1] == 0 and 2*neighbour_distance < self.n[1]:
             for n0 in range(max(1, self.n[0])):
                 for n1 in range(neighbour_distance):
                     _neighbour_array[n0,n1-neighbour_distance,n0, n1] = coefficents[1][n0, -n1]
                     _neighbour_array[n0,n1,n0, n1-neighbour_distance] = coefficents[1][n0, -n1]
 
-        print(_neighbour_array.shape)
+        #print(_neighbour_array.shape)
         return _neighbour_array[np.newaxis, :,:,:,:]
 
 
