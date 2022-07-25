@@ -1,5 +1,6 @@
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.models.adiabatic import Adiabatic
+from fauvqe.models.annni import ANNNI
 from fauvqe.models.cooled_adiabatic import CooledAdiabatic
 from fauvqe.models.coolingmodel import CoolingModel
 from fauvqe.models.drivenmodel import DrivenModel
