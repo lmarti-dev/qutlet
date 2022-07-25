@@ -48,7 +48,7 @@ from fauvqe import ANNNI, Converter, Ising
         ),
     ]
 )
-def test_constructor(n, J, k, h, boundaries, hamiltonian):
+def test_constructor_hamiltonian(n, J, k, h, boundaries, hamiltonian):
     annni_obj = ANNNI(n, J, k, h, boundaries)
 
     assert annni_obj.qubittype == "GridQubit"
@@ -60,6 +60,7 @@ def test_constructor(n, J, k, h, boundaries, hamiltonian):
 @pytest.mark.parametrize(
     "n, J, k, h, boundaries, expected_boundaries",
     [
+        # Convert/use given boundary boundaries by shape of k
         (
             2,
             1,
@@ -77,6 +78,23 @@ def test_constructor(n, J, k, h, boundaries, hamiltonian):
             np.array([1,0]),
         ),
         (
+            [2,2],
+            1,
+            1,
+            1,
+            [1,1],
+            np.array([1,1]),
+        ),
+        # Set boundaries by shape of J
+        (
+            3,
+            np.ones((3)),
+            1,
+            1,
+            None,
+            np.array([0,1]),
+        ),
+        (
             [1,3],
             np.ones((2)),
             1,
@@ -92,6 +110,15 @@ def test_constructor(n, J, k, h, boundaries, hamiltonian):
             None,
             np.array([1,0]),
         ),
+        (
+            [2,3],
+            [np.ones((2,3)),np.ones((2,2))],
+            1,
+            1,
+            None,
+            np.array([0,1]),
+        ),
+        # Set boundaries by shape of k
         (
             [1,5],
             1,

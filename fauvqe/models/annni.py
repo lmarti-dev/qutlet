@@ -117,7 +117,9 @@ class ANNNI(SpinModelFC):
 
         ## Set boundaries:
         #self.boundaries = np.array((self.n[0] - j_v.shape[1], self.n[1] - j_h.shape[2]))
+        print("boundaries: {}".format(boundaries))
         self.boundaries = self._get_boundaries(J,k, boundaries)
+        print("self.boundaries: {}".format(self.boundaries))
         _interations, _external_fields= self._get_Jh(J, k, h)
 
         # convert all input to np array to be sure
@@ -140,8 +142,10 @@ class ANNNI(SpinModelFC):
                 else:
                     return np.array([boundaries, 1])
             else:
-                np.array(boundaries)
+                return np.array(boundaries)
         else:
+            print("J: {}\nk: {}".format(J,k))
+            print("type(J): {}\ntype(k): {}".format(type(J),type(k)))
             if isinstance(J, np.ndarray):
                 # 1D case or generic J.ndim = 5 case
                 if J.ndim == 1:
@@ -152,7 +156,7 @@ class ANNNI(SpinModelFC):
                         return np.array((self.n[0] - np.size(J), 1))
                 else:
                     return np.array((self.n[0] - J.shape[0], self.n[1] - J.shape[1]))
-            elif isinstance(J, tuple):
+            elif isinstance(J, (list, tuple)):
                 # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
                 # 2D case
                 return np.array((self.n[0] - J[0].shape[0], self.n[1] - J[1].shape[1]))
@@ -182,7 +186,7 @@ class ANNNI(SpinModelFC):
         """
         if isinstance(J, Real):
             _NN_array = J*self._get_neighbour_graph(1)         
-        elif isinstance(J, tuple): 
+        elif isinstance(J, (list, tuple)): 
             # this should be Tuple[np.ndarray,np.ndarray] but fails in isinstance
             #_NN_filter = self._get_neighbour_graph(1) 
             #Multiply elementwise the coeeficents in j_v, j_h tuple
@@ -230,13 +234,18 @@ class ANNNI(SpinModelFC):
                                         self.n[0],
                                         self.n[1]))
         if coefficents is None:
+            print("self.n: {}".format(self.n))
+            print("self.boundaries: {}".format(self.boundaries))
+            print(neighbour_distance)
+            print("int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])): {}".format(int(max(1, self.n[0]-neighbour_distance*self.boundaries[0]))))
             _tmp0 = np.ones((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
                                 self.n[1]))
             _tmp1 = np.ones((   self.n[0],
                                 int(max(1, self.n[1]-neighbour_distance*self.boundaries[1]))))
             coefficents = [_tmp0, _tmp1]
-        elif isinstance(coefficents, tuple):
-            coefficents = np.array(coefficents)
+        elif isinstance(coefficents, (list,tuple)):
+            #essentially pass, but here due to symmetry/overview
+            coefficents = coefficents
         elif coefficents.ndim == 1:
             if self.n[0] == 1:
                 _tmp0 = np.zeros((   int(max(1, self.n[0]-neighbour_distance*self.boundaries[0])),
@@ -270,14 +279,14 @@ class ANNNI(SpinModelFC):
         if self.boundaries[0] == 0 and 2*neighbour_distance < self.n[0]:
             for n0 in range(neighbour_distance):
                 for n1 in range(self.n[1]-neighbour_distance):
-                    _neighbour_array[n0,n1,n0-neighbour_distance, n1] = coefficents[0, -n0,n1]
-                    _neighbour_array[n0-neighbour_distance,n1,n0, n1] = coefficents[0, -n0,n1]
+                    _neighbour_array[n0,n1,n0-neighbour_distance, n1] = coefficents[0][-n0,n1]
+                    _neighbour_array[n0-neighbour_distance,n1,n0, n1] = coefficents[0][-n0,n1]
 
         if self.boundaries[1] == 0 and 2*neighbour_distance < self.n[1]:
             for n0 in range(self.n[0]-neighbour_distance):
                 for n1 in range(neighbour_distance):
-                    _neighbour_array[n0,n1-neighbour_distance,n0, n1] = coefficents[1, n0, -n1]
-                    _neighbour_array[n0,n1,n0, n1-neighbour_distance] = coefficents[1, n0, -n1]
+                    _neighbour_array[n0,n1-neighbour_distance,n0, n1] = coefficents[1][n0, -n1]
+                    _neighbour_array[n0,n1,n0, n1-neighbour_distance] = coefficents[1][n0, -n1]
 
         print(_neighbour_array.shape)
         return _neighbour_array[np.newaxis, :,:,:,:]
