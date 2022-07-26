@@ -236,7 +236,7 @@ class ANNNI(SpinModelFC):
             #h.ndim == 3
             _h_array = h
 
-        return [_NN_array+_NNN_array, _h_array]
+        return [_NN_array-_NNN_array, _h_array]
             
     def _get_neighbour_graph(   self,
                                 neighbour_distance: int,

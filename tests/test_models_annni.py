@@ -42,7 +42,7 @@ from fauvqe import ANNNI, Converter, Ising
             1,
             1,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(i+1,0)) for i in range(3-1)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(i+2,0)) for i in range(3-2)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(i+2,0)) for i in range(3-2)]) +
             cirq.PauliSum.from_pauli_strings([-cirq.X(cirq.GridQubit(i,0)) for i in range(3)]),
         ),
         (
@@ -52,7 +52,7 @@ from fauvqe import ANNNI, Converter, Ising
             0.8,
             1,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+1,5),0)) for i in range(5-1)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+2,5),0)) for i in range(5-2)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+2,5),0)) for i in range(5-2)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(i,0)) for i in range(5)]),
         ),
         (
@@ -62,7 +62,7 @@ from fauvqe import ANNNI, Converter, Ising
             0.8,
             1,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+1,5))) for i in range(5-1)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+2,5))) for i in range(5-2)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+2,5))) for i in range(5-2)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(0,i)) for i in range(5)]),
         ),
         (
@@ -72,7 +72,7 @@ from fauvqe import ANNNI, Converter, Ising
             0.8,
             0,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+1,5),0)) for i in range(5)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+2,5),0)) for i in range(5)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(i,0))*cirq.Z(cirq.GridQubit(np.mod(i+2,5),0)) for i in range(5)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(i,0)) for i in range(5)]),
         ),
         (
@@ -82,7 +82,7 @@ from fauvqe import ANNNI, Converter, Ising
             0.8,
             0,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+1,5))) for i in range(5)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+2,5))) for i in range(5)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(0,i))*cirq.Z(cirq.GridQubit(0,np.mod(i+2,5))) for i in range(5)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(0,i)) for i in range(5)]),
         ),
         (
@@ -113,7 +113,7 @@ from fauvqe import ANNNI, Converter, Ising
             1,
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j+1,i)) for i in range(3) for j in range(2-1)]) +
             cirq.PauliSum.from_pauli_strings([-cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+1))  for i in range(3-1) for j in range(2)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+2))  for i in range(3-2) for j in range(2)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+2))  for i in range(3-2) for j in range(2)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(j,i)) for i in range(3) for j in range(2)]),
         ),
     ]
@@ -139,7 +139,7 @@ def test_constructor_hamiltonian(n, J, k, h, boundaries, hamiltonian):
             1,
             cirq.PauliSum.from_pauli_strings([-0.7*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j+1,i)) for i in range(3) for j in range(2-1)]) +
             cirq.PauliSum.from_pauli_strings([-0.7*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+1))  for i in range(3-1) for j in range(2)]) +
-            cirq.PauliSum.from_pauli_strings([-0.5*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+2))  for i in range(3-2) for j in range(2)]) +
+            cirq.PauliSum.from_pauli_strings([+0.5*cirq.Z(cirq.GridQubit(j,i))*cirq.Z(cirq.GridQubit(j,i+2))  for i in range(3-2) for j in range(2)]) +
             cirq.PauliSum.from_pauli_strings([-0.8*cirq.X(cirq.GridQubit(j,i)) for i in range(3) for j in range(2)]),
         ),
     ]
