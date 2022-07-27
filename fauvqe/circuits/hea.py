@@ -303,7 +303,8 @@ def set_symbols(self):
                     #2qubit cases
                     #Here: only count number of parameters. 
                     if self.hea.options.get("is_fully_connected") != True:
-                        for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
+                        #for j in range(np.size(self.j_v[:,:,0]) + np.size(self.j_h[:,:,0])):
+                        for j in range(2*self.n[0]*self.n[1] - (self.n[0]*self.boundaries[1]+self.n[1]*self.boundaries[0])):
                             temp2Q.append(self.hea.__get_sympy_Symbol(self, variable,i,j))
                                 #sympy.Symbol(variable + str(i) + "_" + str(j)))
                     else:
