@@ -215,25 +215,24 @@ def _TwoQubit_layer(self, i, g):
                     v_mask[j] = variable + str(i) + "_" + str(i_p) + "_v"
                     h_mask[j] = variable + str(i) + "_" + str(i_p) + "_h"
                     j +=1
-                
+                #print(gate_variables)
                 v_v = []
                 for l in range(self.n[0]-self.boundaries[0]):
                     temp = []
                     for j in range(self.n[1]):
-                        temp.append([self.hea.__get_sympy_Symbol(self, v_mask[0],l,j),
-                                     self.hea.__get_sympy_Symbol(self, v_mask[1],l,j)])
+                        temp.append([self.hea.__get_sympy_Symbol(self, v_mask[i_v_mask],l,j) for i_v_mask in range(len(v_mask))])
                     #print("temp:\n {}".format(temp))
                     v_v.append(temp)
                 #print("v_v:\n {}".format(v_v))
-
+                
                 v_h = []
                 for l in range(self.n[0]):
                     temp = []
                     for j in range(self.n[1]-self.boundaries[1]):
-                        temp.append([self.hea.__get_sympy_Symbol(self, h_mask[0],l,j),
-                                     self.hea.__get_sympy_Symbol(self, h_mask[1],l,j)])
+                        temp.append([self.hea.__get_sympy_Symbol(self, h_mask[i_h_mask],l,j) for i_h_mask in range(len(h_mask))])
                     #print("temp:\n {}".format(temp))
                     v_h.append(temp)
+                #print(h_mask)
                 #print("v_h:\n {}".format(v_h))  
                 #temp = [gate_variables for i in range(self.n[1]-self.boundaries[1])]
                 #v_h = [temp for i in range(self.n[0])]
