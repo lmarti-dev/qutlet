@@ -30,7 +30,7 @@ def set_circuit(self) -> None:
     if isinstance(self.trotter.options['q'], int):
         self.circuit.append(self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
     else:
-        self.circuit.append(self.trotter.get_product_formula(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
+        self.circuit.append(self.trotter.options['m'] * self.trotter.get_product_formula(self, self.hamiltonian, self.t/self.trotter.options['m'], self.trotter.options['q']))
 
 def get_trotter_circuit_from_hamiltonian(self, hamiltonian: cirq.PauliSum, t: Real, q: np.uint, m: np.uint) -> cirq.Circuit:
     """
@@ -125,13 +125,13 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
         res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
     return res
 
-def get_product_formula(self, hamiltonian: cirq.PauliSum, t: Real, fractions: np.ndarray, m: np.uint):
+def get_product_formula(self, hamiltonian: cirq.PauliSum, t: Real, fractions: np.ndarray):
     res = cirq.Circuit()
     for i in reversed(range(len(fractions))):
-        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
+        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t, 2) )
     for i in range(1, len(fractions)):
-        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
-    return m*res
+        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t, 2) )
+    return res
 
 def get_parameters(self, name: str='', delim: str = ','):
     if(name == ''):
