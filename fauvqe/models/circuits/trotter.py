@@ -3,6 +3,7 @@ This is a submodule for instances of AbstractModel and for the UtCost objective
 Include here methods that help generating Trotterized time evolutions
 """
 # external import
+from collections.abc import Iterable
 import numpy as np
 import cirq
 from numbers import Real
@@ -20,13 +21,16 @@ def set_circuit(self) -> None:
         void
     """
     #assert Trotter order and Trotter number are Integers
-    assert isinstance(self.trotter.options['q'], int), "Trotter order q must be Integer. Received: {}".format(q)
-    assert isinstance(self.trotter.options['m'], int), "Trotter number m must be Integer. Received: {}".format(m)
+    assert isinstance(self.trotter.options['q'], int) or isinstance(self.trotter.options['q'], Iterable), "Trotter order q must be Integer or an Iterable over fractions. Received: {}".format(self.trotter.options['q'])
+    assert isinstance(self.trotter.options['m'], int), "Trotter number m must be Integer. Received: {}".format(self.trotter.options['m'])
     #Reset circuit
     if not self.trotter.options['append']:
         self.circuit = cirq.Circuit()
     #Call helper function that generates a circuit from the Hamiltonian PauliSum
-    self.circuit.append(self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
+    if isinstance(self.trotter.options['q'], int):
+        self.circuit.append(self.trotter.get_trotter_circuit_from_hamiltonian(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
+    else:
+        self.circuit.append(self.trotter.get_product_formula(self, self.hamiltonian, self.t, self.trotter.options['q'], self.trotter.options['m']))
 
 def get_trotter_circuit_from_hamiltonian(self, hamiltonian: cirq.PauliSum, t: Real, q: np.uint, m: np.uint) -> cirq.Circuit:
     """
@@ -120,6 +124,14 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
         #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
         res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
     return res
+
+def get_product_formula(self, hamiltonian: cirq.PauliSum, t: Real, fractions: np.ndarray, m: np.uint):
+    res = cirq.Circuit()
+    for i in reversed(range(len(fractions))):
+        res.append( self.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
+    for i in range(1, len(fractions)):
+        res.append( self.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
+    return m*res
 
 def get_parameters(self, name: str='', delim: str = ','):
     if(name == ''):
