@@ -208,6 +208,60 @@ def test_get_heisenbergfc_trotter_params(n, J, J2, options, t, sol):
     print(sol)
     assert (abs(params - sol) < 1e-13).all()
 
+
+@pytest.mark.parametrize(
+    "trotter_opt, prod_opt",
+    [
+        (
+            {
+                "q":2,
+                "m":1,
+            },
+            {
+                "q":[1],
+                "m":1,
+            }
+        ),
+        (
+            {
+                "q":2,
+                "m":1,
+            },
+            {
+                "q":[1],
+                "m":1,
+            }
+        ),
+    ]
+)
+def test_product_formulas(trotter_opt, prod_opt):
+    n=[2, 1]
+    boundaries = [1, 1]
+    J=1
+    h=2
+    t=1.0
+    ising = Ising("GridQubit", n, 
+        J*np.ones((n[0]-boundaries[0], n[1])), 
+        J*np.ones((n[0], n[1]-boundaries[1])), 
+        h*np.ones((n[0], n[1])),
+        t=t
+    )
+    ising.set_circuit("trotter", trotter_opt)
+    ising2 = Ising("GridQubit", n, 
+        J*np.ones((n[0]-boundaries[0], n[1])), 
+        J*np.ones((n[0], n[1]-boundaries[1])), 
+        h*np.ones((n[0], n[1])),
+        t=t
+    )
+    ising2.set_circuit("trotter", prod_opt)
+
+    assert ising.circuit == ising2.circuit, "Circuits do not coincide... \nCircuit 1:\n{}\nCircuit 2:\n{}".format(ising.circuit, ising2.circuit)
+
+
+###########################################################
+#                        Test Errors                      #
+###########################################################
+
 @pytest.mark.parametrize(
     "n, boundaries, J, h, options, t",
     [
