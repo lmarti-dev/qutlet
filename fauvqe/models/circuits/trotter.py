@@ -128,9 +128,9 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
 def get_product_formula(self, hamiltonian: cirq.PauliSum, t: Real, fractions: np.ndarray, m: np.uint):
     res = cirq.Circuit()
     for i in reversed(range(len(fractions))):
-        res.append( self.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
+        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
     for i in range(1, len(fractions)):
-        res.append( self.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
+        res.append( self.trotter.get_single_step_trotter_circuit_from_hamiltonian(self, hamiltonian, fractions[i]*t/m, 2) )
     return m*res
 
 def get_parameters(self, name: str='', delim: str = ','):
