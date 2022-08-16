@@ -1,10 +1,22 @@
 # external imports
 import pytest
 import numpy as np
-import scipy
+import math
 
 # internal imports
 from fauvqe import Ising, HeisenbergFC, UtCost
+
+###########################################################
+#                       Helper Functions                  #
+###########################################################
+
+def fac(q):
+    return 1/(4 - 4**(1/(q-1)))
+
+
+###########################################################
+#                       Test Logic                        #
+###########################################################
 
 @pytest.mark.parametrize(
     "n, boundaries, field, options, t",
@@ -224,12 +236,108 @@ def test_get_heisenbergfc_trotter_params(n, J, J2, options, t, sol):
         ),
         (
             {
-                "q":2,
+                "q":4,
                 "m":1,
             },
             {
-                "q":[1],
+                "q":[1-4*fac(4), fac(4), fac(4)],
                 "m":1,
+            }
+        ),
+        (
+            {
+                "q":6,
+                "m":1,
+            },
+            {
+                "q":[
+                        (1-4*fac(4))*(1-4*fac(6)), fac(4)*(1-4*fac(6)), fac(4)*(1-4*fac(6)), 
+                        fac(4)*fac(6), fac(4)*fac(6), (1-4*fac(4))*fac(6), fac(4)*fac(6), fac(4)*fac(6),
+                        fac(4)*fac(6), fac(4)*fac(6), (1-4*fac(4))*fac(6), fac(4)*fac(6), fac(4)*fac(6)
+                    ],
+                "m":1,
+            }
+        ),
+        (
+            {
+                "q":8,
+                "m":1,
+            },
+            {
+                "q":[
+                        (1-4*fac(4))*(1-4*fac(6))*(1-4*fac(8)), fac(4)*(1-4*fac(6))*(1-4*fac(8)), fac(4)*(1-4*fac(6))*(1-4*fac(8)), 
+                        fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), (1-4*fac(4))*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)),
+                        fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), (1-4*fac(4))*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), (1-4*fac(4))*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), (1-4*fac(4))*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                    ],
+                "m":1,
+            }
+        ),
+        (
+            {
+                "q":2,
+                "m":3,
+            },
+            {
+                "q":[1],
+                "m":3,
+            }
+        ),
+        (
+            {
+                "q":4,
+                "m":3,
+            },
+            {
+                "q":[1-4*fac(4), fac(4), fac(4)],
+                "m":3,
+            }
+        ),
+        (
+            {
+                "q":6,
+                "m":3,
+            },
+            {
+                "q":[
+                        (1-4*fac(4))*(1-4*fac(6)), fac(4)*(1-4*fac(6)), fac(4)*(1-4*fac(6)), 
+                        fac(4)*fac(6), fac(4)*fac(6), (1-4*fac(4))*fac(6), fac(4)*fac(6), fac(4)*fac(6),
+                        fac(4)*fac(6), fac(4)*fac(6), (1-4*fac(4))*fac(6), fac(4)*fac(6), fac(4)*fac(6)
+                    ],
+                "m":3,
+            }
+        ),
+        (
+            {
+                "q":8,
+                "m":3,
+            },
+            {
+                "q":[
+                        (1-4*fac(4))*(1-4*fac(6))*(1-4*fac(8)), fac(4)*(1-4*fac(6))*(1-4*fac(8)), fac(4)*(1-4*fac(6))*(1-4*fac(8)), 
+                        fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), (1-4*fac(4))*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)),
+                        fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), (1-4*fac(4))*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)), fac(4)*fac(6)*(1-4*fac(8)),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), (1-4*fac(4))*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), (1-4*fac(4))*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8), fac(4)*(1-4*fac(6))*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                        fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8), (1-4*fac(4))*fac(6)*fac(8), fac(4)*fac(6)*fac(8), fac(4)*fac(6)*fac(8),
+                    ],
+                "m":3,
             }
         ),
     ]
@@ -254,8 +362,10 @@ def test_product_formulas(trotter_opt, prod_opt):
         t=t
     )
     ising2.set_circuit("trotter", prod_opt)
-
-    assert ising.circuit == ising2.circuit, "Circuits do not coincide... \nCircuit 1:\n{}\nCircuit 2:\n{}".format(ising.circuit, ising2.circuit)
+    print(len(ising.circuit))
+    print(len(ising2.circuit))
+    assert len(ising.circuit) == len(ising2.circuit), "Circuits do not coincide... \nCircuit 1:\n{}\nCircuit 2:\n{}".format(ising.circuit, ising2.circuit)
+    assert np.linalg.norm(ising.circuit.unitary() - ising2.circuit.unitary()) < 1e-7, "Unitaries does not coincide... \nUnitary 1:\n{}\nUnitary 2:\n{}".format(ising.circuit.unitary(), ising2.circuit.unitary())
 
 
 ###########################################################
