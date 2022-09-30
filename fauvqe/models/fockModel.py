@@ -8,6 +8,7 @@ from fauvqe.models.abstractmodel import AbstractModel
 import fauvqe.utils as utils
 import openfermion as of 
 import cirq
+import scipy
 
 class FockModel(AbstractModel):
     r"""
@@ -30,19 +31,19 @@ class FockModel(AbstractModel):
     operator: Symbolic operator instance, not necessarily a complete hamiltonian, could simply be 1^0 say
 
     """
-    def __init__(self,
+    def __init__(self,*,
                 qubittype,
                 n,
-                encoding_name: str,
-                qubit_maps: Tuple[Callable],
-                fock_maps: Tuple[Callable]
+                qubit_maps: Tuple[Callable]=None,
+                fock_maps: Tuple[Callable]=None,
+                encoding_options: dict
                 ):
         super().__init__(qubittype=qubittype,
                          n=n)
         self.fock_hamiltonian: of.SymbolicOperator=None
-        self.encoding_name=encoding_name
         self.qubit_maps=qubit_maps
         self.fock_maps=fock_maps
+        self.encoding_options=encoding_options
 
         # get the fock hamiltonian
         self._set_fock_hamiltonian()
@@ -64,14 +65,16 @@ class FockModel(AbstractModel):
     def flattened_qubits(self):
         """This function flattens the self.qubits (in case the qubittype is grid), since
         cirq has a lot of issues dealing with GridQubits in nested lists.
-        Note that it simply returns a flattened list.
+        The returned list is a reference of the qubits, so you can append a cicuit
+        to flattened qubits, and it will be applied to qubits 
+        
         ie
 
         1 2 3
         4 5 6       to         1 2 3 4 5 6 7 8 9
         7 8 9
         """
-        if self.qubittype=="GridQubit":
+        if self.qubittype=="GridQubit" and isinstance(self.qubits[0],list):
             return utils.flatten_qubits(self.qubits)
         else:
             return self.qubits
@@ -112,7 +115,10 @@ class FockModel(AbstractModel):
         hamiltonian_sparse = of.get_sparse_operator(self.fock_hamiltonian)
         # can be FermionOperator, QubitOperator, DiagonalCoulombHamiltonian, PolynomialTensor, BosonOperator, QuadOperator
         # this is the general openfermion method but it works for Boson and Fermions so I guess it can stay in fock
-        return of.linalg.eigenspectrum(hamiltonian_sparse)
+        return of.sparse_eigenspectrum(hamiltonian_sparse)
+
+
+
 
     def get_expectation(self,observables):
         return self.simulator.simulate_expectation_values(program=self.circuit,
@@ -131,12 +137,13 @@ class FockModel(AbstractModel):
     def evaluate(self,observables: cirq.PauliSum):
         # this fails if the circuit has unused qubits, as they will not appear in circuit.qubits
         # and the validation methods will think the circuit has not the same qbits as the (hamiltonian) cirq.PauliSum
-        
         try:
             expectation=self.get_expectation(observables)
         except ValueError:
+            raise NotImplementedError("Need to check this")
             self.add_missing_qubits()
             expectation=self.get_expectation(observables)
         return expectation
+
 
 

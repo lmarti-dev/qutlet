@@ -7,8 +7,9 @@ from fauvqe.models.fermiHubbard import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 from fauvqe.models.abstractmodel import AbstractModel
 import fauvqe.utils as utils
-import fauvqe.cirq_utils as cqutils
+import fauvqe.utils_cirq as cqutils
 import numpy as np
+import itertools
 
 def generic_ansatz(model: AbstractModel,layers,ansatz: callable):
     circuit = cirq.Circuit()
@@ -59,25 +60,23 @@ def triangle_potato_ansatz(model: FermionicModel,layers=1):
         return circuit,symbols
     generic_ansatz(model=model,layers=layers,ansatz=ansatz)
 
-def totally_connected(model: FermionicModel,layers=1):
+def totally_connected_ansatz(model: FermionicModel,layers=1):
     def ansatz(model: FermionicModel,symbols,layers):
-        assert model.qubittype == "GridQubit"
-        qubits = model.qubits
-        
+        qubits = model.flattened_qubits
+        Nq = len(qubits)
         circuit=cirq.Circuit()
+        perms = list(itertools.combinations(range(Nq),2))
         for layer in range(layers):
             layer_symbols=[]
-            layer_symbols.append(sympy.Symbol("theta_{}".format(layer)))
-            layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
-            sub_op_tree=[]
-            Nq=len(qubits)-1
-            for a in range(2)
-            for iii in range(a,Nq,2):
 
-                    qi = qubits[jjj]
-                    qj = qubits[jjj+1]
-                    sub_op_tree.append(cirq.FSimGate(theta=layer_symbols[-2],phi=layer_symbols[-1]).on(qi,qj))
-            circuit.append(sub_op_tree,strategy=InsertStrategy.NEW_THEN_INLINE)
+            sub_op_tree=[]
+            for ni,nj in perms:
+                layer_symbols.append(sympy.Symbol("theta_{l}_{ni}_{nj}".format(l=layer,ni=ni,nj=nj)))
+                layer_symbols.append(sympy.Symbol("phi_{l}_{ni}_{nj}".format(l=layer,ni=ni,nj=nj)))
+                qi = qubits[ni]
+                qj = qubits[nj]
+                sub_op_tree.append(cirq.FSimGate(theta=layer_symbols[-2],phi=layer_symbols[-1]).on(qi,qj))
+            circuit.append(sub_op_tree,strategy=InsertStrategy.EARLIEST)
             symbols.append(layer_symbols)
         return circuit,symbols
     generic_ansatz(model=model,layers=layers,ansatz=ansatz)

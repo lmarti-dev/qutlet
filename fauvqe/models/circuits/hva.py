@@ -6,6 +6,8 @@ import openfermion as of
 import sympy
 from fauvqe.models.fermiHubbard import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
+
+import fauvqe.utils_cirq as cqutils
 import fauvqe.utils as utils
 import numpy as np
 
@@ -28,76 +30,58 @@ and discussed also in arXiv:2112.02025 [quant-ph] (we follow the last two)
 def set_circuit(model: FermiHubbardModel,layers=1):
     if model.qubittype != "GridQubit":
         raise NotImplementedError("HVA not implemented for qubittype {}".format(model.qubittype))
-    if model.encoding_name == "jordan_wigner":
+    if model.encoding_options["encoding_name"] == "jordan_wigner":
         circuit=cirq.Circuit()
-        # returns 0 if the longest edge is x(rows) else 1, if it is y(columns)
-        # 0 if sectors are split by a vertical boundary and 1 if they are split by a horizontal boundary
-        swap_axis = 0 if model.x_dimension >= model.y_dimension else 1
-        # returns 0 if the vertical bridges are end-even, beginning-odd (for the first sector)
-        # and returns 1 if thy are end-odd beginning-even
-        vertical_bridges = 0 if max((model.x_dimension,model.y_dimension))%2==0 else 1
         symbols=[]
-
+        # this circuit only works for models laid out like so:
+        # u1 d1 u2 d2 
+        # u3 d3 u4 d4
+        rows = False # means precisely this because we do not weave rows but columns
         for layer in range(layers):
-            
             layer_symbols=[]
+            layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
+            add_op_tree_as_circuit(main_circuit=circuit,
+                                    op_tree=alternating_onsites(model,phi=layer_symbols[-1]),
+                                    strategy=InsertStrategy.EARLIEST
+                                )       
+            add_op_tree_as_circuit(main_circuit=circuit,
+                                    op_tree=weave_sectors(model=model,
+                                                            rows=rows,
+                                                            unweave=True),
+                                    strategy=InsertStrategy.EARLIEST
+                                )       
+
             layer_symbols.append(sympy.Symbol("theta_h{}".format(layer)))
             # performs all horizontal hoppings (odd and even)
             add_op_tree_as_circuit(main_circuit=circuit,
                                     op_tree=horizontal_hoppings(model=model,
-                                                        swap_axis=swap_axis,
                                                         theta=layer_symbols[-1]),
                                     strategy=InsertStrategy.EARLIEST
                                 )
-            if min((model.x_dimension,model.y_dimension)) > 1:
+            if model.n[0] > 1:
                 # perform all vertical hoppings
-                n_minor=int(model.n[1-swap_axis])
                 layer_symbols.append(sympy.Symbol("theta_v{}".format(layer)))
-                for n_swaps in range(int(n_minor/2)):
-                    #  do multiple only if you have more than 2 sites on the horizontal hop axis
-                    if n_minor/2 > 2:
-                        add_op_tree_as_circuit(main_circuit=circuit,
-                                                op_tree=Ul(model=model,swap_axis=swap_axis),
-                                                strategy=InsertStrategy.EARLIEST
-                                        )
+                for Np in range(int(model.n[1]/2)):
                     add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=Ur(model=model,swap_axis=swap_axis),
+                                            op_tree=Ul(model),
                                             strategy=InsertStrategy.EARLIEST
-                                        )
+                                            )                    
+                    add_op_tree_as_circuit(main_circuit=circuit,
+                                            op_tree=Ur(model),
+                                            strategy=InsertStrategy.EARLIEST
+                                            )
                     add_op_tree_as_circuit(main_circuit=circuit,
                                             op_tree=vertical_hoppings(model=model,
-                                            swap_axis=swap_axis,
-                                            vertical_bridges=vertical_bridges,
-                                            theta=layer_symbols[-1]),
+                                                                theta=layer_symbols[-1]),
                                             strategy=InsertStrategy.EARLIEST
-                                        )
-            layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
-            if min((model.x_dimension,model.y_dimension)) == 1:
-                # perform only one onsite if you have a 1-by-N since ups and downs should already be neighbours
-                add_op_tree_as_circuit(main_circuit=circuit,
-                                        op_tree=alternating_onsites(model=model,swap_axis=swap_axis,phi=layer_symbols[-1]),
-                                        strategy=InsertStrategy.EARLIEST
-                                    )
-            else:
-                # put down spins next to up spins 
-                add_op_tree_as_circuit(main_circuit=circuit,
-                                        op_tree=spin_sectors_to_alternate(model=model,
-                                                                            swap_axis=swap_axis,
-                                                                            unweave=False),
-                                        strategy=InsertStrategy.EARLIEST
-                                    )
-                # perform onsite
-                add_op_tree_as_circuit(main_circuit=circuit,
-                                        op_tree=alternating_onsites(model=model,swap_axis=swap_axis,phi=layer_symbols[-1]),
-                                        strategy=InsertStrategy.EARLIEST
-                                    )
-                # put them back 
-                add_op_tree_as_circuit(main_circuit=circuit,
-                                        op_tree=spin_sectors_to_alternate(model=model,
-                                                                            swap_axis=swap_axis,
-                                                                            unweave=True),
-                                        strategy=InsertStrategy.EARLIEST
-                                   )
+                                            )
+            add_op_tree_as_circuit(main_circuit=circuit,
+                        op_tree=weave_sectors(model=model,
+                                            rows=rows,
+                                            unweave=False),
+                        strategy=InsertStrategy.EARLIEST
+                    )       
+
             symbols.append(layer_symbols)
         
         # give everything to the model
@@ -107,7 +91,7 @@ def set_circuit(model: FermiHubbardModel,layers=1):
             model.circuit_param_values = np.array([])
         model.circuit_param_values=np.concatenate((model.circuit_param_values,np.zeros(np.size(symbols))))
     else:
-        raise NotImplementedError("No hva implementation for encoding: {}".format(model.encoding_name))        
+        raise NotImplementedError("No hva implementation for encoding: {}".format(model.encoding_options["encoding_name"]))        
 
 
 def add_op_tree_as_circuit(main_circuit,op_tree,strategy=InsertStrategy.NEW_THEN_INLINE):
@@ -116,146 +100,170 @@ def add_op_tree_as_circuit(main_circuit,op_tree,strategy=InsertStrategy.NEW_THEN
     main_circuit.append(temp_circuit)
 
 # weave up and down spin sectors
-def spin_sectors_to_alternate(model,swap_axis,unweave=False):
+def weave_sectors(model,rows,unweave=False):
     op_tree=[]
-    n_minor=int(model.n[1-swap_axis])
-    for nj in range(1,int(n_minor/2)):
+    
+    Nj,Ni = model.n
+    if rows:
+        Ni,Nj = Nj,Ni 
+    for nj in range(1,Nj):
             sub_op_tree=[]
-            for index in range(nj,n_minor-nj,2):
+            for index in range(nj,Ni-nj,2):
                 sub_op_tree.append(swap_row_or_column(model=model,
                                                     index=index,
                                                     left=False,
-                                                    row=bool(swap_axis))
-                                )
+                                                    row=rows))
             op_tree.append(sub_op_tree)
     if not unweave:
         op_tree = reversed(op_tree)
     return op_tree
 
 
-def U_right_left(model,swap_axis,left: bool):
+def U_right_left(model,left: bool):
     op_tree=[]
-    n_minor=int(model.n[1-swap_axis])
-    for nj in range(1,n_minor-(1-int(left)),2):
+    Nj = model.n[1] # should ALWAYS be even
+    for nj in range(1,Nj-(1-int(left)),2):
         # no fswapping up and down sector edges
-        if (left and nj == n_minor/2) or (not left and nj == n_minor/2-1):
+        if (left and nj == Nj/2) or (not left and nj == Nj/2-1):
             pass
         else:
-            op_tree.append(fswap_row_or_column(model=model,index=nj,left=left,row=bool(swap_axis)))
+            op_tree.append(fswap_row_or_column(model=model,index=nj,left=left,row=False))
     return op_tree
 
-def Ul(model,swap_axis): 
+def Ul(model): 
     return U_right_left(model=model,
-                        swap_axis=swap_axis,
                         left=True)
-def Ur(model,swap_axis): 
+def Ur(model): 
     return U_right_left(model=model,
-                        swap_axis=swap_axis,
                         left=False)
 
-def alternating_onsites(model,swap_axis,phi=0):
+def alternating_onsites(model,phi=0):
 # applies onsite terms given that spins are alternating
     op_tree=[]
-    n_minor=int(model.n[1-swap_axis])
-    n_major=int(model.n[swap_axis])
-    for ni in range(n_major):
-        for nj in range(0,n_minor-1,2):
-            if bool(swap_axis):
-                op_tree.append(onsite(model.qubits[nj][ni],model.qubits[nj+1][ni],phi=phi))
-            else:
-                op_tree.append(onsite(model.qubits[ni][nj],model.qubits[ni][nj+1],phi=phi))
+    Ni, Nj = model.n
+    for ni in range(Ni):
+        for nj in range(0,Nj-1,2):
+            op_tree.append(onsite(model.qubits[ni][nj],model.qubits[ni][nj+1],phi=phi))
     return op_tree
 
-def vertical_hoppings(model,swap_axis,vertical_bridges,theta=0):
+def vertical_hoppings(model,theta=0):
     # vertical hopping at the allowed bridges
+    # if rows, the vertical hoppings are between columns, along the x-axis
     op_tree=[]
-    n_minor=int(model.n[swap_axis])
-    n_major=int(model.n[swap_axis])
-    for ni in range(0,n_major-1):
-        inout = (ni + vertical_bridges) % 2
-        if bool(1-swap_axis):
-            if inout:
-                op_tree.append(hopping(model.qubits[ni][0],model.qubits[ni+1][0],theta=theta))
-                op_tree.append(hopping(model.qubits[ni][-1],model.qubits[ni+1][-1],theta=theta))
-            else:
-                op_tree.append(hopping(model.qubits[ni][int(n_minor/2-1)],model.qubits[ni+1][int(n_minor/2-1)],theta=theta))
-                op_tree.append(hopping(model.qubits[ni][int(n_minor/2)],model.qubits[ni+1][int(n_minor/2)],theta=theta))
-        elif bool(swap_axis):
-            if inout:
-                op_tree.append(hopping(model.qubits[0][ni],model.qubits[0][ni+1],theta=theta))
-                op_tree.append(hopping(model.qubits[-1][ni],model.qubits[-1][ni+1],theta=theta))
-            else:
-                op_tree.append(hopping(model.qubits[int(n_minor/2-1)][ni],model.qubits[int(n_minor/2-1)][ni+1],theta=theta))
-                op_tree.append(hopping(model.qubits[int(n_minor/2)][ni],model.qubits[int(n_minor/2)][ni+1],theta=theta))
+    Ni, Nj = model.n
+    inner_index = int(Nj/2) # should ALWAYS be int
+    assert inner_index == Nj/2
+    starts_inside = Ni%2
+    for ni in range(0,Ni-1):
+            # get the ventral pair of the outer pair of indices
+            iii = starts_inside*inner_index 
+            op_tree.append(hopping(model.qubits[ni][iii],model.qubits[ni+1][iii],theta=theta))
+            op_tree.append(hopping(model.qubits[ni][iii-1],model.qubits[ni+1][iii-1],theta=theta))
+            starts_inside = (starts_inside + 1)%2
+
     return op_tree
 
-def horizontal_hoppings(model,swap_axis,theta=0):
-    n_minor=int(model.n[1-swap_axis])
-    n_major=int(model.n[swap_axis])
+def horizontal_hoppings(model,theta=0):
+    # if rows the horizontal hoppings are across rows, along the y-axis
+    Ni, Nj = model.n
     op_tree=[]
     for odd_even in range(2):
         sub_op_tree=[]
-        for ni in range(0,n_major):
-            for nj in range(odd_even,n_minor-1,2):
+        for ni in range(0,Ni):
+            for nj in range(odd_even,Nj-1,2):
                 # no hopping between up and down
-                if nj == n_minor/2-1 and bool(odd_even):
+                if nj == Nj/2-1 and bool(odd_even):
                     pass
                 else:
-                    if bool(1-swap_axis):
-                        sub_op_tree.append(hopping(model.qubits[ni][nj],model.qubits[ni][nj+1],theta=theta))
-                    else:
-                        sub_op_tree.append(hopping(model.qubits[nj][ni],model.qubits[nj+1][ni],theta=theta))
+                    sub_op_tree.append(hopping(model.qubits[ni][nj],model.qubits[ni][nj+1],theta=theta))
         op_tree.extend(sub_op_tree)
     return op_tree
 
+class HoppingGate(cirq.Gate):
+    def __init__(self, theta):
+        super(HoppingGate, self)
+        self.theta = theta
+
+    def _num_qubits_(self):
+        return 2
+
+    def _unitary_(self):
+        return np.array([
+            [1,0,0,0],
+            [0, np.cos(self.theta/2), -1j*np.sin(self.theta/2),0],
+            [0,-1j*np.sin(self.theta/2), np.cos(self.theta/2),0],
+            [0,0,0,1]
+        ])
+
+    def _circuit_diagram_info_(self, args):
+        return f"Hop({self.theta})"
+
 def hopping(qi: cirq.Qid, qj: cirq.Qid,theta=0):
     op_tree=[]
-    op_tree.append((cirq.Rz(rads=-np.pi/4).on(qi),
-                    cirq.Rz(rads=np.pi/4).on(qj)))
-    op_tree.append(cirq.SQRT_ISWAP(qi,qj))
-    op_tree.append((cirq.Rz(rads=np.pi+theta/2).on(qi),
-                    cirq.Rz(rads=-theta/2).on(qj)))
-    op_tree.append(cirq.SQRT_ISWAP(qi,qj))
-    op_tree.append((cirq.Rz(rads=np.pi*5/4).on(qi),
-                    cirq.Rz(rads=-np.pi/4).on(qj)))
+    # op_tree.append((cirq.Rz(rads=-np.pi/4).on(qi),
+    #                 cirq.Rz(rads=np.pi/4).on(qj)))
+    # op_tree.append(cirq.SQRT_ISWAP(qi,qj))
+    # op_tree.append((cirq.Rz(rads=np.pi+theta/2).on(qi),
+    #                 cirq.Rz(rads=-theta/2).on(qj)))
+    # op_tree.append(cirq.SQRT_ISWAP(qi,qj))
+    # op_tree.append((cirq.Rz(rads=np.pi*5/4).on(qi),
+    #                 cirq.Rz(rads=-np.pi/4).on(qj)))
+    # op_tree.append(HoppingGate(theta=theta).on(qi,qj))
+    op_tree.append(cirq.ISwapPowGate(exponent=-2*theta).on(qi,qj))
     return op_tree
+
+
+class OnsiteGate(cirq.Gate):
+    def __init__(self, theta):
+        super(OnsiteGate, self)
+        self.theta = theta
+
+    def _num_qubits_(self):
+        return 2
+
+    def _unitary_(self):
+        return np.array([
+            [1,0,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [0,0,0,np.exp(1j*self.theta)]
+        ])
+
+    def _circuit_diagram_info_(self, args):
+        return f"Ons({self.theta})"
+
+
 
 def onsite(qi: cirq.Qid, qj: cirq.Qid,phi=0):
     op_tree=[]
-    nu = sympy.asin(sympy.sqrt(2)*sympy.sin(phi/2))
-    xi = sympy.atan(sympy.tan(nu)/sympy.sqrt(2))
-    op_tree.append((cirq.Rz(rads=phi/2).on(qi),
-                    cirq.Rz(rads=phi/2).on(qj)))
-    op_tree.append((cirq.Rx(rads=xi).on(qi),
-                    cirq.Rx(rads=-np.pi/2).on(qj)))
-    op_tree.append(cirq.Z(qi))
-    op_tree.append(cirq.SQRT_ISWAP(qi,qj))
-    op_tree.append((cirq.Z(qi),
-                    cirq.Rx(rads=-2*nu).on(qj)))
-    op_tree.append(cirq.SQRT_ISWAP(qi,qj))
-    op_tree.append((cirq.Rx(rads=xi).on(qi),
-                    cirq.Rx(rads=np.pi/2).on(qj)))
+    # nu = sympy.asin(sympy.sqrt(2)*sympy.sin(phi/2))
+    # xi = sympy.atan(sympy.tan(nu)/sympy.sqrt(2))
+    # op_tree.append((cirq.Rz(rads=phi/2).on(qi),
+    #                 cirq.Rz(rads=phi/2).on(qj)))
+    # op_tree.append((cirq.Rx(rads=xi).on(qi),
+    #                 cirq.Rx(rads=-np.pi/2).on(qj)))
+    # op_tree.append(cirq.Z(qi))
+    # op_tree.append(cirq.SQRT_ISWAP(qi,qj))
+    # op_tree.append((cirq.Z(qi),
+    #                 cirq.Rx(rads=-2*nu).on(qj)))
+    # op_tree.append(cirq.SQRT_ISWAP(qi,qj))
+    # op_tree.append((cirq.Rx(rads=xi).on(qi),
+    #                 cirq.Rx(rads=np.pi/2).on(qj)))
+    # op_tree.append(OnsiteGate(theta=phi).on(qi,qj))
+    op_tree.append(cirq.FSimGate(theta=0,phi=phi).on(qi,qj))
     return op_tree
 
 def hopswap(qi: cirq.Qid, qj: cirq.Qid):
     raise NotImplementedError
 
-def qubits_shape(qubits):
-    last_qubit = max(qubits)
-    if isinstance(last_qubit,cirq.LineQubit):
-        return last_qubit.x+1
-    elif isinstance(last_qubit,cirq.GridQubit):
-        return (last_qubit.row+1,last_qubit.col+1)
-
-
-def fswap_row_or_column(model,index,left,row):
+def fswap_row_or_column(model,index,left=True,row=True):
     return f_or_swap_row_or_column(model=model,
                                     index=index,
                                     left=left,
                                     row=row,
                                     fswap=True)
 
-def swap_row_or_column(model,index,left,row):
+def swap_row_or_column(model,index,left=True,row=True):
     return f_or_swap_row_or_column(model=model,
                                     index=index,
                                     left=left,
@@ -263,7 +271,7 @@ def swap_row_or_column(model,index,left,row):
                                     fswap=False)
 
 def f_or_swap_row_or_column(model,index,left=True,row=True,fswap=True):
-    (dimx,dimy) = qubits_shape(model.flattened_qubits)
+    (dimx,dimy) = cqutils.qubits_shape(model.flattened_qubits)
     if left and index < 1:
         raise ValueError("Cannot f/swap with left column when index is {}".format(index))
     dim_max = dimx if row else dimy
@@ -285,7 +293,7 @@ def f_or_swap_row_or_column(model,index,left=True,row=True,fswap=True):
 
 # don't use
 def fswap_all_rows_or_columns(model,even=True,rows=True):
-    (dimx,dimy) = qubits_shape(model.flattened_qubits)
+    (dimx,dimy) = cqutils.qubits_shape(model.flattened_qubits)
     op_tree=[]
     if even:
         a=1

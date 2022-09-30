@@ -20,7 +20,7 @@ from numbers import Number, Real
 import numpy as np
 import sympy
 import cirq
-import qsimcirq
+# import qsimcirq
 import timeit
 #import fastmat
 
@@ -151,53 +151,15 @@ class AbstractModel(Restorable):
         """
 
     # set simualtor to be written better, aka more general
-    def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}, dtype = np.complex64):
-        if simulator_name == "qsim":
-            """
-            Possible qsim options:
-                Used/Usful options:
-                't' : number of threads; default 't' 1
-                'f': fused gate, e.g. 'f': 4 fused gates to 4-qubit gates
-                        this can save MemoryBandwidth for more required calculations;
-                        default 'f': 2
-                qsimh options (Feynman simulator):
-                Simulate between pre and suffix gates and sum over all
-                pre and suffix gates
-                'k': gates on the cut;default 0
-                'w': ?;default 0
-                'v': ? ;default 0
-                'p': number of prefix gates;default 0
-                'r': number of root gates;default 0
-                'b':    bitstring
-                'i':    ?
-                'c':    ?
-                'ev'. parallel used for sample expectation values?
-                #'s': suffix gates p+r+s=k
-
-            More details: https://github.com/quantumlib/qsim
-
-            From https://github.com/quantumlib/qsim/blob/master/qsimcirq/qsimh_simulator.py:
-            def __init__(self, qsimh_options: dict = {}):
-                self.qsimh_options = {'t': 1, 'f': 2, 'v': 0}
-                self.qsimh_options.update(qsimh_options)
-            
-            cirq Simulator is configured via optional arguments sim_args:
-                dtype: Type[np.number] = np.complex64,
-                noise: "cirq.NOISE_MODEL_LIKE" = None,
-                seed: "cirq.RANDOM_STATE_OR_SEED_LIKE" = None,
-                split_untangled_states: bool = True
-            """
-            self.simulator_options = {"t": 8, "f": 4}
-            self.simulator_options.update(simulator_options)
-            self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
-        elif simulator_name == "cirq":
+    def set_simulator(self, simulator_name="cirq", simulator_options: dict = {}, dtype = np.complex64):
+        if simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator(dtype=dtype)
         elif simulator_name == "dm":
             self.simulator_options = {}
             self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
+            assert False, "Invalid simulator option, received {}, allowed is 'cirq'".format(
                 simulator_name
             )
 

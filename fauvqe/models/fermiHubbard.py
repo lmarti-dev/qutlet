@@ -1,10 +1,11 @@
 from __future__ import annotations
+from mimetypes import init
 
 import openfermion as of
 from typing import Callable, Dict, Tuple,Union,Sequence,Optional
 import cirq
 import numpy as np
-
+import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
 import fauvqe.utils as utils
@@ -14,88 +15,55 @@ class FermiHubbardModel(FermionicModel):
     implements VQEs on the Fermi-Hubbard Hamiltonian for a square lattice, using openfermion
 
     """
-    def __init__(self,
+    # bare * causes code to fail if everything is not keyworded
+    def __init__(self,*,
                 x_dimension: int,
                 y_dimension: int,
                 tunneling: float,
                 coulomb: float,
                 hamiltonian_options: Dict={"periodic":False},
-                hv_grid_qubits=2,
-                encoding_name: str="jordan_wigner",
-                qubit_maps: Tuple[Callable]= None,
-                fock_maps: Tuple= None,
-                Z_snake: Tuple=None
+                encoding_options: Dict = None,
+                **kwargs
                 ):
         
 
-        self.x_dimension=x_dimension
-        self.y_dimension=y_dimension
+        # always lay those horizontally -> the shorter dimension goes in y and the longest gets the boundary
+        # x_dimension (int): The width of the grid. y_dimension (int): The height of the grid
+        # while n is the size of the qubit grid.
+        self.x_dimension=min((x_dimension,y_dimension))
+        self.y_dimension=max((x_dimension,y_dimension))
         self.tunneling=tunneling
         self.coulomb=coulomb
-        self.hv_grid_qubits = hv_grid_qubits
         self.hamiltonian_options=hamiltonian_options
-        # decide whether to stack the spins horizontally or vertically
+        # always stack the spins horizontally 
         # ie
         #
-        # u d u d
-        # u d u d
-        # 
-        # or
-        # 
-        # u d
-        # u d
-        # u d
-        # u d
-        #
-        if self.hv_grid_qubits==0:
-            # horizontally
-            n=(x_dimension,2*y_dimension)
-        elif self.hv_grid_qubits==1:
-            # vertically
-            n=(2*x_dimension,y_dimension)
-        elif self.hv_grid_qubits==2:
-            # automatically
-            if x_dimension >= y_dimension:
-                n=(x_dimension,2*y_dimension)
-            else:
-                n=(2*x_dimension,y_dimension)
-        else:
-            raise ValueError("Invalid value for hv_grid_qubit. expected 0 or 1 but got {}".format(hv_grid_qubits))
-
-        # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
-        if encoding_name == "jordan_wigner":
-            if Z_snake is None:
-                # create canonical snake split between up and down regions
-                # the two sectors are concatenated along the long edge
-                # the snake covers the grid weaving along short edges
-                do_transpose = x_dimension<y_dimension
-                short,long = sorted((x_dimension,y_dimension))
-                Z_snake_up = utils.flip_cross_rows(np.reshape(np.arange(short*long),(long,short)),flip_odd=bool(long%2))
-                Z_snake_down = utils.flip_cross_rows(np.reshape(np.arange(short*long,2*short*long),(long,short)),flip_odd=1)
-                Z_snake_down=np.flip(Z_snake_down,axis=0)
-                Z_snake = np.concatenate((Z_snake_up,Z_snake_down),axis=1)
-                if do_transpose: 
-                    Z_snake = np.transpose(Z_snake)
-            # moves the spins into sectors ududud -> uuuddd
-            if fock_maps is None:
-                fock_maps = utils.alternating_indices_to_sectors(np.reshape(np.arange(2*x_dimension*y_dimension),n),axis=1).tolist()
-            # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
+        # u0 d0 u1 d1
+        # u2 d2 u3 d3
+        # flip for qubits so that indices are row-first
+        n=(self.y_dimension,2*self.x_dimension)
+        
+        
+        
+        if encoding_options is None:
+            # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
+            encoding_options={"encoding_name": "jordan_wigner"}
+            encoding_options["Z_snake"]=self.common_Z_snakes(name="weaved_double_s",dimx=self.x_dimension,dimy=self.y_dimension)                
+        # # moves the spins into sectors ududud -> uuuddd (only along the horizontal axis)
+        # if "fock_maps" not in kwargs.keys():
+        #     kwargs["fock_maps"] = utils.alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
+        #     # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
 
         super().__init__(n=n,
                         qubittype="GridQubit",
-                        encoding_name=encoding_name,
-                        qubit_maps=qubit_maps,
-                        fock_maps=fock_maps,
-                        Z_snake=Z_snake)
+                        encoding_options=encoding_options,
+                        **kwargs)
         
 
     def copy(self):
-        self_copy = FermiHubbardModel(x_dimension=self.x_dimension,
-                                    y_dimension=self.y_dimension,
-                                    tunneling=self.tunneling,
-                                    coulomb=self.coulomb,
-                                    **self.hamiltonian_options)
+        self_copy = copy.deepcopy(self)
         return self_copy
+
     def from_json_dict(self):
         pass
     def to_json_dict(self) -> Dict:
@@ -128,14 +96,21 @@ class FermiHubbardModel(FermionicModel):
                                                 coulomb=self.coulomb,
                                                 **self.hamiltonian_options)
 
+        # if for some reason the hamiltonian has no terms, turn it into an identity
+        if not self.fock_hamiltonian.terms:
+            self.fock_hamiltonian = of.FermionOperator.identity()
+
     def _get_initial_state(self,
                         name: str,
                         initial_state: Union[int, Sequence[int]],
                         Nf: int
                         ) -> cirq.OP_TREE:
+        self.Nf=Nf
+        self.initial_state_name = name
+        if name == "none":
+            return []
         if name == "gaussian":
-            tv=of.get_diagonal_coulomb_hamiltonian(self.fock_hamiltonian)
-            quadratic_hamiltonian=of.QuadraticHamiltonian(tv.one_body)
+            quadratic_hamiltonian=self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
             op_tree = of.prepare_gaussian_state(qubits=self.flattened_qubits,
                                     quadratic_hamiltonian=quadratic_hamiltonian,
                                     occupied_orbitals=list(range(Nf)),
@@ -147,6 +122,13 @@ class FermiHubbardModel(FermionicModel):
             op_tree=of.prepare_slater_determinant(qubits=self.flattened_qubits,
                                         slater_determinant_matrix=unitary_rows[:Nf,:],
                                         initial_state=initial_state)
+            return op_tree
+        elif name == "computational":
+            if isinstance(initial_state,int):
+                # convert int to bin and then index
+                initial_state = utils.index_bits(bin(initial_state))
+            self.Nf = len(initial_state)
+            op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
             return op_tree
         else:   
             raise NameError("No initial state named {}".format(name))
@@ -161,39 +143,35 @@ class FermiHubbardModel(FermionicModel):
         Args:
             name (str): the name of the type of initial state desired
             initial_state (Union[int, Sequence[int]], optional): the indices of qubits that start n the 1 state. Defaults to 0 (i.e. all flipped down).
-                                                                An int input will be converted to binary and interpreted as a computational basis vector
-                                                                e.g. 34 = 100010 means the first and fifth qubits are initialized at one.
+            An int input will be converted to binary and interpreted as a computational basis vector
+            e.g. 34 = 100010 means the first and fifth qubits are initialized at one.
             rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators. 
                                                                 Q diagonalizes Nf rows of the non-interacting hamiltonian
         """
         if Nf==None:
+            raise ValueError
             # if Nf is none, use half the Q matrix
             Nf = self.x_dimension*self.y_dimension
         if initial_state == None:
             # default initial state is all 0s
             initial_state = []
-        cirq.OP_TREE=self._get_initial_state(name=name,initial_state=initial_state,Nf=Nf)
-        self.circuit.append(cirq.OP_TREE)
+        op_tree=self._get_initial_state(name=name,initial_state=initial_state,Nf=Nf)
+        self.circuit.append(op_tree)
+
+    def get_quadratic_hamiltonian_wrapper(self,fermion_hamiltonian):
+        # not sure this is correct
+        # but in case the fermion operator is null (ie empty hamiltonian, get a zeros matrix)
+        if fermion_hamiltonian == of.FermionOperator.identity():
+            return of.QuadraticHamiltonian(np.zeros((np.prod(self.n),np.prod(self.n))))
+        quadratic_hamiltonian=of.get_quadratic_hamiltonian(fermion_hamiltonian)
+        return quadratic_hamiltonian
 
     def diagonalize_non_interacting_hamiltonian(self):
         # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
-        tv=of.get_diagonal_coulomb_hamiltonian(self.fock_hamiltonian)
-        """
-            only get the T part
-            the repartition of spin sectors on the matrix is as such:
-                u11 d11 u12 d12 u21 d21 u22 d22
-            u11 0   0   t   0   t   0   0   0
-            d11 0   0   0   t   0   t   0   0
-            u12
-            d12      ...
-            u21
-            d21
-            u22
-            d22
-        """
-        quadratic_hamiltonian=of.QuadraticHamiltonian(tv.one_body)
-        # get diagonalizing_bogoliubov_transform b_j = sum_i Q_ji a_i s.t H = bDb* with D diag.
-        # the bogoliubov transform conserves particle number, i.e. the bogops are single particle (i think?)
+        non_interacting_fock_hamiltonian=self.non_interacting_model.fock_hamiltonian
+        quadratic_hamiltonian=self.get_quadratic_hamiltonian_wrapper(non_interacting_fock_hamiltonian)
+        # get diagonalizing_bogoliubov_transform $b_j = \sum_i Q_{ji} a_i$ s.t $H = bDb*$ with $D$ diag.
+        # the bogoliubov transform conserves particle number, i.e. the bogops are single particle
         orbital_energies,unitary_rows,_ = quadratic_hamiltonian.diagonalizing_bogoliubov_transform()
         
         # sort them so that you get them in order 
@@ -203,19 +181,16 @@ class FermiHubbardModel(FermionicModel):
         orbital_energies = orbital_energies[idx]
 
         return orbital_energies,unitary_rows
-
     @property
-    def non_interacting_fock_hamiltonian(self) -> of.FermionOperator:
-        return of.fermi_hubbard(x_dimension=self.x_dimension,
+    def non_interacting_model(self) -> FermiHubbardModel:
+        return FermiHubbardModel(x_dimension=self.x_dimension,
                                 y_dimension=self.y_dimension,
                                 tunneling=self.tunneling,
                                 coulomb=0.0,
-                                **self.hamiltonian_options)
-    @property
-    def non_interacting_hamiltonian(self) -> cirq.PauliSum:
-        return FermiHubbardModel.encode_model(fermion_hamiltonian=self.non_interacting_fock_hamiltonian, 
-                                            qubits=self.flattened_qubits,
-                                            encoding_name=self.encoding_name)
+                                encoding_options=self.encoding_options,
+                                qubit_maps=self.qubit_maps,
+                                fock_maps=self.fock_maps,
+                                hamiltonian_options=self.hamiltonian_options)
     @staticmethod
     def snake_map(n,dimx,dimy):
         (x,y) = utils.linear_to_grid(n=n,dimx=dimx,dimy=dimy)
@@ -237,7 +212,16 @@ class FermiHubbardModel(FermionicModel):
         elif name == "columnmajor":
             indices=np.reshape(indices,(dimx,dimy),order="F")
             indices=utils.flip_cross_cols(indices)
-        
+        elif "double_s" in name:
+            # create canonical snake split between up and down regions
+            # the two sectors are concatenated along axis 1
+            # the snake covers the grid weaving along short edges
+            Z_snake_up = utils.flip_cross_rows(np.reshape(np.arange(dimy*dimx),(dimx,dimy)),flip_odd=bool(dimx%2))
+            Z_snake_down = utils.flip_cross_rows(np.reshape(np.arange(dimy*dimx,2*dimy*dimx),(dimx,dimy)),flip_odd=1)
+            Z_snake_down=np.flip(Z_snake_down,axis=0)
+            indices = np.concatenate((Z_snake_up,Z_snake_down),axis=1)
+            if name == "weaved_double_s":
+                indices=utils.sectors_to_alternating_indices(indices,axis=1)
         return list(utils.flatten(indices))
 
 
@@ -252,3 +236,28 @@ class FermiHubbardModel(FermionicModel):
         mat=mat.tolist()
         print(pauli_string)
         print("\n".join(["".join(row) for row in mat]))
+
+
+def eigenspectrum_at_particle_number(sparse_operator, particle_number,expanded=False):
+    n_qubits = int(np.log2(sparse_operator.shape[0]))
+    # Get the operator restricted to the subspace of the desired particle number
+    restricted_operator = of.jw_number_restrict_operator(sparse_operator,
+                                                      particle_number, n_qubits)
+    # Compute eigenvalues and eigenvectors
+    dense_restricted_operator = restricted_operator.toarray()
+    eigvals, eigvecs = np.linalg.eigh(dense_restricted_operator)
+    if expanded:
+        expanded_eigvecs=np.zeros((2**n_qubits,2**n_qubits), dtype=complex)
+        for iii in range(expanded_eigvecs.shape[-1]):
+            expanded_eigvecs[of.jw_number_indices(particle_number, n_qubits),iii] = eigvecs[:,iii]
+            return eigvals, expanded_eigvecs
+    return eigvals, eigvecs
+    
+def jw_get_true_ground_state_at_particle_number(sparse_operator, particle_number):
+    n_qubits = int(np.log2(sparse_operator.shape[0]))
+    eigvals, eigvecs = eigenspectrum_at_particle_number(sparse_operator, particle_number,expanded=False)
+    state = eigvecs[:, 0]
+    expanded_state = np.zeros(2**n_qubits, dtype=complex)
+    expanded_state[of.jw_number_indices(particle_number, n_qubits)] = state
+
+    return eigvals[0], expanded_state

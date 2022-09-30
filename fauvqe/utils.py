@@ -3,6 +3,10 @@ import numpy as np
 from itertools import chain
 import collections
 import sys 
+from datetime import datetime
+
+def now_str():
+    return datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
 
 def pi_kron(*args):
 	R=np.kron(args[0],args[1])
@@ -94,7 +98,7 @@ def alternating_indices_to_sectors(M,even_first: bool = True,axis=None) -> np.nd
     if axis is None:
         idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
     else:
-        idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) if axis == ind else np.arange(ii) for ind,ii in enumerate(dims))
+        idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) if axis==ind else np.arange(ii) for ind,ii in enumerate(dims))
     return M[np.ix_(*idxs)]
 
 def interweave(a, b)-> np.ndarray:
@@ -117,7 +121,7 @@ def interweave(a, b)-> np.ndarray:
             c.append(b[i])
     return c
 
-def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
+def sectors_to_alternating_indices(M,even_first: bool = True,axis=None) -> np.ndarray:
     """This function turns a matrix which has two "sectors" into an interwoven one
     i.e.
 
@@ -142,10 +146,15 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     """
     M=np.array(M)
     dims = M.shape
-    if even_first:
-        idxs = (np.array(interweave(np.arange(0,np.floor(ii/2)),np.arange(np.floor(ii/2),ii))).astype(int) for ii in dims)
-    else:
-        idxs = (np.array(interweave(np.arange(np.floor(ii/2),ii),np.arange(0,np.floor(ii/2)))).astype(int) for ii in dims)
+    idxs=[]
+    for ii in dims:
+        half1,half2=np.arange(0,np.floor(ii/2)),np.arange(np.floor(ii/2),ii)
+        if not even_first:
+            half1,half2=half2,half1
+        if axis is None:
+            idxs = (np.array(interweave(half1,half2)).astype(int) for ii in dims)
+        else:
+            idxs = (np.array(interweave(half1,half2)).astype(int) if axis==ind else np.arange(ii) for ind,ii in enumerate(dims))
     return M[np.ix_(*idxs)]
 
 def flip_cross(M,rc="r",flip_odd=True):
@@ -313,3 +322,51 @@ def linear_to_grid(n,dimx,dimy,horizontal=True):
     else:
         return np.unravel_index((n),(dimx,dimy),order="F")
 
+
+def pretty_convert_list(l):
+    ll=[]
+    for x in l:
+        ll.append(type_to_str(v=x,max_size=4))
+    return ll
+
+def type_to_str(v,max_size=4) -> str:
+    out_v=None
+    if isinstance(v,list):
+        if len(v) > max_size:
+            out_v = str(len(v))
+        else:
+            out_v = pretty_convert_list(v)
+    elif isinstance(v,np.ndarray):
+        if len(v.shape)==1:
+            if len(v)> max_size:
+                out_v = "list:"+str(len(v))
+            else:
+                out_v = pretty_convert_list(v)
+        else:
+            out_v = "ndarray:"+str(v.shape)
+    elif any(isinstance(v,t) for t in (str,int)):
+        out_v = str(v)
+    elif any(isinstance(v,t) for t in(float,np.double,np.float64,np.single)):
+        out_v = "{v:.3}".format(v=v)
+    elif any(isinstance(v,t) for t in (np.csingle,np.cdouble)):
+        out_v = "{r:.3}+j{i:.3}".format(r=np.real(v),i=np.imag(v))
+    else:
+        out_v = "unsupported type:{t}".format(t=type(v))
+    
+    return out_v
+
+
+def infodump_locals(locals,max_size=4):
+    infodump={}
+    for k,v in locals.items():
+        try:
+            if isinstance(v,type(np)) or v is None or "__" in k:
+                pass
+            else:
+                infodump[k]=type_to_str(v,max_size)
+        except ValueError:
+            infodump[k] = str(v)
+    return infodump
+    
+def normalize(v: np.ndarray) -> np.ndarray:
+    return v/np.linalg.norm(v)

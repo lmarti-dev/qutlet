@@ -18,22 +18,10 @@ class FermionicModel(FockModel):
 
     """
     def __init__(self,
-                qubittype: str,
-                n,
-                encoding_name: str,
-                qubit_maps:Tuple[Callable]=None,
-                fock_maps: Tuple=None,
-                Z_snake: Tuple=None
+                **kwargs
                 ):
-
-        #flatten it in case it's given as [[1 2][4 3]]
-        self.Z_snake=tuple(utils.flatten(Z_snake))
-
-        super().__init__(qubittype=qubittype,
-                        n=n,
-                        encoding_name=encoding_name,
-                        qubit_maps=qubit_maps,
-                        fock_maps=fock_maps)
+        
+        super().__init__(**kwargs)
 
         # this is a reminder of how up and down fermions are spread on the grid
         # the default value is the one given by the fermi_hubbard function, ie
@@ -105,7 +93,7 @@ class FermionicModel(FockModel):
             _type_: _description_
         """
         flat_fock_map_arr = tuple(utils.flatten(fock_map_arr))
-        FermionicModel.assert_map_matches_operator(flat_fock_map_arr,fermion_hamiltonian)
+        FermionicModel.assert_map_matches_operator(fermion_hamiltonian,flat_fock_map_arr)
         action_strings=fermion_hamiltonian.action_strings
         actions = fermion_hamiltonian.actions
         new_fermion_operator=of.FermionOperator()
@@ -129,29 +117,28 @@ class FermionicModel(FockModel):
             else:
                 raise ValueError(
                     "expected fock_maps to be either a tuple of functions or a tuple of indices but got: {}".format(type(self.fock_maps)))
-    def _set_hamiltonian(self, reset: bool = True):
+    def _set_hamiltonian(self, reset:bool=True):
         self.hamiltonian = self._encode_fock_hamiltonian()
 
     def _encode_fock_hamiltonian(self) -> cirq.PauliSum:
-        if self.Z_snake is not None:
+        if "Z_snake" in self.encoding_options.keys():
+            # flattened_Z_snake=list(utils.flatten(self.encoding_options["Z_snake"]))
+            # self.encoding_options["Z_snake"] = flattened_Z_snake
+            
             return self.mapped_encode_model(fermion_hamiltonian=self.fock_hamiltonian,
                                             qubits=self.flattened_mapped_qubits,
-                                            encoding_name=self.encoding_name,
-                                            Z_snake=self.Z_snake
+                                            encoding_name=self.encoding_options["encoding_name"],
+                                            Z_snake=self.encoding_options["Z_snake"]
                                             )
         return self.encode_model(fermion_hamiltonian=self.fock_hamiltonian,
                                             qubits=self.flattened_mapped_qubits,
-                                            encoding_name=self.encoding_name
+                                            encoding_name=self.encoding_options["encoding_name"]
                                             )
 
     def set_circuit(self,
                     qalgorithm: str
                     ):
-        # set fermions on qubits -> initial states -> h/v hopping - fswap loop -> onsite 
-        if qalgorithm == "hva":
-            raise NotImplementedError("Hamiltonian Variational Ansatz doesn't exist yet")
-        else:
-            raise NameError("{} is not a valid circuit".format(qalgorithm))
+        raise NameError("{} is not a valid circuit".format(qalgorithm))
     
     @staticmethod
     def mapped_jordan_wigner_fermion_operator(operator,Z_snake):
@@ -170,7 +157,7 @@ class FermionicModel(FockModel):
         # the Z_snake array follows the indices 
         # original code belongs to openfermion
 
-        FermionicModel.assert_map_matches_operator(Z_snake,operator)
+        FermionicModel.assert_map_matches_operator(operator,Z_snake)
         transformed_operator = of.QubitOperator()
         for term in operator.terms:
             # Initialize identity matrix.
@@ -192,9 +179,8 @@ class FermionicModel(FockModel):
         return transformed_operator
 
     @staticmethod
-    def assert_map_matches_operator(map_arr,operator):
-        assert np.array(sorted(map_arr) 
-                == sorted(FermionicModel.get_ops_action_indices(operator))).all()
+    def assert_map_matches_operator(operator,map_arr):
+        assert set(map_arr) >= set(FermionicModel.get_ops_action_indices(operator))
 
     @staticmethod
     def get_ops_action_indices(operator):
