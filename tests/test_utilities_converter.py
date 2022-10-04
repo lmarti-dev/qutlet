@@ -27,7 +27,7 @@ try:
 except:
     PyTrilinos_supported = False
 
-from fauvqe import Converter
+from fauvqe import ANNNI, Converter
 
 
   
@@ -175,6 +175,102 @@ def test_cirq_paulisum2scipy_crsmatrix_joblib(paulisum, true_diagonal):
     #To avoid slow down use diagonal matrixes/diagonal vectors for testing
     np.testing.assert_allclose(true_diagonal, scipy_crsmatrix.diagonal(), rtol=1e-14, atol=0)
 
+#
+#   Test Converter & ANNNI model
+#
+@pytest.mark.parametrize(
+    "n, b",
+    [
+        (
+            [1,4],
+            [1,1],
+        ),
+        (
+            [1,4],
+            [1,0],
+        ),
+        (
+            [2,3],
+            [1,1],
+        ),
+        (
+            [2,3],
+            [1,0],
+        ),
+        (
+            [3,3],
+            [1,1],
+        ),
+        (
+            [3,3],
+            [1,0],
+        ),
+        (
+            [3,3],
+            [0,0],
+        ),
+    ]
+)
+def test_ANNNI_cirq_paulisum2scipy_crsmatrix(n, b):
+    #print("n: {}\tb: {}".format(n,b))
+    J = float(2*np.random.random(1) - 1)
+    h = float(2*np.random.random(1) - 1)
+    kappa = float(2*np.random.random(1) - 1)
+
+    #print("J: {}\tkappa: {}".format(J,kappa))
+    
+    annni_obj = ANNNI(n, J, kappa, h, b)
+    #print(annni_obj.hamiltonian())
+    #print(np.diag(annni_obj.hamiltonian().matrix()))
+
+    converter_obj = Converter()
+    #scipy_sparse_obj = converter_obj.cirq_paulisum2scipy_crsmatrix(annni_obj.hamiltonian())
+    scipy_sparse_obj = converter_obj.cirq_paulisum2scipy_crsmatrix(annni_obj.hamiltonian())
+
+    np.testing.assert_allclose(np.diag(annni_obj.hamiltonian().matrix()), scipy_sparse_obj.diagonal(), rtol=1e-14, atol=1e-14)
+
+#@pytest.mark.higheffort
+@pytest.mark.parametrize(
+       "n, b",
+    [
+        (
+            [1,3],
+            [1,1],
+        ),
+        (
+            [1,4],
+            [1,0],
+        ),
+        (
+            [2,3],
+            [1,1],
+        ),
+        (
+            [2,3],
+            [1,0],
+        ),
+        (
+            [3,2],
+            [0,1],
+        ),
+    ]
+)
+def test_ANNNI_diagonalisation_consistency(n, b):
+    J = float(2*np.random.random(1) - 1)
+    h = float(2*np.random.random(1) - 1)
+    kappa = float(2*np.random.random(1) - 1)
+    annni_obj = ANNNI(n, J, kappa, h, b)
+    annni_obj.diagonalise()
+    dense_GS = annni_obj.eig_vec[:,0].copy()
+
+    converter_obj = Converter()
+    scipy_sparse_obj = converter_obj.cirq_paulisum2scipy_crsmatrix(annni_obj.hamiltonian())
+    annni_obj.diagonalise(matrix=scipy_sparse_obj)
+    sparse_GS = annni_obj.eig_vec[:,0]
+
+    print(abs(np.vdot(dense_GS,sparse_GS))**2)
+    assert (abs(np.vdot(dense_GS,sparse_GS))**2-1) < 1e-14
+    #cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(dense_GS, sparse_GS, rtol=1e-14, atol=1e-14)
 
 #############################################################
 #                                                           #
