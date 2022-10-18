@@ -1,3 +1,4 @@
+
 from typing import Tuple
 import cirq
 from cirq.circuits import InsertStrategy
@@ -10,8 +11,6 @@ from fauvqe.models.fermionicModel import FermionicModel
 import fauvqe.utils_cirq as cqutils
 import fauvqe.utils as utils
 import numpy as np
-
-
 
 """
 HAMILTONIAN VARIATIONAL ANSATZ
@@ -26,6 +25,7 @@ and discussed also in arXiv:2112.02025 [quant-ph] (we follow the last two)
 # you cannot and I repeat CANNOT create a circuit and set it in another circuit with any other insert strategy than "new"
 # thus parts of the circuits should not be converted to circuit.
 
+# it's the nth goshdarn time i redo this circuit. This time we go like z-string to s-string and then vertical hoppings along the whole thing.
 
 def set_circuit(model: FermiHubbardModel,layers=1):
     if model.qubittype != "GridQubit":
@@ -47,7 +47,8 @@ def set_circuit(model: FermiHubbardModel,layers=1):
             add_op_tree_as_circuit(main_circuit=circuit,
                                     op_tree=weave_sectors(model=model,
                                                             rows=rows,
-                                                            unweave=True),
+                                                            unweave=True,
+                                                            fswap=True),
                                     strategy=InsertStrategy.EARLIEST
                                 )       
 
@@ -59,26 +60,38 @@ def set_circuit(model: FermiHubbardModel,layers=1):
                                     strategy=InsertStrategy.EARLIEST
                                 )
             if model.n[0] > 1:
+                # reverse odd rows with swaps to get from Z to S snake
+                # and match even rows with FSWAPs to align corresponding indices
+                add_op_tree_as_circuit(main_circuit=circuit,
+                                            op_tree=ZtoS(model),
+                                            strategy=InsertStrategy.EARLIEST
+                                        )   
                 # perform all vertical hoppings
                 layer_symbols.append(sympy.Symbol("theta_v{}".format(layer)))
-                for Np in range(int(model.n[1]/2)):
+                for Np in range(int(model.n[1])):
                     add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=Ul(model),
+                                            op_tree=Ul(model,split=False),
                                             strategy=InsertStrategy.EARLIEST
                                             )                    
                     add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=Ur(model),
+                                            op_tree=Ur(model,split=False),
                                             strategy=InsertStrategy.EARLIEST
                                             )
                     add_op_tree_as_circuit(main_circuit=circuit,
                                             op_tree=vertical_hoppings(model=model,
-                                                                theta=layer_symbols[-1]),
+                                                                theta=layer_symbols[-1],
+                                                                split=False),
                                             strategy=InsertStrategy.EARLIEST
                                             )
+                add_op_tree_as_circuit(main_circuit=circuit,
+                            op_tree=ZtoS(model),
+                            strategy=InsertStrategy.EARLIEST
+                        )  
             add_op_tree_as_circuit(main_circuit=circuit,
                         op_tree=weave_sectors(model=model,
                                             rows=rows,
-                                            unweave=False),
+                                            unweave=False,
+                                            fswap=True),
                         strategy=InsertStrategy.EARLIEST
                     )       
 
@@ -94,13 +107,43 @@ def set_circuit(model: FermiHubbardModel,layers=1):
         raise NotImplementedError("No hva implementation for encoding: {}".format(model.encoding_options["encoding_name"]))        
 
 
+
+def ZtoS(model,split:bool=False):
+    op_tree=[]
+    Nx,Ny = model.n
+    for x in range(0,Nx):
+        sub_op_tree=[]
+        for y in range(Ny//2):
+            fswap = bool(1-x%2)
+            sub_op_tree.extend(f_or_swap_all_left(model,row_index=x,fswap=fswap,left=True))
+            sub_op_tree.extend(f_or_swap_all_left(model,row_index=x,fswap=fswap,left=False))
+        op_tree.extend(sub_op_tree)
+    return op_tree    
+
+
+def f_or_swap_all_left(model,row_index:int,left:bool,fswap:bool,split:bool=False):
+    Nx,Ny = model.n
+    il = -1 if left else 1
+    al=int(left)
+    op_tree=[]
+    if fswap:
+        qubit_op=of.FSWAP
+    else:
+        qubit_op=cirq.SWAP
+    # start at 1 otherwise left and not left are the same
+    for ny in range(1,Ny-(1-al),2):
+            if ((left and ny == Ny/2) or (not left and ny == Ny/2-1)) and split:
+                pass
+            else:
+                op_tree.append(qubit_op(model.qubits[row_index][ny],model.qubits[row_index][ny+il]))
+    return op_tree
 def add_op_tree_as_circuit(main_circuit,op_tree,strategy=InsertStrategy.NEW_THEN_INLINE):
     temp_circuit=cirq.Circuit()
     temp_circuit.append(op_tree,strategy=strategy)
     main_circuit.append(temp_circuit)
 
 # weave up and down spin sectors
-def weave_sectors(model,rows,unweave=False):
+def weave_sectors(model,rows,unweave:bool=False,fswap:bool=False):
     op_tree=[]
     
     Nj,Ni = model.n
@@ -109,33 +152,39 @@ def weave_sectors(model,rows,unweave=False):
     for nj in range(1,Nj):
             sub_op_tree=[]
             for index in range(nj,Ni-nj,2):
-                sub_op_tree.append(swap_row_or_column(model=model,
-                                                    index=index,
-                                                    left=False,
-                                                    row=rows))
+                if fswap:
+                    sub_op_tree.append(fswap_row_or_column(model=model,
+                                                        index=index,
+                                                        left=False,
+                                                        row=rows))
+                else:
+                    sub_op_tree.append(swap_row_or_column(model=model,
+                                                        index=index,
+                                                        left=False,
+                                                        row=rows))
             op_tree.append(sub_op_tree)
     if not unweave:
         op_tree = reversed(op_tree)
     return op_tree
 
 
-def U_right_left(model,left: bool):
+def U_right_left(model,left: bool,fswap:bool=True,split:bool=True):
     op_tree=[]
-    Nj = model.n[1] # should ALWAYS be even
-    for nj in range(1,Nj-(1-int(left)),2):
-        # no fswapping up and down sector edges
-        if (left and nj == Nj/2) or (not left and nj == Nj/2-1):
-            pass
-        else:
-            op_tree.append(fswap_row_or_column(model=model,index=nj,left=left,row=False))
+    Nx,_ = model.n # Ny should ALWAYS be even because it's 2*y
+    for nx in range(Nx):
+        op_tree.append(f_or_swap_all_left(model,row_index=nx,left=left,fswap=fswap,split=split))
     return op_tree
 
-def Ul(model): 
+def Ul(model,fswap:bool=True,split:bool=True): 
     return U_right_left(model=model,
-                        left=True)
-def Ur(model): 
+                        left=True,
+                        fswap=fswap,
+                        split=split)
+def Ur(model,fswap:bool=True,split:bool=True): 
     return U_right_left(model=model,
-                        left=False)
+                        left=False,
+                        fswap=fswap,
+                        split=split)
 
 def alternating_onsites(model,phi=0):
 # applies onsite terms given that spins are alternating
@@ -146,9 +195,22 @@ def alternating_onsites(model,phi=0):
             op_tree.append(onsite(model.qubits[ni][nj],model.qubits[ni][nj+1],phi=phi))
     return op_tree
 
-def vertical_hoppings(model,theta=0):
+def vertical_hoppings(model,theta=0,split:bool=True):
     # vertical hopping at the allowed bridges
     # if rows, the vertical hoppings are between columns, along the x-axis
+    if split:
+        return split_vertical_hoppings(model=model,theta=theta)
+    else:
+        return single_vertical_hoppings(model=model,theta=theta)
+def single_vertical_hoppings(model,theta):
+    op_tree=[]
+    Nx,_=model.n
+    for ni in range(0,Nx-1):
+            # get the ventral pair of the outer pair of indices
+            vertical_ind=ni%2-1
+            op_tree.append(hopping(model.qubits[ni][vertical_ind],model.qubits[ni+1][vertical_ind],theta=theta))
+    return op_tree
+def split_vertical_hoppings(model,theta):
     op_tree=[]
     Ni, Nj = model.n
     inner_index = int(Nj/2) # should ALWAYS be int

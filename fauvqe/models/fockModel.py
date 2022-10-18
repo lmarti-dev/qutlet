@@ -112,11 +112,7 @@ class FockModel(AbstractModel):
     def energy(self):
         # this function should probably not do this, since it gives the actual energy of the hamiltonian
         # and not the energy of the calculated energy??
-        hamiltonian_sparse = of.get_sparse_operator(self.fock_hamiltonian)
-        # can be FermionOperator, QubitOperator, DiagonalCoulombHamiltonian, PolynomialTensor, BosonOperator, QuadOperator
-        # this is the general openfermion method but it works for Boson and Fermions so I guess it can stay in fock
-        return of.sparse_eigenspectrum(hamiltonian_sparse)
-
+        raise NotImplementedError("Energy function doesnt exist")
 
 
 
@@ -144,6 +140,3 @@ class FockModel(AbstractModel):
             self.add_missing_qubits()
             expectation=self.get_expectation(observables)
         return expectation
-
-
-

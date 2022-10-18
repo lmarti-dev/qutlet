@@ -4,6 +4,10 @@ from itertools import chain
 import collections
 import sys 
 from datetime import datetime
+import os
+import io
+import re
+import json
 
 def now_str():
     return datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
@@ -370,3 +374,60 @@ def infodump_locals(locals,max_size=4):
     
 def normalize(v: np.ndarray) -> np.ndarray:
     return v/np.linalg.norm(v)
+
+def sum_divisible(l:list,i:int):
+    return sum([1 if x%i==0 else 0 for x in l])
+def sum_even(l):
+    return sum_divisible(l,2)
+def sum_odd(l):
+    return len(l) - sum_even(l)
+
+
+def ensure_fpath(fpath:os.PathLike):
+    """If the file path doesn't exist, create the necessary directories
+
+    Args:
+        fpath (os.PathLike): the file path (with the file at the end)
+    """
+    dirname = os.path.dirname(fpath)
+    if not os.path.exists(dirname): 
+        os.makedirs(dirname)
+
+
+def normalize_str(s: str):
+    return re.sub(r"\W","",s)
+
+def cap_first(s: str):
+    if len(s)==1:
+        return s[0].upper()
+    return s[0].upper() + s[1:]
+
+def random_name(lenw=5,Nwords=3):
+    word_file = "/usr/share/dict/words"
+    words = io.open(word_file,mode="r",encoding="utf8").read().splitlines()
+    words = [normalize_str(w) for w in words if len(w)==lenw]
+    indices = np.random.choice(len(words),Nwords,replace=True)
+    return "".join([cap_first(words[iii]) for iii in indices])
+
+
+def fidelity(a,b):
+    if np.all(a.shape != b.shape):
+        raise ValueError("vectors do not have the same shape a:{a},b:{b}".format(a=a.shape,b=b.shape))
+    return np.sqrt(np.abs(np.dot(np.conj(a),b)*np.dot(np.conj(b),a)))
+def infidelity(a,b):
+    return 1-fidelity(a,b)
+
+def save_to_json(data,fpath=None,randname=False):
+    sobj=json.dumps(data,ensure_ascii=False,indent=4)
+    if fpath is None:
+        fpath = random_name() + "_" + now_str()
+    elif randname:
+        fpath = fpath + "_" + random_name() + "_" + now_str()
+    else:
+        fpath = fpath + "_" + now_str()
+    
+    ensure_fpath(fpath)
+    fout=io.open("{fpath}.json".format(fpath=fpath),"w+",encoding="utf8")
+    fout.write(sobj)
+    fout.close()
+    print("saved {}".format(fpath))

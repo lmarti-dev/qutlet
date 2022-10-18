@@ -80,3 +80,24 @@ def totally_connected_ansatz(model: FermionicModel,layers=1):
             symbols.append(layer_symbols)
         return circuit,symbols
     generic_ansatz(model=model,layers=layers,ansatz=ansatz)
+
+
+def stair_ansatz(model: FermionicModel,layers=1):
+    def ansatz(model: FermionicModel,symbols:list,layers:int):
+        qubits = model.flattened_qubits
+        Nq = len(qubits)
+        circuit=cirq.Circuit()
+        for layer in range(layers):
+            sub_op_tree=[]
+            layer_symbols=[]
+            for nq in range(Nq-1):
+                layer_symbols.append(sympy.Symbol("theta_{l}_{nq}".format(l=layer,nq=nq)))
+                layer_symbols.append(sympy.Symbol("phi_{l}_{nq}".format(l=layer,nq=nq)))
+                qi = qubits[nq]
+                qj = qubits[nq+1]
+                sub_op_tree.append(cirq.FSimGate(theta=layer_symbols[-2],phi=layer_symbols[-1]).on(qi,qj))
+            circuit.append(sub_op_tree,strategy=InsertStrategy.EARLIEST)
+            symbols.append(layer_symbols)
+        return circuit,symbols
+    generic_ansatz(model=model,layers=layers,ansatz=ansatz)
+

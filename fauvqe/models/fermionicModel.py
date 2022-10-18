@@ -14,20 +14,26 @@ class FermionicModel(FockModel):
     Fock model subclass that implements fermionic operators, 
     i.e creators and annihilators which follow anticommutation rules.
     this class also implements the encoding (and not the fockmodel class),
-    because the encodings are dependant on fermionic properties
+    because the encodings are dependant on fermionic properties.
+    This class is a pure class and not intended to be instanciated
 
     """
-    def __init__(self,
-                **kwargs
-                ):
-        
+    def __init__(self,**kwargs):
         super().__init__(**kwargs)
-
         # this is a reminder of how up and down fermions are spread on the grid
         # the default value is the one given by the fermi_hubbard function, ie
         # u d u d
+    
     @staticmethod
-    def mapped_encode_model(fermion_hamiltonian,qubits,encoding_name: str,Z_snake: Tuple) -> cirq.PauliSum:
+    def encode_model(fermion_hamiltonian,qubits,encoding_options) -> cirq.PauliSum:
+        if "encoding_name" not in encoding_options.keys():
+            raise KeyError("Please provide an encoding name")
+        if "Z_snake" in encoding_options.keys():
+            return FermionicModel._mapped_encode_model(fermion_hamiltonian=fermion_hamiltonian,qubits=qubits,encoding_name=encoding_options["encoding_name"],Z_snake=encoding_options["Z_snake"])
+        else:
+            return FermionicModel._non_mapped_encode_model(fermion_hamiltonian=fermion_hamiltonian,qubits=qubits,encoding_name=encoding_options["encoding_name"])
+    @staticmethod
+    def _mapped_encode_model(fermion_hamiltonian,qubits,encoding_name: str,Z_snake: Tuple) -> cirq.PauliSum:
         encodings_dict=dict()
         encodings_dict["jordan_wigner"]=FermionicModel.mapped_jordan_wigner_fermion_operator
         if encoding_name in encodings_dict.keys():
@@ -36,7 +42,7 @@ class FermionicModel(FockModel):
             raise KeyError("No transform named {}. Allowed transforms: {}".format(encoding_name,encodings_dict.keys()))   
     
     @staticmethod
-    def encode_model(fermion_hamiltonian,qubits,encoding_name: str) -> cirq.PauliSum:
+    def _non_mapped_encode_model(fermion_hamiltonian,qubits,encoding_name: str) -> cirq.PauliSum:
         """
         use an openfermion transform to encode the occupation basis hamiltonian
         into a qubit hamiltonian.
@@ -119,26 +125,10 @@ class FermionicModel(FockModel):
                     "expected fock_maps to be either a tuple of functions or a tuple of indices but got: {}".format(type(self.fock_maps)))
     def _set_hamiltonian(self, reset:bool=True):
         self.hamiltonian = self._encode_fock_hamiltonian()
-
+    
     def _encode_fock_hamiltonian(self) -> cirq.PauliSum:
-        if "Z_snake" in self.encoding_options.keys():
-            # flattened_Z_snake=list(utils.flatten(self.encoding_options["Z_snake"]))
-            # self.encoding_options["Z_snake"] = flattened_Z_snake
-            
-            return self.mapped_encode_model(fermion_hamiltonian=self.fock_hamiltonian,
-                                            qubits=self.flattened_mapped_qubits,
-                                            encoding_name=self.encoding_options["encoding_name"],
-                                            Z_snake=self.encoding_options["Z_snake"]
-                                            )
-        return self.encode_model(fermion_hamiltonian=self.fock_hamiltonian,
-                                            qubits=self.flattened_mapped_qubits,
-                                            encoding_name=self.encoding_options["encoding_name"]
-                                            )
+        return FermionicModel.encode_model(fermion_hamiltonian=self.fock_hamiltonian,qubits=self.flattened_qubits,encoding_options=self.encoding_options)
 
-    def set_circuit(self,
-                    qalgorithm: str
-                    ):
-        raise NameError("{} is not a valid circuit".format(qalgorithm))
     
     @staticmethod
     def mapped_jordan_wigner_fermion_operator(operator,Z_snake):
@@ -185,3 +175,19 @@ class FermionicModel(FockModel):
     @staticmethod
     def get_ops_action_indices(operator):
         return list(set(utils.flatten(operator.terms.keys())))
+    @property
+    def jw_number_operator(self)-> cirq.PauliSum:
+        number_op = of.number_operator(n_modes=len(self.flattened_qubits),mode=None,coefficient=-1)
+        jw_number_op=of.jordan_wigner(number_op)
+        qubit_number_op=of.qubit_operator_to_pauli_sum(operator=jw_number_op,qubits=self.flattened_qubits)
+        return qubit_number_op
+    def jw_fermion_number_expectation(self,state):
+        qmap={k:v for k,v in zip(self.flattened_qubits,range(len(self.flattened_qubits)))}
+        Nf = self.jw_number_operator.expectation_from_state_vector(state,qubit_map=qmap)
+        return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
+    def get_encoded_terms(self):
+        operators = self.fock_hamiltonian.get_operators()
+        encoded_terms = [FermionicModel.encode_model(operator,self.flattened_qubits,self.encoding_options) for operator in operators]
+        return encoded_terms
+    def local_fermionic_encoding(fermion_operator):
+        pass
