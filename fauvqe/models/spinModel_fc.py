@@ -86,9 +86,9 @@ class SpinModelFC(AbstractModel):
         self._TwoQubitGates = TwoQubitGates
         self._SingleQubitGates = SingleQubitGates
         self._set_jh(j, h)
+        self.t = t
         self._set_hamiltonian()
         super().set_simulator()
-        self.t = t
 
     def _check_symmetric(self, j: np.array) -> bool:
         """
@@ -361,3 +361,57 @@ class SpinModelFC(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst
+    
+    @classmethod
+    def toFC(cls, model: fauvqe.SpinModel) -> np.ndarray:
+        j_h = np.transpose(model.j_h, (2, 0, 1))
+        j_v = np.transpose(model.j_v, (2, 0, 1))
+        j = np.zeros((model.j_h.shape[-1], *model.n, *model.n))
+        
+        for g in range(len(j_h)):
+            for n0 in range(model.n[0]-1):
+                for n1 in range(model.n[1]-1):
+                    j[g][n0][n1][n0][(n1+1)] = j_h[g][n0][n1]
+                    j[g][n0][(n1+1)][n0][n1] = j_h[g][n0][n1]
+                    j[g][n0][n1][(n0+1)][n1] = j_v[g][n0][n1]
+                    j[g][(n0+1)][n1][n0][n1] = j_v[g][n0][n1]
+            
+            for n0 in range(model.n[0]-1):
+                n1 = model.n[1]-1
+                j[g][n0][n1][(n0+1)][n1] = j_v[g][n0][n1]
+                j[g][(n0+1)][n1][n0][n1] = j_v[g][n0][n1]
+            
+            for n1 in range(model.n[1]-1):
+                n0 = model.n[0]-1
+                j[g][n0][n1][n0][n1+1] = j_h[g][n0][n1]
+                j[g][n0][n1+1][n0][n1] = j_h[g][n0][n1]
+            
+            if model.boundaries[1] == 0:
+                for n0 in range(model.n[0]):
+                    n1 = model.n[1]-1
+                    j[g][n0][n1][n0][0] = j_h[g][n0][n1]
+                    j[g][n0][0][n0][n1] = j_h[g][n0][n1]
+            
+            if model.boundaries[0] == 0:
+                for n1 in range(model.n[1]):
+                    n0 = model.n[0]-1
+                    j[g][n0][n1][0][n1] = j_v[g][n0][n1]
+                    j[g][0][n1][n0][n1] = j_v[g][n0][n1]
+        
+        '''
+        h = np.transpose(model.h, (2, 0, 1))
+        
+        modelFC = SpinModelFC(
+            model.qubittype, 
+            model.n,
+            j,
+            h,
+            model._TwoQubitGates,
+            model._SingleQubitGates,
+            model.t
+        )
+        
+        modelFC.energy_fields = model.energy_fields
+        return modelFC
+        '''
+        return np.transpose(j, (1, 2, 3, 4, 0))
