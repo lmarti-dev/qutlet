@@ -7,7 +7,7 @@ from numbers import Real
 from scipy.integrate import quad
 
 import numpy as np
-import cirq
+from cirq import PauliSum
 
 from fauvqe.models.spinModel_fc import SpinModelFC
 from fauvqe.models.spinModel import SpinModel
@@ -121,7 +121,7 @@ class Adiabatic(SpinModelFC):
         void 
         """
         if reset:
-            self.hamiltonian = cirq.PauliSum()
+            self.hamiltonian = PauliSum()
         self.hamiltonian = (1-self._sweep(self.t)) * self._H0.hamiltonian + self._sweep(self.t) * self._H1.hamiltonian
     
     #Overrides SpinModelFC's function
