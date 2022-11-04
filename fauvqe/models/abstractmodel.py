@@ -193,6 +193,9 @@ class AbstractModel(Restorable):
         elif simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator(dtype=dtype)
+        elif simulator_name == "dm":
+            self.simulator_options = {}
+            self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
         else:
             assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
                 simulator_name
@@ -292,7 +295,8 @@ class AbstractModel(Restorable):
             return True
         
         if np.size(self.eig_val) != _N or \
-        (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
+            (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
+            #self.diagonalise(solver = "numpy")
             self.diagonalise(solver = "scipy", solver_options={"subset_by_index": [0, _N - 1]})
         
         #print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
@@ -316,17 +320,30 @@ class AbstractModel(Restorable):
         #t1 = timeit.default_timer()
         #print("Time Mat mult.: \t {}".format(t1-t0))
 
+    def normalise(self, spread: float = 2) -> None:
+        '''
+        Scales and shifts the system Hamiltonian, B, J and shift to achieve
+        specified minimum and maximum energies in the Hamiltonian
+        eigenspectrum.
+        
+        This function assumes that the eigenvalues have been priorly rescaled by the qubit number n
+        '''
+        previous_spread = (self.eig_val[-1] - self.eig_val[0])
+        scale = spread / previous_spread
+        self.hamiltonian = scale * self.hamiltonian
+        self.eig_val *= scale
+    
     def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
         #General function to glue arbitrary GridQubit circuits 
         # given that they periodic boundary gates
         assert(repetitions > 1),\
-            "AbstractModelError in glue_circuit: repetitions need to > 1, received {}".format(repetitions)
+            "AbstractModelError in glue_circuit: repetitions need to be > 1, received {}".format(repetitions)
         if self.qubittype != "GridQubit":
             raise NotImplementedError()
 
         ###########################################################################
         #1.Find 2-qubit gates along the given axis
-        # Through error if there are none
+        # Throw error if there are none
         # Use 2D list, [Moment][Operation]
 
         glueing_gates = [[] for _ in range(np.size(self.circuit.moments))]

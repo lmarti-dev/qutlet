@@ -19,6 +19,7 @@ class SpinModel(AbstractModel):
     2D SpinModel class inherits AbstractModel
     is mother of different quantum circuit methods
     """
+    trotter  = importlib.import_module("fauvqe.models.circuits.trotter")
     basics  = importlib.import_module("fauvqe.models.circuits.basics")
     hea  = importlib.import_module("fauvqe.models.circuits.hea")
     qaoa = importlib.import_module("fauvqe.models.circuits.qaoa")
@@ -195,6 +196,7 @@ class SpinModel(AbstractModel):
             self.hea.options = {"append": False,
                                 "p": 1,
                                 "parametrisation" : 'joint',
+                                "fully_connected" : False,
                                 "SingleQubitVariables": _SingleQubitVariables,
                                 "TwoQubitVariables": _TwoQubitVariables,
                                 "SingleQubitGates": [lambda a, x, z: cirq.PhasedXZGate(x_exponent=x, z_exponent=z, axis_phase_exponent=a) for g in range(len(self._SingleQubitGates))],
@@ -213,13 +215,24 @@ class SpinModel(AbstractModel):
             self.hea.set_circuit(self)
             self.basics.rm_unused_cpv(self)  
             self.basics.add_missing_cpv(self)
+        elif qalgorithm == "trotter":
+            self.trotter.options = { "append": False,
+                                    "q":1,
+                                    "m":1
+                                  }
+            self.trotter.options.update(options)
+            self.trotter.set_circuit(self)
         elif qalgorithm == "qaoa":
             # set symbols gets as parameter QAOA repetitions p
             #This needs some further revisions as some parts are not very general yet
             self.qaoa.options = {"append": False,
                                 "p": 1,
                                 "H_layer": True,
-                                "i0": 0}
+                                "fully_connected" : False,
+                                "i0": 0,
+                                "SingleQubitGates": [ lambda q, theta: cirq.Z(q)**(theta)],
+                                "TwoQubitGates" : [lambda q1, q2, theta: cirq.ZZ(q1, q2)**(theta)]
+                                }
             self.qaoa.options.update(options)
             self.qaoa.set_symbols(self)
             self.qaoa.set_circuit(self)
@@ -227,7 +240,7 @@ class SpinModel(AbstractModel):
             assert (
                 False
             ), "Invalid quantum algorithm, received: '{}', allowed is \n \
-                'basics', 'hea', 'qaoa'".format(
+                'basics', 'hea', 'qaoa', 'trotter'".format(
                 qalgorithm
             )
 
@@ -296,6 +309,26 @@ class SpinModel(AbstractModel):
     
     def energy(self, j_v, j_h, h) -> np.ndarray:
         return self.energy_1q(h) + self.energy_2q(j_v, j_h)
+    
+    def normalise(self, spread: float = 2) -> None:
+        '''
+        Scales and shifts the system Hamiltonian, B, J and shift to achieve
+        specified minimum and maximum energies in the Hamiltonian
+        eigenspectrum.
+        
+        Overrides AbstractModel's normalise() function
+        '''
+        _n = np.size(self.qubits)
+        _N = 2**_n
+        if np.size(self.eig_val) != _N or \
+        (np.shape(self.eig_vec) != np.array((_N, _N)) ).all():
+            self.diagonalise(solver = "numpy")
+        previous_spread = (self.eig_val[-1] - self.eig_val[0])
+        scale = spread / previous_spread
+        super().normalise(spread)
+        self.j_v *= scale
+        self.j_h *= scale
+        self.h *= scale
     
     def copy(self) -> SpinModel:
         self_copy = SpinModel( self.qubittype,

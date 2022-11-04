@@ -178,7 +178,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
         wf0[i-1]=0
 
         print("i: {}\nwf: {}\nwf0: {}".format(i,wf, wf0))
-        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=5e-8)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=1e-7, atol=1e-7)
 
 
 @pytest.mark.parametrize(

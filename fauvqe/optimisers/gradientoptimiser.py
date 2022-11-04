@@ -214,13 +214,13 @@ class GradientOptimiser(Optimiser):
                     res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
             if(self.options['plot_run']):
-                assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.'
-                plt.plot(range(self.options['break_param']), costs)
-                plt.yscale('log')
-                dir_path = os.path.abspath(os.path.dirname(__file__))
-                plt.savefig(dir_path + '/../../plots/GD_Optimisation.png')
+                assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.' #pragma: no cover
+                plt.plot(range(self.options['break_param']), costs) #pragma: no cover
+                plt.yscale('log') #pragma: no cover
+                dir_path = os.path.abspath(os.path.dirname(__file__)) #pragma: no cover
+                plt.savefig(dir_path + '/../../plots/GD_Optimisation.png') #pragma: no cover
             if(self.options['use_progress_bar']):
-                pbar.close()
+                pbar.close() 
         return res
 
 #    def configure_fig(fig):

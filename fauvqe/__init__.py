@@ -15,10 +15,13 @@ from fauvqe import models, objectives, optimisers
 # Flattened sub-modules
 from fauvqe.models import (
     AbstractModel,
+    CoolingModel,
     Ising,
     IsingXY,
     Heisenberg,
-    SpinModel
+    HeisenbergFC,
+    SpinModel,
+    SpinModelFC
 )
 from fauvqe.objectives import (
     AbstractExpectationValue,
