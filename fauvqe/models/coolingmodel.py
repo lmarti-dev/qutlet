@@ -11,70 +11,135 @@ import cirq
 from fauvqe.models.spinModel_fc import SpinModelFC
 
 
-class CoolingNA(SpinModelFC):
+class CoolingModel(SpinModelFC):
     """
-    Class for cooling structure using n system qubits and 1 ancilla qubit inherits SpinModelFC
+    CoolingModel class
+    
+    Class for cooling structure using n system qubits and either a copy of the system or a single added row as ancilla qubit; inherits SpinModelFC
+    
+    Parameters
+    ----------
+    m_sys: AbstractModel, System Model
+    m_anc: AbstractModel, Ancilla Model
+    int_gates: List[cirq.PauliSum], List of gates used for the interaction between system and ancilla qubits
+    j_int: np.array, interaction coefficients used on the interaction gates int_gates
+    t: Real, simulation time
+    
+    Methods
+    ----------
+    _get_int_index(self, i:int): int
+        Returns
+        ---------
+        int:
+            Index which determines the ancilla qubit connected to the ith row of the system
+    
+    _combine_jh(self): List[np.array]
+        Returns
+        ---------
+        List[np.array]:
+            Arrays defining interaction js and field strengths h
+    
+    _set_j_int(self, j_int): void
+        Returns
+        ---------
+        void
+    
+    _set_h_anc(self, h_anc): void
+        Returns
+        ---------
+        void
     """
     
     def __init__(self, 
-                 m_sys,
-                 m_anc,
+                 m_sys: AbstractModel,
+                 m_anc: AbstractModel,
                  int_gates: List[cirq.PauliSum],
                  j_int: np.array,
                  t: Real = 0):
         """
-        m_sys model defining the system of interest
-        m_anc model defining the ancilla system
-        int_gates, a cirq.PauliSum defining the interaction gates between system and ancillas including interaction constants
+        m_sys: model defining the system of interest
+        m_anc: model defining the ancilla system
+        int_gates: a cirq.PauliSum defining the interaction gates between system and ancillas including interaction constants
+        j_int: an array encoding the interaction constants between ancillas and system
         t: Simulation Time
         """
         assert m_sys.qubittype == m_anc.qubittype, "Incompatible Qubittypes, System: {}, Ancilla: {}".format(
             m_sys.qubittype, m_anc.qubittype
         )
-        assert m_anc.n[0] == m_sys.n[0] and m_anc.n[1] == m_sys.n[1], "Could not instantiate system doubled ancilla cooling with ancilla model of size {}".format(
-            m_anc.n
-        )
         j_int = np.array(j_int)
-        assert j_int.shape == (len(int_gates), *m_anc.n ), "Wrong shape of j_int, received: {} expected: {}".format(
-            j_int.shape, (len(int_gates), m_anc.n[0])
+        assert j_int.shape == (len(int_gates), *m_sys.n ), "Wrong shape of j_int, received: {} expected: {}".format(
+            j_int.shape, (len(int_gates), *m_sys.n)
         )
+        if(m_anc.n[0] == m_sys.n[0] and m_anc.n[1] == m_sys.n[1]):
+            n = [2*m_sys.n[0], m_sys.n[1]]
+            self.cooling_type = "NA"
+            self._get_int_index = self._get_int_index_na
+        elif(m_anc.n[0] == 1 and m_anc.n[1] == m_sys.n[1]):
+            n = [m_sys.n[0] + 1, m_sys.n[1]]
+            self.cooling_type = "1A"
+            self._get_int_index = self._get_int_index_1a
+        else:
+            assert False, "Could not instantiate system doubled ancilla cooling or single qubit ancilla cooling with ancilla model of size {}".format(
+                m_anc.n
+            )
         
-        n = [2*m_sys.n[0], m_sys.n[1]]
-        
-        self.nbr_2Q_sys = len(m_sys._two_q_gates)
-        self.nbr_2Q_anc = len(m_anc._two_q_gates)
+        self.nbr_2Q_sys = len(m_sys._TwoQubitGates)
+        self.nbr_2Q_anc = len(m_anc._TwoQubitGates)
         self.nbr_2Q_int = len(int_gates)
         self.nbr_2Q = self.nbr_2Q_sys + self.nbr_2Q_anc + self.nbr_2Q_int
         
-        self.nbr_1Q_sys = len(m_sys._one_q_gates)
-        self.nbr_1Q_anc = len(m_anc._one_q_gates)
+        self.nbr_1Q_sys = len(m_sys._SingleQubitGates)
+        self.nbr_1Q_anc = len(m_anc._SingleQubitGates)
         self.nbr_1Q = self.nbr_1Q_sys + self.nbr_1Q_anc
         
         self.sys_fc = issubclass(m_sys.__class__, SpinModelFC)
         self.anc_fc = issubclass(m_anc.__class__, SpinModelFC)
         
-        two_q_gates = [*m_sys._two_q_gates, *m_anc._two_q_gates, *int_gates]
-        one_q_gates = [*m_sys._one_q_gates, *m_anc._one_q_gates]
-        
-        j, h = self._combine_jh(m_sys, m_anc, j_int)
+        _TwoQubitGates = [*m_sys._TwoQubitGates, *m_anc._TwoQubitGates, *int_gates]
+        _SingleQubitGates = [*m_sys._SingleQubitGates, *m_anc._SingleQubitGates]
         
         self.m_sys = m_sys
         self.m_anc = m_anc
         self.j_int = j_int
+        
+        j, h = self._combine_jh()
         
         super().__init__( 
             m_sys.qubittype,
             np.array(n),
             j,
             h,
-            two_q_gates,
-            one_q_gates,
+            _TwoQubitGates,
+            _SingleQubitGates,
             t
-            )
+        )
     
-    def _combine_jh(self, m_sys, m_anc, j_int):
-        n = [2*m_sys.n[0], m_sys.n[1]]
+    def _get_int_index_na(self, i: int) -> int:
+        return self.m_sys.n[0] + i
+    
+    def _get_int_index_1a(self, i: int) -> int:
+        return self.m_sys.n[0]
+    
+    def _combine_jh(self) -> List[np.array]:
+        """Combine interaction and field strengths from system and ancilla qubits to get the new interaction graph
+
+        Parameters
+        ----------
+        self
         
+        Returns
+        -------
+        js: np.array
+        h: np.array
+        """
+        m_sys = self.m_sys
+        m_anc = self.m_anc
+        j_int = self.j_int
+        if(self.cooling_type == "NA"):
+            n = [2*m_sys.n[0], m_sys.n[1]]
+        else:
+            n = [m_sys.n[0] + 1, m_sys.n[1]]
+        g_int = 0
         js = np.zeros(shape=(self.nbr_2Q, *n, *n))
         for g in range(self.nbr_2Q):
             if(g<self.nbr_2Q_sys):
@@ -158,8 +223,8 @@ class CoolingNA(SpinModelFC):
                 #Interaction js
                 for i in range(m_sys.n[0]):
                     for j in range(m_sys.n[1]):
-                        js[g, i, j, m_sys.n[0] + i, j] = j_int[g_int, i, j]
-                        js[g, m_sys.n[0] + i, j, i, j] = j_int[g_int, i, j]
+                        js[g, i, j, self._get_int_index(i), j] = j_int[g_int, i, j]
+                        js[g, self._get_int_index(i), j, i, j] = j_int[g_int, i, j]
         
         h = np.zeros(shape=(self.nbr_1Q, *n))
         for g in range(self.nbr_1Q):
@@ -177,26 +242,67 @@ class CoolingNA(SpinModelFC):
         
         return js, h
     
+    def _set_j_int(self, j_int: np.array) -> None:
+        """Sets the new interaction constants j_int and recombines the whole interaction graph.
+            To be called when j_int shall be changed after already having initialized the object.
+        
+        Parameters
+        ----------
+        self
+        j_int: np.array
+        
+        Returns
+        -------
+        void
+        """
+        self.j_int = j_int
+        for g in range(self.nbr_2Q_sys + self.nbr_2Q_anc, self.nbr_2Q):
+            g_int = g - self.nbr_2Q_sys - self.nbr_2Q_anc
+            #Interaction js
+            for i in range(self.m_sys.n[0]):
+                for j in range(self.m_sys.n[1]):
+                    self.j[i, j, self._get_int_index(i), j, g] = j_int[g_int, i, j]
+                    self.j[self._get_int_index(i), j, i, j, g] = j_int[g_int, i, j]
+    
+    def _set_h_anc(self, h_anc: np.array) -> None:
+        """Sets the new ancilla field strengts h_anc and recombines the whole interaction graph.
+            To be called when h_anc shall be changed after already having initialized the object.
+            
+        Parameters
+        ----------
+        self
+        h_anc: np.array
+        
+        Returns
+        -------
+        void
+        """
+        for g in range(self.nbr_1Q_sys, self.nbr_1Q):
+            g_anc = g - self.nbr_1Q_sys
+            for i in range(self.m_anc.n[0]):
+                for j in range(self.m_anc.n[1]):
+                    self.h[self.m_sys.n[0]+i, j, g] = h_anc[i, j, g_anc]
+    
     def energy(self) -> np.ndarray:
         raise NotImplementedError('Cooling Energy not implemented, use expectation value of self.hamiltonian instead.') 
     
-    def copy(self) -> CoolingNA:
-        self_copy = CoolingNA( 
+    def copy(self) -> CoolingModel:
+        self_copy = CoolingModel(
                 self.m_sys,
                 self.m_anc,
-                self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
+                self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
                 self.j_int,
                 self.t)
-
+        
         self_copy.circuit = self.circuit.copy()
-        self_copy.circuit_param = self.circuit_param.copy()
+        if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
         self_copy.hamiltonian = self.hamiltonian.copy()
-
+        
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
         if self._Ut is not None: self_copy._Ut = self._Ut.copy()
-
+        
         return self_copy
     
     def to_json_dict(self) -> Dict:
@@ -204,7 +310,7 @@ class CoolingNA(SpinModelFC):
             "constructor_params": {
                 "m_sys": self.m_sys,
                 "m_anc": self.m_anc,
-                "int_gates": self._two_q_gates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
+                "int_gates": self._TwoQubitGates[self.nbr_2Q_sys + self.nbr_2Q_anc:self.nbr_2Q],
                 "j_int": self.j_int,
                 "t": self.t
              },

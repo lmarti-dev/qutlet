@@ -27,10 +27,10 @@ class IsingXY(SpinModel):
         """
         # convert all input to np array to be sure
         if(field == "X"):
-            one_q_gate = [cirq.X,]
+            SingleQubitGate = [cirq.X,]
             self.energy_fields = ["Y", "Z", "X"]
         elif(field == "Z"):
-            one_q_gate = [cirq.Z,]
+            SingleQubitGate = [cirq.Z,]
             self.energy_fields = ["Y", "Z"]
         else:
             assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
@@ -41,7 +41,7 @@ class IsingXY(SpinModel):
                  [h,],
                  [lambda q1, q2: cirq.Y(q1)*cirq.Y(q2),
                   lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-                 one_q_gate,
+                 SingleQubitGate,
                  t
         )
         self.field = field
