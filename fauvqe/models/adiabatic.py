@@ -10,7 +10,7 @@ import numpy as np
 import cirq
 
 from fauvqe.models.spinModel_fc import SpinModelFC
-import fauvqe
+from fauvqe.models.spinModel import SpinModel
 
 
 class Adiabatic(SpinModelFC):
@@ -43,11 +43,11 @@ class Adiabatic(SpinModelFC):
         self._H0 = H0
         self._H1 = H1
         
-        if(isinstance(H0, fauvqe.SpinModel)):
+        if(isinstance(H0, SpinModel)):
             #self._H0 = SpinModelFC.toFC(H0)
             self._H0.j = SpinModelFC.toFC(H0)
         
-        if(isinstance(H1, fauvqe.SpinModel)):
+        if(isinstance(H1, SpinModel)):
             #self._H1 = SpinModelFC.toFC(H1)
             self._H1.j = SpinModelFC.toFC(H1)
         
