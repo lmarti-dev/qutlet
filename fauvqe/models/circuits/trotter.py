@@ -2,13 +2,10 @@
 This is a submodule for instances of AbstractModel and for the UtCost objective
 Include here methods that help generating Trotterized time evolutions
 """
-from fauvqe.models.abstractmodel import AbstractModel
-
 # external import
 import numpy as np
 import cirq
 from numbers import Real
-import sympy
 
 def set_circuit(self) -> None:
     """
@@ -123,3 +120,21 @@ def _first_order_trotter_circuit(self, hamiltonian: cirq.PauliSum, t: Real) -> c
         #Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
         res.append(temp**np.real(2/np.pi * t * hamiltonian._linear_dict[pstr]))
     return res
+
+def get_parameters(self, name: str='', delim: str = ','):
+    if(name == ''):
+        if(self.trotter.options['q'] > 2):
+            raise NotImplementedError
+        t_number = self.trotter.options['m']
+        parameters = []
+        for m in range(t_number):
+            for pstr in self.hamiltonian._linear_dict:
+                #print(self.hamiltonian._linear_dict[pstr])
+                parameters.append(self.hamiltonian._linear_dict[pstr] / t_number)
+        parameters = np.array(parameters) * np.real(2/np.pi * self.t)
+        if(self.trotter.options['q']==2):
+            return 0.5*np.concatenate((parameters, parameters[-1::-1]))
+        else:
+            return parameters
+    else:
+        return np.genfromtxt(name, delimiter=delim) #pragma: no cover
