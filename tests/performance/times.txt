@@ -8117,3 +8117,93 @@ Test Adam + ExpectationValue
 Sequential Time: 12.872852802276611
 Parallel Time: 5.435937881469727
 
+===Di, 08 Nov 2022 09:45:20 +0000===
+Test No Indices 
+
+Sequential Time: 3.638570547103882
+Parallel Time: 7.701136589050293
+
+===Di, 08 Nov 2022 09:45:48 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 16.330620288848877
+Parallel Time: 10.353144407272339
+
+===Di, 08 Nov 2022 09:46:01 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 8.320754766464233
+Parallel Time: 5.504918098449707
+
+===Di, 08 Nov 2022 09:46:42 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 28.30819821357727
+Parallel Time: 12.773087501525879
+
+===Di, 08 Nov 2022 09:47:03 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.373057126998901
+Parallel Time: 6.512065410614014
+
+===Di, 08 Nov 2022 10:15:12 +0000===
+Test No Indices 
+
+Sequential Time: 3.2132408618927
+Parallel Time: 7.878516912460327
+
+===Di, 08 Nov 2022 10:15:38 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 16.043946981430054
+Parallel Time: 9.88398551940918
+
+===Di, 08 Nov 2022 10:15:54 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 9.540778636932373
+Parallel Time: 5.536668300628662
+
+===Di, 08 Nov 2022 10:16:40 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 31.61333656311035
+Parallel Time: 15.242059469223022
+
+===Di, 08 Nov 2022 10:17:07 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 17.556631803512573
+Parallel Time: 9.16378116607666
+
+===Di, 08 Nov 2022 10:17:09 +0000===
+Test No Indices 
+
+Sequential Time: 3.5164854526519775
+Parallel Time: 7.762364149093628
+
+===Di, 08 Nov 2022 10:17:43 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 18.831363201141357
+Parallel Time: 14.430233478546143
+
+===Di, 08 Nov 2022 10:17:59 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 9.707678079605103
+Parallel Time: 6.2940874099731445
+
+===Di, 08 Nov 2022 10:18:38 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 27.826340198516846
+Parallel Time: 10.339014291763306
+
+===Di, 08 Nov 2022 10:18:57 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.149363994598389
+Parallel Time: 5.697232246398926
+
