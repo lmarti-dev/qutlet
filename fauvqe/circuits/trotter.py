@@ -123,61 +123,11 @@ def _first_order_trotter_circuit(   self,
     
     Returns
     ---------
-    res: cirq.Circuit()
         Circuit describing Trotterized Time Evolution
     """
-    #res = cirq.Circuit()
-    #Loop through all the addends in the PauliSum Hamiltonian
-    #for pstr in hamiltonian._linear_dict:
-    #temp encodes each of the PauliStrings in the PauliSum hamiltonian which need to be turned into gates
-    #temp = 1
-    #Loop through Paulis in the PauliString (pauli[1] encodes the cirq gate and pauli[0] encodes the qubit on which the gate acts)
-    #for pauli in pstr:
-    #    temp = temp * pauli[1](pauli[0])
-    #   Append the PauliString gate in temp to the power of the time step * coefficient of said PauliString. 
-    # The coefficient needs to be multiplied by a correction factor of 2/pi in order for the PowerGate to represent a Pauli exponential.
-
-    #gate = self.trotter._get_gate_from_paulistring(self, pstr)
-    #res.append(temp**np.real(2/np.pi * float(t) * float(np.real(hamiltonian._linear_dict[pstr]))))
-    #res.append(self.trotter._get_gate_from_paulistring2(self, pstr, hamiltonian, t))
-    #Copy the Trotter layer *m times.
-    #return res
-    
-    #return cirq.Circuit(*[self.trotter._get_gate_from_paulistring(self, pstr)**np.real(2/np.pi * float(t) * float(np.real(hamiltonian._linear_dict[pstr]))) for pstr in hamiltonian._linear_dict])
-    return cirq.Circuit(*[self.trotter._get_gate_from_paulistring2(self, pstr, hamiltonian, t) for pstr in hamiltonian._linear_dict])
+    return cirq.Circuit(*[self.trotter._get_gate_from_paulistring(self, pstr, hamiltonian, t) for pstr in hamiltonian._linear_dict])
 
 def _get_gate_from_paulistring( self,
-                                pauli_string: frozenset):
-    #Try to just return appropiate gates
-    _paulis=[]
-    _qubits =[]
-    temp=1
-    for item in pauli_string:
-        temp = temp * item[1](item[0])
-        _qubits.append(item[0])
-        _paulis.append(item[1])
-    if len(_paulis) > 2:
-        return temp
-    elif len(_paulis) == 2:
-        if _paulis[0] != _paulis[1]:
-            return temp
-        elif _paulis[0] == cirq.Z:
-            return cirq.ZZ.on(*_qubits)
-        elif _paulis[0] == cirq.X:
-            return cirq.XX.on(*_qubits)
-        else:
-            return cirq.YY.on(*_qubits)
-    elif len(_paulis) == 1:
-        if _paulis[0] == cirq.X:
-            return cirq.X.on(*_qubits)
-        elif _paulis[0] == cirq.Z:
-            return cirq.Z.on(*_qubits)
-        else:
-            return cirq.Y.on(*_qubits)
-    else:
-        return cirq.IdentityGate
-
-def _get_gate_from_paulistring2( self,
                                 pauli_string: frozenset,
                                 hamiltonian: cirq.PauliSum, 
                                 t: Real):
