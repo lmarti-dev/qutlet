@@ -54,6 +54,7 @@ from fauvqe.utilities  import (
     flatten,
     flatten_qubits,
     flip_cross_rows,
+    get_gate_count,
     greedy_grouping,
     haar,
     haar_1qubit,

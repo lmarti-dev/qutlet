@@ -10,6 +10,7 @@ from fauvqe.utilities.generic import (
     flatten,
     flatten_qubits,
     flip_cross_rows,
+    get_gate_count,
     greedy_grouping,
     hamming_weight,
     index_bits,
