@@ -1,3 +1,4 @@
+import cirq
 import collections
 from itertools import chain
 from numbers import Real
@@ -8,6 +9,115 @@ from typing import Iterable,List, Union
 
 # Order functions by Alphabet
 # Rethink some of the nameing here...
+
+#Needs to be tested:
+def greedy_grouping(paulisum: cirq.PauliSum) -> List[cirq.PauliSum]:
+    # Missing doc string
+    grouped_paulisums = []
+    grouped_qubits = []
+
+    #print(paulisum.__dict__)
+    for paulistring, coefficient in paulisum._linear_dict.items():
+        #print(paulistring)
+        #print(coefficient)
+        _tmp_qubits = []
+        _tmp_paulisum = 1 #coefficient.copy()
+        for item in paulistring:
+            _tmp_qubits.append(item[0])
+            _tmp_paulisum = _tmp_paulisum * item[1](item[0])
+
+        _tmp_paulisum = coefficient*_tmp_paulisum
+        _appended = False
+
+        for i in range(len(grouped_qubits)):
+            if set(_tmp_qubits) & set(grouped_qubits[i]):
+                pass
+            else:
+                for qubit in _tmp_qubits:
+                    grouped_qubits[i].append(qubit)
+                grouped_paulisums[i] += _tmp_paulisum
+                _appended = True
+                continue
+
+        if not _appended:
+            grouped_qubits.append(_tmp_qubits)
+            grouped_paulisums.append(_tmp_paulisum)
+    
+    assert (sum(grouped_paulisums) == paulisum), "Error in greedy_grouping: paulisum:\n{}\nsum(grouped_paulis):\n{}".format(
+                paulisum, sum(grouped_paulisums)
+            )
+    return grouped_paulisums
+
+def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
+    # strategy:
+    # start from last moment see if operation commuts with operation on previous moment
+    # or is same operation
+    # If same operation: merge angles
+    # if commuting then check next moment
+    # do until as long as moment of current operation > 1
+    # Does this help?
+    #https://quantumai.google/cirq/transform/custom_transformers?authuser=4
+    #https://quantumai.google/cirq/start/intro?authuser=4
+    #https://quantumcomputing.stackexchange.com/questions/13488/reordering-commuting-gates-in-cirq-to-reduce-circuit-depth
+    #https://quantumai.google/reference/python/cirq/Circuit
+    new_circuit = circuit.copy()
+    for i_moment in range(len(circuit)-1,-1,-1):
+        for i_op in range(len(circuit.moments[i_moment].operations)):
+            current_op = circuit.moments[i_moment].operations[i_op]
+            # find merge able operation
+            for i_previous_moment in range(i_moment-1,-1,-1):
+                for previous_op in circuit.moments[i_previous_moment]:
+                    if current_op.qubits == previous_op.qubits:
+                        #Check first whether gates are the same 
+                        # This potentially can be extended to more general by using the cirq mergers
+                        # and extending them to operations with are neighbouring by vanishing commutator pathes
+                        # print("Current op: {} \tPrevious op: {}\n".format(type(current_op.gate), previous_op.gate.__dict__))
+                        if type(current_op.gate) == type(previous_op.gate):
+                            # now check whether all operations between them commute
+                            # We need to get all gates between both gates and check whether those commute with the gate
+                            #print("Moment: {}\tCurrent op: {}\nMoment: {}\tPrevious op: {}\n"\
+                            #    .format(i_moment, current_op.__dict__,i_previous_moment, previous_op.__dict__))
+                            _IsMergable = True
+                            for i_inter_moments in range(i_moment-1,i_previous_moment,-1):
+                                if not _IsMergable:
+                                    continue
+                                #print("Moment: {}".format(i_inter_moments))
+                                for inter_op in circuit.moments[i_inter_moments]:
+                                    if not _IsMergable:
+                                        continue
+                                    if set(current_op.qubits) & set(inter_op.qubits):
+                                        #print("Inter op: {}".format(inter_op.__dict__))
+                                        #print(cirq.commutes(current_op.gate, inter_op.gate))
+                                        _IsMergable = cirq.definitely_commutes(current_op.gate, inter_op.gate)
+                            if _IsMergable:
+                                print("Mergeable operations: ")
+                                print("Moment: {}\tCurrent op: {}\nMoment: {}\tPrevious op: {}\n"\
+                                    .format(i_moment, current_op.__dict__,i_previous_moment, previous_op.__dict__))
+                                print(current_op.gate.__dict__)
+                                print(previous_op.gate.__dict__)
+
+                                new_gate = current_op.gate.__class__()
+
+                                for key, value in previous_op.gate.__dict__.items() :
+                                    #print(current_op.gate.__dict__.get(key))
+                                    value2=current_op.gate.__dict__.get(key)
+                                    if value is not None and value2 is not None:
+                                        setattr(new_gate, key, value+value2)
+                                    else:
+                                        setattr(new_gate, key, None)
+                                print(new_gate)
+
+                                new_operation = new_gate.on(*current_op.qubits)
+                                new_circuit.batch_replace([[i_moment,current_op, new_operation]])
+                                new_circuit.batch_remove([[i_previous_moment, previous_op]])
+                                
+                                #new_gate = current_op.gate + previous_op.gate
+                                #new_circuit.insert(i_moment,new_gate.on(current_op.qubits))
+    new_circuit = cirq.drop_empty_moments(new_circuit)
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        circuit, new_circuit
+    )
+    return new_circuit
 
 def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     """This function takes a matrix and reorders so that the even index basis vectors 
