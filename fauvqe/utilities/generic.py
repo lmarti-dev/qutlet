@@ -26,10 +26,12 @@ def greedy_grouping(paulisum: cirq.PauliSum) -> List[cirq.PauliSum]:
             _tmp_qubits.append(item[0])
             _tmp_paulisum = _tmp_paulisum * item[1](item[0])
 
-        _tmp_paulisum = coefficient*_tmp_paulisum
+        _tmp_paulisum = cirq.PauliSum.from_pauli_strings(coefficient*_tmp_paulisum)
         _appended = False
 
         for i in range(len(grouped_qubits)):
+            if _appended:
+                continue
             if set(_tmp_qubits) & set(grouped_qubits[i]):
                 pass
             else:
@@ -37,14 +39,13 @@ def greedy_grouping(paulisum: cirq.PauliSum) -> List[cirq.PauliSum]:
                     grouped_qubits[i].append(qubit)
                 grouped_paulisums[i] += _tmp_paulisum
                 _appended = True
-                continue
 
         if not _appended:
             grouped_qubits.append(_tmp_qubits)
             grouped_paulisums.append(_tmp_paulisum)
     
-    assert (sum(grouped_paulisums) == paulisum), "Error in greedy_grouping: paulisum:\n{}\nsum(grouped_paulis):\n{}".format(
-                paulisum, sum(grouped_paulisums)
+    assert (sum(grouped_paulisums) == paulisum), "Error in greedy_grouping: paulisum:\n{}\nsum(grouped_paulis):\n{}\ngrouped_paulis:\n{}".format(
+                paulisum, sum(grouped_paulisums), grouped_paulisums
             )
     return grouped_paulisums
 

@@ -5,7 +5,7 @@ import cirq
 import sympy
 
 # internal imports
-from fauvqe.utilities.generic import ptrace, commutator, orth_norm
+from fauvqe.utilities.generic import greedy_grouping, ptrace, commutator, orth_norm
 
 import fauvqe.utilities.generic as ut
 
@@ -277,3 +277,95 @@ def test_commutator(A, B, solution):
 )
 def test_orth_norm(A, solution):
     assert abs(orth_norm(A) - solution) < 1e-7
+
+@pytest.mark.parametrize(
+    "pauli_sum, grouped_pauli_sum",
+    [
+        #
+        #   1D test cases
+        #
+        (
+            cirq.PauliSum.from_pauli_strings(
+            0.5*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1))
+            ),
+            [cirq.PauliSum.from_pauli_strings(
+            0.5*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1))
+            )],
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([
+            1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+            2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+            ]),
+            [
+                cirq.PauliSum.from_pauli_strings(
+                1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1))
+                ),
+                cirq.PauliSum.from_pauli_strings(
+                2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2))
+                ),
+            ],
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([
+            1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+            2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+            3*cirq.Z.on(cirq.GridQubit(0,2))*cirq.Z.on(cirq.GridQubit(0,3)),
+            ]),
+            [
+                cirq.PauliSum.from_pauli_strings([
+                    1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+                    3*cirq.Z.on(cirq.GridQubit(0,2))*cirq.Z.on(cirq.GridQubit(0,3)),
+                ]),
+                cirq.PauliSum.from_pauli_strings(
+                2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2))
+                ),
+            ],
+        ),
+        (
+            cirq.PauliSum.from_pauli_strings([
+            1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+            2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+            3*cirq.Z.on(cirq.GridQubit(0,2))*cirq.Z.on(cirq.GridQubit(0,3)),
+            0.3*cirq.Z.on(cirq.GridQubit(0,3))*cirq.Z.on(cirq.GridQubit(0,0)),
+            ]),
+            [
+                cirq.PauliSum.from_pauli_strings([
+                    1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+                    3*cirq.Z.on(cirq.GridQubit(0,2))*cirq.Z.on(cirq.GridQubit(0,3)),
+                ]),
+                cirq.PauliSum.from_pauli_strings([
+                    2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+                    0.3*cirq.Z.on(cirq.GridQubit(0,3))*cirq.Z.on(cirq.GridQubit(0,0)),
+                ]),
+            ],
+        ),
+        #
+        #   2D test cases
+        #
+        (
+            cirq.PauliSum.from_pauli_strings([
+            1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+            2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+            1.1*cirq.Z.on(cirq.GridQubit(1,0))*cirq.Z.on(cirq.GridQubit(1,1)),
+            2.1*cirq.Z.on(cirq.GridQubit(1,1))*cirq.Z.on(cirq.GridQubit(1,2)),
+            ]),
+            [
+                cirq.PauliSum.from_pauli_strings([
+                    1*cirq.Z.on(cirq.GridQubit(0,0))*cirq.Z.on(cirq.GridQubit(0,1)),
+                    1.1*cirq.Z.on(cirq.GridQubit(1,0))*cirq.Z.on(cirq.GridQubit(1,1)),
+                ]),
+                cirq.PauliSum.from_pauli_strings([
+                    2*cirq.Z.on(cirq.GridQubit(0,1))*cirq.Z.on(cirq.GridQubit(0,2)),
+                    2.1*cirq.Z.on(cirq.GridQubit(1,1))*cirq.Z.on(cirq.GridQubit(1,2)),
+                ]),
+            ],
+        ),
+    ]
+)
+def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
+    greedily_grouped_pauli_sum = greedy_grouping(pauli_sum)
+    print(pauli_sum)
+    print(grouped_pauli_sum)
+    print(type(greedily_grouped_pauli_sum[0]))    
+    assert greedily_grouped_pauli_sum == grouped_pauli_sum
