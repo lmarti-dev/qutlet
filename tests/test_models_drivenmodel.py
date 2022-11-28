@@ -457,6 +457,122 @@ def test_Kt(models, drives, integrated_Vt):
                                     np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
 
 @pytest.mark.parametrize(
+    "models, drives, ground_truth_Kt",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,3],
+                        1*np.ones((1-1,3)),
+                        1*np.ones((1,3-1)),
+                        0*np.ones((1,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,3],
+                        0*np.ones((1-1,3)),
+                        0*np.ones((1,3-1)),
+                        np.ones((1,3)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            lambda t: -(1/10)*np.sin(10*t)*cirq.PauliSum.from_pauli_strings([cirq.X.on(cirq.GridQubit(0,i)) for i in range(3)])
+                      -(1*1/(10**2))*2*np.sin(10*t)*( \
+                            cirq.PauliSum.from_pauli_strings([cirq.Z.on(cirq.GridQubit(0,i))*cirq.Y.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]) \
+                            + cirq.PauliSum.from_pauli_strings([cirq.Y.on(cirq.GridQubit(0,i))*cirq.Z.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]))
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,3],
+                        1*np.ones((1-1,3)),
+                        1*np.ones((1,3-1)),
+                        0*np.ones((1,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,3],
+                        0*np.ones((1-1,3)),
+                        0*np.ones((1,3-1)),
+                        3.14*np.ones((1,3)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            lambda t: -(3.14/10)*np.sin(10*t)*cirq.PauliSum.from_pauli_strings([cirq.X.on(cirq.GridQubit(0,i)) for i in range(3)])
+                      -(3.14/(10**2))*2*np.sin(10*t)*( \
+                            cirq.PauliSum.from_pauli_strings([cirq.Z.on(cirq.GridQubit(0,i))*cirq.Y.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]) \
+                            + cirq.PauliSum.from_pauli_strings([cirq.Y.on(cirq.GridQubit(0,i))*cirq.Z.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]))
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,3],
+                        1.17*np.ones((1-1,3)),
+                        1.17*np.ones((1,3-1)),
+                        0*np.ones((1,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,3],
+                        0*np.ones((1-1,3)),
+                        0*np.ones((1,3-1)),
+                        np.ones((1,3)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            lambda t: -(1/10)*np.sin(10*t)*cirq.PauliSum.from_pauli_strings([cirq.X.on(cirq.GridQubit(0,i)) for i in range(3)])
+                      -(1.17/(10**2))*2*np.sin(10*t)*( \
+                            cirq.PauliSum.from_pauli_strings([cirq.Z.on(cirq.GridQubit(0,i))*cirq.Y.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]) \
+                            + cirq.PauliSum.from_pauli_strings([cirq.Y.on(cirq.GridQubit(0,i))*cirq.Z.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]))
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [1,3],
+                        1.17*np.ones((1-1,3)),
+                        1.17*np.ones((1,3-1)),
+                        0*np.ones((1,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [1,3],
+                        0*np.ones((1-1,3)),
+                        0*np.ones((1,3-1)),
+                        3.14*np.ones((1,3)),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            lambda t: -(3.14/10)*np.sin(10*t)*cirq.PauliSum.from_pauli_strings([cirq.X.on(cirq.GridQubit(0,i)) for i in range(3)])
+                      -(3.14*1.17/(10**2))*2*np.sin(10*t)*( \
+                            cirq.PauliSum.from_pauli_strings([cirq.Z.on(cirq.GridQubit(0,i))*cirq.Y.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]) \
+                            + cirq.PauliSum.from_pauli_strings([cirq.Y.on(cirq.GridQubit(0,i))*cirq.Z.on(cirq.GridQubit(0,i+1)) for i in range(3-1)]))
+         ),
+    ],
+)    
+def test_Kt_order_2(models, drives, ground_truth_Kt):
+    # make t random, make hamiltian random
+    # give correctly integrated v(t) w.o. Hamiltonian to test
+    driven_model = DrivenModel( models, 
+                                drives)
+    t = np.random.random_sample()
+    
+    print(driven_model.K(t, order=2))
+    print(ground_truth_Kt(t))
+    if driven_model.K(t, order=2) == ground_truth_Kt(t):
+        assert True
+    else:
+        np.testing.assert_allclose( driven_model.K(t, order=2).matrix() - ground_truth_Kt(t).matrix(),
+                                    np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
+
+@pytest.mark.parametrize(
     "models, drives, T",
     [
         (
