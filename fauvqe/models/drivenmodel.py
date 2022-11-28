@@ -198,26 +198,68 @@ class DrivenModel(AbstractModel):
         return hamiltonian
 
     def K(self,
-            t: Real) -> PauliSum:
+            t: Real,
+            order: int = 1) -> PauliSum:
         """
             This implements the Kick-operator:
-                K(t) = 
+                K(t) =      1/(1j*omega) \sum_{k=1}^\infty 1/k (V^(k)exp(1jk omega t) - V^(k)exp(1jk omega t)
+                        +   1/(omega²1j) \sum_{k=1}^\infty 1/k² ([V^(k), H0] exp(1jk omega t) - [V^(-k), H0] exp(1jk omega t)
+                        +   1/(omega²1j) [Vj, Vl] NOT IMPLEMENTED
 
             Parameters
             ----------
         """
         K_t =  PauliSum()
+        assert (
+                order > 0
+            ), "Error in DrivenModel.K(t): order needs to be natural Number received: order = {}".format(
+                order
+            )
+        if order > 2:
+            raise NotImplementedError
+        else:
+            for i_drive in range(len(self.drives)):
+                _tmp = sum(self.Vjs[i_drive][i_j]*(1/((i_j-self.j_max)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
+                _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*(1/((i_j)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+                K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
+                
+                #print(_tmp)
+            if order == 1:
+                #Round PauliSum Coefficents to 1e-16 for numerical stability
+                for key,value in K_t._linear_dict._terms.items():
+                    K_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+
+                return K_t
+            else:
+                #order == 2
+                for i_drive in range(len(self.drives)):
+                    #1/(omega²1j) \sum_{k=1}^\infty 1/k² ([V^(k), H0] exp(1jk omega t) - [V^(-k), H0] exp(1jk omega t)
+                    print([self.Vjs[i_drive][i_j] for i_j in range(self.j_max)])
+                    _tmp += sum(commutator(self.Vjs[i_drive][i_j], self.H0)*(1/((i_j-self.j_max)**2*sympy.I*(2*sympy.pi/self.T)**2))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
+                    _tmp += sum(commutator(self.Vjs[i_drive][self.j_max+i_j-1], self.H0)*(1/((i_j)**2*sympy.I*2*(2*sympy.pi/self.T)**2))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+                    
+                    #1/(2omega²1j) \sum_{k,l=1}^\infty 1/(k(k+l) ([V^(k), V^(l)] exp(1j(k+l) omega t) - h.c.) + 
+
+                    #1/(2omega²1j) \sum_{k \neq l=1}^\infty 1/(k(k-l) ([V^(k), V^(-l)] exp(1j(k-l) omega t) - h.c.)
+                    K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
+
+                #Round PauliSum Coefficents to 1e-16 for numerical stability
+                for key,value in K_t._linear_dict._terms.items():
+                    K_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+                return K_t
+            
+    def V(self,
+            t: Real) -> PauliSum:
+        V_t =  PauliSum()
         for i_drive in range(len(self.drives)):
-            _tmp = sum(self.Vjs[i_drive][i_j]*(1/((i_j-self.j_max)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
-            _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*(1/((i_j)*sympy.I*2*sympy.pi/self.T))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
-            #print(_tmp)
-            K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
+                _tmp = sum(self.Vjs[i_drive][i_j]*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
+                _tmp += sum(self.Vjs[i_drive][self.j_max+i_j-1]*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+                V_t += complex(_tmp)*self.models[i_drive]._hamiltonian
+            #Round PauliSum Coefficents to 1e-16 for numerical stability
+        #for key,value in V_t._linear_dict._terms.items():
+        #    V_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
 
-        #Round PauliSum Coefficents to 1e-16 for numerical stability
-        for key,value in K_t._linear_dict._terms.items():
-            K_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
-
-        return K_t
+        return V_t
 
     def set_circuit(self, qalgorithm, options: dict = {}):
         """
