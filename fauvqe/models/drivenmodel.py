@@ -234,14 +234,20 @@ class DrivenModel(AbstractModel):
                 #order == 2
                 for i_drive in range(len(self.drives)):
                     #1/(omega²1j) \sum_{k=1}^\infty 1/k² ([V^(k), H0] exp(1jk omega t) - [V^(-k), H0] exp(1jk omega t)
-                    print([self.Vjs[i_drive][i_j] for i_j in range(self.j_max)])
-                    _tmp += sum(commutator(self.Vjs[i_drive][i_j], self.H0)*(1/((i_j-self.j_max)**2*sympy.I*(2*sympy.pi/self.T)**2))*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
-                    _tmp += sum(commutator(self.Vjs[i_drive][self.j_max+i_j-1], self.H0)*(1/((i_j)**2*sympy.I*2*(2*sympy.pi/self.T)**2))*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+                    #print([self.Vjs[i_drive][i_j] for i_j in range(self.j_max)])
+                    #print([self._commutator(self.Vjs[i_drive][i_j], self.H0) for i_j in range(self.j_max)])
+                    _tmp = sum(self.Vjs[i_drive][i_j]*(1/((i_j-self.j_max)*sympy.I*2*sympy.pi/self.T))**2*sympy.exp(sympy.I*2*sympy.pi*(i_j-self.j_max)*t/self.T) for i_j in range(self.j_max)).expand(complex=True)
+                    K_t += commutator(self.H0, complex(_tmp)*self.models[i_drive]._hamiltonian)
                     
+                    _tmp = sum(self.Vjs[i_drive][self.j_max+i_j-1]*(1/((i_j)*sympy.I*2*sympy.pi/self.T))**2*sympy.exp(sympy.I*2*sympy.pi*i_j*t/self.T) for i_j in range(1,self.j_max+1)).expand(complex=True)
+                    K_t += commutator(complex(_tmp)*self.models[i_drive]._hamiltonian, self.H0)
+
                     #1/(2omega²1j) \sum_{k,l=1}^\infty 1/(k(k+l) ([V^(k), V^(l)] exp(1j(k+l) omega t) - h.c.) + 
+                    # NOTIMPLEMENTED
 
                     #1/(2omega²1j) \sum_{k \neq l=1}^\infty 1/(k(k-l) ([V^(k), V^(-l)] exp(1j(k-l) omega t) - h.c.)
-                    K_t += complex(_tmp)*self.models[i_drive]._hamiltonian
+                    # NOTIMPLEMENTED
+                    
 
                 #Round PauliSum Coefficents to 1e-16 for numerical stability
                 for key,value in K_t._linear_dict._terms.items():
@@ -515,4 +521,9 @@ class DrivenModel(AbstractModel):
         
         return inst
 
-    
+    def _commutator(self, a,b):
+        if isinstance(a, Number) or isinstance(b, Number):
+            return 0
+        else:
+            print("a: {}\ttype(a): {}\nb: {}\ttype(b): {}".format(a,type(a),b,type(b)))
+            commutator(a,b)
