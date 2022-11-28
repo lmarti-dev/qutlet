@@ -456,6 +456,95 @@ def test_Kt(models, drives, integrated_Vt):
         np.testing.assert_allclose( driven_model.K(t).matrix() - integrated_Vt(t) * H_V.matrix(),
                                     np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
 
+@pytest.mark.parametrize(
+    "models, drives, T",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        #np.ones((2,2)),
+                        2*(np.random.rand(2,2)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.cos(10*t),
+            ],
+            2*sympy.pi/10
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [2,3],
+                        1*np.ones((2-1,3)),
+                        1*np.ones((2,3-1)),
+                        0*np.ones((2,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,3],
+                        0*np.ones((2-1,3)),
+                        0*np.ones((2,3-1)),
+                        #np.ones((2,3)),
+                        2*(np.random.rand(2,3)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: (sympy.cos(10*t) + sympy.cos(20*t)),
+            ],
+            2*sympy.pi/10
+         ),
+         (
+            [
+                Ising(  "GridQubit",
+                        [2,3],
+                        1*np.ones((2-1,3)),
+                        1*np.ones((2,3-1)),
+                        0*np.ones((2,3)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,3],
+                        0*np.ones((2-1,3)),
+                        0*np.ones((2,3-1)),
+                        #np.ones((2,3)),
+                        2*(np.random.rand(2,3)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: (sympy.cos(10*t) + sympy.sin(20*t)),
+            ],
+            2*sympy.pi/10
+         ),
+    ],
+)    
+def test_Vt(models, drives, T):
+    # make t random, make hamiltian random
+    # give correctly integrated v(t) w.o. Hamiltonian to test
+    driven_model = DrivenModel( models, 
+                                drives,
+                                T = T)
+    t = np.random.random_sample()
+
+    print("t: {}\tdrive[1](t): {}".format(t, drives[1](t)))
+    print(driven_model.V(t))
+    print(drives[1](t) * models[1]._hamiltonian)
+    assert False
+    if driven_model.V(t) == drives[1](t) * models[1]._hamiltonian:
+        assert True
+    else:
+        np.testing.assert_allclose( driven_model.V(t).matrix() - drives[1](t) * models[1]._hamiltonian.matrix(),
+                                    np.zeros((2**np.product(driven_model.n), 2**np.product(driven_model.n))),rtol=1e-15,atol=1e-15)
+
 def test_Vjs():
     pass
 
