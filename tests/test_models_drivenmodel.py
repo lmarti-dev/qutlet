@@ -538,7 +538,7 @@ def test_Vt(models, drives, T):
     print("t: {}\tdrive[1](t): {}".format(t, drives[1](t)))
     print(driven_model.V(t))
     print(drives[1](t) * models[1]._hamiltonian)
-    assert False
+
     if driven_model.V(t) == drives[1](t) * models[1]._hamiltonian:
         assert True
     else:
