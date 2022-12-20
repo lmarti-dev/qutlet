@@ -39,15 +39,12 @@ class FermiHubbardModel(FermionicModel):
         # u0 d0 u1 d1
         # u2 d2 u3 d3
         # flip for qubits so that indices are row-first
-        
-        
-        
-        
+     
         if encoding_options is None:
             # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
             encoding_options={"encoding_name": "jordan_wigner"}
             # encoding_options["Z_snake"]=self.common_Z_snakes(name="weaved_double_s",dimx=self.x_dimension,dimy=self.y_dimension)                
-        # # moves the spins into sectors ududud -> uuuddd (only along the horizontal axis)
+            # moves the spins into sectors ududud -> uuuddd (only along the horizontal axis)
         # if "fock_maps" not in kwargs.keys():
         #     kwargs["fock_maps"] = utils.alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
         #     # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
@@ -152,10 +149,8 @@ class FermiHubbardModel(FermionicModel):
             rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators. 
                                                                 Q diagonalizes Nf rows of the non-interacting hamiltonian
         """
-        if Nf==None:
-            raise ValueError
-            # if Nf is none, use half the Q matrix
-            Nf = self.x_dimension*self.y_dimension
+        if Nf is None or Nf<=0:
+            raise ValueError("Expected Nf to be a positive integer but got: {}".format(Nf))
         if initial_state == None:
             # default initial state is all 0s
             initial_state = []

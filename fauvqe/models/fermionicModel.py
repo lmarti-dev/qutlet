@@ -185,9 +185,21 @@ class FermionicModel(FockModel):
         qmap={k:v for k,v in zip(self.flattened_qubits,range(len(self.flattened_qubits)))}
         Nf = self.jw_number_operator.expectation_from_state_vector(state,qubit_map=qmap)
         return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
-    def get_encoded_terms(self):
+    def get_encoded_terms(self,anti_hermitian:bool) -> "list[cirq.PauliSum]":
         operators = self.fock_hamiltonian.get_operators()
-        encoded_terms = [FermionicModel.encode_model(operator,self.flattened_qubits,self.encoding_options) for operator in operators]
+        encoded_terms = []
+        parity=1
+        if anti_hermitian:
+            parity=-1
+        for operator in operators:
+            operator = operator+parity*of.hermitian_conjugated(operator)
+            encoded_term = FermionicModel.encode_model(operator,self.flattened_qubits,self.encoding_options)
+            if encoded_term not in encoded_terms:
+                encoded_terms.append(encoded_term)
         return encoded_terms
-    def local_fermionic_encoding(fermion_operator):
+    
+
+    def derby_klassen(self):
+        pass
+    def local_fermionic_encoding(self):
         pass

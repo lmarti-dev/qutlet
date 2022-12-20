@@ -326,56 +326,19 @@ def linear_to_grid(n,dimx,dimy,horizontal=True):
     else:
         return np.unravel_index((n),(dimx,dimy),order="F")
 
-
-def pretty_convert_list(l):
-    ll=[]
-    for x in l:
-        ll.append(type_to_str(v=x,max_size=4))
-    return ll
-
-def type_to_str(v,max_size=4) -> str:
-    out_v=None
-    if isinstance(v,list):
-        if len(v) > max_size:
-            out_v = str(len(v))
-        else:
-            out_v = pretty_convert_list(v)
-    elif isinstance(v,np.ndarray):
-        if len(v.shape)==1:
-            if len(v)> max_size:
-                out_v = "list:"+str(len(v))
-            else:
-                out_v = pretty_convert_list(v)
-        else:
-            out_v = "ndarray:"+str(v.shape)
-    elif any(isinstance(v,t) for t in (str,int)):
-        out_v = str(v)
-    elif any(isinstance(v,t) for t in(float,np.double,np.float64,np.single)):
-        out_v = "{v:.3}".format(v=v)
-    elif any(isinstance(v,t) for t in (np.csingle,np.cdouble)):
-        out_v = "{r:.3}+j{i:.3}".format(r=np.real(v),i=np.imag(v))
-    else:
-        out_v = "unsupported type:{t}".format(t=type(v))
-    
-    return out_v
-
-
-def infodump_locals(locals,max_size=4):
-    infodump={}
-    for k,v in locals.items():
-        try:
-            if isinstance(v,type(np)) or v is None or "__" in k:
-                pass
-            else:
-                infodump[k]=type_to_str(v,max_size)
-        except ValueError:
-            infodump[k] = str(v)
-    return infodump
-    
 def normalize(v: np.ndarray) -> np.ndarray:
     return v/np.linalg.norm(v)
 
 def sum_divisible(l:list,i:int):
+    """Returns the sum of all numbers divisible by an integer i in a list
+
+    Args:
+        l (list): the list of integers
+        i (int): the interger that is a divisor of the summed numbers
+
+    Returns:
+        int: the sum of divisble integers in the list
+    """
     return sum([1 if x%i==0 else 0 for x in l])
 def sum_even(l):
     return sum_divisible(l,2)
@@ -390,24 +353,31 @@ def ensure_fpath(fpath:os.PathLike):
         fpath (os.PathLike): the file path (with the file at the end)
     """
     dirname = os.path.dirname(fpath)
-    if not os.path.exists(dirname): 
-        os.makedirs(dirname)
+    if dirname != "":
+        if not os.path.exists(dirname): 
+            os.makedirs(dirname)
 
 
-def normalize_str(s: str):
-    return re.sub(r"\W","",s)
+def normalize_str(s: str,token:str=""):
+    return re.sub(r"\W",token,s)
 
 def cap_first(s: str):
     if len(s)==1:
         return s[0].upper()
     return s[0].upper() + s[1:]
 
-def random_name(lenw=5,Nwords=3):
-    word_file = "/usr/share/dict/words"
-    words = io.open(word_file,mode="r",encoding="utf8").read().splitlines()
-    words = [normalize_str(w) for w in words if len(w)==lenw]
-    indices = np.random.choice(len(words),Nwords,replace=True)
-    return "".join([cap_first(words[iii]) for iii in indices])
+def random_word(lenw=5,Nwords=3):
+    dict_paths = ["/usr/share/dict/words","/usr/dict/words"]
+    word_files = [dp for dp in dict_paths if os.path.isfile(dp)]
+    if len(word_files):
+        word_file = word_files[0]
+        words = io.open(word_file,mode="r",encoding="utf8").read().splitlines()
+        words = [normalize_str(w) for w in words if len(w)==lenw]
+        indices = np.random.choice(len(words),Nwords,replace=False)
+        word = "".join([cap_first(words[iii]) for iii in indices])
+    else:
+        word = "".join([chr(x) for x in np.random.choice(range(97, 97 + 26),lenw*Nwords,replace=True)])
+    return word
 
 
 def fidelity(a,b):
@@ -417,17 +387,53 @@ def fidelity(a,b):
 def infidelity(a,b):
     return 1-fidelity(a,b)
 
-def save_to_json(data,fpath=None,randname=False):
+def save_to_json(data,dirname=None,fname=None,randname=False):
     sobj=json.dumps(data,ensure_ascii=False,indent=4)
-    if fpath is None:
-        fpath = random_name() + "_" + now_str()
-    elif randname:
-        fpath = fpath + "_" + random_name() + "_" + now_str()
-    else:
-        fpath = fpath + "_" + now_str()
     
+    if fname is None:
+        fname = random_word() + "_" + now_str()
+    elif randname:
+        fname = fname + "_" + random_word() + "_" + now_str()
+    else:
+        fname = fname + "_" + now_str()
+    if dirname is not None:
+        fpath = os.path.join(dirname,fname)
+    else:
+        fpath = fname
+
     ensure_fpath(fpath)
     fout=io.open("{fpath}.json".format(fpath=fpath),"w+",encoding="utf8")
     fout.write(sobj)
     fout.close()
     print("saved {}".format(fpath))
+
+def hex_to_rgb(hex:str):
+    hex = hex.lstrip("#").upper()
+    return tuple(int(hex[i:i+2], 16) for i in (0, 2, 4))
+
+def grid_neighbour_list(i:int,shape,neighbour_order:int,periodic:bool,diagonal:bool):
+    numrows,numcols=shape
+    mat=np.reshape(np.arange(0,numrows*numcols),(numrows,numcols))
+    grid=[]
+    m,n=np.unravel_index(i,(numrows,numcols))
+    for j in range(m-neighbour_order,m+neighbour_order+1):
+        for k in range(n-neighbour_order,n+neighbour_order+1):
+            if periodic:
+                j = j % numrows
+                k + k % numcols
+            if j < numrows and k < numcols and j >= 0 and k >=0:
+                if diagonal:
+                    grid.append(mat[j,k])
+                elif j == m or k == n:
+                    grid.append(mat[j,k])
+    return grid
+
+def default_value_handler(shape:tuple,value:Union[str,float]):
+    if isinstance(value,float):
+        return np.full(shape=shape,fill_value=value)
+    if value=="zeros":
+        return np.zeros(shape=shape)
+    if value=="ones":
+        return np.ones(shape=shape)
+    if value=="random":
+        return np.random.rand(*shape)

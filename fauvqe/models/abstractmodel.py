@@ -20,7 +20,7 @@ from numbers import Number, Real
 import numpy as np
 import sympy
 import cirq
-# import qsimcirq
+import qsimcirq
 import timeit
 #import fastmat
 
@@ -29,6 +29,7 @@ from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 from scipy.sparse import dia_matrix as scipy_dia_matrix 
 
 from fauvqe.restorable import Restorable
+import fauvqe.utils as utils
 
 class AbstractModel(Restorable):
     """
@@ -152,6 +153,42 @@ class AbstractModel(Restorable):
 
     # set simualtor to be written better, aka more general
     def set_simulator(self, simulator_name="cirq", simulator_options: dict = {}, dtype = np.complex64):
+        if simulator_name == "qsim":
+            """
+            Possible qsim options:
+                Used/Usful options:
+                't' : number of threads; default 't' 1
+                'f': fused gate, e.g. 'f': 4 fused gates to 4-qubit gates
+                        this can save MemoryBandwidth for more required calculations;
+                        default 'f': 2
+                qsimh options (Feynman simulator):
+                Simulate between pre and suffix gates and sum over all
+                pre and suffix gates
+                'k': gates on the cut;default 0
+                'w': ?;default 0
+                'v': ? ;default 0
+                'p': number of prefix gates;default 0
+                'r': number of root gates;default 0
+                'b':    bitstring
+                'i':    ?
+                'c':    ?
+                'ev'. parallel used for sample expectation values?
+                #'s': suffix gates p+r+s=k
+            More details: https://github.com/quantumlib/qsim
+            From https://github.com/quantumlib/qsim/blob/master/qsimcirq/qsimh_simulator.py:
+            def __init__(self, qsimh_options: dict = {}):
+                self.qsimh_options = {'t': 1, 'f': 2, 'v': 0}
+                self.qsimh_options.update(qsimh_options)
+            
+            cirq Simulator is configured via optional arguments sim_args:
+                dtype: Type[np.number] = np.complex64,
+                noise: "cirq.NOISE_MODEL_LIKE" = None,
+                seed: "cirq.RANDOM_STATE_OR_SEED_LIKE" = None,
+                split_untangled_states: bool = True
+            """
+            self.simulator_options = {"t": 8, "f": 4}
+            self.simulator_options.update(simulator_options)
+            self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
         if simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator(dtype=dtype)
@@ -159,7 +196,7 @@ class AbstractModel(Restorable):
             self.simulator_options = {}
             self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'cirq'".format(
+            assert False, "Invalid simulator option, received {}, allowed are 'cirq,dm,qsim'".format(
                 simulator_name
             )
 
@@ -461,3 +498,22 @@ class AbstractModel(Restorable):
         else:
             for i in range(temp_options['start'],temp_options['end']+temp_sign, temp_sign):
                 self.circuit.append(self.circuit._moments[i])
+
+    @property
+    def flattened_qubits(self):
+        """This function flattens the self.qubits (in case the qubittype is grid), since
+        cirq has a lot of issues dealing with GridQubits in nested lists.
+        The returned list is a reference of the qubits, so you can append a cicuit
+        to flattened qubits, and it will be applied to qubits 
+        
+        ie
+
+        1 2 3
+        4 5 6       to         1 2 3 4 5 6 7 8 9
+        7 8 9
+        """
+        if self.qubittype=="GridQubit" and isinstance(self.qubits[0],list):
+            return utils.flatten_qubits(self.qubits)
+        else:
+            return self.qubits
+

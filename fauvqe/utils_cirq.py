@@ -6,15 +6,16 @@ import numpy as np
 import openfermion as of
 from fauvqe.models.abstractmodel import AbstractModel
 import io
+from typing import List
 
 def qubits_shape(qubits: Tuple[cirq.Qid]):
     last_qubit = max(qubits)
     if isinstance(last_qubit,cirq.LineQubit):
-        return last_qubit.x+1
+        return (last_qubit.x+1,1)
     elif isinstance(last_qubit,cirq.GridQubit):
         return (last_qubit.row+1,last_qubit.col+1)
 
-
+# shamelessly taken from stack
 def depth(circuit: cirq.Circuit)-> int:
     depth = len(cirq.Circuit(circuit.all_operations()))
     return depth
@@ -41,6 +42,7 @@ def jw_spin_restrict_operator(sparse_operator,particle_number,n_qubits):
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
 
+# Again this function comes from openfermion, I changed the eigenvalue function to a deterministic one so that I get the same ground state everytime in case it is degenerate
 def eigenspectrum_at_particle_number(sparse_operator, particle_number,expanded=False,spin:bool=True):
     n_qubits = int(np.log2(sparse_operator.shape[0]))
     # Get the operator restricted to the subspace of the desired particle number
@@ -78,16 +80,129 @@ def svg_print_out(circuit,fpath="circuit"):
     fout.write(cirq.contrib.svg.circuit_to_svg(circuit))
     fout.close()
 
-def make_pauli_sum_hermitian(psum,anti=False):
-    psum_out=cirq.PauliSum()
-    if not anti:
-        for pstr in psum:
-            psum_out += pstr.with_coefficient(np.real(pstr.coefficient))
+def pauli_str_is_hermitian(pstr:cirq.PauliString,anti:bool=False):
+    if anti:
+        return 1j*np.imag(pstr.coefficient) == pstr.coefficient
     else:
-        for pstr in psum:
-            psum_out += pstr.with_coefficient(1j*np.imag(pstr.coefficient))
+        return np.real(pstr.coefficient) == pstr.coefficient
+def pauli_sum_is_hermitian(psum: cirq.PauliSum,anti:bool=False):
+    return all(pauli_str_is_hermitian(pstr=pstr,anti=anti) for pstr in psum)
+
+
+def make_pauli_str_hermitian(pstr,anti:bool=False):
+    if pauli_str_is_hermitian(pstr=pstr,anti=not anti):
+        return pstr.with_coefficient(1j*pstr.coefficient)
+    if not anti:
+        # hermitian A + A* = re(A)
+        return pstr.with_coefficient(np.real(pstr.coefficient))
+    else:
+        # anti-hermitian A - A* = 1j*im(A)
+        return pstr.with_coefficient(1j*np.imag(pstr.coefficient))
+    
+def make_pauli_sum_hermitian(psum: cirq.PauliSum,anti:bool=False):
+    psum_out=cirq.PauliSum()
+    if pauli_sum_is_hermitian(psum=psum,anti=anti):
+        return psum
+    psum_out = cirq.PauliSum.from_pauli_strings([make_pauli_str_hermitian(pstr) for pstr in psum])
     return psum_out
 
 
 def qmap(model:AbstractModel):
-    return {k:v for k,v in zip(utils.flatten(model.qubits),range(len(utils.flatten(model.qubits))))}
+    flattened_qubits = list(utils.flatten(model.qubits))
+    return {k:v for k,v in zip(flattened_qubits,range(len(flattened_qubits)))}
+
+
+def populate_empty_qubits(model: AbstractModel):
+    circuit_qubits=list(model.circuit.all_qubits())
+    model_qubits = model.flattened_qubits
+    missing_qubits = [x for x in model_qubits if x not in circuit_qubits]
+    circ = model.circuit.copy()
+    if circuit_qubits==[]:
+        print("The circuit has no qubits")
+        
+        circ = cirq.Circuit()
+    circ.append([cirq.I(mq) for mq in missing_qubits])
+    return circ
+
+def match_param_values_to_symbols(model,symbols,default_value:str="zeros"):
+    if model.circuit_param_values is None:
+        model.circuit_param_values = np.array([])
+    missing_size = np.size(symbols)-np.size(model.circuit_param_values)
+
+    param_default_values = utils.default_value_handler(shape=(missing_size,),value=default_value)
+    if missing_size > 0:
+        model.circuit_param_values=np.concatenate((model.circuit_param_values,param_default_values))
+
+def pauli_str_is_identity(pstr:cirq.PauliString) -> bool:
+    if not isinstance(pstr,cirq.PauliString):
+        raise ValueError("expected PauliString, got: {}".format(type(pstr)))
+    return all(pstr.gate.pauli_mask == np.array([0]*len(pstr.gate.pauli_mask)).astype(np.uint8))
+
+def all_pauli_str_commute(psum):
+    for pstr1 in psum:
+        for pstr2 in psum:
+            if not cirq.commutes(pstr1,pstr2):
+                return False
+    return True
+    
+def pauli_string_exponentiation_circuit(pstr,theta):
+    to_Z_basis=cirq.Circuit()
+    from_Z_basis=cirq.Circuit()
+    cnot_qs=[]
+    for item in pstr.items():
+        qubit,pauli = item
+        
+        if pauli == cirq.X:
+            to_Z_basis.append(cirq.H(qubit))
+            from_Z_basis.append(cirq.H(qubit))
+        if pauli == cirq.Y:
+            to_Z_basis.append(cirq.Rx(rads=np.pi/4).on(qubit))
+            from_Z_basis.append(cirq.Rx(rads=-np.pi/4).on(qubit))
+        if pauli != cirq.I:
+            cnot_qs.append(qubit)
+    qubits = list(pstr.keys())
+
+    cnots = [cirq.CNOT(cnot_qs[n],cnot_qs[n+1]) for n in range(len(cnot_qs)-1)]
+    cnot_circ = cirq.Circuit(*cnots)
+    print(cnot_qs)
+    circ = cirq.Circuit()
+    
+    circ.append(to_Z_basis)
+    circ.append(cnot_circ)
+    circ.append(cirq.Rz(rads=theta).on(qubits[-1]))
+    circ.append(cirq.Circuit(reversed(cnot_circ)))
+    circ.append(from_Z_basis)
+
+    return circ
+
+def even_excitation(coeff: float,indices: List[int],anti_hermitian:bool) -> of.FermionOperator:
+    if len(indices)%2 !=0:
+        raise ValueError("expected an even length for the indices list but got: {}".format(len(indices)))
+    half_len = int(len(indices)/2)
+    # split the indices between annihilation and creation parts
+    iind = indices[:half_len]
+    jind = indices[half_len:]
+    # ai*aj*akal
+    ac1 = ["{}^".format(n) for n in iind]
+    aa1 = ["{}".format(n) for n in jind]
+    # al*ak*ajai (h.c)
+    ac2 = ["{}^".format(n) for n in jind]
+    aa2 = ["{}".format(n) for n in iind]
+    # partiy flip from resorting the operators
+    if half_len == 1:
+        parity = 1
+    else:
+        parity = (-1)**(half_len%2)
+
+    op1=of.FermionOperator(" ".join(ac1 + aa1),coefficient=coeff)
+    op2=parity*of.FermionOperator(" ".join(ac2 + aa2),coefficient=coeff)
+    if anti_hermitian:
+        return op1 - op2
+    else:
+        return op1 + op2
+
+def single_excitation(coeff,i,j,anti_hermitian:bool):
+    return even_excitation(coeff=coeff,indices=[i,j],anti_hermitian=anti_hermitian)
+
+def double_excitation(coeff,i,j,k,l,anti_hermitian:bool):
+    return even_excitation(coeff=coeff,indices=[i,j,k,l],anti_hermitian=anti_hermitian)

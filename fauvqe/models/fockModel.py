@@ -61,24 +61,6 @@ class FockModel(AbstractModel):
         self._set_hamiltonian()
         self.set_simulator("cirq")
 
-    @property
-    def flattened_qubits(self):
-        """This function flattens the self.qubits (in case the qubittype is grid), since
-        cirq has a lot of issues dealing with GridQubits in nested lists.
-        The returned list is a reference of the qubits, so you can append a cicuit
-        to flattened qubits, and it will be applied to qubits 
-        
-        ie
-
-        1 2 3
-        4 5 6       to         1 2 3 4 5 6 7 8 9
-        7 8 9
-        """
-        if self.qubittype=="GridQubit" and isinstance(self.qubits[0],list):
-            return utils.flatten_qubits(self.qubits)
-        else:
-            return self.qubits
-
 
     @abc.abstractmethod
     def _encode_fock_hamiltonian(self):
@@ -121,14 +103,6 @@ class FockModel(AbstractModel):
                                                     observables=observables,
                                                     qubit_order=cirq.ops.QubitOrder.DEFAULT
                                                     )
-    def add_missing_qubits(model):
-        circuit_qubits=list(model.circuit.all_qubits())
-        model_qubits = model.flattened_qubits
-        missing_qubits = [x for x in model_qubits if x not in circuit_qubits]
-        if circuit_qubits==[]:
-            print("The circuit has no qubits")
-            model.circuit = cirq.Circuit()
-        model.circuit.append([cirq.I(mq) for mq in missing_qubits])
 
     def evaluate(self,observables: cirq.PauliSum):
         # this fails if the circuit has unused qubits, as they will not appear in circuit.qubits
