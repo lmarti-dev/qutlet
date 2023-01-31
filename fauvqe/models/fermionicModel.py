@@ -7,6 +7,7 @@ from typing import Callable, Tuple
 
 from fauvqe.models.fockModel import FockModel
 import fauvqe.utils as utils
+import fauvqe.utils_cirq as cqutils
 
 
 class FermionicModel(FockModel):
@@ -27,7 +28,7 @@ class FermionicModel(FockModel):
     @staticmethod
     def encode_model(fermion_hamiltonian,qubits,encoding_options) -> cirq.PauliSum:
         if "encoding_name" not in encoding_options.keys():
-            raise KeyError("Please provide an encoding name")
+            raise KeyError("encoding_name missing")
         if "Z_snake" in encoding_options.keys():
             return FermionicModel._mapped_encode_model(fermion_hamiltonian=fermion_hamiltonian,qubits=qubits,encoding_name=encoding_options["encoding_name"],Z_snake=encoding_options["Z_snake"])
         else:
@@ -50,6 +51,7 @@ class FermionicModel(FockModel):
         encodings_dict=dict()
         encodings_dict["jordan_wigner"]=of.jordan_wigner
         encodings_dict["bravyi_kitaev"]=of.bravyi_kitaev
+        encodings_dict["bravyi_kitaev_fast"]=cqutils.bravyi_kitaev_fast_wrapper
         
         if encoding_name in encodings_dict.keys():
             # need to specify the flattened_qubits here otherwise some validation methods will fail when evaluating the expectation
@@ -197,9 +199,4 @@ class FermionicModel(FockModel):
             if encoded_term not in encoded_terms:
                 encoded_terms.append(encoded_term)
         return encoded_terms
-    
 
-    def derby_klassen(self):
-        pass
-    def local_fermionic_encoding(self):
-        pass

@@ -373,6 +373,7 @@ def random_word(lenw=5,Nwords=3):
         word_file = word_files[0]
         words = io.open(word_file,mode="r",encoding="utf8").read().splitlines()
         words = [normalize_str(w) for w in words if len(w)==lenw]
+        np.random.seed(seed=None)
         indices = np.random.choice(len(words),Nwords,replace=False)
         word = "".join([cap_first(words[iii]) for iii in indices])
     else:
@@ -437,3 +438,10 @@ def default_value_handler(shape:tuple,value:Union[str,float]):
         return np.ones(shape=shape)
     if value=="random":
         return np.random.rand(*shape)
+
+
+def wrapping_slice(arr,indices):
+    out_arr =[arr[i%len(arr)] for i in indices]
+    if isinstance(arr,str):
+        return "".join(out_arr)
+    return out_arr

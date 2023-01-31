@@ -30,81 +30,81 @@ and discussed also in arXiv:2112.02025 [quant-ph] (we follow the last two)
 def set_circuit(model: FermiHubbardModel,layers=1):
     if model.qubittype != "GridQubit":
         raise NotImplementedError("HVA not implemented for qubittype {}".format(model.qubittype))
-    if model.encoding_options["encoding_name"] == "jordan_wigner":
-        circuit=cirq.Circuit()
-        symbols=[]
-        # this circuit only works for models laid out like so:
-        # u1 d1 u2 d2 
-        # u3 d3 u4 d4
-        rows = False # means precisely this because we do not weave rows but columns
-        for layer in range(layers):
-            layer_symbols=[]
-            layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
-            add_op_tree_as_circuit(main_circuit=circuit,
-                                    op_tree=alternating_onsites(model,phi=layer_symbols[-1]),
-                                    strategy=InsertStrategy.EARLIEST
-                                )       
-            add_op_tree_as_circuit(main_circuit=circuit,
-                                    op_tree=weave_sectors(model=model,
-                                                            rows=rows,
-                                                            unweave=True,
-                                                            fswap=True),
-                                    strategy=InsertStrategy.EARLIEST
-                                )       
+    if model.encoding_options["encoding_name"] != "jordan_wigner":
+        raise NotImplementedError("HVA not implemented for encoding: {}".format(model.encoding_options["encoding_name"]))
+    circuit=cirq.Circuit()
+    symbols=[]
+    # this circuit only works for models laid out like so:
+    # u1 d1 u2 d2 
+    # u3 d3 u4 d4
+    rows = False # means precisely this because we do not weave rows but columns
+    for layer in range(layers):
+        layer_symbols=[]
+        layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
+        add_op_tree_as_circuit(main_circuit=circuit,
+                                op_tree=alternating_onsites(model,phi=layer_symbols[-1]),
+                                strategy=InsertStrategy.EARLIEST
+                            )       
+        add_op_tree_as_circuit(main_circuit=circuit,
+                                op_tree=weave_sectors(model=model,
+                                                        rows=rows,
+                                                        unweave=True,
+                                                        fswap=True),
+                                strategy=InsertStrategy.EARLIEST
+                            )       
 
-            layer_symbols.append(sympy.Symbol("theta_h{}".format(layer)))
-            # performs all horizontal hoppings (odd and even)
+        layer_symbols.append(sympy.Symbol("theta_h{}".format(layer)))
+        # performs all horizontal hoppings (odd and even)
+        add_op_tree_as_circuit(main_circuit=circuit,
+                                op_tree=horizontal_hoppings(model=model,
+                                                    theta=layer_symbols[-1]),
+                                strategy=InsertStrategy.EARLIEST
+                            )
+        if model.n[0] > 1:
+            # reverse odd rows with swaps to get from Z to S snake
+            # and match even rows with FSWAPs to align corresponding indices
             add_op_tree_as_circuit(main_circuit=circuit,
-                                    op_tree=horizontal_hoppings(model=model,
-                                                        theta=layer_symbols[-1]),
-                                    strategy=InsertStrategy.EARLIEST
-                                )
-            if model.n[0] > 1:
-                # reverse odd rows with swaps to get from Z to S snake
-                # and match even rows with FSWAPs to align corresponding indices
+                                        op_tree=ZtoS(model),
+                                        strategy=InsertStrategy.EARLIEST
+                                    )   
+            # perform all vertical hoppings
+            layer_symbols.append(sympy.Symbol("theta_v{}".format(layer)))
+            for Np in range(int(model.n[1])):
                 add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=ZtoS(model),
-                                            strategy=InsertStrategy.EARLIEST
-                                        )   
-                # perform all vertical hoppings
-                layer_symbols.append(sympy.Symbol("theta_v{}".format(layer)))
-                for Np in range(int(model.n[1])):
-                    add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=Ul(model,split=False),
-                                            strategy=InsertStrategy.EARLIEST
-                                            )                    
-                    add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=Ur(model,split=False),
-                                            strategy=InsertStrategy.EARLIEST
-                                            )
-                    add_op_tree_as_circuit(main_circuit=circuit,
-                                            op_tree=vertical_hoppings(model=model,
-                                                                theta=layer_symbols[-1],
-                                                                split=False),
-                                            strategy=InsertStrategy.EARLIEST
-                                            )
+                                        op_tree=Ul(model,split=False),
+                                        strategy=InsertStrategy.EARLIEST
+                                        )                    
                 add_op_tree_as_circuit(main_circuit=circuit,
-                            op_tree=ZtoS(model),
-                            strategy=InsertStrategy.EARLIEST
-                        )  
+                                        op_tree=Ur(model,split=False),
+                                        strategy=InsertStrategy.EARLIEST
+                                        )
+                add_op_tree_as_circuit(main_circuit=circuit,
+                                        op_tree=vertical_hoppings(model=model,
+                                                            theta=layer_symbols[-1],
+                                                            split=False),
+                                        strategy=InsertStrategy.EARLIEST
+                                        )
             add_op_tree_as_circuit(main_circuit=circuit,
-                        op_tree=weave_sectors(model=model,
-                                            rows=rows,
-                                            unweave=False,
-                                            fswap=True),
+                        op_tree=ZtoS(model),
                         strategy=InsertStrategy.EARLIEST
-                    )       
+                    )  
+        add_op_tree_as_circuit(main_circuit=circuit,
+                    op_tree=weave_sectors(model=model,
+                                        rows=rows,
+                                        unweave=False,
+                                        fswap=True),
+                    strategy=InsertStrategy.EARLIEST
+                )       
 
-            symbols.append(layer_symbols)
-        
-        # give everything to the model
-        model.circuit.append(circuit)
-        model.circuit_param.extend(list(utils.flatten(symbols)))
-        if model.circuit_param_values is None:
-            model.circuit_param_values = np.array([])
-        model.circuit_param_values=np.concatenate((model.circuit_param_values,np.zeros(np.size(symbols))))
-    else:
-        raise NotImplementedError("No hva implementation for encoding: {}".format(model.encoding_options["encoding_name"]))        
+        symbols.append(layer_symbols)
+    
+    # give everything to the model
+    model.circuit.append(circuit)
+    model.circuit_param.extend(list(utils.flatten(symbols)))
+    if model.circuit_param_values is None:
+        model.circuit_param_values = np.array([])
+    model.circuit_param_values=np.concatenate((model.circuit_param_values,np.zeros(np.size(symbols))))
+                
 
 
 

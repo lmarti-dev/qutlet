@@ -48,12 +48,13 @@ class FermiHubbardModel(FermionicModel):
         # if "fock_maps" not in kwargs.keys():
         #     kwargs["fock_maps"] = utils.alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
         #     # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
-        if encoding_options["encoding_name"] in ("jordan_wigner","bravyi_kitaev"):
+        if encoding_options["encoding_name"] in ("jordan_wigner","bravyi_kitaev","derby_klassen"):
+            #derby-klassen uses 1.5N qubits in a checkerboard, but here we'll go with 2N and remove a quarter, that's easier
+            # considering how abstractmodel is setup,
             n=(self.y_dimension,2*self.x_dimension)
-        elif encoding_options["encoding_name"] in ("lfsf","derby_klassen"):
+        elif encoding_options["encoding_name"] in ("local_fermionic_encoding",):
             raise NotImplementedError
-
-
+        
         super().__init__(n=n,
                         qubittype="GridQubit",
                         encoding_options=encoding_options,

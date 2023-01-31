@@ -85,9 +85,9 @@ def pauli_str_is_hermitian(pstr:cirq.PauliString,anti:bool=False):
         return 1j*np.imag(pstr.coefficient) == pstr.coefficient
     else:
         return np.real(pstr.coefficient) == pstr.coefficient
+
 def pauli_sum_is_hermitian(psum: cirq.PauliSum,anti:bool=False):
     return all(pauli_str_is_hermitian(pstr=pstr,anti=anti) for pstr in psum)
-
 
 def make_pauli_str_hermitian(pstr,anti:bool=False):
     if pauli_str_is_hermitian(pstr=pstr,anti=not anti):
@@ -106,11 +106,9 @@ def make_pauli_sum_hermitian(psum: cirq.PauliSum,anti:bool=False):
     psum_out = cirq.PauliSum.from_pauli_strings([make_pauli_str_hermitian(pstr) for pstr in psum])
     return psum_out
 
-
 def qmap(model:AbstractModel):
     flattened_qubits = list(utils.flatten(model.qubits))
     return {k:v for k,v in zip(flattened_qubits,range(len(flattened_qubits)))}
-
 
 def populate_empty_qubits(model: AbstractModel):
     circuit_qubits=list(model.circuit.all_qubits())
@@ -206,3 +204,33 @@ def single_excitation(coeff,i,j,anti_hermitian:bool):
 
 def double_excitation(coeff,i,j,k,l,anti_hermitian:bool):
     return even_excitation(coeff=coeff,indices=[i,j,k,l],anti_hermitian=anti_hermitian)
+
+
+def checkerboard_qubits(nx,ny):
+    s=[]
+    for x in range(nx):
+        if x%2==0:
+            pat="X-X-"
+        elif x%4==1:
+            pat="-X--"
+        elif x%4==3:
+            pat="---X"
+        s.append(utils.wrapping_slice(pat,range(ny)))
+    diagram = "\n".join(s)
+    print(diagram)
+    return cirq.GridQubit.from_diagram(diagram)
+
+def sym_op_size(symbolic_operator: of.SymbolicOperator):
+    return max([x[0] for x in symbolic_operator.terms.keys()])
+
+
+def bravyi_kitaev_fast_wrapper(fermionic_operator: of.FermionOperator) -> of.QubitOperator:
+    interaction_op=of.get_interaction_operator(fermionic_operator)
+    return of.bravyi_kitaev_fast(interaction_op)
+
+
+def bksf_get_true_ground_state_at_particle_number(sparse_operator, particle_number,spin:bool=True):
+    pass
+
+# these two should be implemented relatively easily by making use of already implemented BK fast methods in bksf.py
+

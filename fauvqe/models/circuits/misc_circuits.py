@@ -11,6 +11,16 @@ import fauvqe.utils_cirq as cqutils
 import numpy as np
 import itertools
 
+"""This file defines a standard way to smoothly implement new simple "circuit" ansaetze with our class system. 
+It hinges on the generic_ansatz function which requires an ansatz function itself.
+THe ansatz function should contain the description of the circuit for any number of layers
+the layers part could have been left in generic_ansatz,
+but I wanted to have the ability to implement non-identical layers
+and not simply repeat one single layer.
+
+"""
+
+
 def generic_ansatz(model: AbstractModel,layers,ansatz: callable):
     circuit = cirq.Circuit()
     symbols = []
