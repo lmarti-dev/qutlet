@@ -1,6 +1,7 @@
 """
     Implementation of the fidelity as objective function for an AbstractModel object.
 """
+from tkinter import W
 from typing import Literal, Tuple, Dict, Optional, Union
 from numbers import Integral, Real
 
@@ -76,3 +77,9 @@ class Fidelity(Objective):
 
     def __repr__(self) -> str:
         return "<Fidelity target_state={}>".format(self._target_state)
+
+    
+class Infidelity(Fidelity):
+    def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
+        return 1-super().evaluate(wavefunction=wavefunction)
+    

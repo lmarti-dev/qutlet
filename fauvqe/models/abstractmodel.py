@@ -29,6 +29,7 @@ from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 from scipy.sparse import dia_matrix as scipy_dia_matrix 
 
 from fauvqe.restorable import Restorable
+import fauvqe.utils as utils
 
 class AbstractModel(Restorable):
     """
@@ -151,7 +152,7 @@ class AbstractModel(Restorable):
         """
 
     # set simualtor to be written better, aka more general
-    def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}, dtype = np.complex64):
+    def set_simulator(self, simulator_name="cirq", simulator_options: dict = {}, dtype = np.complex64):
         if simulator_name == "qsim":
             """
             Possible qsim options:
@@ -173,9 +174,7 @@ class AbstractModel(Restorable):
                 'c':    ?
                 'ev'. parallel used for sample expectation values?
                 #'s': suffix gates p+r+s=k
-
             More details: https://github.com/quantumlib/qsim
-
             From https://github.com/quantumlib/qsim/blob/master/qsimcirq/qsimh_simulator.py:
             def __init__(self, qsimh_options: dict = {}):
                 self.qsimh_options = {'t': 1, 'f': 2, 'v': 0}
@@ -190,14 +189,14 @@ class AbstractModel(Restorable):
             self.simulator_options = {"t": 8, "f": 4}
             self.simulator_options.update(simulator_options)
             self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
-        elif simulator_name == "cirq":
+        if simulator_name == "cirq":
             self.simulator_options = {}
             self.simulator = cirq.Simulator(dtype=dtype)
         elif simulator_name == "dm":
             self.simulator_options = {}
             self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
         else:
-            assert False, "Invalid simulator option, received {}, allowed is 'qsim', 'cirq'".format(
+            assert False, "Invalid simulator option, received {}, allowed are 'cirq,dm,qsim'".format(
                 simulator_name
             )
 
@@ -499,3 +498,22 @@ class AbstractModel(Restorable):
         else:
             for i in range(temp_options['start'],temp_options['end']+temp_sign, temp_sign):
                 self.circuit.append(self.circuit._moments[i])
+
+    @property
+    def flattened_qubits(self):
+        """This function flattens the self.qubits (in case the qubittype is grid), since
+        cirq has a lot of issues dealing with GridQubits in nested lists.
+        The returned list is a reference of the qubits, so you can append a cicuit
+        to flattened qubits, and it will be applied to qubits 
+        
+        ie
+
+        1 2 3
+        4 5 6       to         1 2 3 4 5 6 7 8 9
+        7 8 9
+        """
+        if self.qubittype=="GridQubit" and isinstance(self.qubits[0],list):
+            return utils.flatten_qubits(self.qubits)
+        else:
+            return self.qubits
+
