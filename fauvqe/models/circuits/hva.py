@@ -27,16 +27,28 @@ and discussed also in arXiv:2112.02025 [quant-ph] (we follow the last two)
 
 # it's the nth goshdarn time i redo this circuit. This time we go like z-string to s-string and then vertical hoppings along the whole thing.
 
-def set_circuit(model: FermiHubbardModel,layers=1):
+def set_circuit(model: FermiHubbardModel,layers:int=1,swaps:bool=True):
+    # this circuit only works for models laid out like so:
+    # u1 d1 u2 d2 
+    # u3 d3 u4 d4
     if model.qubittype != "GridQubit":
         raise NotImplementedError("HVA not implemented for qubittype {}".format(model.qubittype))
     if model.encoding_options["encoding_name"] != "jordan_wigner":
         raise NotImplementedError("HVA not implemented for encoding: {}".format(model.encoding_options["encoding_name"]))
+    if swaps:
+        # implement all swaps and such 
+        hva_with_swaps(model=model,layers=layers)
+    else:
+        #  assume all to all connectivity and implement only the FSIM gates
+        hva_no_swaps(model=model,layers=layers)
+
+def hva_no_swaps(model: FermiHubbardModel, layers:int=1):
+    raise NotImplementedError("HVA is only implemented with FSWAPs and SWAPs")
+
+def hva_with_swaps(model: FermiHubbardModel, layers:int=1):
     circuit=cirq.Circuit()
     symbols=[]
-    # this circuit only works for models laid out like so:
-    # u1 d1 u2 d2 
-    # u3 d3 u4 d4
+
     rows = False # means precisely this because we do not weave rows but columns
     for layer in range(layers):
         layer_symbols=[]

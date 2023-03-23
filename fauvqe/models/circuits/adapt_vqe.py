@@ -23,28 +23,52 @@ def print_if_verbose(s: str, verbose: bool):
 
 
 def pauli_string_set(
-    qubits: "list[cirq.Qid]",
-    min_len: int,
-    max_len: int,
+    qubits: list[cirq.Qid],
+    neighbour_order: int,
     pauli_list: list = None,
+    periodic: bool = False,
+    diagonal: bool = False,
     anti_hermitian: bool = True,
+    coeff: float = 0.5,
 ):
+    """Creates a list of all possible pauli strings on a given geometry up to some neighbour order
+
+    Args:
+        qubits (list[cirq.Qid]): the qubits on which the paulis are applied
+        neighbour_order (int): the neighbour order up to which operators go. 1 means nearest-neighbour only
+        pauli_list (list, optional): The list of available Pauli matrices. Defaults to None which means all 3 are used.
+        periodic (bool, optional): whether the bounds of the qubit lattice are periodic. Defaults to False.
+        diagonal (bool, optional): Whether to consider diagonal neighbours. Defaults to False.
+        anti_hermitian (bool, optional): whether to make the Pauli string anti-hermitian. Defaults to True.
+        coeff (float, optional): the default coefficient of the pauli matrix. Defaults to 0.5.
+
+    Returns:
+        list[cirq.PauliString]: List of pauli strings
+    """
     pauli_set = []
     if pauli_list is None:
+        # add I in case we want to go with non-local neighbours
         pauli_list = ["X", "Y", "Z"]
-    coefficient = 1
+    coeff = 1 * coeff
     if anti_hermitian:
-        coefficient = 1j
-    for l in range(min_len, max_len + 1):
-        combinations = itertools.combinations_with_replacement(pauli_list, l)
-        for comb in combinations:
-            dps = cirq.DensePauliString(comb, coefficient=coefficient)
-            for start in range(len(qubits)):
-                i1 = start
-                i2 = start + len(comb)
-                if i2 <= len(qubits):
-                    pstr = dps.on(*qubits[i1:i2])
-                    pauli_set.append(pstr)
+        coeff = 1j * coeff
+    shape = cqutils.qubits_shape(qubits)
+    numrows, numcols = shape
+    for i in range(numcols * numrows):
+        # get the neighbours up to the order on the grid of the given shape
+        neighbours = utils.grid_neighbour_list(
+            i, shape, neighbour_order, periodic=periodic, diagonal=diagonal, origin="topleft"
+        )
+        # do all the possible pauli strings combinations on this list of neighbours up to the given order
+        max_length = len(neighbours)
+        for term_order in range(1, max_length + 1):
+            # all possible permutations with repetition 3**term_order
+            combinations = itertools.product(pauli_list, repeat=term_order)
+            for comb in combinations:
+                # for each combination add a paulistring on the corresponding qubits
+                dps = cirq.DensePauliString(comb, coefficient=coeff)
+                pstr = dps.on(*(qubits[n] for n in neighbours[: len(comb)]))
+                pauli_set.append(pstr)
     return pauli_set
 
 
@@ -60,30 +84,44 @@ def fermionic_fock_set(
     """Creates a list of Hermitian fock terms for a grid of fermions of the given shape
 
     Args:
-        shape (Tuple of int): Shape of the grid, ie the number of rows and columns. For now, this only works wth 2D square constructs
+        shape (Tuple of int): Shape of the fermionic grid, with one fermionic DOF per site, ie the number of rows and columns. For now, this only works wth 2D square constructs
         neighbour_order (int): Highest (nth) nearest neighbour order of hopping terms.
-        excitation_order (int): How many fock operators are in the terms. First order is ij, 2nd order is ijkl, third is ijklmn and so on.
+        excitation_order (int): How many fock operators are in the terms. 1st order is ij, 2nd order is ijkl, 3rd is ijklmn and so on.
         periodic (bool, optional): Whether the borders of the grid have periodic boundary conditions. Defaults to False.
         diagonal: (bool): Whether the operators should wrap around the border.Defaults to False
         coeff: (float): The coefficient in front of each operator. Defaults to 0.5,
         anti_hermitian: (bool) Whether to ensure that the operators are anti hermitiant, so that they can be exponentiated into unitaries without being multiplied by 1j. Defaults to True
     """
+    all_combs = []
     numrows, numcols = shape
     fock_set = []
     for i in range(numcols * numrows):
         neighbours = utils.grid_neighbour_list(
-            i, shape, neighbour_order, periodic=periodic, diagonal=diagonal
+            i, shape, neighbour_order, periodic=periodic, diagonal=diagonal, origin="topleft"
         )
-        for term_order in range(2, 2 ** (excitation_order) + 1, 2):
-            combinations = itertools.combinations_with_replacement(
-                neighbours[1:], term_order - 1
-            )
-            for comb in combinations:
-                fock_set.append(
-                    cqutils.even_excitation(
-                        coeff=coeff, indices=(i,) + comb, anti_hermitian=anti_hermitian
-                    )
-                )
+        for term_order in range(2, 2 * (excitation_order) + 1, 2):
+            half_order = int(term_order / 2)
+            # if there are enough neighbours to get a term go on
+            if len(neighbours) >= half_order:
+                # get all combinations of non repeating indices for each half of the fock term
+                # no repetitions because two same fock terms put the thing to zero
+                half_combs = list(itertools.combinations(neighbours, half_order))
+                # products of all possible fock term halves
+                combinations = itertools.product(half_combs, half_combs)
+                for comb in combinations:
+                    # flatten
+                    comb = list(utils.flatten(comb))
+                    # not elegant but gotta avoid doubles
+                    if (
+                        i in comb
+                        and comb not in all_combs
+                        and list(reversed(comb)) not in all_combs
+                    ):
+                        term = cqutils.even_excitation(
+                            coeff=coeff, indices=comb, anti_hermitian=anti_hermitian
+                        )
+                        fock_set.append(term)
+                        all_combs.append(comb)
     return fock_set
 
 
@@ -216,12 +254,10 @@ def get_best_gate(
     for ps in paulisum_set:
         ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
         op = ps.matrix(qubits=model.flattened_qubits)
-        if np.any(utils.unitary_transpose(op) != -op):
+        if np.any(op.H != -op):
             raise ValueError("Expected op to be anti-hermitian")
         print_if_verbose("gate: {}".format(ps), verbose=verbose)
-        grad_values.append(
-            compute_gradient(ham=ham, op=op, wf=trial_wf, verbose=verbose)
-        )
+        grad_values.append(compute_gradient(ham=ham, op=op, wf=trial_wf, verbose=verbose))
     max_index = np.argmax(grad_values)
     best_ps = paulisum_set[max_index]
     if tol is not None and grad_values[max_index] < tol:
@@ -299,9 +335,7 @@ def random_iterating_step(
     cqutils.match_param_values_to_symbols(
         model=model, symbols=model.circuit_param, default_value=default_value
     )
-    print_if_verbose(
-        "adding random gate: {rgate}".format(rgate=exp_gates), verbose=verbose
-    )
+    print_if_verbose("adding random gate: {rgate}".format(rgate=exp_gates), verbose=verbose)
     return False
 
 

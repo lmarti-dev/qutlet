@@ -27,7 +27,6 @@ class FermiHubbardModel(FermionicModel):
         encoding_options: Dict = None,
         **kwargs
     ):
-
         # always lay those horizontally -> the shorter dimension goes in y and the longest gets the boundary
         # x_dimension (int): The width of the grid. y_dimension (int): The height of the grid
         # while n is the size of the qubit grid.
@@ -62,9 +61,7 @@ class FermiHubbardModel(FermionicModel):
         elif encoding_options["encoding_name"] in ("local_fermionic_encoding",):
             raise NotImplementedError
 
-        super().__init__(
-            n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs
-        )
+        super().__init__(n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs)
 
     def copy(self):
         self_copy = copy.deepcopy(self)
@@ -118,9 +115,7 @@ class FermiHubbardModel(FermionicModel):
         if name == "none":
             return []
         if name == "gaussian":
-            quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
-                self.fock_hamiltonian
-            )
+            quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
             op_tree = of.prepare_gaussian_state(
                 qubits=self.flattened_qubits,
                 quadratic_hamiltonian=quadratic_hamiltonian,
@@ -138,6 +133,8 @@ class FermiHubbardModel(FermionicModel):
             )
             return op_tree
         elif name == "computational" or name == "hadamard":
+            if initial_state is None:
+                raise ValueError("initial_state cannot be None")
             if isinstance(initial_state, int):
                 # convert int to bin and then index
                 initial_state = utils.index_bits(bin(initial_state))
@@ -163,9 +160,7 @@ class FermiHubbardModel(FermionicModel):
                                                                 Q diagonalizes Nf rows of the non-interacting hamiltonian
         """
         if Nf is None or Nf <= 0:
-            raise ValueError(
-                "Expected Nf to be a positive integer but got: {}".format(Nf)
-            )
+            raise ValueError("Expected Nf to be a positive integer but got: {}".format(Nf))
         if initial_state == None:
             # default initial state is all 0s
             initial_state = []
@@ -258,10 +253,7 @@ class FermiHubbardModel(FermionicModel):
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
         last_qubit = max(self.flattened_qubits)
         mat = np.array(
-            [
-                ["0" for y in range(last_qubit.col + 1)]
-                for x in range(last_qubit.row + 1)
-            ]
+            [["0" for y in range(last_qubit.col + 1)] for x in range(last_qubit.row + 1)]
         )
 
         for k, v in pauli_string.items():
