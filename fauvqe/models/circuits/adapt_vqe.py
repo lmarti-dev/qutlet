@@ -254,7 +254,7 @@ def get_best_gate(
     for ps in paulisum_set:
         ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
         op = ps.matrix(qubits=model.flattened_qubits)
-        if np.any(op.H != -op):
+        if np.any(np.conj(np.transpose(op)) != -op):
             raise ValueError("Expected op to be anti-hermitian")
         print_if_verbose("gate: {}".format(ps), verbose=verbose)
         grad_values.append(compute_gradient(ham=ham, op=op, wf=trial_wf, verbose=verbose))
