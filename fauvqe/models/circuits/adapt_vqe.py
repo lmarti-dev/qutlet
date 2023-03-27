@@ -323,7 +323,7 @@ def random_iterating_step(
     model: AbstractModel,
     paulisum_set: list,
     verbose: bool = False,
-    default_value="random",
+    default_value: str = "random",
 ):
     ind = np.random.choice(len(paulisum_set))
     param_name = utils.random_word(lenw=4, Nwords=1)
@@ -367,6 +367,11 @@ def adapt_loop(
             model.circuit = cqutils.populate_empty_qubits(model=model)
             result = optimiser.optimise(objective=objective)
             model.circuit_param_values = result.get_latest_step().params
+            print(
+                "circuit depth: {d}, number of params: {p}".format(
+                    d=cqutils.depth(model.circuit), p=len(model.circuit_param)
+                )
+            )
         else:
             print("treshold reached, exiting")
             break
