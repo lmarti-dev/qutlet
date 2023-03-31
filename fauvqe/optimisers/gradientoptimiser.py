@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import cirq
 
-#external imports
+# external imports
 import importlib
 import joblib
 
@@ -19,91 +19,94 @@ import os
 from sys import stdout
 from typing import Literal, Optional, Dict, List
 
-#internal imports
+# internal imports
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.optimisers.optimiser import Optimiser
 
+
 class GradientOptimiser(Optimiser):
     """Abstract GradientOptimiser class"""
 
-    def __init__(
-        self,
-        options: dict = {}
-    ):
+    def __init__(self, options: dict = {}):
         """GradientOptimiser
-        
+
         Parameters
         ----------
         optimiser_options: dict
             Dictionary containing additional options to individualise the optimisation routine. Contains:
                 eps: Real
                     Discretisation finesse for numerical gradient
-                
+
                 eta: Real
                     Step size for parameter update rule
-                
+
                 break_cond: {"iterations"} default "iterations"
                     Break condition for the optimisation
-                
+
                 break_param: Integral
                     "iterations" break parameter for the optimisation
-                
+
                 batch_size: Integral
-                    number of batch wavefunctions, une None as initial_state if batch_size = 0 
-                
+                    number of batch wavefunctions, use None as initial_state if batch_size = 0
+
                 symmetric_gradient: bool
                     Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-                
+
                 plot_run: bool
                     Plot cost development in optimisation run and save to fauvqe/plots
-                
+
                 use_progress_bar: bool
                     Determines whether to use tqdm's progress bar when running the optimisation
-                
+
                 dtype: np.dtype
                     data type of wavefunction
+
+                initial_state: np.ndarray
+                    initial wavefunction for simulate
         """
 
         super().__init__()
-        
+
         # Update Optimiser Options
         self.options = {
-            'eps': 1e-3, 
-            'eta': 1e-2, 
-            'break_cond': "iterations", 
-            'break_param': 100, 
-            'batch_size': 0, 
-            'symmetric_gradient': True, 
-            'plot_run': False, 
-            'use_progress_bar': False,
-            'dtype': np.complex64
+            "eps": 1e-3,
+            "eta": 1e-2,
+            "break_cond": "iterations",
+            "break_param": 100,
+            "batch_size": 0,
+            "symmetric_gradient": True,
+            "plot_run": False,
+            "use_progress_bar": False,
+            "dtype": np.complex64,
+            "initial_state": None,
         }
         self.options.update(options)
-        if(self.options['symmetric_gradient'] and self.options['batch_size'] == 0):
+        if self.options["symmetric_gradient"] and self.options["batch_size"] == 0:
             self._get_gradients = self._get_gradients_sym
             self._get_single_cost = self._get_single_cost_sym
-        elif((not self.options['symmetric_gradient']) and self.options['batch_size'] == 0):
+        elif (not self.options["symmetric_gradient"]) and self.options["batch_size"] == 0:
             self._get_gradients = self._get_gradients_asym
             self._get_single_cost = self._get_single_cost_asym
-        elif(self.options['symmetric_gradient'] and self.options['batch_size'] > 0):
+        elif self.options["symmetric_gradient"] and self.options["batch_size"] > 0:
             self._get_gradients = self._get_gradients_sym_indices
             self._get_single_cost = self._get_single_cost_sym_indices
         else:
             self._get_gradients = self._get_gradients_asym_indices
             self._get_single_cost = self._get_single_cost_asym_indices
-        
+
         assert all(
-            isinstance(n, Real) and n > 0.0 for n in [self.options['eps'], self.options['eta']]
+            isinstance(n, Real) and n > 0.0 for n in [self.options["eps"], self.options["eta"]]
         ), "Parameters must be positive, real numbers"
         assert (
-            isinstance(n, Integral) and n > 0 for n in [self.options['break_param'], self.options['batch_size']]
+            isinstance(n, Integral) and n > 0
+            for n in [self.options["break_param"], self.options["batch_size"]]
         ), "Parameters must be positive integers"
         valid_break_cond = ["iterations"]
         assert (
-            self.options['break_cond'] in valid_break_cond
+            self.options["break_cond"] in valid_break_cond
         ), "Invalid break condition, received: '{}', allowed are {}".format(
-            self.options['break_cond'], valid_break_cond
+            self.options["break_cond"], valid_break_cond
         )
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
@@ -112,7 +115,7 @@ class GradientOptimiser(Optimiser):
 
     def _set_default_n_jobs(self):
         # max(n_jobs) = 2*n_params, as otherwise overhead of not used jobs
-        if(self.options['symmetric_gradient']):
+        if self.options["symmetric_gradient"]:
             max_thread = 2 * np.size(self._circuit_param)
         else:
             max_thread = np.size(self._circuit_param) + 1
@@ -127,14 +130,16 @@ class GradientOptimiser(Optimiser):
         )
         # Try to reset qsim threads, which overwrites the simulator if it was not qsim
         try:
-            if str(self._objective.model.simulator.__class__).find('qsim') > 0:
+            if str(self._objective.model.simulator.__class__).find("qsim") > 0:
                 sim_name = "qsim"
             t_new = int(max(np.divmod(multiprocessing.cpu_count() / 2, n_jobs)[0], 1))
-            self._objective.model.set_simulator(simulator_name=sim_name,simulator_options={"t": t_new})
+            self._objective.model.set_simulator(
+                simulator_name=sim_name, simulator_options={"t": t_new}
+            )
         except:
             pass
         return n_jobs
-    
+
     def optimise(
         self,
         objective: Objective,
@@ -150,12 +155,12 @@ class GradientOptimiser(Optimiser):
         Parameters
         ----------
         n_jobs: Integral, default -1
-            The number ob simultaneous jobs (-1 for auto detection). Auto-detection is not sensible for the case that there is one more process than a multiple of available cores. Hence, it is advisable to hand over a suiting n_jobs in such a case. 
+            The number ob simultaneous jobs (-1 for auto detection). Auto-detection is not sensible for the case that there is one more process than a multiple of available cores. Hence, it is advisable to hand over a suiting n_jobs in such a case.
         objective: Objective
             The objective to optimise
         continue_at: OptimisationResult, optional
             Continue a optimisation
-        
+
         Returns
         -------
         OptimisationResult
@@ -181,7 +186,7 @@ class GradientOptimiser(Optimiser):
             skip_steps = 0
 
         self._n_param = np.size(temp_cpv)
-        
+
         # Handle n_jobs parameter
         assert isinstance(
             n_jobs, Integral
@@ -192,48 +197,58 @@ class GradientOptimiser(Optimiser):
         # Determine maximal number of threads and reset qsim 't' flag for n_job = -1 (default)
         if n_jobs < 1:
             n_jobs = self._set_default_n_jobs()
-        
+
         # Do step until break condition
-        if self.options['break_cond'] == "iterations":
-            #Set progress bar, if wanted
-            pbar = self.create_range(self.options['break_param'] - skip_steps, self.options['use_progress_bar'])
-            costs = np.empty(self.options['break_param'] - skip_steps)
-            if(self.options['symmetric_gradient']):
-                tmp_cost = [None for i in range(self.options['break_param'] - skip_steps)]
+        if self.options["break_cond"] == "iterations":
+            # Set progress bar, if wanted
+            pbar = self.create_range(
+                self.options["break_param"] - skip_steps, self.options["use_progress_bar"]
+            )
+            costs = np.empty(self.options["break_param"] - skip_steps)
+            if self.options["symmetric_gradient"]:
+                tmp_cost = [None for i in range(self.options["break_param"] - skip_steps)]
             else:
                 tmp_cost = costs.view()
-            #Case distinction between sym <-> asym and indices <-> no indices
-            if self.options['batch_size'] > 0:
-                indices = np.random.randint(low=0, high=self._objective.batch_size, size=(self.options['break_param'] - skip_steps, self.options['batch_size']))
+            # Case distinction between sym <-> asym and indices <-> no indices
+            if self.options["batch_size"] > 0:
+                indices = np.random.randint(
+                    low=0,
+                    high=self._objective.batch_size,
+                    size=(self.options["break_param"] - skip_steps, self.options["batch_size"]),
+                )
                 for i in pbar:
-                    temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1, indices = indices[i])
+                    temp_cpv, costs[i] = self._optimise_step(
+                        temp_cpv, n_jobs, step=i + 1, indices=indices[i]
+                    )
                     res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
             else:
                 for i in pbar:
                     temp_cpv, costs[i] = self._optimise_step(temp_cpv, n_jobs, step=i + 1)
                     res.add_step(temp_cpv.copy(), objective=tmp_cost[i])
-            #Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
-            if(self.options['plot_run']):
-                assert not self.options['symmetric_gradient'], 'Plotting only supported for asymmetric numerical gradient.' #pragma: no cover
-                plt.plot(range(self.options['break_param']), costs) #pragma: no cover
-                plt.yscale('log') #pragma: no cover
-                dir_path = os.path.abspath(os.path.dirname(__file__)) #pragma: no cover
-                plt.savefig(dir_path + '/../../plots/GD_Optimisation.png') #pragma: no cover
-            if(self.options['use_progress_bar']):
-                pbar.close() 
+            # Plot Optimisation run, if wanted (only possible for asymmetric gradient, since only there the cost function is calculated without further effort)
+            if self.options["plot_run"]:
+                assert not self.options[
+                    "symmetric_gradient"
+                ], "Plotting only supported for asymmetric numerical gradient."  # pragma: no cover
+                plt.plot(range(self.options["break_param"]), costs)  # pragma: no cover
+                plt.yscale("log")  # pragma: no cover
+                dir_path = os.path.abspath(os.path.dirname(__file__))  # pragma: no cover
+                plt.savefig(dir_path + "/../../plots/GD_Optimisation.png")  # pragma: no cover
+            if self.options["use_progress_bar"]:
+                pbar.close()
         return res
 
-#    def configure_fig(fig):
-#        fig.yscale('log')
-#        fig.title('Bla')
-#    
-#    options = {'func': configure_fig}
-    
+    #    def configure_fig(fig):
+    #        fig.yscale('log')
+    #        fig.title('Bla')
+    #
+    #    options = {'func': configure_fig}
+
     @abc.abstractmethod
     def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         """
         Perform Optimiser specific update rule and return new parameters
-        
+
         Parameters
         ----------
         temp_cpv: np.ndarray        current parameters
@@ -241,7 +256,7 @@ class GradientOptimiser(Optimiser):
         step: Integral        number of current step
         """
         raise NotImplementedError()
-    
+
     ###############################################################
     #                                                             #
     #                                                             #
@@ -249,7 +264,7 @@ class GradientOptimiser(Optimiser):
     #                                                             #
     #                                                             #
     ###############################################################
-    
+
     def _get_gradients_sym(self, temp_cpv, _n_jobs):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
         # backend options: -'loky'               seems to be always the slowest
@@ -266,7 +281,7 @@ class GradientOptimiser(Optimiser):
         # 2. Return gradients
         # Make np array?
         _costs = np.array(_costs).reshape((self._n_param, 2))
-        gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options['eps'])
+        gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options["eps"])
         return gradients_values, 0.5 * (_costs[0][0] + _costs[0][1])
 
     def _get_single_cost_sym(self, joined_dict, j):
@@ -276,11 +291,14 @@ class GradientOptimiser(Optimiser):
         # Alternative: _str_cp = str(self.circuit_param[np.divmod(j,2)[0]])
         joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])] = (
             joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])]
-            + 2 * (0.5 - np.mod(j, 2)) * self.options['eps']
+            + 2 * (0.5 - np.mod(j, 2)) * self.options["eps"]
         )
-        wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
-        return self._objective.evaluate(wf)        
-    
+        wf = self._objective.simulate(
+            param_resolver=cirq.ParamResolver(joined_dict),
+            initial_state=self.options["initial_state"],
+        )
+        return self._objective.evaluate(wf)
+
     ###############################################################
     #                                                             #
     #                                                             #
@@ -288,7 +306,7 @@ class GradientOptimiser(Optimiser):
     #                                                             #
     #                                                             #
     ###############################################################
-    
+
     def _get_gradients_sym_indices(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
         _costs = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
@@ -296,22 +314,28 @@ class GradientOptimiser(Optimiser):
             for j in range(2 * self._n_param)
         )
         _costs = np.array(_costs).reshape((self._n_param, 2))
-        gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options['eps'])
+        gradients_values = np.matmul(_costs, np.array((1, -1))) / (2 * self.options["eps"])
         return gradients_values, 0.5 * (_costs[0][0] + _costs[0][1])
-    
+
     def _get_single_cost_sym_indices(self, joined_dict, j, indices: Optional[List[int]] = None):
         joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])] = (
             joined_dict[str(self._circuit_param[np.divmod(j, 2)[0]])]
-            + 2 * (0.5 - np.mod(j, 2)) * self.options['eps']
+            + 2 * (0.5 - np.mod(j, 2)) * self.options["eps"]
         )
-        if(hasattr(self._objective, '_time_steps')):
-            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+        if hasattr(self._objective, "_time_steps"):
+            wf = np.empty(
+                shape=(len(self._objective._time_steps), len(indices), self._objective._N),
+                dtype=self.options["dtype"],
+            )
         else:
-            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options["dtype"])
         for k in range(len(indices)):
-            wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
-        return self._objective.evaluate(wf, options={'indices': indices})
-    
+            wf[:, k, :] = self._objective.simulate(
+                param_resolver=cirq.ParamResolver(joined_dict),
+                initial_state=self._objective._initial_wavefunctions[indices[k]],
+            )
+        return self._objective.evaluate(wf, options={"indices": indices})
+
     ###############################################################
     #                                                             #
     #                                                             #
@@ -319,7 +343,7 @@ class GradientOptimiser(Optimiser):
     #                                                             #
     #                                                             #
     ###############################################################
-    
+
     def _get_gradients_asym(self, temp_cpv, _n_jobs):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
         _costs = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
@@ -327,16 +351,19 @@ class GradientOptimiser(Optimiser):
             for j in range(self._n_param + 1)
         )
         _costs = np.array(_costs)
-        gradients_values = (_costs[1:] - _costs[0]) / (self.options['eps'])
+        gradients_values = (_costs[1:] - _costs[0]) / (self.options["eps"])
         return gradients_values, _costs[0]
 
     def _get_single_cost_asym(self, joined_dict, j):
-        joined_dict[str(self._circuit_param[j-1])] = (
-            joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
+        joined_dict[str(self._circuit_param[j - 1])] = (
+            joined_dict[str(self._circuit_param[j - 1])] + np.sign(j) * self.options["eps"]
         )
-        wf = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict))
+        wf = self._objective.simulate(
+            param_resolver=cirq.ParamResolver(joined_dict),
+            initial_state=self.options["initial_state"],
+        )
         return self._objective.evaluate(wf)
-    
+
     ###############################################################
     #                                                             #
     #                                                             #
@@ -347,31 +374,37 @@ class GradientOptimiser(Optimiser):
 
     def _get_gradients_asym_indices(self, temp_cpv, _n_jobs, indices: Optional[List[int]] = None):
         joined_dict = {**{str(self._circuit_param[i]): temp_cpv[i] for i in range(self._n_param)}}
-        
+
         _costs = joblib.Parallel(n_jobs=_n_jobs, backend="loky")(
             joblib.delayed(self._get_single_cost_asym_indices)(joined_dict.copy(), j, indices)
             for j in range(self._n_param + 1)
         )
         _costs = np.array(_costs)
-        gradients_values = (_costs[1:] - _costs[0]) / (self.options['eps'])
+        gradients_values = (_costs[1:] - _costs[0]) / (self.options["eps"])
         return gradients_values, _costs[0]
 
     def _get_single_cost_asym_indices(self, joined_dict, j, indices: Optional[List[int]] = None):
-        joined_dict[str(self._circuit_param[j-1])] = (
-            joined_dict[str(self._circuit_param[j-1])] + np.sign(j) * self.options['eps']
+        joined_dict[str(self._circuit_param[j - 1])] = (
+            joined_dict[str(self._circuit_param[j - 1])] + np.sign(j) * self.options["eps"]
         )
-        if(hasattr(self._objective, '_time_steps')):
-            wf = np.empty(shape=(len(self._objective._time_steps), len(indices), self._objective._N), dtype=self.options['dtype'])
+        if hasattr(self._objective, "_time_steps"):
+            wf = np.empty(
+                shape=(len(self._objective._time_steps), len(indices), self._objective._N),
+                dtype=self.options["dtype"],
+            )
         else:
-            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options['dtype'])
+            wf = np.empty(shape=(1, len(indices), self._objective._N), dtype=self.options["dtype"])
         for k in range(len(indices)):
-            wf[:, k, :] = self._objective.simulate(param_resolver=cirq.ParamResolver(joined_dict), initial_state=self._objective._initial_wavefunctions[indices[k]])
-        return self._objective.evaluate(wf, options={'indices': indices})
-    
+            wf[:, k, :] = self._objective.simulate(
+                param_resolver=cirq.ParamResolver(joined_dict),
+                initial_state=self._objective._initial_wavefunctions[indices[k]],
+            )
+        return self._objective.evaluate(wf, options={"indices": indices})
+
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
-                'options': self.options,
+                "options": self.options,
             },
         }
 

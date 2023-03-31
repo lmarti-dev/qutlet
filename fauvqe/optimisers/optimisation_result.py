@@ -114,13 +114,14 @@ class OptimisationResult:
             fauvqe.json.dump(dct, outfile, indent=indent)
             outfile.close()
         t2 = timeit.default_timer()
-        print("Store, get objective value: {}s,\t write to json {}s".format(t1-t0, t2-t1))
+        print("Store, get objective value: {}s,\t write to json {}s".format(t1 - t0, t2 - t1))
 
-    def storetxt(self,
+    def storetxt(
+        self,
         path: Union[pathlib.Path, str],  # Todo: Support File-like objects
         overwrite: bool = False,
         additional_objectives: List[Objective] = None,
-        ) -> None:
+    ) -> None:
         """
         Store Objective values of ths `OptimisationResult` in a txt file.
 
@@ -132,7 +133,7 @@ class OptimisationResult:
             Overwrite existing files
         additional_objectives: List[Objective]
             Calculate and include objective values of the given additional objectives in txt file
-        
+
 
         Raises
         ---------
@@ -146,27 +147,22 @@ class OptimisationResult:
         if not overwrite and path.exists():
             raise FileExistsError("Not overwriting existing path {}".format(path))
 
-        header_string="{} \t".format(self.__objective.__class__.__name__)
+        header_string = "{} \t".format(self.__objective.__class__.__name__)
         if additional_objectives is None:
             save_data = self.get_objectives()
         else:
-            if isinstance(additional_objectives,Objective):
+            if isinstance(additional_objectives, Objective):
                 additional_objectives = [additional_objectives]
-            save_data = np.empty([self.__index, 1 + len(additional_objectives)]) 
-            save_data[:,0] = self.get_objectives()
+            save_data = np.empty([self.__index, 1 + len(additional_objectives)])
+            save_data[:, 0] = self.get_objectives()
 
-            i=1
+            i = 1
             for objective in additional_objectives:
-                header_string+="{} \t".format(objective.__class__.__name__)
-                save_data[:,i]=self.get_objectives(objective)
-                i+=1
+                header_string += "{} \t".format(objective.__class__.__name__)
+                save_data[:, i] = self.get_objectives(objective)
+                i += 1
 
-
-        np.savetxt( path, 
-                    save_data,
-                    header=header_string,
-                    delimiter='\t')
-
+        np.savetxt(path, save_data, header=header_string, delimiter="\t")
 
     @classmethod
     def restore(cls, path: Union[pathlib.Path, str]) -> "OptimisationResult":
@@ -286,7 +282,6 @@ class OptimisationResult:
         # Todo: optimise with joblib?
         return [step.wavefunction for step in self.__steps]
 
-
     def _get_wf_from_i(self, i) -> np.ndarray:
         return self.__steps[i].wavefunction
 
@@ -303,20 +298,18 @@ class OptimisationResult:
         list of Real
         """
         if objective == None:
-            objective=self.objective
+            objective = self.objective
 
         _n_jobs = 8
-        
-        pool = Pool(_n_jobs-1)
+
+        pool = Pool(_n_jobs - 1)
         _wfs = pool.map(self._get_wf_from_i, range(self.__index))
-        
+
         _objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
-            joblib.delayed(objective.evaluate)(_wfs[i])
-            for i in range(len(_wfs))
+            joblib.delayed(objective.evaluate)(_wfs[i]) for i in range(len(_wfs))
         )
 
         return _objective_values
-        
 
     def __repr__(self) -> str:
         return "<OptimisationResult steps={} latest_step={} objective={}>".format(

@@ -421,7 +421,9 @@ def save_to_json(data, dirname=None, fname=None, randname=False):
         fpath = fname
 
     ensure_fpath(fpath)
-    fout = io.open("{fpath}.json".format(fpath=fpath), "w+", encoding="utf8")
+    if not fpath.endswith(".json"):
+        fpath = fpath + ".json"
+    fout = io.open("{fpath}".format(fpath=fpath), "w+", encoding="utf8")
     fout.write(sobj)
     fout.close()
     print("saved {}".format(fpath))

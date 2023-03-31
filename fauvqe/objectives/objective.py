@@ -71,7 +71,7 @@ class Objective(Restorable):
             initial_state=initial_state,
         ).state_vector()
 
-        return wf/np.linalg.norm(wf)
+        return wf / np.linalg.norm(wf)
 
     @abc.abstractmethod
     def evaluate(self, wavefunction: np.ndarray) -> Real:
@@ -105,24 +105,26 @@ class Objective(Restorable):
             Rotated wavefunction of the same size as the input wavefunction
         """
         return self._rotate(wavefunction, ["X" for k in range(self._model.n[0] * self._model.n[1])])
-    
+
     def _rotate_y(self, wavefunction: np.ndarray) -> np.ndarray:
         return self._rotate(wavefunction, ["Y" for k in range(self._model.n[0] * self._model.n[1])])
-    
+
     def _rotate(self, wavefunction: np.ndarray, bases: List[str]) -> np.ndarray:
-        assert len(wavefunction) == 2**(len(bases)), "List of bases does not fit dimension of wavefunction"
+        assert len(wavefunction) == 2 ** (
+            len(bases)
+        ), "List of bases does not fit dimension of wavefunction"
         rotation_circuit = cirq.Circuit()
         hadamard = lambda q: cirq.H(q)
-        s_dagger = lambda q: cirq.Z(q)**(3/2)
-        i=0
+        s_dagger = lambda q: cirq.Z(q) ** (3 / 2)
+        i = 0
         for row in self._model.qubits:
             for qubit in row:
-                if(bases[i] == "X"):
+                if bases[i] == "X":
                     rotation_circuit.append(hadamard(qubit))
-                elif(bases[i] == "Y"):
+                elif bases[i] == "Y":
                     rotation_circuit.append(s_dagger(qubit))
                     rotation_circuit.append(hadamard(qubit))
-                elif(bases[i] == "Z"):
+                elif bases[i] == "Z":
                     pass
                 else:
                     raise NotImplementedError()
@@ -133,7 +135,7 @@ class Objective(Restorable):
             # Start off at the given wavefunction
             initial_state=wavefunction,
         ).state_vector()
-    
+
     @abc.abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()  # pragma: no cover
