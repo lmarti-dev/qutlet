@@ -406,19 +406,27 @@ def infidelity(a, b):
     return 1 - fidelity(a, b)
 
 
-def save_to_json(data, dirname=None, fname=None, randname=False):
+def save_to_json(
+    data, dirname: str = None, fname: str = None, randname: bool = False, date: bool = True
+):
     sobj = json.dumps(data, ensure_ascii=False, indent=4)
 
     if fname is None:
-        fname = random_word() + "_" + now_str()
+        fname = random_word() + "_"
     elif randname:
-        fname = fname + "_" + random_word() + "_" + now_str()
+        fname = fname + "_" + random_word() + "_"
     else:
-        fname = fname + "_" + now_str()
+        fname = fname + "_"
     if dirname is not None:
+        # expand environment variables
+        if "$" in dirname:
+            dirname = os.path.expandvars(dirname)
         fpath = os.path.join(dirname, fname)
     else:
         fpath = fname
+
+    if date:
+        fpath = fpath + now_str()
 
     ensure_fpath(fpath)
     if not fpath.endswith(".json"):
