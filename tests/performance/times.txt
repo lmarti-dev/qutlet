@@ -2567,3 +2567,33 @@ Sequential Time: 12.7533438205719
 Parallel Time: 4.487656116485596
 >>>>>>> 55a5d013284b152a49c514bedbe87d6c57f7e1a2
 
+===Tue, 04 Apr 2023 13:56:59 +0000===
+Test No Indices 
+
+Sequential Time: 2.3483917713165283
+Parallel Time: 1.1065385341644287
+
+===Tue, 04 Apr 2023 13:57:35 +0000===
+Test Indices 
+
+Sequential Time: 23.650033473968506
+Parallel Time: 12.27641248703003
+
+===Tue, 04 Apr 2023 13:57:54 +0000===
+Test Indices 
+
+Sequential Time: 12.51258635520935
+Parallel Time: 6.665971279144287
+
+===Tue, 04 Apr 2023 13:58:32 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 26.174845933914185
+Parallel Time: 12.346499681472778
+
+===Tue, 04 Apr 2023 13:58:54 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 15.07288932800293
+Parallel Time: 6.432308912277222
+

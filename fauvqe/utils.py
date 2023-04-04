@@ -360,6 +360,8 @@ def ensure_fpath(fpath: os.PathLike):
         fpath (os.PathLike): the file path (with the file at the end)
     """
     dirname = os.path.dirname(fpath)
+    # turn $HOME and such into actual paths.
+    dirname = os.path.expandvars(dirname)
     if dirname != "":
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -418,9 +420,6 @@ def save_to_json(
     else:
         fname = fname + "_"
     if dirname is not None:
-        # expand environment variables
-        if "$" in dirname:
-            dirname = os.path.expandvars(dirname)
         fpath = os.path.join(dirname, fname)
     else:
         fpath = fname
