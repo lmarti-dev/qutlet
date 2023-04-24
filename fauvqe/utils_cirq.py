@@ -7,6 +7,24 @@ import openfermion as of
 from fauvqe.models.abstractmodel import AbstractModel
 import io
 from typing import List
+import scipy
+
+
+def mean_coeff_n_terms(fop: of.FermionOperator, n: int) -> float:
+    mean_coeff = np.mean(list(fop.terms[k] for k in fop.terms.keys() if len(k) == n))
+    return mean_coeff
+
+
+def fermion_sites_number(fop: of.FermionOperator) -> int:
+    """Returns the highest index of some hamiltonian + 1
+
+    Args:
+        fop (of.FermionOperator): The FermionOperator containing the Hamiltonian
+
+    Returns:
+        int: The highest index + 1
+    """
+    return max([y[0] for x in fop.terms for y in x]) + 1
 
 
 def qubits_shape(qubits: Tuple[cirq.Qid]):
@@ -23,14 +41,26 @@ def depth(circuit: cirq.Circuit) -> int:
     return depth
 
 
-def jw_spin_correct_indices(n_electrons, n_qubits):
+# TODO: remove n_spin_up and have n_electrons as list if needed
+
+
+def jw_spin_correct_indices(n_electrons, n_qubits, n_spin_up=None):
     # since we usually fill even then odd indices, and in the default jw,
     # the up spins are even and odd are down, we check if we have the correct
     # up and down spin count before passing the indices back
     # when Nf is odd, we assume there is one more even indices, since those are filled even-first.
+    # I guess we could use abs() but then we would mix two unrelated parity states
+    # in the case n_spin_up is defined, then we count the number of spin_up (even indices) in the comb
     combinations = itertools.combinations(range(n_qubits), n_electrons)
+
+    if n_spin_up is None:
+        # we get the correct combinations by checking there is the same amount of even and odd indices in the comb
+        n_spin_up = int(np.ceil(n_electrons / 2))
+
     correct_combinations = [
-        list(c) for c in combinations if utils.sum_even(c) - utils.sum_odd(c) == n_electrons % 2
+        list(c)
+        for c in combinations
+        if utils.sum_even(c) == n_spin_up and utils.sum_odd(c) == (n_electrons - n_spin_up)
     ]
     jw_indices = [sum([2**iii for iii in combination]) for combination in correct_combinations]
     return jw_indices
@@ -41,47 +71,76 @@ def jw_spin_correct_indices(n_electrons, n_qubits):
 # also implemented is the possibility to further restrict the Fock space to match spin occupations
 
 
-def jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits):
+def jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits, n_spin_up=None):
     if n_qubits is None:
         n_qubits = int(np.log2(sparse_operator.shape[0]))
 
-    select_indices = jw_spin_correct_indices(n_electrons=particle_number, n_qubits=n_qubits)
+    select_indices = jw_spin_correct_indices(
+        n_electrons=particle_number, n_qubits=n_qubits, n_spin_up=n_spin_up
+    )
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
 
 # Again this function comes from openfermion, I changed the eigenvalue function to a deterministic one so that I get the same ground state everytime in case it is degenerate
 def eigenspectrum_at_particle_number(
-    sparse_operator, particle_number, expanded=False, spin: bool = True
+    sparse_operator,
+    particle_number,
+    expanded=False,
+    spin: bool = True,
+    n_spin_up=None,
+    sparse: bool = False,
+    k: int = None,
 ):
     n_qubits = int(np.log2(sparse_operator.shape[0]))
     # Get the operator restricted to the subspace of the desired particle number
+
     if spin:
-        jw_restrict_operator_func = jw_spin_restrict_operator
-        jw_indices_func = jw_spin_correct_indices
+        restricted_operator = jw_spin_restrict_operator(
+            sparse_operator=sparse_operator,
+            particle_number=particle_number,
+            n_qubits=n_qubits,
+            n_spin_up=n_spin_up,
+        )
     else:
-        jw_restrict_operator_func = of.jw_number_restrict_operator
-        jw_indices_func = of.jw_number_indices
-    restricted_operator = jw_restrict_operator_func(
-        sparse_operator=sparse_operator, particle_number=particle_number, n_qubits=n_qubits
-    )
+        restricted_operator = of.jw_number_restrict_operator(
+            sparse_operator=sparse_operator, particle_number=particle_number, n_qubits=n_qubits
+        )
     # Compute eigenvalues and eigenvectors
-    dense_restricted_operator = restricted_operator.toarray()
-    eigvals, eigvecs = np.linalg.eigh(dense_restricted_operator)
+    if sparse:
+        eigvals, eigvecs = scipy.sparse.linalg.eigsh(restricted_operator, k=k)
+    else:
+        dense_restricted_operator = restricted_operator.toarray()
+        eigvals, eigvecs = np.linalg.eigh(dense_restricted_operator)
     if expanded:
         expanded_eigvecs = np.zeros((2**n_qubits, 2**n_qubits), dtype=complex)
         for iii in range(expanded_eigvecs.shape[-1]):
-            expanded_eigvecs[
-                jw_indices_func(n_electrons=particle_number, n_qubits=n_qubits), iii
-            ] = eigvecs[:, iii]
+            if spin:
+                expanded_eigvecs[
+                    jw_spin_correct_indices(
+                        n_electrons=particle_number, n_qubits=n_qubits, n_spin_up=n_spin_up
+                    ),
+                    iii,
+                ] = eigvecs[:, iii]
+            else:
+                expanded_eigvecs[
+                    of.jw_number_indices(n_electrons=particle_number, n_qubits=n_qubits), iii
+                ] = eigvecs[:, iii]
+
             return eigvals, expanded_eigvecs
     return eigvals, eigvecs
 
 
 def jw_get_true_ground_state_at_particle_number(
-    sparse_operator, particle_number, spin: bool = True
+    sparse_operator, particle_number, spin: bool = True, n_spin_up: int = None, sparse: bool = False
 ):
     eigvals, eigvecs = eigenspectrum_at_particle_number(
-        sparse_operator, particle_number, expanded=True, spin=spin
+        sparse_operator,
+        particle_number,
+        expanded=True,
+        spin=spin,
+        n_spin_up=n_spin_up,
+        sparse=sparse,
+        k=1,
     )
     state = eigvecs[:, 0]
     return eigvals[0], state

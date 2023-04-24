@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple, Union, Sequence
 
 
 from fauvqe.models.abstractmodel import AbstractModel
 import fauvqe.utils as utils
-import openfermion as of 
+import openfermion as of
 import cirq
 import scipy
+
 
 class FockModel(AbstractModel):
     r"""
     Implements a class that can run VQEs on occupation basis hamiltonians
-    
-    the Hamiltonian looks like 
+
+    the Hamiltonian looks like
 
     \( H = \sum_{ij} t_{ij} a^{\dagger}_i a_j + \sum_{ijkl} t_{ijkl} a^{\dagger}_{i} a^{dagger}_{j} a_k a_l \)
 
@@ -31,19 +32,21 @@ class FockModel(AbstractModel):
     operator: Symbolic operator instance, not necessarily a complete hamiltonian, could simply be 1^0 say
 
     """
-    def __init__(self,*,
-                qubittype,
-                n,
-                qubit_maps: Tuple[Callable]=None,
-                fock_maps: Tuple[Callable]=None,
-                encoding_options: dict
-                ):
-        super().__init__(qubittype=qubittype,
-                         n=n)
-        self.fock_hamiltonian: of.SymbolicOperator=None
-        self.qubit_maps=qubit_maps
-        self.fock_maps=fock_maps
-        self.encoding_options=encoding_options
+
+    def __init__(
+        self,
+        *,
+        qubittype,
+        n,
+        qubit_maps: Tuple[Callable] = None,
+        fock_maps: Tuple[Callable] = None,
+        encoding_options: dict,
+    ):
+        super().__init__(qubittype=qubittype, n=n)
+        self.fock_hamiltonian: of.SymbolicOperator = None
+        self.qubit_maps = qubit_maps
+        self.fock_maps = fock_maps
+        self.encoding_options = encoding_options
 
         # get the fock hamiltonian
         self._set_fock_hamiltonian()
@@ -61,56 +64,51 @@ class FockModel(AbstractModel):
         self._set_hamiltonian()
         self.set_simulator("cirq")
 
-
     @abc.abstractmethod
     def _encode_fock_hamiltonian(self):
-        raise NotImplementedError()# pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @abc.abstractmethod
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
-        raise NotImplementedError()# pragma: no cover
+        raise NotImplementedError()  # pragma: no cover
 
     @abc.abstractmethod
     def _get_initial_state(self):
-        raise NotImplementedError()# pragma: no cover
-    
+        raise NotImplementedError()  # pragma: no cover
+
     @abc.abstractmethod
-    def _apply_maps_to_fock_hamiltonian(self,fock_maps):
-        raise NotImplementedError()# pragma: no cover
-    
+    def _apply_maps_to_fock_hamiltonian(self, fock_maps):
+        raise NotImplementedError()  # pragma: no cover
+
     @property
     def flattened_mapped_qubits(self):
         return utils.flatten_qubits(self.apply_qubit_maps())
-    
+
     def apply_qubit_maps(self):
         if self.qubit_maps is not None:
-            qubits=self.qubits.copy()
+            qubits = self.qubits.copy()
             for qubit_map in self.qubit_maps:
                 qubits = qubit_map(qubits)
             return qubits
         return self.qubits
-    
 
     def energy(self):
         # this function should probably not do this, since it gives the actual energy of the hamiltonian
         # and not the energy of the calculated energy??
         raise NotImplementedError("Energy function doesnt exist")
 
+    def get_expectation(self, observables):
+        return self.simulator.simulate_expectation_values(
+            program=self.circuit, observables=observables, qubit_order=cirq.ops.QubitOrder.DEFAULT
+        )
 
-
-    def get_expectation(self,observables):
-        return self.simulator.simulate_expectation_values(program=self.circuit,
-                                                    observables=observables,
-                                                    qubit_order=cirq.ops.QubitOrder.DEFAULT
-                                                    )
-
-    def evaluate(self,observables: cirq.PauliSum):
+    def evaluate(self, observables: cirq.PauliSum):
         # this fails if the circuit has unused qubits, as they will not appear in circuit.qubits
         # and the validation methods will think the circuit has not the same qbits as the (hamiltonian) cirq.PauliSum
         try:
-            expectation=self.get_expectation(observables)
+            expectation = self.get_expectation(observables)
         except ValueError:
             raise NotImplementedError("Need to check this")
             self.add_missing_qubits()
-            expectation=self.get_expectation(observables)
+            expectation = self.get_expectation(observables)
         return expectation

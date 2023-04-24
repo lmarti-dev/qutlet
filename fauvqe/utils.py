@@ -1,5 +1,6 @@
 from typing import Iterable, Union
 import numpy as np
+from scipy.linalg import sqrtm
 from itertools import chain
 import collections
 import sys
@@ -10,11 +11,21 @@ import re
 import json
 
 
-def now_str():
+def now_str() -> str:  # pragma: no cover
+    """Returns the current date up to the second as a string under the format YYYY-MM-DD-hh-mm-ss
+
+    Returns:
+        str: the current date as a string
+    """
     return datetime.today().strftime("%Y-%m-%d-%H-%M-%S")
 
 
-def pi_kron(*args):
+def pi_kron(*args) -> np.ndarray:
+    """Compute the tensor product of all matrices given as input
+
+    Returns:
+        np.ndarray: the tensor product of the matrices
+    """
     R = np.kron(args[0], args[1])
     if len(args) > 2:
         for M in args[2:]:
@@ -22,7 +33,16 @@ def pi_kron(*args):
     return R
 
 
-def direct_sum(a, b):
+def direct_sum(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Computes the direct sum between two matrices
+
+    Args:
+        a (np.ndarray): the first input matrix
+        b (np.ndarray): the second input matrix
+
+    Returns:
+        np.ndarray: The direct sum of a and b
+    """
     ax = a.shape[0]
     ay = a.shape[1]
 
@@ -34,6 +54,11 @@ def direct_sum(a, b):
 
 
 def pi_direct_sum(*args):
+    """Compute the direct sum of all matrices given as arguments (i.e. creates a large matrix where all args are set as a block)
+
+    Returns:
+        np.ndarray: the output matrix whose diagonal is made of blocks of the input matrices
+    """
     R = direct_sum(args[0], args[1])
     if len(args) > 2:
         for M in args[2:]:
@@ -58,7 +83,7 @@ def flatten(a) -> Iterable:
             yield ii
 
 
-def pi_matmul(*args):
+def pi_matmul(*args) -> np.ndarray:
     """This function takes in multiple matrices (as different arguments) and multiplies them together
     Returns:
         Matrix: The matrix resulting from the multiplication
@@ -70,7 +95,16 @@ def pi_matmul(*args):
     return R
 
 
-def get_non_zero(M, eq_tol: float = 1e-15):
+def get_non_zero(M, eq_tol: float = 1e-15) -> np.ndarray:
+    """Returns an array with ones where the input array is non-null and zero elsewhere
+
+    Args:
+        M (np.ndarray): the input array
+        eq_tol (float, optional): the tolerance below which a number is considered to be 0. Defaults to 1e-15.
+
+    Returns:
+        np.ndarray: the output array with only filled with ones and zeroes.
+    """
     return (abs(np.array(M)) > eq_tol).astype(int)
 
 
@@ -157,17 +191,16 @@ def sectors_to_alternating_indices(M, even_first: bool = True, axis=None) -> np.
     M = np.array(M)
     dims = M.shape
     idxs = []
-    for ii in dims:
-        half1, half2 = np.arange(0, np.floor(ii / 2)), np.arange(np.floor(ii / 2), ii)
+    if isinstance(axis, int):
+        axis = (axis,)
+    for ind, dim in enumerate(dims):
+        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(np.floor(dim / 2), dim)
         if not even_first:
             half1, half2 = half2, half1
         if axis is None:
-            idxs = (np.array(interweave(half1, half2)).astype(int) for ii in dims)
-        else:
-            idxs = (
-                np.array(interweave(half1, half2)).astype(int) if axis == ind else np.arange(ii)
-                for ind, ii in enumerate(dims)
-            )
+            idxs.append(np.array(interweave(half1, half2)).astype(int))
+        elif ind in axis:
+            idxs.append(np.array(interweave(half1, half2)).astype(int))
     return M[np.ix_(*idxs)]
 
 
@@ -213,12 +246,17 @@ def flip_cross_rows(M, flip_odd=True):
     return M_tmp
 
 
-def lists_have_same_elements(a: Iterable, b: Iterable):
+def lists_have_same_elements(a: Iterable, b: Iterable) -> bool:
+    """Whether two lists only contains the same elements (not necessarily in the same quantities)
+
+    Args:
+        a (Iterable): the first list
+        b (Iterable): the second list
+
+    Returns:
+        bool: Whether both lists contain the same elements
+    """
     return collections.Counter(a) == collections.Counter(b)
-
-
-def flatten_qubits(gridqubits):  # pragma: no cover
-    return list(flatten(gridqubits))
 
 
 def hamming_weight(n: Union[int, str]) -> int:
@@ -277,6 +315,19 @@ def arg_alternating_index_to_sector(index: int, N: int):
 
 
 def arg_alternating_indices_to_sectors(indices: tuple, N: Union[tuple, int]):
+    """The arg equivalent to alternating indices to sectors
+
+    Args:
+        indices (tuple): the indices to be moved around
+        N (Union[tuple, int]): the dimension(s) of the vector or matrix
+
+    Raises:
+        TypeError: if the index list doens't have N elements
+        TypeError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     if isinstance(N, tuple):
         if len(N) != len(indices):
             raise TypeError("The length of N is not equal to the length of the indices vector")
@@ -314,14 +365,38 @@ def arg_flip_cross_row(x: int, y: int, dimy: int, flip_odd: bool = True):
         return x, y
 
 
-def grid_to_linear(x, y, dimx, dimy, horizontal=True):
+def grid_to_linear(x: int, y: int, dimx: int, dimy: int, horizontal: bool = True) -> int:
+    """Returns the single ravelled index corresponding to a position on a dimx-by-dimy grid given by x and y
+
+    Args:
+        x (int): the row index
+        y (int): the column index
+        dimx (int): the number of rows
+        dimy (int): the number of columns
+        horizontal (bool, optional): whether the index is row or column major. Defaults to True.
+
+    Returns:
+        int: the ravelled index
+    """
     if horizontal:
         return x * dimy + y
     else:
         return y * dimx + x
 
 
-def linear_to_grid(n, dimx, dimy, horizontal=True):
+def linear_to_grid(n: int, dimx: int, dimy: int, horizontal: bool = True) -> np.ndarray:
+    """Unravels an index into two given two dimensions and the index.
+
+    Args:
+        n (int): The initial index
+        dimx (int): Number of rows
+        dimy (int): Number of columns
+        horizontal (bool, optional): Whether to consider n as being. Defaults to True.
+
+    Returns:
+        np.ndarray: The two indices corresponding to the original unravelled index
+    """
+
     if horizontal:
         return np.unravel_index((n), (dimx, dimy), order="C")
     else:
@@ -329,11 +404,19 @@ def linear_to_grid(n, dimx, dimy, horizontal=True):
 
 
 def normalize(v: np.ndarray) -> np.ndarray:
+    """Normalizes a vector by its Frobenius norm
+
+    Args:
+        v (np.ndarray): the vector
+
+    Returns:
+        np.ndarray: the normalized vector
+    """
     return v / np.linalg.norm(v)
 
 
 def sum_divisible(l: list, i: int):
-    """Returns the sum of all numbers divisible by an integer i in a list
+    """Returns the amount of numbers divisible by an integer i in a list
 
     Args:
         l (list): the list of integers
@@ -345,11 +428,27 @@ def sum_divisible(l: list, i: int):
     return sum([1 if x % i == 0 else 0 for x in l])
 
 
-def sum_even(l):
+def sum_even(l: Iterable) -> int:
+    """Returns the number of even numbers in a list
+
+    Args:
+        l (Iterable): the list
+
+    Returns:
+        int: the number of even numbers
+    """
     return sum_divisible(l, 2)
 
 
-def sum_odd(l):
+def sum_odd(l: Iterable) -> int:
+    """Returns the number of odd numbers in a list
+
+    Args:
+        l (Iterable): the list
+
+    Returns:
+        int: the number of odd numbers
+    """
     return len(l) - sum_even(l)
 
 
@@ -367,17 +466,43 @@ def ensure_fpath(fpath: os.PathLike):
             os.makedirs(dirname)
 
 
-def normalize_str(s: str, token: str = ""):
-    return re.sub(r"\W", token, s)
+def normalize_str(s: str, token: str = "") -> str:
+    """Replaces all non alphanumeric symbols in a string with token
+
+    Args:
+        s (str): the string to be normalized
+        token (str, optional): the token which will replace all occurrences of non-alphanumeric symbols. Defaults to "".
+
+    Returns:
+        str: the normalized string
+    """
+    return re.sub(r"\W|\_", token, s)
 
 
-def cap_first(s: str):
+def cap_first(s: str) -> str:
+    """Capitalizes the first letter of a string. Useful for figure captions
+
+    Args:
+        s (str): the string whose first letter will be capitalized
+
+    Returns:
+        str: The string with the first letter capitalized
+    """
     if len(s) == 1:
         return s[0].upper()
     return s[0].upper() + s[1:]
 
 
-def random_word(lenw=5, Nwords=3):
+def random_word(lenw=5, Nwords=3) -> str:  # pragma: no cover
+    """Generates a random string from either the local dictionary if it is present, or simply from the alphabet
+
+    Args:
+        lenw (int, optional): length of words in string. Defaults to 5.
+        Nwords (int, optional): number of words in string. Defaults to 3.
+
+    Returns:
+        str: the random string
+    """
     dict_paths = ["/usr/share/dict/words", "/usr/dict/words"]
     word_files = [dp for dp in dict_paths if os.path.isfile(dp)]
     if len(word_files):
@@ -394,23 +519,72 @@ def random_word(lenw=5, Nwords=3):
     return word
 
 
-def fidelity(a, b):
+def fidelity(a: np.ndarray, b: np.ndarray) -> float:
+    """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
+
+    Args:
+        a (np.ndarray): the first object
+        b (np.ndarray): the second object
+
+    Raises:
+        ValueError: if there is a mismatch in the dimensions of the objects
+        ValueError: if a tensor has more than 2 dimensions
+
+    Returns:
+        float: the fidelity between the two objects
+    """
+    # remove empty dimensions
     squa = np.squeeze(a)
     squb = np.squeeze(b)
-    if np.all(squa.shape != squb.shape):
-        raise ValueError(
-            "vectors do not have the same shape a:{a},b:{b}".format(a=squa.shape, b=squb.shape)
-        )
-    return np.sqrt(np.abs(np.dot(np.conj(squa), squb) * np.dot(np.conj(squb), squa)))
+    # check for dimensions mismatch
+    if len(set((*squa.shape, *squb.shape))) > 1:
+        raise ValueError("Dimension mismatch: {} and {}".format(squa.shape, squb.shape))
+    # case for two vectors
+    if len(squa.shape) == 1 and len(squb.shape) == 1:
+        return np.sqrt(np.abs(np.dot(np.conj(squa), squb) * np.dot(np.conj(squb), squa)))
+    else:
+        # case for one matrix and one vector, or two matrices
+        items = []
+        for item in (squa, squb):
+            if len(item.shape) == 1:
+                items.append(np.outer(item, item))
+            elif len(item.shape) == 2:
+                items.append(item)
+            else:
+                raise ValueError("expected vector or matrix, got {}dimensions".format(item.shape))
+
+        items[0] = sqrtm(items[0])
+        print(items)
+        rho_sigma_rho = pi_matmul(items[0], items[1], items[0])
+        final_mat = sqrtm(rho_sigma_rho)
+        return np.trace(final_mat) ** 2
 
 
-def infidelity(a, b):
+def infidelity(a: np.ndarray, b: np.ndarray) -> float:
+    """Computes the infidelity between two wavefunctions or density matrices (or any combination thereof)
+
+    Args:
+        a (np.ndarray): the first wavefunction or density matrix
+        b (np.ndarray): the second wavefunction or density matrix
+
+    Returns:
+        float: the infidelity between a and b
+    """
     return 1 - fidelity(a, b)
 
 
 def save_to_json(
     data, dirname: str = None, fname: str = None, randname: bool = False, date: bool = True
 ):
+    """Saves data to json with more steps for convenience
+
+    Args:
+        data (jsonifiable object): data to be saved
+        dirname (str, optional): directory to save the object to. Defaults to None.
+        fname (str, optional): name of the json file. Defaults to None.
+        randname (bool, optional): whether to append a random string to the name. Defaults to False.
+        date (bool, optional): whether to append the date to the string. Defaults to True.
+    """
     sobj = json.dumps(data, ensure_ascii=False, indent=4)
 
     if fname is None:
@@ -434,11 +608,6 @@ def save_to_json(
     fout.write(sobj)
     fout.close()
     print("saved {}".format(fpath))
-
-
-def hex_to_rgb(hex: str):
-    hex = hex.lstrip("#").upper()
-    return tuple(int(hex[i : i + 2], 16) for i in (0, 2, 4))
 
 
 def grid_neighbour_list(
@@ -475,7 +644,7 @@ def grid_neighbour_list(
         for k in range(n + colleft, n + colright + 1):
             if periodic:
                 j = j % numrows
-                k + k % numcols
+                k = k % numcols
             if j < numrows and k < numcols and j >= 0 and k >= 0:
                 if diagonal:
                     grid.append(mat[j, k])
@@ -502,9 +671,11 @@ def default_value_handler(shape: tuple, value: Union[str, float]):
         return np.ones(shape=shape)
     if value == "random":
         return np.random.rand(*shape)
+    else:
+        raise ValueError("expected a valid option, got {}".format(value))
 
 
-def wrapping_slice(arr: list, indices: list):
+def wrapping_slice(arr: Iterable, indices: list):
     """Get a slice of some array (can be str) given some indices which wraps around if the index list is longer than the array
 
     Args:
@@ -518,3 +689,19 @@ def wrapping_slice(arr: list, indices: list):
     if isinstance(arr, str):
         return "".join(out_arr)
     return out_arr
+
+
+def jw_computational_wf(indices: list, Nqubits: int) -> np.ndarray:
+    """Creates a 2**Nqubits wavefunction corresponding to the computational state of Nqubits with the qubits in indices set to one
+
+    Args:
+        indices (list): the indices of the qubits which are non-zero
+        Nqubits (int): the number of qubits in the wavefunction
+
+    Returns:
+        np.ndarray: 2**Nqubits vector with a one in the entry correspknding to the desired computational state
+    """
+    wf = np.zeros((2**Nqubits))
+    jw_index = sum((2 ** (iii) for iii in indices))
+    wf[jw_index] = 1
+    return wf
