@@ -33,10 +33,18 @@ class ScipyOptimisers(Optimiser):
         minimize_options={"method": "L-BFGS-B"},
         initial_state=None,
         initial_params="random",
+        save_each_function_call: bool = False,
         method_options: dict = {},
     ):
+        self.save_each_function_call = save_each_function_call
         self.minimize_options = minimize_options
-        self.method_options = method_options
+        self.method_options = {
+            "maxiter": 1e3,
+            "maxfev": 1e3,
+            "disp": True,
+            "ftol": 1e-12,
+        }
+        self.method_options.update(method_options)
         self.initial_state = initial_state
         self.initial_params = initial_params
         self.function_calls_count = 0
@@ -53,7 +61,8 @@ class ScipyOptimisers(Optimiser):
         self.function_calls_count += 1
         wf = self.simulate(x)
         objective_value = self._objective.evaluate(wavefunction=wf)
-        self._fauvqe_res.add_step(params=x, wavefunction=wf, objective=objective_value)
+        if self.save_each_function_call:
+            self._fauvqe_res.add_step(params=x, wavefunction=wf, objective=objective_value)
         return objective_value
 
     def optimise(self, objective: Objective):
@@ -71,12 +80,12 @@ class ScipyOptimisers(Optimiser):
 
         # add the initial step
         process_step(x0)
+        if not self.save_each_function_call:
+            callback = process_step
+        else:
+            callback = None
         scipy_res = minimize(
-            self.fun,
-            x0,
-            **self.minimize_options,
-            # callback=process_step,
-            options=self.method_options
+            self.fun, x0, **self.minimize_options, callback=callback, options=self.method_options
         )
         # add the last step when the simulation is done
         x_final = scipy_res.x

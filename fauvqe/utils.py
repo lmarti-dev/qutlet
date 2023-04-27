@@ -11,6 +11,7 @@ import re
 import json
 
 import fauvqe.json
+from scipy.sparse import csc_matrix
 
 
 def now_str() -> str:  # pragma: no cover
@@ -518,7 +519,56 @@ def random_word(lenw=5, Nwords=3) -> str:  # pragma: no cover
     return word
 
 
-def fidelity(a: np.ndarray, b: np.ndarray) -> float:
+def sparse_fidelity(a: np.ndarray, b: np.ndarray) -> float:
+    """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
+
+    Args:
+        a (np.ndarray): the first object
+        b (np.ndarray): the second object
+
+    Raises:
+        ValueError: if there is a mismatch in the dimensions of the objects
+        ValueError: if a tensor has more than 2 dimensions
+
+    Returns:
+        float: the fidelity between the two objects
+    """
+    # remove empty dimensions
+    squa = np.squeeze(a)
+    squb = np.squeeze(b)
+    # check for dimensions mismatch
+    if len(set((*squa.shape, *squb.shape))) > 1:
+        raise ValueError("Dimension mismatch: {} and {}".format(squa.shape, squb.shape))
+    # case for two vectors
+    sparse_a = csc_matrix(squa)
+    sparse_b = csc_matrix(squb)
+    if len(sparse_a.get_shape()) == 1 and len(sparse_b.get_shape()) == 1:
+        return np.sqrt(
+            (
+                sparse_a.conj(bool=True).dot(sparse_b) * sparse_b.conj(bool=True).dot(sparse_a)
+            ).toarray()
+        )
+    else:
+        raise NotImplementedError("no sqrtm for sparse matrices yet")
+        # case for one matrix and one vector, or two matrices
+        items = []
+        for item in (sparse_a, sparse_b):
+            if len(item.get_shape()) == 1:
+                items.append(item.getH() * item)
+            elif len(item.get_shape()) == 2:
+                items.append(item)
+            else:
+                raise ValueError(
+                    "expected vector or matrix, got {}dimensions".format(item.get_shape())
+                )
+
+        items[0] = sqrtm(items[0])
+        rho_sigma_rho = items[0] * items[1] * items[0]
+        final_mat = sqrtm(rho_sigma_rho)
+        return np.trace(final_mat) ** 2
+
+
+def fidelity(a: np.ndarray, b: np.ndarray, sparse: bool = False) -> float:
     """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
 
     Args:
