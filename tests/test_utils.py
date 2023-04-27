@@ -24,10 +24,11 @@ import fauvqe.utils as utils
                 [1, 1, 1, 1, 1, 1, 1, 1, 1],
             ],
         ),
+        ([np.eye(2), np.ones((2, 2)), np.ones((2, 2))], np.kron(np.eye(2), np.ones((4, 4)))),
     ],
 )
 def test_pi_kron(l, correct):
-    assert (utils.pi_kron(*l) == np.array(correct)).all()
+    assert (np.array(utils.pi_kron(*l)) == np.array(correct)).all()
 
 
 @pytest.mark.parametrize(
@@ -94,10 +95,29 @@ def test_flatten(a, correct):
 
 
 @pytest.mark.parametrize(
-    "M,correct,even_first",
+    "M,correct,even_first,axis",
     [
-        ([0, 1, 2, 3, 4, 5], [0, 2, 4, 1, 3, 5], True),
-        ([[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]], [[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]], True),
+        ([0, 1, 2, 3, 4, 5], [0, 2, 4, 1, 3, 5], True, None),
+        ([[0, 1], [2, 3]], [[2, 3], [0, 1]], False, 0),
+        (
+            [0, 1, 2, 3, 4, 5],
+            [
+                1,
+                3,
+                5,
+                0,
+                2,
+                4,
+            ],
+            False,
+            None,
+        ),
+        (
+            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
+            [[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]],
+            True,
+            None,
+        ),
         (
             [
                 [0, 1, 2, 3, 4, 5],
@@ -112,17 +132,19 @@ def test_flatten(a, correct):
                 [18, 20, 22, 19, 21, 23],
             ],
             True,
+            None,
         ),
     ],
 )
-def test_alternating_indices_to_sectors(M, correct, even_first):
-    assert (utils.alternating_indices_to_sectors(np.array(M), even_first) == correct).all()
+def test_alternating_indices_to_sectors(M, correct, even_first, axis):
+    assert (utils.alternating_indices_to_sectors(np.array(M), even_first, axis) == correct).all()
 
 
 @pytest.mark.parametrize(
     "M,correct,even_first,axis",
     [
         ([0, 2, 4, 1, 3, 5], [0, 1, 2, 3, 4, 5], True, 0),
+        ([0, 2, 4, 1, 3, 5], [1, 0, 3, 2, 5, 4], False, None),
         (
             [[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]],
             [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
@@ -148,7 +170,9 @@ def test_alternating_indices_to_sectors(M, correct, even_first):
     ],
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
-    assert (utils.sectors_to_alternating_indices(np.array(M), even_first, axis) == correct).all()
+    assert (
+        utils.sectors_to_alternating_indices(np.array(M), even_first, axis) == np.array(correct)
+    ).all()
 
 
 @pytest.mark.parametrize(
@@ -165,14 +189,63 @@ def test_sectors_to_alternating_indices(M, correct, even_first, axis):
             True,
         ),
         (
-            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
-            [[5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5]],
+            np.array(
+                [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+            ),
+            np.array(
+                [[5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5]]
+            ),
             False,
         ),
     ],
 )
 def test_flip_cross_rows(M, correct, flip_odd):
-    assert (utils.flip_cross_rows(np.array(M), flip_odd) == correct).all()
+    assert (np.array(utils.flip_cross_rows(M, flip_odd) == correct)).all()
+
+
+@pytest.mark.parametrize(
+    "M,correct,flip_odd",
+    [
+        (
+            [[1, 2], [3, 4]],
+            [[1, 4], [3, 2]],
+            True,
+        ),
+        (
+            np.array([[1, 2], [3, 4]]),
+            np.array([[3, 2], [1, 4]]),
+            False,
+        ),
+    ],
+)
+def test_flip_cross_cols(M, correct, flip_odd):
+    assert (np.array(utils.flip_cross_cols(M, flip_odd) == correct)).all()
+
+
+@pytest.mark.parametrize(
+    "M,correct,rc,flip_odd",
+    [
+        (
+            [[1, 2], [3, 4]],
+            [[1, 2], [4, 3]],
+            "r",
+            True,
+        ),
+        (
+            [[1, 2], [3, 4]],
+            [[3, 2], [1, 4]],
+            "c",
+            False,
+        ),
+    ],
+)
+def test_flip_cross(M, correct, rc, flip_odd):
+    assert (utils.flip_cross(np.array(M), rc, flip_odd) == correct).all()
+
+
+def test_flip_cross_error():
+    with pytest.raises(ValueError):
+        utils.flip_cross(M=[1, 2], rc="u")
 
 
 @pytest.mark.parametrize(
@@ -192,18 +265,25 @@ def test_hamming_weight(i, correct):
     assert utils.hamming_weight(i) == correct
 
 
+def test_hamming_weight_error():
+    with pytest.raises(TypeError):
+        utils.hamming_weight("lol")
+        utils.hamming_weight({"a": 2})
+
+
 @pytest.mark.parametrize(
-    "a,correct",
+    "a,correct,ones",
     [
-        (bin(300), [0, 3, 5, 6]),
-        (bin(399), [0, 1, 5, 6, 7, 8]),
-        (bin(1), [0]),
-        (bin(0), []),
-        (bin(-29), [0, 1, 2, 4]),
+        (bin(300), [0, 3, 5, 6], True),
+        (bin(399), [0, 1, 5, 6, 7, 8], True),
+        (bin(1), [0], True),
+        (bin(0), [], True),
+        (bin(-29), [0, 1, 2, 4], True),
+        (10, [1, 3], False),
     ],
 )
-def test_indexbits(a, correct):
-    assert utils.index_bits(a) == correct
+def test_index_bits(a, correct, ones):
+    assert utils.index_bits(a, ones) == correct
 
 
 @pytest.mark.parametrize(
@@ -256,10 +336,23 @@ def test_lists_have_same_elements(M1, M2, correct):
     [
         ((0, 1, 2, 3, 4, 5, 6, 7), (0, 4, 1, 5, 2, 6, 3, 7), 8),
         ((3, 2), (6, 1), 10),
+        ((0, 2), (0, 1), (2, 4)),
     ],
 )
 def test_arg_alternating_indices_to_sectors(indices, correct, N):
     assert np.array(utils.arg_alternating_indices_to_sectors(indices=indices, N=N) == correct).all()
+
+
+def test_arg_alternating_indices_to_sectors_error():
+    with pytest.raises(ValueError):
+        utils.arg_alternating_indices_to_sectors(
+            indices=[1, 2],
+            N=[
+                2,
+            ],
+        )
+    with pytest.raises(TypeError):
+        utils.arg_alternating_indices_to_sectors(indices=[1, 2], N="a")
 
 
 @pytest.mark.parametrize(
@@ -291,30 +384,32 @@ def test_arg_flip_cross_row_error(x, y, dimy):
 
 
 @pytest.mark.parametrize(
-    "x,y,dimx,dimy,correct",
+    "x,y,dimx,dimy,correct,horizontal",
     [
-        (1, 2, 2, 4, 6),
-        (0, 0, 2, 4, 0),
-        (0, 3, 2, 4, 3),
-        (2, 1, 4, 2, 5),
-        (3, 1, 4, 2, 7),
+        (1, 2, 2, 4, 6, True),
+        (0, 0, 2, 4, 0, True),
+        (0, 3, 2, 4, 3, True),
+        (2, 1, 4, 2, 5, True),
+        (3, 1, 4, 2, 7, True),
+        (4, 1, 4, 2, 8, False),
     ],
 )
-def test_grid_to_linear(x, y, dimx, dimy, correct):
-    assert utils.grid_to_linear(x, y, dimx, dimy) == correct
+def test_grid_to_linear(x, y, dimx, dimy, correct, horizontal):
+    assert utils.grid_to_linear(x, y, dimx, dimy, horizontal) == correct
 
 
 @pytest.mark.parametrize(
-    "n,dimx,dimy,correct",
+    "n,dimx,dimy,correct,horizontal",
     [
-        (6, 2, 4, (1, 2)),
-        (6, 4, 2, (3, 0)),
-        (0, 10, 10, (0, 0)),
-        (6, 2, 4, (1, 2)),
+        (6, 2, 4, (1, 2), True),
+        (6, 4, 2, (3, 0), True),
+        (0, 10, 10, (0, 0), True),
+        (6, 2, 4, (1, 2), True),
+        (6, 4, 4, (2, 1), False),
     ],
 )
-def test_linear_to_grid(n, dimx, dimy, correct):
-    assert utils.linear_to_grid(n, dimx, dimy) == correct
+def test_linear_to_grid(n, dimx, dimy, correct, horizontal):
+    assert utils.linear_to_grid(n, dimx, dimy, horizontal) == correct
 
 
 @pytest.mark.parametrize(
@@ -462,12 +557,13 @@ def test_grid_neighbour_list(i, shape, neighbour_order, periodic, diagonal, orig
         ((3, 3), 3.3, np.full(shape=(3, 3), fill_value=3.3)),
         ((2, 2), "zeros", np.zeros(shape=(2, 2))),
         ((1, 1), "ones", np.ones(shape=(1, 1))),
+        ((3, 3), "random", np.random.rand(3, 3)),
         ((10, 10), "zoink", None),
     ],
 )
 def test_default_value_handler(shape, value, correct):
     if value == "random":
-        assert (utils.default_value_handler(shape, value).shape == shape).all()
+        assert (utils.default_value_handler(shape, value).shape == np.array(shape)).all()
     elif value in ["zeros", "ones"] or isinstance(value, float):
         assert (utils.default_value_handler(shape, value) == correct).all()
     else:
@@ -490,5 +586,5 @@ def test_wrapping_slice(arr, indices, correct):
         ([0, 1], 2, np.array([0, 0, 0, 1])),
     ],
 )
-def test_wrapping_slice(indices, Nqubits, correct):
+def test_jw_computational_wf(indices, Nqubits, correct):
     assert (utils.jw_computational_wf(indices, Nqubits) == correct).all()
