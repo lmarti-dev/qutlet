@@ -10,6 +10,8 @@ import io
 import re
 import json
 
+import fauvqe.json
+
 
 def now_str() -> str:  # pragma: no cover
     """Returns the current date up to the second as a string under the format YYYY-MM-DD-hh-mm-ss
@@ -270,10 +272,7 @@ def hamming_weight(n: Union[int, str]) -> int:
     """
     if isinstance(n, int):
         n = bin(n)
-    elif isinstance(n, str):
-        if bin(int(n, 2)) != n:
-            raise TypeError("Expected a valid binary number string, but got {}".format(n))
-    else:
+    elif not isinstance(n, str):
         raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
     return sum((1 for j in n if j == "1"))
 
@@ -303,7 +302,7 @@ def arg_alternating_index_to_sector(index: int, N: int):
 
     Args:
         index (int): the index to be sectorized
-        N (tuple): the vector length
+        N (int): the vector length
 
     Returns:
         int: The sectorized index
@@ -314,23 +313,23 @@ def arg_alternating_index_to_sector(index: int, N: int):
     )
 
 
-def arg_alternating_indices_to_sectors(indices: tuple, N: Union[tuple, int]):
+def arg_alternating_indices_to_sectors(indices: tuple, N: int) -> tuple:
     """The arg equivalent to alternating indices to sectors
 
     Args:
         indices (tuple): the indices to be moved around
-        N (Union[tuple, int]): the dimension(s) of the vector or matrix
+        N (int): the length of the vectors
 
     Raises:
-        TypeError: if the index list doens't have N elements
-        TypeError: _description_
+        ValueError: if the index list doens't have N elements
+        TypeError: if N is not the right type
 
     Returns:
-        _type_: _description_
+        tuple: tuple of indices corresponding to the transformation
     """
-    if isinstance(N, tuple):
+    if isinstance(N, tuple) or isinstance(N, list):
         if len(N) != len(indices):
-            raise TypeError("The length of N is not equal to the length of the indices vector")
+            raise ValueError("The length of N is not equal to the length of the indices vector")
         return tuple(map(arg_alternating_index_to_sector, indices, N))
     elif isinstance(N, int):
         return tuple(map(arg_alternating_index_to_sector, indices, [N] * len(indices)))
@@ -585,21 +584,19 @@ def save_to_json(
         randname (bool, optional): whether to append a random string to the name. Defaults to False.
         date (bool, optional): whether to append the date to the string. Defaults to True.
     """
-    sobj = json.dumps(data, ensure_ascii=False, indent=4)
+    sobj = fauvqe.json.dumps(data, ensure_ascii=False, indent=4)
 
     if fname is None:
-        fname = random_word() + "_"
+        fname = random_word()
     elif randname:
-        fname = fname + "_" + random_word() + "_"
-    else:
-        fname = fname + "_"
+        fname = fname + "_" + random_word()
     if dirname is not None:
         fpath = os.path.join(dirname, fname)
     else:
         fpath = fname
 
     if date:
-        fpath = fpath + now_str()
+        fpath = fpath + "_" + now_str()
 
     ensure_fpath(fpath)
     if not fpath.endswith(".json"):
