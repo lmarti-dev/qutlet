@@ -454,3 +454,16 @@ def test_pauli_str_is_identity_err():
 )
 def test_all_pauli_str_commute(psum, correct):
     assert cqutils.all_pauli_str_commute(psum) == correct
+
+######################################################################
+#                           Errors                                   #
+######################################################################
+@pytest.mark.parametrize(
+    "n_electrons,n_indices, correct",
+    [
+        ("a", 4, [3, 6, 9, 12])
+    ],
+)
+def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
+    with pytest.raises(TypeError):
+        cqutils.jw_spin_correct_indices(n_electrons, n_indices), correct
