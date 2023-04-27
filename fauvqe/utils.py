@@ -196,7 +196,9 @@ def sectors_to_alternating_indices(M, even_first: bool = True, axis=None) -> np.
     if isinstance(axis, int):
         axis = (axis,)
     for ind, dim in enumerate(dims):
-        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(np.floor(dim / 2), dim)
+        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(
+            np.floor(dim / 2), dim
+        )
         if not even_first:
             half1, half2 = half2, half1
         if axis is None:
@@ -273,7 +275,9 @@ def hamming_weight(n: Union[int, str]) -> int:
     if isinstance(n, int):
         n = bin(n)
     elif not isinstance(n, str):
-        raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
+        raise TypeError(
+            "expected a binary number or an int but got a {}".format(type(n))
+        )
     return sum((1 for j in n if j == "1"))
 
 
@@ -329,12 +333,16 @@ def arg_alternating_indices_to_sectors(indices: tuple, N: int) -> tuple:
     """
     if isinstance(N, tuple) or isinstance(N, list):
         if len(N) != len(indices):
-            raise ValueError("The length of N is not equal to the length of the indices vector")
+            raise ValueError(
+                "The length of N is not equal to the length of the indices vector"
+            )
         return tuple(map(arg_alternating_index_to_sector, indices, N))
     elif isinstance(N, int):
         return tuple(map(arg_alternating_index_to_sector, indices, [N] * len(indices)))
     else:
-        raise TypeError("Expected N to be either a tuple or an int, got a {}".format(type(N)))
+        raise TypeError(
+            "Expected N to be either a tuple or an int, got a {}".format(type(N))
+        )
 
 
 def arg_flip_cross_row(x: int, y: int, dimy: int, flip_odd: bool = True):
@@ -364,7 +372,9 @@ def arg_flip_cross_row(x: int, y: int, dimy: int, flip_odd: bool = True):
         return x, y
 
 
-def grid_to_linear(x: int, y: int, dimx: int, dimy: int, horizontal: bool = True) -> int:
+def grid_to_linear(
+    x: int, y: int, dimx: int, dimy: int, horizontal: bool = True
+) -> int:
     """Returns the single ravelled index corresponding to a position on a dimx-by-dimy grid given by x and y
 
     Args:
@@ -502,18 +512,23 @@ def random_word(lenw=5, Nwords=3) -> str:  # pragma: no cover
     Returns:
         str: the random string
     """
-    dict_paths = ["/usr/share/dict/words", "/usr/dict/words"]
-    word_files = [dp for dp in dict_paths if os.path.isfile(dp)]
-    if len(word_files):
+    try:
+        dict_paths = ["/usr/share/dict/words", "/usr/dict/words"]
+        word_files = [dp for dp in dict_paths if os.path.isfile(dp)]
         word_file = word_files[0]
         words = io.open(word_file, mode="r", encoding="utf8").read().splitlines()
         words = [normalize_str(w) for w in words if len(w) == lenw]
         np.random.seed(seed=None)
         indices = np.random.choice(len(words), Nwords, replace=False)
         word = "".join([cap_first(words[iii]) for iii in indices])
-    else:
+    except:
         word = "".join(
-            [chr(x) for x in np.random.choice(range(97, 97 + 26), lenw * Nwords, replace=True)]
+            [
+                chr(x)
+                for x in np.random.choice(
+                    range(97, 97 + 26), lenw * Nwords, replace=True
+                )
+            ]
         )
     return word
 
@@ -540,7 +555,9 @@ def fidelity(a: np.ndarray, b: np.ndarray) -> float:
         raise ValueError("Dimension mismatch: {} and {}".format(squa.shape, squb.shape))
     # case for two vectors
     if len(squa.shape) == 1 and len(squb.shape) == 1:
-        return np.sqrt(np.abs(np.dot(np.conj(squa), squb) * np.dot(np.conj(squb), squa)))
+        return np.sqrt(
+            np.abs(np.dot(np.conj(squa), squb) * np.dot(np.conj(squb), squa))
+        )
     else:
         # case for one matrix and one vector, or two matrices
         items = []
@@ -550,7 +567,9 @@ def fidelity(a: np.ndarray, b: np.ndarray) -> float:
             elif len(item.shape) == 2:
                 items.append(item)
             else:
-                raise ValueError("expected vector or matrix, got {}dimensions".format(item.shape))
+                raise ValueError(
+                    "expected vector or matrix, got {}dimensions".format(item.shape)
+                )
 
         items[0] = sqrtm(items[0])
         print(items)
@@ -573,7 +592,11 @@ def infidelity(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def save_to_json(
-    data, dirname: str = None, fname: str = None, randname: bool = False, date: bool = True
+    data,
+    dirname: str = None,
+    fname: str = None,
+    randname: bool = False,
+    date: bool = True,
 ):
     """Saves data to json with more steps for convenience
 
@@ -608,7 +631,12 @@ def save_to_json(
 
 
 def grid_neighbour_list(
-    i: int, shape, neighbour_order: int, periodic: bool, diagonal: bool, origin: str = "center"
+    i: int,
+    shape,
+    neighbour_order: int,
+    periodic: bool,
+    diagonal: bool,
+    origin: str = "center",
 ):
     """Creates a list of indices which are the nearest neighbour to some index on a grid. The initial index is assumed to be unraveled
 
