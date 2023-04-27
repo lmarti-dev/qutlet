@@ -29,11 +29,17 @@ import cirq
 
 class ScipyOptimisers(Optimiser):
     def __init__(
-        self, minimize_options={"method": "L-BFGS-B"}, initial_state=None, initial_params="random"
+        self,
+        minimize_options={"method": "L-BFGS-B"},
+        initial_state=None,
+        initial_params="random",
+        method_options: dict = {},
     ):
         self.minimize_options = minimize_options
+        self.method_options = method_options
         self.initial_state = initial_state
         self.initial_params = initial_params
+        self.function_calls_count = 0
         super().__init__()
 
     def simulate(self, x):
@@ -44,8 +50,11 @@ class ScipyOptimisers(Optimiser):
         return wf
 
     def fun(self, x):
+        self.function_calls_count += 1
         wf = self.simulate(x)
-        return self._objective.evaluate(wavefunction=wf)
+        objective_value = self._objective.evaluate(wavefunction=wf)
+        self._fauvqe_res.add_step(params=x, wavefunction=wf, objective=objective_value)
+        return objective_value
 
     def optimise(self, objective: Objective):
         self._objective = objective
@@ -57,13 +66,22 @@ class ScipyOptimisers(Optimiser):
 
         def process_step(xk):
             wf = self.simulate(xk)
-            self._fauvqe_res.add_step(params=xk, wavefunction=wf, objective=self.fun(xk))
-            # print(self._fauvqe_res)
+            objective_value = self._objective.evaluate(wavefunction=wf)
+            self._fauvqe_res.add_step(params=xk, wavefunction=wf, objective=objective_value)
 
-        scipy_res = minimize(self.fun, x0, **self.minimize_options, callback=process_step)
+        # add the initial step
+        process_step(x0)
+        scipy_res = minimize(
+            self.fun,
+            x0,
+            **self.minimize_options,
+            # callback=process_step,
+            options=self.method_options
+        )
         # add the last step when the simulation is done
         x_final = scipy_res.x
         process_step(x_final)
+        print("function calls: ", self.function_calls_count)
         return self._fauvqe_res
 
     def from_json_dict(self) -> Dict:
