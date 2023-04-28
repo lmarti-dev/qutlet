@@ -177,12 +177,6 @@ def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
         cqutils.jw_spin_correct_indices(n_electrons, n_indices), correct
     )
 
-
-def test_jw_spin_correct_indices_error():
-    with pytest.raises(TypeError):
-        cqutils.jw_spin_correct_indices(n_electrons="hello", n_indices=[1, 2])
-
-
 @pytest.mark.parametrize(
     "sparse_operator, particle_number, n_qubits,correct",
     [
@@ -458,12 +452,7 @@ def test_all_pauli_str_commute(psum, correct):
 ######################################################################
 #                           Errors                                   #
 ######################################################################
-@pytest.mark.parametrize(
-    "n_electrons,n_indices, correct",
-    [
-        ("a", 4, [3, 6, 9, 12])
-    ],
-)
-def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
+
+def test_jw_spin_correct_indices_error():
     with pytest.raises(TypeError):
-        cqutils.jw_spin_correct_indices(n_electrons, n_indices), correct
+        cqutils.jw_spin_correct_indices("hello", [1,2])
