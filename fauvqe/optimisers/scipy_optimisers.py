@@ -38,12 +38,7 @@ class ScipyOptimisers(Optimiser):
     ):
         self.save_each_function_call = save_each_function_call
         self.minimize_options = minimize_options
-        self.method_options = {
-            "maxiter": 1e3,
-            "maxfev": 1e3,
-            "disp": True,
-            "ftol": 1e-12,
-        }
+        self.method_options = {}
         self.method_options.update(method_options)
         self.initial_state = initial_state
         self.initial_params = initial_params
