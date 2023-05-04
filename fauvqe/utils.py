@@ -575,7 +575,7 @@ def fidelity(a: np.ndarray, b: np.ndarray) -> float:
         print(items)
         rho_sigma_rho = pi_matmul(items[0], items[1], items[0])
         final_mat = sqrtm(rho_sigma_rho)
-        return np.trace(final_mat) ** 2
+        return np.trace(final_mat)
 
 
 def infidelity(a: np.ndarray, b: np.ndarray) -> float:
