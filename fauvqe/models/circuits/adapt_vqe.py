@@ -164,35 +164,68 @@ def fermionic_paulisum_set(model: FermionicModel, set_options: dict):
     return paulisum_set
 
 
+def compute_heuristic(
+    ham: np.ndarray,
+    op: np.ndarray,
+    wf: np.ndarray,
+):
+    pass
+
+
 def compute_gradient(
     ham: np.ndarray,
     op: np.ndarray,
     wf: np.ndarray,
-    full: bool = False,
+    full: bool = True,
     eps: float = 1e-5,
     verbose: bool = False,
+    sparse: bool = False,
 ) -> float:
-    if not full:
-        # in the noiseless case dE/dt = 2Re<ps|HA|ps>
-        spham = scipy.sparse.csc_matrix(ham)
-        spop = scipy.sparse.csc_matrix(op)
-        comm = spham @ spop
-        ket = comm.dot(wf)
-        bra = wf.conj()
-        grad = np.abs(2 * np.real(np.dot(bra, ket)))
-        print_if_verbose("gradient: {:.10f}".format(grad), verbose=verbose)
+    if sparse:
+        if not full:
+            # in the noiseless case dE/dt = 2Re<ps|HA|ps>
+            spham = scipy.sparse.csc_matrix(ham)
+            spop = scipy.sparse.csc_matrix(op)
+            spwf = scipy.sparse.csc_matrix(wf)
+            comm = spham @ spop
+            ket = comm.dot(spwf.transpose())
+            bra = spwf.conj()
+            grad = float(np.abs(2 * np.real((bra @ ket).toarray())))
+            print_if_verbose("gradient: {:.10f}".format(grad), verbose=verbose)
+        else:
+            # <p|[H,A(k)]|p> = <p|(HA(k) - A(k)H)|p> = dE/dk
+            # finite diff (f(theta + eps) - f(theta - eps))/ 2eps but theta = 0
+            # if A is anti hermitian
+            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
+            # if A is hermitian the theta needs to be multiplied by 1j
+            wfexp = scipy.sparse.linalg.expm_multiply(
+                A=op, B=wf, start=-eps, stop=eps, num=2, endpoint=True
+            )
+            spham = scipy.sparse.csc_matrix(ham)
+            spwf0 = scipy.sparse.csc_matrix(wfexp[0, :]).transpose()
+            spwf1 = scipy.sparse.csc_matrix(wfexp[1, :]).transpose()
+            grad_minus = (spwf0.getH() @ spham @ spwf0).toarray()
+            grad_plus = (spwf1.getH() @ spham @ spwf1).toarray()
+            grad = float(np.abs((grad_minus - grad_plus) / (2 * eps)))
+    # dense methods (get it?)
     else:
-        # <p|[H,A(k)]|p> = <p|(HA(k) - A(k)H)|p> = dE/dk
-        # finite diff (f(theta + eps) - f(theta - eps))/ 2eps but theta = 0
-        # if A is anti hermitian
-        # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
-        # if A is hermitian the theta needs to be multiplied by 1j
-        wfexp = scipy.sparse.linalg.expm_multiply(
-            A=op, B=wf, start=-eps, stop=eps, num=2, endpoint=True
-        )
-        grad_minus = wfexp[0, :].conj().dot(ham @ wfexp[0, :])
-        grad_plus = wfexp[1, :].conj().dot(ham @ wfexp[1, :])
-        grad = np.abs((grad_minus - grad_plus) / (2 * eps))
+        if not full:
+            # dE/dt = 2Re<ps|HA|ps>
+            comm = np.matmul(ham, op)
+            ket = comm.dot(wf)
+            bra = wf.conj()
+            grad = np.abs(2 * np.real(np.dot(bra, ket)))
+        else:
+            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
+            wfexp = scipy.sparse.linalg.expm_multiply(
+                A=op, B=wf, start=-eps, stop=eps, num=2, endpoint=True
+            )
+            wfexp_plus = wfexp[1, :]
+            wfexp_minus = wfexp[0, :]
+            grad_minus = wfexp_minus.conj().dot(ham @ wfexp_minus)
+            grad_plus = wfexp_plus.conj().dot(ham @ wfexp_plus)
+            grad = np.abs((grad_minus - grad_plus) / (2 * eps))
+
     if grad > 0:
         print_if_verbose("gradient: {:.10f}".format(grad), verbose=verbose)
     return grad
@@ -250,7 +283,7 @@ def get_best_gate(
 
     grad_values = []
     # grad_values_full = []
-
+    print_if_verbose("number of gates: {}".format(len(ps)), verbose=verbose)
     for ps in paulisum_set:
         ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
         op = ps.matrix(qubits=model.flattened_qubits)

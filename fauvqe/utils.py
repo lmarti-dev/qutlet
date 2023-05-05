@@ -278,7 +278,7 @@ def hamming_weight(n: Union[int, str]) -> int:
     return sum((1 for j in n if j == "1"))
 
 
-def index_bits(a: str, ones=True) -> list:
+def index_bits(a: Union[str, int], ones=True) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
 
     Args:
@@ -290,7 +290,10 @@ def index_bits(a: str, ones=True) -> list:
     """
     if isinstance(a, int):
         a = bin(a)
-    b = a.split("b")[1]
+    if "b" in a:
+        b = a.split("b")[1]
+    else:
+        b = a
     if ones:
         return [idx for idx, v in enumerate(b) if int(v)]
     elif not ones:
@@ -519,56 +522,7 @@ def random_word(lenw=5, Nwords=3) -> str:  # pragma: no cover
     return word
 
 
-def sparse_fidelity(a: np.ndarray, b: np.ndarray) -> float:
-    """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
-
-    Args:
-        a (np.ndarray): the first object
-        b (np.ndarray): the second object
-
-    Raises:
-        ValueError: if there is a mismatch in the dimensions of the objects
-        ValueError: if a tensor has more than 2 dimensions
-
-    Returns:
-        float: the fidelity between the two objects
-    """
-    # remove empty dimensions
-    squa = np.squeeze(a)
-    squb = np.squeeze(b)
-    # check for dimensions mismatch
-    if len(set((*squa.shape, *squb.shape))) > 1:
-        raise ValueError("Dimension mismatch: {} and {}".format(squa.shape, squb.shape))
-    # case for two vectors
-    sparse_a = csc_matrix(squa)
-    sparse_b = csc_matrix(squb)
-    if len(sparse_a.get_shape()) == 1 and len(sparse_b.get_shape()) == 1:
-        return np.sqrt(
-            (
-                sparse_a.conj(bool=True).dot(sparse_b) * sparse_b.conj(bool=True).dot(sparse_a)
-            ).toarray()
-        )
-    else:
-        raise NotImplementedError("no sqrtm for sparse matrices yet")
-        # case for one matrix and one vector, or two matrices
-        items = []
-        for item in (sparse_a, sparse_b):
-            if len(item.get_shape()) == 1:
-                items.append(item.getH() * item)
-            elif len(item.get_shape()) == 2:
-                items.append(item)
-            else:
-                raise ValueError(
-                    "expected vector or matrix, got {}dimensions".format(item.get_shape())
-                )
-
-        items[0] = sqrtm(items[0])
-        rho_sigma_rho = items[0] * items[1] * items[0]
-        final_mat = sqrtm(rho_sigma_rho)
-        return np.trace(final_mat) ** 2
-
-
-def fidelity(a: np.ndarray, b: np.ndarray, sparse: bool = False) -> float:
+def fidelity(a: np.ndarray, b: np.ndarray) -> float:
     """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
 
     Args:
@@ -596,17 +550,16 @@ def fidelity(a: np.ndarray, b: np.ndarray, sparse: bool = False) -> float:
         items = []
         for item in (squa, squb):
             if len(item.shape) == 1:
-                items.append(np.outer(item, item))
+                items.append(np.outer(item, item.conj()))
             elif len(item.shape) == 2:
                 items.append(item)
             else:
-                raise ValueError("expected vector or matrix, got {}dimensions".format(item.shape))
+                raise ValueError("expected vector or matrix, got {} dimensions".format(item.shape))
 
         items[0] = sqrtm(items[0])
-        print(items)
-        rho_sigma_rho = pi_matmul(items[0], items[1], items[0])
+        rho_sigma_rho = items[0] @ items[1] @ items[0]
         final_mat = sqrtm(rho_sigma_rho)
-        return np.trace(final_mat) ** 2
+        return np.trace(final_mat)
 
 
 def infidelity(a: np.ndarray, b: np.ndarray) -> float:

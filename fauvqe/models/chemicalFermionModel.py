@@ -10,12 +10,17 @@ import fauvqe.utils_cirq as cqutils
 
 class ChemicalFermionModel(FermionicModel):
     def __init__(
-        self, fermion_operator: of.FermionOperator, encoding_options: dict = None, **kwargs
+        self,
+        fermion_operator: of.FermionOperator,
+        encoding_options: dict = None,
+        n: tuple = None,
+        **kwargs
     ):
         if not isinstance(fermion_operator, of.FermionOperator):
             raise TypeError("Expected a FermionOperator, got: {}".format(type(fermion_operator)))
         self.fermion_operator = fermion_operator
-        n = (1, of.count_qubits(operator=self.fermion_operator))
+        if n is None:
+            n = (1, of.count_qubits(operator=self.fermion_operator))
         if encoding_options is None:
             encoding_options = {"encoding_name": "jordan_wigner"}
         super().__init__(n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs)
