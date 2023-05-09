@@ -133,12 +133,15 @@ class FermiHubbardModel(FermionicModel):
             return op_tree
         elif name == "computational" or name == "hadamard":
             if initial_state is None:
-                raise ValueError("initial_state cannot be None")
+                if Nf is None:
+                    raise ValueError("initial_state and Nf cannot both be None")
+                else:
+                    initial_state = [x for x in range(Nf)]
             if isinstance(initial_state, int):
                 # convert int to bin and then index
                 initial_state = utils.index_bits(bin(initial_state))
-            self.Nf = len(initial_state)
             op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
+            self.Nf = len(initial_state)
             if name == "hadamard":
                 op_tree.extend([cirq.H(q) for q in self.flattened_qubits])
             return op_tree
