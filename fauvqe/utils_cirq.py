@@ -140,7 +140,7 @@ def eigenspectrum_at_particle_number(
         k (int, optional): if using a sparse solver, the number of eigenstates to find (must be smaller than the total number of eigenstates). Defaults to None.
 
     Returns:
-        Tuple[np.ndarray,np.ndarray]: _description_
+        Tuple[np.ndarray,np.ndarray]: the eigenvalues and eigenvectors
     """
 
     n_qubits = int(np.log2(sparse_operator.shape[0]))

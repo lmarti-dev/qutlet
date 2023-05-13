@@ -241,6 +241,13 @@ class FermionicModel(FockModel):
         Nf = self.jw_number_operator.expectation_from_state_vector(state, qubit_map=qmap)
         return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
 
+    def fermion_spin_number_operator(self):
+        n_qubits = of.count_qubits(self.fock_hamiltonian)
+        n_up_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(0,n_qubits,2)])
+        n_down_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(1,n_qubits,2)])
+        n_total=sum(n_up_op,n_down_op)
+        return n_up_op,n_down_op,n_total
+
     def get_encoded_terms(self, anti_hermitian: bool) -> "list[cirq.PauliSum]":
         operators = self.fock_hamiltonian.get_operators()
         encoded_terms = []
