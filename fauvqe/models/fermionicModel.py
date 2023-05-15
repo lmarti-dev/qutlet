@@ -245,8 +245,8 @@ class FermionicModel(FockModel):
         n_qubits = of.count_qubits(self.fock_hamiltonian)
         n_up_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(0,n_qubits,2)])
         n_down_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(1,n_qubits,2)])
-        n_total=sum(n_up_op,n_down_op)
-        return n_up_op,n_down_op,n_total
+        n_total_op=sum(n_up_op,n_down_op)
+        return n_up_op,n_down_op,n_total_op
 
     def get_encoded_terms(self, anti_hermitian: bool) -> "list[cirq.PauliSum]":
         operators = self.fock_hamiltonian.get_operators()
@@ -270,6 +270,7 @@ class FermionicModel(FockModel):
 
         Args:
             name (str): the name of the type of initial state desired
+            Nf: the number of fermions in the system
             initial_state (Union[int, Sequence[int]], optional): the indices of qubits that start n the 1 state. Defaults to 0 (i.e. all flipped down).
             An int input will be converted to binary and interpreted as a computational basis vector
             e.g. 34 = 100010 means the first and fifth qubits are initialized at one.
