@@ -9,6 +9,19 @@ from typing import Iterable,List, Union
 
 # Order functions by Alphabet
 # Rethink some of the nameing here...
+def flatten(a) -> Iterable:
+    """This function takes in a list of list or another nested iterable object and flattens it
+    Args:
+        a (Iterable): The nested iterable to be flattened
+    Returns:
+        Iterable: THe flattened iterable
+    """
+    for ii in a:
+        # avoid strings and bytes to be split too
+        if isinstance(ii,Iterable) and not isinstance(ii, (str, bytes)):
+            yield from flatten(ii)
+        else:
+            yield ii
 
 def get_gate_count(circuit: cirq.Circuit) -> int:
     count = 0
@@ -158,20 +171,6 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
                                     range(int(even_first),ii,2)))) for ii in M.shape)
     return M[np.ix_(*idxs)]
 
-def flatten(a) -> Iterable:
-    """This function takes in a list of list or another nested iterable object and flattens it
-    Args:
-        a (Iterable): The nested iterable to be flattened
-    Returns:
-        Iterable: THe flattened iterable
-    """
-    for ii in a:
-        # avoid strings and bytes to be split too
-        if isinstance(ii,Iterable) and not isinstance(ii, (str, bytes)):
-            yield from flatten(ii)
-        else:
-            yield ii
-
 def flip_cross_rows(M,flip_odd=True):
     """Reverses the order of the elements in odd or even rows.
     Args:
@@ -232,19 +231,6 @@ def interweave(a, b)-> np.ndarray:
     c[1::2] = b
     return c
 
-def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: int=sys_maxsize):
-    """This function nicely prints a numpy array without truncation to desired precision
-    Args:
-        a (np.array): the array to print. Converted to np.array if not
-        precision (int, optional): number of significant numbers. Defaults to 2.
-        suppress (bool, optional): print very small numbers as 0 (small as 0 with the current precision) . Defaults to True.
-        threshold (int, optional): The number of items to show. Defaults to sys.maxsize, i.e. as many as allowed.
-    """
-    if not isinstance(a,np.ndarray):
-        a=np.array(a)
-    with np.printoptions(precision=precision,suppress=suppress, threshold=threshold): 
-        print(a)
-
 def direct_sum(a,b):
     """
         Missing docstring
@@ -260,11 +246,11 @@ def direct_sum(a,b):
 def generalized_matmul(multiplication_rule = np.matmul,
                           *args):
     """
-    This function takes in multiple matrices (as different arguments) and multiplies them together 
-    via the multiplication rule function. Other functions can be np.kron or fauvqe.direct_sum
-    
-    Returns:
-    Matrix: The matrix resulting from the multiplication
+        This function takes in multiple matrices (as different arguments) and multiplies them together 
+        via the multiplication rule function. Other functions can be np.kron or fauvqe.direct_sum
+        
+        Returns:
+            Matrix: The matrix resulting from the multiplication
     """
     R=multiplication_rule(args[0],args[1])
     if len(args)>2:
