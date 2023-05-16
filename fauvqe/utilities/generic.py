@@ -342,13 +342,6 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     else:
         idxs = (np.array(interweave(np.arange(np.floor(ii/2),ii),np.arange(0,np.floor(ii/2)))).astype(int) for ii in dims)
     return M[np.ix_(*idxs)]
-
-def unitary_transpose(M):
-    """
-        Missing docstring
-    """
-    return np.conj(np.transpose(np.array(M)))
-
 ############################################################################################
 #                                                                                          #
 #                    Utilities for Quantum Mechanics                                       #
