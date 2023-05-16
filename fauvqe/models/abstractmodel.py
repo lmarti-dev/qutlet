@@ -356,8 +356,7 @@ class AbstractModel(Restorable):
         #1.Find 2-qubit gates along the given axis
         # Throw error if there are none
         # Use 2D list, [Moment][Operation]
-
-        glueing_gates = [[] for _ in range(np.size(self.circuit.moments))]
+        glueing_gates = [[] for _ in range(len(self.circuit.moments))]
         m = 0
         for moment in self.circuit.moments:
             #print("{}.Moment: \n{}\n ".format(i, moment.__dict__))
@@ -428,7 +427,7 @@ class AbstractModel(Restorable):
         #   Need to overright this locally further to double further parameters locally!!
         ###########################################################################
         #Reset n
-        self.n = self.n + (repetitions-1)*[self.n[0]*(1-axis) ,self.n[1]*axis]
+        self.n = self.n + (repetitions-1)*np.array([self.n[0]*(1-axis) ,self.n[1]*axis])
 
         #Reset qubits    
         self.init_qubits(self.qubittype,self.n)

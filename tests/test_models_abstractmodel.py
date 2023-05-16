@@ -328,7 +328,157 @@ def test_symmetrise_circuit(n, circuit, options, solution_circuit):
 
     assert(model.circuit == solution_circuit)
 
-def test_glue_circuit_error():
-    model = MockAbstractModel("LineQubit", 3)
-    with pytest.raises(NotImplementedError):
+@pytest.mark.parametrize(
+    "model, error",
+    [
+        (
+            MockAbstractModel("LineQubit", 3),
+            NotImplementedError,
+        ),
+        (
+            MockAbstractModel("GridQubit", [1,3]),
+            AssertionError,
+        ),
+    ]
+)
+def test_glue_circuit_error(model, error):
+    with pytest.raises(error):
         model.glue_circuit()
+
+@pytest.mark.parametrize(
+    "n, axis, repetitions, init_circuit, init_circuit_param, init_circuit_param_values, final_circuit, final_circuit_param, final_circuit_param_values",
+    [
+        (
+            np.array([1,3]),
+            1,
+            2,
+            cirq.Circuit((cirq.ZZ**sympy.Symbol('a')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('b')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('c')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a'),sympy.Symbol('b'),sympy.Symbol('c')],
+            np.array([1, 1/2, 1/3]),
+            cirq.Circuit((cirq.ZZ**sympy.Symbol('a_g0')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('a_g1')).on(cirq.GridQubit(0,3),cirq.GridQubit(0,4)),
+                         (cirq.ZZ**sympy.Symbol('b_g0')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('b_g1')).on(cirq.GridQubit(0,4),cirq.GridQubit(0,5)),
+                         (cirq.ZZ**sympy.Symbol('c_g0')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,3)),
+                         (cirq.ZZ**sympy.Symbol('c_g1')).on(cirq.GridQubit(0,5),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a_g0'),sympy.Symbol('b_g0'),
+             sympy.Symbol('c_g0'),sympy.Symbol('a_g1'),
+             sympy.Symbol('b_g1'),sympy.Symbol('c_g1')],
+            np.array([1,1,1/2, 1/2, 1/3,1/3]),
+        ),
+        (
+            np.array([1,3]),
+            1,
+            2,
+            cirq.Circuit((cirq.ZZ**sympy.Symbol('a')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**0.4).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('c')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a'),sympy.Symbol('c')],
+            np.array([1, 1/3]),
+            cirq.Circuit((cirq.ZZ**sympy.Symbol('a_g0')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('a_g1')).on(cirq.GridQubit(0,3),cirq.GridQubit(0,4)),
+                         (cirq.ZZ**0.4).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**0.4).on(cirq.GridQubit(0,4),cirq.GridQubit(0,5)),
+                         (cirq.ZZ**sympy.Symbol('c_g0')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,3)),
+                         (cirq.ZZ**sympy.Symbol('c_g1')).on(cirq.GridQubit(0,5),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a_g0'),sympy.Symbol('c_g0'),
+             sympy.Symbol('a_g1'),sympy.Symbol('c_g1')],
+            np.array([1,1, 1/3,1/3]),
+        ),
+        (
+            np.array([1,3]),
+            1,
+            2,
+            cirq.Circuit( cirq.H.on(cirq.GridQubit(0,0)),cirq.H.on(cirq.GridQubit(0,1)),cirq.H.on(cirq.GridQubit(0,2)),
+                            (cirq.ZZ**sympy.Symbol('a')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('b')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('c')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a'),sympy.Symbol('b'),sympy.Symbol('c')],
+            np.array([1, 1/2, 1/3]),
+            cirq.Circuit(   cirq.H.on(cirq.GridQubit(0,0)),cirq.H.on(cirq.GridQubit(0,1)),cirq.H.on(cirq.GridQubit(0,2)),
+                            cirq.H.on(cirq.GridQubit(0,3)),cirq.H.on(cirq.GridQubit(0,4)),cirq.H.on(cirq.GridQubit(0,5)),
+                            (cirq.ZZ**sympy.Symbol('a_g0')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('a_g1')).on(cirq.GridQubit(0,3),cirq.GridQubit(0,4)),
+                         (cirq.ZZ**sympy.Symbol('b_g0')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('b_g1')).on(cirq.GridQubit(0,4),cirq.GridQubit(0,5)),
+                         (cirq.ZZ**sympy.Symbol('c_g0')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,3)),
+                         (cirq.ZZ**sympy.Symbol('c_g1')).on(cirq.GridQubit(0,5),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a_g0'),sympy.Symbol('b_g0'),
+             sympy.Symbol('c_g0'),sympy.Symbol('a_g1'),
+             sympy.Symbol('b_g1'),sympy.Symbol('c_g1')],
+            np.array([1,1,1/2, 1/2, 1/3,1/3]),
+        ),
+        (
+            np.array([3,1]),
+            0,
+            3,
+            cirq.Circuit((cirq.XX**sympy.Symbol('a')).on(cirq.GridQubit(0,0),cirq.GridQubit(1,0)),
+                         (cirq.YY**sympy.Symbol('b')).on(cirq.GridQubit(1,0),cirq.GridQubit(2,0)),
+                         (cirq.ZZ**sympy.Symbol('c')).on(cirq.GridQubit(2,0),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a'),sympy.Symbol('b'),sympy.Symbol('c')],
+            np.array([1, 1/2, 1/3]),
+            cirq.Circuit((cirq.XX**sympy.Symbol('a_g0')).on(cirq.GridQubit(0,0),cirq.GridQubit(1,0)),
+                         (cirq.XX**sympy.Symbol('a_g1')).on(cirq.GridQubit(3,0),cirq.GridQubit(4,0)),
+                         (cirq.XX**sympy.Symbol('a_g2')).on(cirq.GridQubit(6,0),cirq.GridQubit(7,0)),
+                         (cirq.YY**sympy.Symbol('b_g0')).on(cirq.GridQubit(1,0),cirq.GridQubit(2,0)),
+                         (cirq.YY**sympy.Symbol('b_g1')).on(cirq.GridQubit(4,0),cirq.GridQubit(5,0)),
+                         (cirq.YY**sympy.Symbol('b_g2')).on(cirq.GridQubit(7,0),cirq.GridQubit(8,0)),
+                         (cirq.ZZ**sympy.Symbol('c_g0')).on(cirq.GridQubit(2,0),cirq.GridQubit(3,0)),
+                         (cirq.ZZ**sympy.Symbol('c_g1')).on(cirq.GridQubit(5,0),cirq.GridQubit(6,0)),
+                         (cirq.ZZ**sympy.Symbol('c_g2')).on(cirq.GridQubit(8,0),cirq.GridQubit(0,0))),
+            [sympy.Symbol('a_g0'),sympy.Symbol('b_g0'),sympy.Symbol('c_g0'),
+             sympy.Symbol('a_g1'),sympy.Symbol('b_g1'),sympy.Symbol('c_g1'),
+             sympy.Symbol('a_g2'),sympy.Symbol('b_g2'),sympy.Symbol('c_g2'),],
+            np.array([1,1,1,1/2,1/2, 1/2, 1/3,1/3,1/3]),
+        ),
+        (
+            np.array([1,3]),
+            1,
+            2,
+            cirq.Circuit((cirq.ZZ**sympy.Symbol('a')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('b')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('c')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,0)),
+                         cirq.H.on(cirq.GridQubit(0,0)),cirq.H.on(cirq.GridQubit(0,1)),cirq.H.on(cirq.GridQubit(0,2))),
+            [sympy.Symbol('a'),sympy.Symbol('b'),sympy.Symbol('c')],
+            np.array([1, 1/2, 1/3]),
+            cirq.Circuit( (cirq.ZZ**sympy.Symbol('a_g0')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         (cirq.ZZ**sympy.Symbol('a_g1')).on(cirq.GridQubit(0,3),cirq.GridQubit(0,4)),
+                         (cirq.ZZ**sympy.Symbol('b_g0')).on(cirq.GridQubit(0,1),cirq.GridQubit(0,2)),
+                         (cirq.ZZ**sympy.Symbol('b_g1')).on(cirq.GridQubit(0,4),cirq.GridQubit(0,5)),
+                         (cirq.ZZ**sympy.Symbol('c_g0')).on(cirq.GridQubit(0,2),cirq.GridQubit(0,3)),
+                         (cirq.ZZ**sympy.Symbol('c_g1')).on(cirq.GridQubit(0,5),cirq.GridQubit(0,0)),
+                         cirq.H.on(cirq.GridQubit(0,0)),cirq.H.on(cirq.GridQubit(0,1)),cirq.H.on(cirq.GridQubit(0,2)),
+                        cirq.H.on(cirq.GridQubit(0,3)),cirq.H.on(cirq.GridQubit(0,4)),cirq.H.on(cirq.GridQubit(0,5)),),
+            [sympy.Symbol('a_g0'),sympy.Symbol('b_g0'),
+             sympy.Symbol('c_g0'),sympy.Symbol('a_g1'),
+             sympy.Symbol('b_g1'),sympy.Symbol('c_g1')],
+            np.array([1,1,1/2, 1/2, 1/3,1/3]),
+        ),
+    ]
+)
+def test_glue_circuit(n, axis, repetitions, 
+                      init_circuit, init_circuit_param, init_circuit_param_values,
+                      final_circuit, final_circuit_param, final_circuit_param_values):
+    model = MockAbstractModel("GridQubit", n)
+    model.circuit=init_circuit
+    model.circuit_param = init_circuit_param
+    model.circuit_param_values = init_circuit_param_values
+
+    print(n)
+    print(model.circuit)
+    model.glue_circuit(axis, repetitions)
+
+    if axis:
+        n2 = n*[1,repetitions]
+    else:
+        n2 = n*[repetitions,1]
+
+    
+    print(final_circuit)
+
+    assert (model.n == n2).all()
+    assert model.circuit == final_circuit
+    assert model.circuit_param == final_circuit_param
+    np.allclose(model.circuit_param_values, final_circuit_param_values, rtol=0, atol=1e-15)
