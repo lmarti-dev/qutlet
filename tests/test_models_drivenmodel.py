@@ -878,7 +878,43 @@ def test_trotter(driven_model, non_driven_model, m,q,tf):
     print("driven_model.circuit:\n{}\n\nnon_driven_model.circuit:\n{}".format(driven_model.circuit, non_driven_model.circuit))
     assert driven_model.circuit == non_driven_model.circuit
 
+@pytest.mark.parametrize(
+    "models, drives",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: sympy.sin((10)*t)
+            ],  
+        ),
+    ]
+) 
+def test_json(models, drives):
+    model = DrivenModel( models, drives)
+    
+    json = model.to_json_dict()
+    
+    model2 = DrivenModel.from_json_dict(json)
+    
+    print(model.__dict__)
+    print("#######################")
+    print(model2.__dict__)
 
+    assert (model == model2)
 #####################################
 #                                   #
 #           Asssert tests           #
@@ -925,3 +961,64 @@ def test_constructor_asserts(models, drives):
     with pytest.raises(AssertionError):
         driven_model = DrivenModel( models, 
                                     drives)
+@pytest.mark.parametrize(
+    "models, drives",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: sympy.sin((10)*t)
+            ],  
+        ),
+    ]
+)        
+def test_Kt_asserts(models, drives):
+    driven_model = DrivenModel( models, 
+                                    drives)
+    with pytest.raises(NotImplementedError):
+        tmp= driven_model.K(t=1,order=3)
+
+@pytest.mark.parametrize(
+    "models, drives",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: sympy.sin((10)*t)
+            ],  
+        ),
+    ]
+)        
+def test_set_circuit_asserts(models, drives):
+    driven_model = DrivenModel( models, 
+                                    drives)
+    with pytest.raises(NotImplementedError):
+        driven_model.set_circuit("magic_algorithm")
