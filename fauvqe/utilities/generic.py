@@ -174,20 +174,20 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
                                     range(int(even_first),ii,2)))) for ii in M.shape)
     return M[np.ix_(*idxs)]
 
-def flip_cross_rows(M,flip_odd=True):
-    """Reverses the order of the elements in odd or even rows.
-    Args:
-        M (n-by-m matrix): Input matrix
-        flip_odd (bool, optional): Whether to reverse the odd or even rows. Defaults to True (odd rows)     .
-    Returns:
-        M: New matrix with odd or even rows flipped
+def flip_cross_rows(M,
+                    flip_odd=True):
+    """
+        Reverses the order of the elements in odd or even rows.
+        
+        Args:
+            M (n-by-m matrix): Input matrix
+            flip_odd (bool, optional): Whether to reverse the odd or even rows. Defaults to True (odd rows)     .
+        
+        Returns:
+            M: New matrix with odd or even rows flipped
     """
     M_tmp = np.array(M)
-    if flip_odd==True:
-        a=1
-    else:
-        a=0
-    M_tmp[a::2,:] = M_tmp[a::2,::-1]
+    M_tmp[int(flip_odd)::2,:] = M_tmp[int(flip_odd)::2,::-1]
     return M_tmp
 
 def hamming_weight(n: Union[int,str])-> int:
