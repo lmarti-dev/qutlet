@@ -138,18 +138,22 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     return new_circuit
 
 def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
-    """This function takes a matrix and reorders so that the even index basis vectors 
-    are put at the beginning and the odd are put at the end. Mostly useful for
-    openfermion stuff, as the matrices usually set up alternating rows of up and 
-    down spins vectors, and not sectors. i.e. this reorganizes the indices from
-    u11 d11 u12 d12 u21 d21 u22 d22
-    to
-    u11 u12 u21 u22 d11 d12 d21 d22
-    Args:
-        M (np.ndarray): the matrix to be reordered
-        even_first: whether the even vectors go in the first sector or the last (0 is the first index)
     """
-    M=check_type_and_convert(M)
+        This function takes a matrix and reorders so that the even index basis vectors 
+        are put at the beginning and the odd are put at the end. Mostly useful for
+        openfermion stuff, as the matrices usually set up alternating rows of up and 
+        down spins vectors, and not sectors. i.e. this reorganizes the indices from
+        
+        u11 d11 u12 d12 u21 d21 u22 d22
+        to
+        u11 u12 u21 u22 d11 d12 d21 d22
+
+        Args:
+            M (np.ndarray): the matrix to be reordered
+            even_first: whether the even vectors go in the first sector or the last (0 is the first index)
+    """
+    if not isinstance(M,np.ndarray):
+        M=np.array(M)
     dims = M.shape
     if even_first:
         a=0
@@ -159,14 +163,6 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
         b=0
     idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
     return M[np.ix_(*idxs)]
-
-def check_type_and_convert(M):
-    """
-        Missing docstring
-    """
-    if not isinstance(M,np.ndarray):
-        return np.array(M)
-    return M
 
 def direct_sum(a,b):
     """
@@ -338,7 +334,8 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     Returns:
         M (np.ndarray): reordered matrix
     """
-    M=check_type_and_convert(M)
+    if not isinstance(M,np.ndarray):
+        M=np.array(M)
     dims = M.shape
     if even_first:
         idxs = (np.array(interweave(np.arange(0,np.floor(ii/2)),np.arange(np.floor(ii/2),ii))).astype(int) for ii in dims)
