@@ -333,27 +333,6 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
 #                    Utilities for Quantum Mechanics                                       #
 #                                                                                          #
 ############################################################################################
-def commutator(A: np.array, B:np.array) -> np.array:
-    """
-        Commutator of A and B
-        
-        Parameters
-        ----------
-        self
-        A: np.array
-            Matrix 1
-        B: np.array
-            Matrix 2
-        
-        Returns
-        -------
-        [A, B]
-    """
-    # Not that this might be misleading as there is a commutator of
-    # cirq.PauliSum from openfermion which we want to use as well
-    # possible solution allow both
-    return A @ B - B @ A
-
 def orth_norm(A: np.array) -> Real:
     """
         TE:     THis is badly written and super inefficent. just calculated largest and smallest eigenvalue.
@@ -372,7 +351,6 @@ def orth_norm(A: np.array) -> Real:
         ||A||_\perp
     """
     eig_val = scipy.linalg.eigvalsh(A)
-    #print((eig_val[-1] - eig_val[0])/2)
     return (eig_val[-1] - eig_val[0])/2
 
 def ptrace(Q, ind):
