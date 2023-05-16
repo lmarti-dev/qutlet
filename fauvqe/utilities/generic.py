@@ -154,13 +154,8 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     """
     if not isinstance(M,np.ndarray):
         M=np.array(M)
-    if even_first:
-        a=0
-        b=1
-    else:
-        a=1
-        b=0
-    idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in M.shape)
+    idxs = (np.array(list(chain(    range(np.mod(int(even_first)+1,2),ii,2),
+                                    range(int(even_first),ii,2)))) for ii in M.shape)
     return M[np.ix_(*idxs)]
 
 
