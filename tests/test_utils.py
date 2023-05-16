@@ -6,6 +6,55 @@ import io
 
 import fauvqe.utils as utils
 
+@pytest.mark.parametrize(
+    "multiplication_rule,l,correct",
+    [
+        (
+            np.kron,
+            [[[1, 2, 3], [0, 0, 0], [1, 1, 1]], [[1, 1, 1], [1, 1, 1], [1, 1, 1]]],
+            [
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ],
+        ),
+        (
+            np.kron,
+            [np.eye(2), np.ones((2, 2)), np.ones((2, 2))],
+            np.kron(np.eye(2), np.ones((4, 4))),
+        ),
+         (  utils.direct_sum,
+            [
+                np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
+                np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
+                np.array([[2, 2, 2], [2, 2, 2], [3, 3, 3]]),
+            ],
+            np.array(
+                [
+                    [1, 2, 3, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 1, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 3, 3, 3],
+                ]
+            ),
+        ),
+        (np.matmul,([[3, 0], [0, 2]], [[0, 2], [2, 0]], [[1, 1], [1, 1]]), [[6, 6], [4, 4]])
+    ],
+)
+def test_chained_matrix_multiplication(multiplication_rule,l, correct):
+    assert (np.array(utils.chained_matrix_multiplication(multiplication_rule,*l)) == np.array(correct)).all()
+
 
 @pytest.mark.parametrize(
     "l,correct",
@@ -28,6 +77,7 @@ import fauvqe.utils as utils
             [np.eye(2), np.ones((2, 2)), np.ones((2, 2))],
             np.kron(np.eye(2), np.ones((4, 4))),
         ),
+
     ],
 )
 def test_pi_kron(l, correct):
