@@ -154,14 +154,13 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     """
     if not isinstance(M,np.ndarray):
         M=np.array(M)
-    dims = M.shape
     if even_first:
         a=0
         b=1
     else:
         a=1
         b=0
-    idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
+    idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in M.shape)
     return M[np.ix_(*idxs)]
 
 
@@ -333,6 +332,27 @@ def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
 #                    Utilities for Quantum Mechanics                                       #
 #                                                                                          #
 ############################################################################################
+def commutator(A: np.array, B:np.array) -> np.array:
+    """
+        Commutator of A and B
+        
+        Parameters
+        ----------
+        self
+        A: np.array
+            Matrix 1
+        B: np.array
+            Matrix 2
+        
+        Returns
+        -------
+        [A, B]
+    """
+    # Not that this might be misleading as there is a commutator of
+    # cirq.PauliSum from openfermion which we want to use as well
+    # possible solution allow both
+    return A @ B - B @ A
+
 def orth_norm(A: np.array) -> Real:
     """
         TE:     THis is badly written and super inefficent. just calculated largest and smallest eigenvalue.
