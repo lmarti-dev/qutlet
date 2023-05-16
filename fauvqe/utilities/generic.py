@@ -232,15 +232,6 @@ def interweave(a, b)-> np.ndarray:
     c[1::2] = b
     return c
 
-def lists_almost_have_same_elements(a: list,b: list,decimals:int):
-    """
-        Missing docstring
-        Use np.isclose instead
-    """
-    rounded_a=np.round(np.array(a),decimals=decimals)
-    rounded_b=np.round(np.array(b),decimals=decimals)
-    return collections.Counter(rounded_a) == collections.Counter(rounded_b)
-
 def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: int=sys_maxsize):
     """This function nicely prints a numpy array without truncation to desired precision
     Args:
