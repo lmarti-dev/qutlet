@@ -915,6 +915,71 @@ def test_json(models, drives):
     print(model2.__dict__)
 
     assert (model == model2)
+
+#Add more examples:
+@pytest.mark.parametrize(
+    "models, drives, qalgorithm, options, final_circuit",
+    [
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: sympy.sin((10)*t)
+            ],  
+            "basics",
+            {"start": "hadamard"},
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0,0)),cirq.H.on(cirq.GridQubit(0,1)))
+        ),
+        (
+            [
+                Ising(  "GridQubit",
+                        [1,2],
+                        1*np.ones((1-1,2)),
+                        1*np.ones((1,2-1)),
+                        0*np.ones((1,2)),
+                        "Z" ),
+                Ising(  "GridQubit",
+                        [1,2],
+                        0*np.ones((1-1,2)),
+                        0*np.ones((1,2-1)),
+                        1*np.ones((1,2)),
+                        "X" ),
+            ],
+            [
+                lambda t:  1,
+                lambda t: sympy.sin((10)*t)
+            ],  
+            "hea",
+            {"p": 2, "parametrisation" : 'layerwise'},
+            cirq.Circuit(cirq.PhasedXZGate(x_exponent=sympy.Symbol('x0'), z_exponent=sympy.Symbol('z0'), axis_phase_exponent=sympy.Symbol('a0')).on(cirq.GridQubit(0,0)),
+                         cirq.PhasedXZGate(x_exponent=sympy.Symbol('x0'), z_exponent=sympy.Symbol('z0'), axis_phase_exponent=sympy.Symbol('a0')).on(cirq.GridQubit(0,1)),
+                         cirq.FSimGate(phi=sympy.Symbol('phi0_1'), theta=sympy.Symbol('theta0_1')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),
+                         cirq.PhasedXZGate(x_exponent=sympy.Symbol('x1'), z_exponent=sympy.Symbol('z1'), axis_phase_exponent=sympy.Symbol('a1')).on(cirq.GridQubit(0,0)),
+                         cirq.PhasedXZGate(x_exponent=sympy.Symbol('x1'), z_exponent=sympy.Symbol('z1'), axis_phase_exponent=sympy.Symbol('a1')).on(cirq.GridQubit(0,1)),
+                         cirq.FSimGate(phi=sympy.Symbol('phi1_1'), theta=sympy.Symbol('theta1_1')).on(cirq.GridQubit(0,0),cirq.GridQubit(0,1)),)
+        ),
+    ]
+) 
+def test_set_circuit(models, drives, qalgorithm, options, final_circuit):
+    model = DrivenModel( models, drives)
+    model.set_circuit(qalgorithm, options)
+
+    print(model.circuit )
+    assert model.circuit == final_circuit
+
 #####################################
 #                                   #
 #           Asssert tests           #

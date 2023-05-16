@@ -13,7 +13,7 @@ from numbers import Real, Number
 from importlib import import_module
 from itertools import chain
 from openfermion.utils import commutator
-from typing import Callable, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from fauvqe.models.abstractmodel import AbstractModel
 
@@ -521,9 +521,9 @@ class DrivenModel(AbstractModel):
         
         return inst
 
-    def _commutator(self, a,b):
-        if isinstance(a, Number) or isinstance(b, Number):
-            return 0
-        else:
-            print("a: {}\ttype(a): {}\nb: {}\ttype(b): {}".format(a,type(a),b,type(b)))
-            commutator(a,b)
+#    def _commutator(self, a,b):
+#        if isinstance(a, Number) or isinstance(b, Number):
+#            return 0
+#        else:
+#            print("a: {}\ttype(a): {}\nb: {}\ttype(b): {}".format(a,type(a),b,type(b)))
+#            commutator(a,b)
