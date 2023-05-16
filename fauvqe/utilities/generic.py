@@ -194,12 +194,6 @@ def flatten(a) -> Iterable:
         else:
             yield ii
 
-def flatten_qubits(gridqubits):
-    """
-        Missing docstring
-    """
-    return list(flatten(gridqubits))
-
 def flip_cross_rows(M,flip_odd=True):
     """Reverses the order of the elements in odd or even rows.
     Args:
