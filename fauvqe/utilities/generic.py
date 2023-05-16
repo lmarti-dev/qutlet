@@ -10,7 +10,6 @@ from typing import Iterable,List, Union
 # Order functions by Alphabet
 # Rethink some of the nameing here...
 
-#Needs to be tested:
 def get_gate_count(circuit: cirq.Circuit) -> int:
     count = 0
     for moment in circuit.moments:
@@ -327,12 +326,6 @@ def print_non_zero( M,
         print(name)
     print((abs(M)>eq_tol).astype(int))
 
-def round_small_to_zero(l: list,eq_tol: float = 1E-15):
-    """
-        Missing docstring
-    """
-    return [0 if abs(x) < eq_tol else x for x in l]
-
 def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
     """This function turns a matrix which has two "sectors" into an interwoven one
     i.e.
@@ -393,6 +386,9 @@ def commutator(A: np.array, B:np.array) -> np.array:
 
 def orth_norm(A: np.array) -> Real:
     """
+        TE:     THis is badly written and super inefficent. just calculated largest and smallest eigenvalue.
+                Due to symmetry often it is sufficent to just calculate one of them
+
         Calculates the orthogonal norm of A
         
         Parameters
