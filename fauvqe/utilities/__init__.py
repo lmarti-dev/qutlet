@@ -24,5 +24,6 @@ from fauvqe.utilities.generic import (
 from fauvqe.utilities.random import (
     haar,
     haar_1qubit,
+    sample,
     uniform,
 )

@@ -15,7 +15,7 @@ import numpy as np
 import qsimcirq
 
 def _get_haar_circuit(  n: int,
-                        p: int): #-> cirq.Circuit()
+                        p: int) -> cirq.Circuit():
     """
         Helper function to generate pseudo Haar random p-layer scrabling circuit for n qubits
 
@@ -74,7 +74,7 @@ def haar(n: int,
         p: int = -1,
         reuse_circuit: bool = False,
         n_jobs: int = -1,
-        simulator = None): #-> np.ndarray
+        simulator = None) -> np.ndarray:
     '''
         Generates m Haar random 2^n dim state vectors
 
@@ -145,7 +145,7 @@ def haar(n: int,
 def _single_haar(   n: int,
                     p: int,
                     simulator,
-                    haar_circuit = False):
+                    haar_circuit = False) -> np.ndarray:
     if haar_circuit is False:
         haar_circuit = _get_haar_circuit(n,p)
     rnd_int = np.random.randint(2**n)
@@ -155,7 +155,7 @@ def _single_haar(   n: int,
 def haar_1qubit(n: int,
                 m: int = 1,
                 n_jobs: int = -1,
-                simulator = None): #-> np.ndarray
+                simulator = None) -> np.ndarray:
     '''
         Generates m Single Qubit Haar random product state vectors
 
@@ -194,7 +194,7 @@ def haar_1qubit(n: int,
     return np.array(random_states[0:m])*(1/np.linalg.norm(np.array(random_states[0:m]), axis=1)[:,None])
 
 def _single_haar_1qubit(n: int,
-                        simulator):
+                        simulator) -> np.ndarray:
     haar_1qubit_circuit = cirq.Circuit(
                             _get_haar_1QubitLayer(cirq.LineQubit.range(n))
     )
@@ -203,7 +203,7 @@ def _single_haar_1qubit(n: int,
                                 initial_state=rnd_int).state_vector()
 
 def uniform(n: int,
-            m: int = 1): #-> np.ndarray
+            m: int = 1) -> np.ndarray:
     '''
         Generates m Uniform random 2^n dim state vectors
 
@@ -217,3 +217,10 @@ def uniform(n: int,
     random_states=2*np.random.rand(m,2**n).astype(np.complex128) - 1 + 2j*np.random.rand(m,2**n) - 1j
     #Renormalise all random state
     return np.array(random_states[0:m])*(1/np.linalg.norm(np.array(random_states[0:m]), axis=1)[:,None])
+
+def sample( wavefunction: np.ndarray, 
+            repetitions: int) -> np.ndarray:
+    _n = int(np.log2(np.size(wavefunction)))
+    return np.random.choice( 2**_n,
+                            size = repetitions,
+                            p=abs(wavefunction)**2)

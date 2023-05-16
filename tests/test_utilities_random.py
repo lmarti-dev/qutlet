@@ -2,11 +2,12 @@
 from cirq import Simulator as cirq_Simulator
 import numpy as np
 import pytest
+from random import randrange
 from scipy import stats
 from timeit import default_timer
 
 # internal imports
-from fauvqe import haar, haar_1qubit, uniform
+from fauvqe import haar, haar_1qubit, sample, uniform
 from fauvqe.utilities.random import _single_haar
 
 @pytest.mark.higheffort
@@ -120,4 +121,26 @@ def test_uniform(n, m):
     #print(stats.kstest(probabilities, "uniform", N=m, alternative='two-sided', mode='auto'))
     #TODO test for distribution
     assert (abs(np.sum(probabilities) - m) < 1e-14)
+
+@pytest.mark.parametrize(
+    "n, reps",
+    [
+        (
+            2, 5
+        ),
+        (
+            3, 7
+        ),
+        (
+            5, 3
+        ),
+    ]
+)
+def test_sample(n, reps):
+    random_int = randrange(0, 2**n)
+    test_state=np.zeros((2**n))
+    test_state[random_int] = 1
+
+    assert (sample(test_state, reps) == random_int*np.ones((1,reps))).all()
+
 

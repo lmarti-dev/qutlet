@@ -64,6 +64,7 @@ from fauvqe.utilities  import (
     orth_norm,
     ptrace,
     print_non_zero,
+    sample,
     sectors_to_alternating_indices,
     uniform,
 )
