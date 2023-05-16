@@ -42,6 +42,10 @@ def test_simulate(model, x0_value, ground_truth):
                             "SingleQubitGates": [lambda a, x, z: cirq.XPowGate(exponent=x)],
                             "TwoQubitGates" : []})
     objective0 = Correlation(model)
+    objectivesum_obj = ObjectiveSum(objective0)
+    wavefunction = objectivesum_obj.simulate(param_resolver={"x0": x0_value})
+    assert 1- abs(np.vdot(wavefunction, ground_truth)) < 1e-14
+    
     objective1 = Variance(  model, 
                             observables=objective0._observable)
 
@@ -52,6 +56,131 @@ def test_simulate(model, x0_value, ground_truth):
         print(wavefunction)
         assert 1- abs(np.vdot(wavefunction, ground_truth)) < 1e-14
 
+@pytest.mark.parametrize(
+    "model, states, combination_fkt",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [2, 3], 
+                    np.ones((1, 3)), 
+                    np.ones((2, 2)), 
+                    np.ones((2, 3)),
+                    "X"),
+            _get_euclidian_vec(6,0).astype(np.complex128),
+            None
+        ),
+        #(
+        #    Ising(  "GridQubit", 
+        #            [2, 3], 
+        #            np.ones((1, 3)), 
+        #            np.ones((2, 2)), 
+        #            np.ones((2, 3)),
+        #            "X"),
+        #    [_get_euclidian_vec(6,2).astype(np.complex128), _get_euclidian_vec(6,4).astype(np.complex128)],
+        #    None
+        #),
+        (
+            Ising(  "GridQubit", 
+                    [2, 3], 
+                    np.ones((1, 3)), 
+                    np.ones((2, 2)), 
+                    np.ones((2, 3)),
+                    "X"),
+            _get_euclidian_vec(6,-1).astype(np.complex128),
+            lambda x0, x1: 0.5*x0 + x1**2 
+        ),  
+        #(
+        #    Ising(  "GridQubit", 
+        #            [2, 3], 
+        #            np.ones((1, 3)), 
+        #            np.ones((2, 2)), 
+        #            np.ones((2, 3)),
+        #            "X"),
+        #    [_get_euclidian_vec(6,-1).astype(np.complex128), _get_euclidian_vec(6,3).astype(np.complex128)],
+        #    lambda x0, x1: 0.5*x0 + x1**2 
+        #), 
+    ]
+)
+def test_evaluate(model, states, combination_fkt):
+    model.set_simulator("cirq")
+
+    objective0 = Correlation(model)
+    objectivesum_obj = ObjectiveSum(objective0)
+
+    obj_value0 = objective0.evaluate(states)
+    obj_value_sum = objectivesum_obj.evaluate(states)
+    assert abs(obj_value0-obj_value_sum) < 1e-14
+    
+    objective1 = ExpectationValue(  model)
+
+    objectivesum_obj = ObjectiveSum([objective0, objective1], combination_fkt)
+    obj_value1 = objective1.evaluate(states)
+    obj_value_sum = objectivesum_obj.evaluate(states)
+    if combination_fkt is None:
+        assert abs(obj_value0+obj_value1-obj_value_sum) < 1e-14
+    else:
+        assert abs(combination_fkt(obj_value0,obj_value1)-obj_value_sum) < 1e-14
+    #wavefunctions = objectivesum_obj.simulate(param_resolver={"x0": x0_value})
+    #for wavefunction in wavefunctions:
+    #    print(ground_truth)
+    #    print(wavefunction)
+    #    assert 1- abs(np.vdot(wavefunction, ground_truth)) < 1e-14
+
+@pytest.mark.parametrize(
+    "model, coefficents, true_combination_fkt",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [2, 3], 
+                    np.ones((1, 3)), 
+                    np.ones((2, 2)), 
+                    np.ones((2, 3)),
+                    "X"),
+            [0.3, 0.75],
+            lambda *args: 0.3*args[0]+0.75*args[1]
+        ),
+    ]
+)
+def test_set_linear_combined_objective_fct(model, coefficents, true_combination_fkt):
+    objective0 = Correlation(model)
+    objectivesum_obj = ObjectiveSum(objective0)
+
+    objectivesum_obj.set_linear_combined_objective_fct(coefficents)
+    test_vec = np.random.rand(len(coefficents))
+    print(test_vec)
+
+    np.allclose(objectivesum_obj._combined_objective_fct(*test_vec),true_combination_fkt(*test_vec),rtol=0, atol=1e-15)
+
+def test_json():
+    model = Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
+    objective1 = ExpectationValue(model)
+    objective2 = Correlation(model)
+
+    objective_sum = ObjectiveSum( objectives = [objective1, objective2],
+                                 combined_objective_fct = lambda x0, x1: 0.5*x0 + x1**2 )
+
+    json = objective_sum.to_json_dict()    
+    objective_sum2 = ObjectiveSum.from_json_dict(json)
+    
+    print(objective_sum)
+
+    assert (objective_sum == objective_sum2)
+
+def test_repr():
+    model = Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
+    objective1 = ExpectationValue(model)
+    objective2 = Correlation(model)
+
+    objective_sum = ObjectiveSum( objectives = [objective1, objective2])
+    assert repr(objective_sum) == "<ObjectiveSum:\n{}{}".format(repr(objective1),repr(objective2))
+
+def test_objectives():
+    model = Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
+    objective1 = ExpectationValue(model)
+    objective2 = Correlation(model)
+    objective_sum = ObjectiveSum( objectives = [objective1, objective2])
+
+    assert objective_sum._objectives == objective_sum.objectives
 """ 
 @pytest.mark.parametrize(
     "n",

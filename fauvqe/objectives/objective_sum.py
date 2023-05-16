@@ -113,7 +113,7 @@ class ObjectiveSum(Restorable):
         if isinstance(self._objectives, List):
             _tmp = []
             for i in range(len(self._objectives)):
-                _tmp.append(self._objectives[i].evaluate(wavefunctions[i]))
+                _tmp.append(self._objectives[i].evaluate(wavefunctions))
         else:
             _tmp = self._objectives.evaluate(wavefunctions)
 
