@@ -227,7 +227,7 @@ class DrivenModel(AbstractModel):
             if order == 1:
                 #Round PauliSum Coefficents to 1e-16 for numerical stability
                 for key,value in K_t._linear_dict._terms.items():
-                    K_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+                    K_t._linear_dict._terms[key] = np.round(complex(sympy.N(value, 17)), decimals=16)
 
                 return K_t
             else:
@@ -251,7 +251,7 @@ class DrivenModel(AbstractModel):
 
                 #Round PauliSum Coefficents to 1e-16 for numerical stability
                 for key,value in K_t._linear_dict._terms.items():
-                    K_t._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+                    K_t._linear_dict._terms[key] = np.round(complex(sympy.N(value, 17)), decimals=16)
                 return K_t
             
     def V(self,
@@ -399,7 +399,7 @@ class DrivenModel(AbstractModel):
         _Vjs_combined = []
         for i_j in range(len(self.Vjs[0])):
             #print(sympy.N(self.Vjs[i][i_j],16).expand(complex=True))
-            _Vjs_combined.append(sum([  np.complex(self.Vjs[i][i_j]) * \
+            _Vjs_combined.append(sum([  complex(self.Vjs[i][i_j]) * \
                                         self.models[i]._hamiltonian for i in _non_H0_indices]))
             #print("self.Vjs[:][i_j]: {}\t_Vjs_combined[i_j]: {}".format([self.Vjs[i][i_j] for i in _non_H0_indices], _Vjs_combined[i_j]))
 
@@ -422,7 +422,7 @@ class DrivenModel(AbstractModel):
         #Round PauliSum Coefficents to 1e-16 for numerical stability
         for key,value in Heff._linear_dict._terms.items():
             #print("key: {}\tvalue: {}".format(key,value))
-            Heff._linear_dict._terms[key] = np.round(np.complex(sympy.N(value, 17)), decimals=16)
+            Heff._linear_dict._terms[key] = np.round(complex(sympy.N(value, 17)), decimals=16)
 
         #for key,value in Heff._linear_dict._terms.items():
         #    print("key: {}\tvalue: {}".format(key,value))
