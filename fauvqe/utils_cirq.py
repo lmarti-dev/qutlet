@@ -43,6 +43,8 @@ def qubits_shape(qubits: Tuple[cirq.Qid]) -> tuple:
 # shamelessly taken from stack
 def depth(circuit: cirq.Circuit) -> int:
     """Get the depth of a circuit
+    We create a new circuit to repack it, since the original circuit whose depth we want to compute has not been optimised.
+    
 
     Args:
         circuit (cirq.Circuit): the circuit to evaluate
