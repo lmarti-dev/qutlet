@@ -164,17 +164,7 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
     idxs = (np.array(list(chain(range(a,ii,2),range(b,ii,2)))) for ii in dims)
     return M[np.ix_(*idxs)]
 
-def direct_sum(a,b):
-    """
-        Missing docstring
-    """
-    ax=a.shape[0]
-    ay=a.shape[1]
-    
-    bx=b.shape[0]
-    by=b.shape[1]
-    return np.block(    [[a,np.zeros((ax,by))],
-                        [np.zeros((bx,ay)),b]])
+
 
 def flatten(a) -> Iterable:
     """This function takes in a list of list or another nested iterable object and flattens it
@@ -278,35 +268,31 @@ def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: in
     with np.printoptions(precision=precision,suppress=suppress, threshold=threshold): 
         print(a)
 
-def pi_direct_sum(*args):
+def direct_sum(a,b):
     """
         Missing docstring
     """
-    R=direct_sum(args[0],args[1])
-    if len(args) > 2:
-        for M in args[2:]:
-            R=direct_sum(R,M)
-    return R
+    ax=a.shape[0]
+    ay=a.shape[1]
+    
+    bx=b.shape[0]
+    by=b.shape[1]
+    return np.block(    [[a,np.zeros((ax,by))],
+                        [np.zeros((bx,ay)),b]])
 
-def pi_kron(*args):
+def generalized_matmul(multiplication_rule = np.matmul,
+                          *args):
     """
-        Missing docstring
-    """
-    R=np.kron(args[0],args[1])
-    if len(args)>2:
-        for M in args[2:]:
-            R=np.kron(R,M)
-    return R
-
-def pi_matmul(*args):
-    """This function takes in multiple matrices (as different arguments) and multiplies them together
+    This function takes in multiple matrices (as different arguments) and multiplies them together 
+    via the multiplication rule function. Other functions can be np.kron or fauvqe.direct_sum
+    
     Returns:
-        Matrix: The matrix resulting from the multiplication
+    Matrix: The matrix resulting from the multiplication
     """
-    R=np.matmul(args[0],args[1])
+    R=multiplication_rule(args[0],args[1])
     if len(args)>2:
-    	for M in args[2:]:
-            R=np.matmul(R,M) 
+        for M in args[2:]:
+            R=multiplication_rule(R,M)
     return R
 
 def print_non_zero( M,
