@@ -158,8 +158,6 @@ def alternating_indices_to_sectors(M,even_first: bool = True) -> np.ndarray:
                                     range(int(even_first),ii,2)))) for ii in M.shape)
     return M[np.ix_(*idxs)]
 
-
-
 def flatten(a) -> Iterable:
     """This function takes in a list of list or another nested iterable object and flattens it
     Args:
@@ -241,13 +239,7 @@ def lists_almost_have_same_elements(a: list,b: list,decimals:int):
     """
     rounded_a=np.round(np.array(a),decimals=decimals)
     rounded_b=np.round(np.array(b),decimals=decimals)
-    return lists_have_same_elements(rounded_a,rounded_b)
-
-def lists_have_same_elements(a: list,b: list):
-    """
-        Missing docstring
-    """
-    return collections.Counter(a) == collections.Counter(b)
+    return collections.Counter(rounded_a) == collections.Counter(rounded_b)
 
 def niceprint(a: np.array,precision: int=2, suppress: bool = True, threshold: int=sys_maxsize):
     """This function nicely prints a numpy array without truncation to desired precision
