@@ -24,6 +24,9 @@ def flatten(a) -> Iterable:
             yield ii
 
 def get_gate_count(circuit: cirq.Circuit) -> int:
+    """
+        Note that this also counts cirq.reset gates
+    """
     count = 0
     for moment in circuit.moments:
         count += len(moment.operations)

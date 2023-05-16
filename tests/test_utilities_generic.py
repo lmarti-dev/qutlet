@@ -5,29 +5,91 @@ import cirq
 import sympy
 
 # internal imports
-from fauvqe.utilities.generic import greedy_grouping, ptrace, commutator, orth_norm
-
-import fauvqe.utilities.generic as ut
+from fauvqe import (
+    alternating_indices_to_sectors,
+    commutator,
+    direct_sum,
+    flatten,
+    flip_cross_rows,
+    generalized_matmul,
+    get_gate_count,
+    greedy_grouping,
+    hamming_weight,
+    index_bits,
+    interweave,
+    merge_same_gates,
+    orth_norm,
+    ptrace,
+    print_non_zero,
+    sectors_to_alternating_indices,
+)
 
 @pytest.mark.parametrize(
-    "l,correct",
+    "test_circuit, gate_count",
     [
-        ([[[1,2,3],[0,0,0],[1,1,1]],[[1,1,1],[1,1,1],[1,1,1]]],
-            [[1,1,1,2,2,2,3,3,3],
-            [1,1,1,2,2,2,3,3,3],
-            [1,1,1,2,2,2,3,3,3],
-            [0,0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0,0],
-            [1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,1,1,1,1,1]]
-            
+        (
+            cirq.Circuit([cirq.Z(cirq.LineQubit(i)) for i in range(5)]),
+            5
+        ),
+        (
+             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2))),
+            8,
+        ),
+        (
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
+                        cirq.Moment(cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
+                                        z_exponent= sympy.Symbol('z0'), 
+                                        axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 0)),
+                        cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
+                                        z_exponent= sympy.Symbol('z0'), 
+                                        axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 1)),
+                        cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
+                                        z_exponent= sympy.Symbol('z0'), 
+                                        axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 2))),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        cirq.FSimGate(sympy.Symbol('theta0'), sympy.Symbol('phi0')).\
+                            on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2))),
+            13,
+        ),
+        (
+            cirq.Circuit(
+                        (cirq.ZZ**(-0.665)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.XX**(-0.665)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                        (cirq.XX**(-0.665)).on(cirq.GridQubit(1, 0), cirq.GridQubit(3, 0)),
+                        (cirq.X**(-0.665)).on(cirq.GridQubit(0, 0)),
+                        (cirq.Z**(-0.665)).on(cirq.GridQubit(2, 0)),
+                        (cirq.X**(-0.665)).on(cirq.GridQubit(1, 0)),
+                        (cirq.Z**(-0.665)).on(cirq.GridQubit(3, 0)),
+                        cirq.reset(cirq.GridQubit(2,0)),
+                        cirq.reset(cirq.GridQubit(3,0)),
+                        (cirq.ZZ**(-0.707)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.XX**(-0.707)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                        (cirq.XX**(-0.707)).on(cirq.GridQubit(1, 0), cirq.GridQubit(3, 0)),
+                        (cirq.X**(-0.707)).on(cirq.GridQubit(0, 0)),
+                        (cirq.Z**(-0.707)).on(cirq.GridQubit(2, 0)),
+                        (cirq.X**(-0.707)).on(cirq.GridQubit(1, 0)),
+                        (cirq.Z**(-0.707)).on(cirq.GridQubit(3, 0)),
+                        cirq.reset(cirq.GridQubit(2,0)),
+                        cirq.reset(cirq.GridQubit(3,0)),
+                        ),
+            18,
         ),
     ]
 )
-def test_pi_kron(l,correct):
-    assert (ut.pi_kron(*l) == np.array(correct)).all()
+def test_get_gate_count(test_circuit, gate_count):
+    assert get_gate_count(test_circuit) == gate_count
+
 @pytest.mark.parametrize(
     "a,b,correct",
     [
@@ -42,11 +104,29 @@ def test_pi_kron(l,correct):
     ]
 )
 def test_direct_sum(a,b,correct):
-    assert (ut.direct_sum(np.array(a),np.array(b)) == np.array(correct)).all()
+    assert (direct_sum(np.array(a),np.array(b)) == np.array(correct)).all()
+
 @pytest.mark.parametrize(
-    "l,correct",
+    "multiplication_function,test_args,ground_truth",
     [
-        ([np.array([[1,2,3],[0,0,0],[1,1,1]]),
+        (
+            np.kron,
+            [[[1,2,3],[0,0,0],[1,1,1]],[[1,1,1],[1,1,1],[1,1,1]]],
+            np.array(
+                [[1,1,1,2,2,2,3,3,3],
+                [1,1,1,2,2,2,3,3,3],
+                [1,1,1,2,2,2,3,3,3],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1]]
+            )
+        ),
+        (
+            direct_sum,
+        [np.array([[1,2,3],[0,0,0],[1,1,1]]),
             np.array([[1,1,1],[1,1,1],[1,1,1]]),
             np.array([[2,2,2],[2,2,2],[3,3,3]])
         ],
@@ -62,10 +142,19 @@ def test_direct_sum(a,b,correct):
                 [0,0,0,0,0,0,3,3,3]]
             )  
         ),
+        (
+            np.matmul,
+            [   np.array([[3, 0], [0, 2]]), 
+                np.array([[0, 2], [2, 0]]), 
+                np.array([[1, 1], [1, 1]])], 
+            np.array([[6, 6], [4, 4]]),
+        ),
     ]
 )
-def test_pi_direct_sum(l,correct):
-    assert (ut.pi_direct_sum(*l) == correct).all()
+def test_generalized_matmul(multiplication_function,test_args,ground_truth):
+    assert (generalized_matmul(multiplication_function,*test_args) == ground_truth).all()
+
+
 @pytest.mark.parametrize(
     "a,correct",
     [
@@ -76,7 +165,7 @@ def test_pi_direct_sum(l,correct):
     ]
 )
 def test_flatten(a,correct):
-    assert list(ut.flatten(a)) == correct
+    assert list(flatten(a)) == correct
 
 """
 todo
@@ -97,20 +186,42 @@ def test_print_non_zero(M,correct):
 )
 
 def test_alternating_indices_to_sectors(M,correct,even_first):
-    assert (ut.alternating_indices_to_sectors(np.array(M),even_first) == correct).all()
+    assert (alternating_indices_to_sectors(np.array(M),even_first) == correct).all()
 
 @pytest.mark.parametrize(
-    "M,correct,even_first",
+    "M,correct,even_first,axis",
     [
-     ([0,2,4,1,3,5],[0,1,2,3,4,5],True), 
-     ([[0,2,4,1,3,5],[0,2,4,1,3,5]],[[0,1,2,3,4,5],[0,1,2,3,4,5]],True), 
-     ([[0,2,4,1,3,5],[12,14,16,13,15,17],[6,8,10,7,9,11],[18,20,22,19,21,23]],
-        [[0,1,2,3,4,5],[6,7,8,9,10,11],[12,13,14,15,16,17],[18,19,20,21,22,23]],True), 
-    ]
+        ([0, 2, 4, 1, 3, 5], [0, 1, 2, 3, 4, 5], True, 0),
+        ([0, 2, 4, 1, 3, 5], [1, 0, 3, 2, 5, 4], False, None),
+        (
+            [[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]],
+            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
+            True,
+            (0, 1),
+        ),
+        (
+            [
+                [0, 2, 4, 1, 3, 5],
+                [12, 14, 16, 13, 15, 17],
+                [6, 8, 10, 7, 9, 11],
+                [18, 20, 22, 19, 21, 23],
+            ],
+            [
+                [0, 1, 2, 3, 4, 5],
+                [6, 7, 8, 9, 10, 11],
+                [12, 13, 14, 15, 16, 17],
+                [18, 19, 20, 21, 22, 23],
+            ],
+            True,
+            (0, 1),
+        ),
+    ],
 )
-
-def test_sectors_to_alternating_indices(M,correct,even_first):
-    assert (ut.sectors_to_alternating_indices(np.array(M),even_first) == correct).all()
+def test_sectors_to_alternating_indices(M, correct, even_first, axis):
+    assert (
+        sectors_to_alternating_indices(np.array(M), even_first, axis)
+        == np.array(correct)
+    ).all()
 
 
 @pytest.mark.parametrize(
@@ -134,7 +245,8 @@ def test_sectors_to_alternating_indices(M,correct,even_first):
     ]
 )
 def test_flip_cross_rows(M,correct,flip_odd):
-    assert (ut.flip_cross_rows(np.array(M),flip_odd)==correct).all()
+    assert (flip_cross_rows(np.array(M),flip_odd)==correct).all()
+
 @pytest.mark.parametrize(
     "i,correct",
     [
@@ -149,7 +261,7 @@ def test_flip_cross_rows(M,correct,flip_odd):
     ]
 )
 def test_hamming_weight(i,correct):
-    assert ut.hamming_weight(i)==correct
+    assert hamming_weight(i)==correct
 
 @pytest.mark.parametrize(
     "a,correct",
@@ -162,7 +274,7 @@ def test_hamming_weight(i,correct):
     ]
 )
 def test_indexbits(a,correct):
-    assert ut.index_bits(a)==correct
+    assert index_bits(a)==correct
 
 @pytest.mark.parametrize(
     "rho, ind, solution",
