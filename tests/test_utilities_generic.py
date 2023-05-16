@@ -167,61 +167,70 @@ def test_generalized_matmul(multiplication_function,test_args,ground_truth):
 def test_flatten(a,correct):
     assert list(flatten(a)) == correct
 
-"""
-todo
-def test_pi_matmul(l,correct):
-    assert ut.pi_matmul(*l) == correct
-def test_print_non_zero(M,correct):
-    assert ut.print_non_zero(M) == correct
-"""
-
 @pytest.mark.parametrize(
     "M,correct,even_first",
     [
-     ([0,1,2,3,4,5],[0,2,4,1,3,5],True), 
-     ([[0,1,2,3,4,5],[0,1,2,3,4,5]],[[0,2,4,1,3,5],[0,2,4,1,3,5]],True), 
-     ([[0,1,2,3,4,5],[6,7,8,9,10,11],[12,13,14,15,16,17],[18,19,20,21,22,23]],
-            [[0,2,4,1,3,5],[12,14,16,13,15,17],[6,8,10,7,9,11],[18,20,22,19,21,23]],True), 
+        (
+            [0,1,2,3,4,5],
+            [0,2,4,1,3,5],
+            True
+        ), 
+        (
+            [[0,1,2,3,4,5],[0,1,2,3,4,5]],
+            [[0,2,4,1,3,5],[0,2,4,1,3,5]],
+            True
+        ), 
+        (
+            np.array([[0,1,2,3,4,5],[6,7,8,9,10,11],[12,13,14,15,16,17],[18,19,20,21,22,23]]),
+            [[0,2,4,1,3,5],[12,14,16,13,15,17],[6,8,10,7,9,11],[18,20,22,19,21,23]],
+            True
+            ), 
     ]
 )
-
 def test_alternating_indices_to_sectors(M,correct,even_first):
-    assert (alternating_indices_to_sectors(np.array(M),even_first) == correct).all()
+    assert (alternating_indices_to_sectors(M,even_first) == correct).all()
 
 @pytest.mark.parametrize(
     "M,correct,even_first,axis",
     [
-        ([0, 2, 4, 1, 3, 5], [0, 1, 2, 3, 4, 5], True, 0),
-        ([0, 2, 4, 1, 3, 5], [1, 0, 3, 2, 5, 4], False, None),
         (
-            [[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]],
-            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
+            np.array([0, 2, 4, 1, 3, 5]), 
+            np.array([0, 1, 2, 3, 4, 5]), 
+            True, 
+            0
+        ),
+        (
+            np.array([0, 2, 4, 1, 3, 5]), 
+            np.array([1, 0, 3, 2, 5, 4]),
+            False, 
+            None
+        ),
+        (
+            np.array([[0, 2, 4, 1, 3, 5], [0, 2, 4, 1, 3, 5]]),
+            np.array([[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]),
             True,
             (0, 1),
         ),
         (
-            [
+            np.array([
                 [0, 2, 4, 1, 3, 5],
                 [12, 14, 16, 13, 15, 17],
                 [6, 8, 10, 7, 9, 11],
                 [18, 20, 22, 19, 21, 23],
-            ],
-            [
+            ]),
+            np.array([
                 [0, 1, 2, 3, 4, 5],
                 [6, 7, 8, 9, 10, 11],
                 [12, 13, 14, 15, 16, 17],
                 [18, 19, 20, 21, 22, 23],
-            ],
+            ]),
             True,
             (0, 1),
         ),
     ],
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
-    assert (
-        sectors_to_alternating_indices(np.array(M), even_first, axis)
-        == np.array(correct)
-    ).all()
+    assert (sectors_to_alternating_indices(M, even_first, axis)== correct).all()
 
 
 @pytest.mark.parametrize(
@@ -264,17 +273,36 @@ def test_hamming_weight(i,correct):
     assert hamming_weight(i)==correct
 
 @pytest.mark.parametrize(
-    "a,correct",
+    "wrong_input",
     [
-     (bin(300),[0,3,5,6]),
-     (bin(399),[0,1,5,6,7,8]),
-     (bin(1),[0]),
-     (bin(0),[]),
-     (bin(-29),[0,1,2,4]),
+     (
+        [0,1,2],
+     ),
+     (
+        np.array([0,1,2]),
+     ),
+     (
+        1.1
+     )
     ]
 )
-def test_indexbits(a,correct):
-    assert index_bits(a)==correct
+def test_hamming_weight_error(wrong_input):
+    with pytest.raises(TypeError):
+        hamming_weight(wrong_input)
+
+@pytest.mark.parametrize(
+    "a,correct, ones",
+    [
+     (bin(300),[0,3,5,6], True),
+     (bin(399),[0,1,5,6,7,8], True),
+     (bin(1),[0], True),
+     (bin(0),[], True),
+     (bin(-29),[0,1,2,4], True),
+     (10, [1, 3], False),
+    ]
+)
+def test_index_bits(a,correct, ones):
+    assert index_bits(a, ones)==correct
 
 @pytest.mark.parametrize(
     "rho, ind, solution",
@@ -481,3 +509,160 @@ def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
     print(grouped_pauli_sum)
     print(type(greedily_grouped_pauli_sum[0]))    
     assert greedily_grouped_pauli_sum == grouped_pauli_sum
+
+@pytest.mark.parametrize(
+    "init_circuit, final_circuit",
+    [
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),cirq.H.on(cirq.GridQubit(2, 0)),
+                    cirq.ZZ.on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.ZZ.on(cirq.GridQubit(1, 0), cirq.GridQubit(2, 0)),
+                    cirq.ZZ.on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),cirq.H.on(cirq.GridQubit(2, 0)),
+                    cirq.ZZ.on(cirq.GridQubit(1, 0), cirq.GridQubit(2, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.666)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.666)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.111)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.222)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.111)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.XX**(-0.222)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.XX**(-0.222)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.445)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+        ),
+         (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.111)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                    (cirq.CNOT**(-0.222)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.ZZ**(-0.111)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                    (cirq.CNOT**(-0.222)).on(cirq.GridQubit(0, 0), cirq.GridQubit(2, 0)),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),(cirq.X.on(cirq.GridQubit(1, 0))),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.ZZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),(cirq.X.on(cirq.GridQubit(1, 0))),
+                    (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.CZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),
+                    (cirq.CZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(0, 0))),
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.CZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(1, 0))),
+                    (cirq.CZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(1, 0))),
+                    cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
+            ),
+        ),
+    ]
+)
+def test_merge_same_gates(init_circuit, final_circuit):
+    print(merge_same_gates(init_circuit) )
+    print(final_circuit)
+    assert merge_same_gates(init_circuit) == final_circuit
+

@@ -71,20 +71,33 @@ def greedy_grouping(paulisum: cirq.PauliSum) -> List[cirq.PauliSum]:
     return grouped_paulisums
 
 def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
-    # strategy:
-    # start from last moment see if operation commuts with operation on previous moment
-    # or is same operation
-    # If same operation: merge angles
-    # if commuting then check next moment
-    # do until as long as moment of current operation > 1
-    # Does this help?
-    #https://quantumai.google/cirq/transform/custom_transformers?authuser=4
-    #https://quantumai.google/cirq/start/intro?authuser=4
-    #https://quantumcomputing.stackexchange.com/questions/13488/reordering-commuting-gates-in-cirq-to-reduce-circuit-depth
-    #https://quantumai.google/reference/python/cirq/Circuit
+    """
+    Strategy:
+        -Start from last moment and check whether operation commutes with operation on previous moment or is same operation
+        -If same operation: merge angles
+        -If commuting then check next moment
+        -Do as long as moment of current operation > 1
+
+    Resources:
+        https://quantumai.google/cirq/transform/custom_transformers?authuser=4
+        https://quantumai.google/cirq/start/intro?authuser=4
+        https://quantumcomputing.stackexchange.com/questions/13488/reordering-commuting-gates-in-cirq-to-reduce-circuit-depth
+        https://quantumai.google/reference/python/cirq/Circuit
+    
+    This currently does not manage following trafo:
+        Initial circuit:
+        (0, 0): ───ZZ──────────Z───ZZ──────────
+                │               │
+        (1, 0): ───ZZ^(-1/3)───────ZZ^(-1/3)───
+
+        Target circuit:
+        (0, 0): ───ZZ──────────Z───
+                │
+        (1, 0): ───ZZ^(-2/3)───────
+    """
     new_circuit = circuit.copy()
     #for i_moment in range(len(new_circuit)-1,-1,-1):
-    for i_moment in range(len(new_circuit)-2,-1,-1):
+    for i_moment in range(len(new_circuit)-1,-1,-1):
         for i_op in range(len(new_circuit.moments[i_moment].operations)):
             current_op = new_circuit.moments[i_moment].operations[i_op]
             # find merge able operation
@@ -113,11 +126,12 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
                                         #print(cirq.commutes(current_op.gate, inter_op.gate))
                                         #_IsMergable = cirq.definitely_commutes(current_op.gate, inter_op.gate)
                                         try:
+                                            #print("Gate1: {}\tGate2: {}".format(type(current_op.gate), type(inter_op.gate)))
                                             _IsMergable = cirq.commutes(current_op.gate, inter_op.gate)
                                         except:
-                                            # print("Gate1: {}\tGate2: {}".format(type(current_op.gate), type(inter_op.gate)))
-                                            # print("cirq.commutes fails:")
-                                            # print("Moment: {}\tCurrent op: {}\nMoment: {}\tInter op: {}\nMoment: {}\tPrevious op: {}\n"\
+                                            #print("Gate1: {}\tGate2: {}".format(type(current_op.gate), type(inter_op.gate)))
+                                            #print("cirq.commutes fails:")
+                                            #print("Moment: {}\tCurrent op: {}\nMoment: {}\tInter op: {}\nMoment: {}\tPrevious op: {}\n"\
                                             #     .format(i_moment, current_op.__dict__,i_inter_moment, inter_op.__dict__, i_previous_moment, previous_op.__dict__))
                                             _IsMergable = False
                             if _IsMergable:
@@ -136,7 +150,7 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
                                         setattr(new_gate, key, value+value2)
                                     else:
                                         setattr(new_gate, key, None)
-                                #print(new_gate)
+                                print(new_gate)
 
                                 new_operation = new_gate.on(*current_op.qubits)
                                 new_circuit.batch_replace([[i_moment,current_op, new_operation]])
@@ -145,7 +159,8 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
                                 
                                 #new_gate = current_op.gate + previous_op.gate
                                 #new_circuit.insert(i_moment,new_gate.on(current_op.qubits))
-    new_circuit = cirq.drop_empty_moments(new_circuit)
+    
+    new_circuit = cirq.drop_empty_moments(cirq.drop_negligible_operations(new_circuit, atol=1e-15))
     
     # This is a bad assert as it uses cirq.unitary(circuit) somewhere
     #cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
@@ -197,13 +212,13 @@ def hamming_weight(binary: Union[int,str])-> int:
     Returns:
         int: the hamming weight, i.e. the number of 1s in the number n
     """
-    if isinstance(n,int):
-        n=bin(n)
-    elif isinstance(n,str):
+    if isinstance(binary,int):
+        binary=bin(binary)
+    elif isinstance(binary,str):
         pass
     else:
-        raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
-    return sum((1 for j in n if j == '1'))
+        raise TypeError("expected a binary number or an int but got a {}".format(type(binary)))
+    return sum((1 for j in binary if j == '1'))
 
 def index_bits(binary: Union[int,str],ones=True) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
@@ -261,35 +276,52 @@ def generalized_matmul(multiplication_rule = np.matmul,
 def print_non_zero( M,
                     name: str=None, 
                     eq_tol: float=1E-15):
-    if name is not None: 
-        print(name)
-    print((abs(M)>eq_tol).astype(int))
+    if name is not None:                # pragma: no cover 
+        print(name)                     # pragma: no cover 
+    print((abs(M)>eq_tol).astype(int))  # pragma: no cover 
 
-def sectors_to_alternating_indices(M,even_first: bool = True) -> np.ndarray:
-    """This function turns a matrix which has two "sectors" into an interwoven one
+#This seems somewhat specific to a fermion problem?
+def sectors_to_alternating_indices(M, 
+                                   even_first: bool = True, 
+                                   axis=None) -> np.ndarray:
+    """
+    This function turns a matrix which has two "sectors" into an interwoven one
     i.e.
-    u u d d 
-    a a b b 
-    x x y y 
-    c c d d 
+
+    u u d d
+    a a b b
+    x x y y
+    c c d d
+
     into
+
     u d u d
     x y x y
     a b a b
     c d c d
+
     Args:
         M (np.ndarray): the matrix to be reordered
         even_first (bool, optional): whether the first sector is distributed over even indices (0 is the first index). Defaults to True.
+
     Returns:
         M (np.ndarray): reordered matrix
     """
-    if not isinstance(M,np.ndarray):
-        M=np.array(M)
+    M = np.array(M)
     dims = M.shape
-    if even_first:
-        idxs = (np.array(interweave(np.arange(0,np.floor(ii/2)),np.arange(np.floor(ii/2),ii))).astype(int) for ii in dims)
-    else:
-        idxs = (np.array(interweave(np.arange(np.floor(ii/2),ii),np.arange(0,np.floor(ii/2)))).astype(int) for ii in dims)
+    idxs = []
+    if isinstance(axis, int):
+        axis = (axis,)
+    for ind, dim in enumerate(dims):
+        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(
+            np.floor(dim / 2), dim
+        )
+        if not even_first:
+            half1, half2 = half2, half1
+        if axis is None:
+            idxs.append(np.array(interweave(half1, half2)).astype(int))
+        elif ind in axis:
+            idxs.append(np.array(interweave(half1, half2)).astype(int))
     return M[np.ix_(*idxs)]
 ############################################################################################
 #                                                                                          #
