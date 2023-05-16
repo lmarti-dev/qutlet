@@ -190,7 +190,7 @@ def flip_cross_rows(M,
     M_tmp[int(flip_odd)::2,:] = M_tmp[int(flip_odd)::2,::-1]
     return M_tmp
 
-def hamming_weight(n: Union[int,str])-> int:
+def hamming_weight(binary: Union[int,str])-> int:
     """Counts the number of 1s in a binary number. Can input either a binary or int representation
     Args:
         n (str i.e. binary representation or int representation): the number to be processed
@@ -205,7 +205,7 @@ def hamming_weight(n: Union[int,str])-> int:
         raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
     return sum((1 for j in n if j == '1'))
 
-def index_bits(a: str,ones=True) -> list:
+def index_bits(binary: Union[int,str],ones=True) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
     Args:
         a (binary number): The binary number whose ones or zeroes will be indexed
@@ -213,12 +213,14 @@ def index_bits(a: str,ones=True) -> list:
     Returns:
         list: List of indices where a is one (or zero)
     """
-    if isinstance(a,int):
-        a = bin(a)
-    b = a.split("b")[1]
+    if isinstance(binary,int):
+        binary = bin(binary)
+        
+    b = binary.split("b")[1]
+
     if ones:
         return [idx for idx, v in enumerate(b) if int(v)]
-    elif not ones:
+    else:
         return [idx for idx, v in enumerate(b) if not int(v)]
 
 def interweave(a, b)-> np.ndarray:
@@ -238,13 +240,8 @@ def direct_sum(a,b):
     """
         Missing docstring
     """
-    ax=a.shape[0]
-    ay=a.shape[1]
-    
-    bx=b.shape[0]
-    by=b.shape[1]
-    return np.block(    [[a,np.zeros((ax,by))],
-                        [np.zeros((bx,ay)),b]])
+    return np.block(    [[a,np.zeros((a.shape[0],b.shape[1]))],
+                        [np.zeros((b.shape[0],a.shape[1])),b]])
 
 def generalized_matmul(multiplication_rule = np.matmul,
                           *args):
