@@ -252,21 +252,24 @@ class UtCost(Objective):
 
         if options.get('time_indices') is None:
             options['time_indices'] = range(len(self._time_steps))
-        ####
-        # Print outs
-        #print("np.shape(self._output_wavefunctions): {}".format(np.shape(self._output_wavefunctions)))
-        ####
-        #This seems better? But test fail:
+        
+        # Suggestion Refik:
         #if len(options.get('time_indices')) == 1:
-        #    _tmp = [np.vdot(wavefunction[0], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
-        #    return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
-        #else:
+        #    wavefunction = [wavefunction]
+        
+        
+        #This fails ADAM batch tests:
+        if len(options.get('time_indices')) == 1:
+            _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
+            return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
+        else:
         # Past comment: seems wrong? -> No test to that shows that?
-        for step in options.get('time_indices'):
-            cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
-                                        self._output_wavefunctions[step][options.get('state_indices')], 
-                                        axis=1))/len(options.get('state_indices')))**self._exponent )
-            return 1 / len(self._time_steps) * cost
+        # This fails UtCost self-consistency tests:
+            for step in options.get('time_indices'):
+                cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
+                                            self._output_wavefunctions[step][options.get('state_indices')], 
+                                            axis=1))/len(options.get('state_indices')))**self._exponent )
+                return (1 / len(self._time_steps)) * cost
 
 
     #Need to overwrite simulate from parent class in order to work

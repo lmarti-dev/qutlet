@@ -470,7 +470,6 @@ def test_high_order_vec_cost(   model,
         ),
     ],
 )
-
 def test_consistency_exact_Ut(model, t_final):
     cost_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
     test_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
@@ -658,10 +657,11 @@ def test_consistency_exact_Ut3(model, get_states_method, t_final,n_states, tol):
 
     test_states=get_states_method(model.n[0]*model.n[1],
                                 2**(model.n[0]*model.n[1]))
-
+    print(np.shape(test_states))
+    print(np.linalg.norm(test_states))
     cost_states =get_states_method(model.n[0]*model.n[1],
                                 n_states)
-
+    print(np.linalg.norm(cost_states[0,:]))
     #cost_states = test_states
 
     ut_cost = UtCost(   model,
