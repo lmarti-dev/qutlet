@@ -50,7 +50,7 @@ class MatrixCost(Objective):
         else:
             assert(False),"MatrixCostError in __init__: expected 1D or 2D tensor, received {}".format(len(matrix.shape))
 
-    def evaluate(self, wavefunction: np.ndarray) -> np.float128:
+    def evaluate(self, wavefunction: np.ndarray) -> np.longdouble:
         if self.__IsVec == False:
             #Calculation via Forbenius norm
             #Then the "wavefunction" is also a unitary matrix
