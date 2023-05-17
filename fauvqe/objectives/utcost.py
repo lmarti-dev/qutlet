@@ -139,6 +139,8 @@ class UtCost(Objective):
     def get_output_wavefunctions(self,
                                 initial_wavefunctions=None):
         """
+        QUESTION: What are the different dimensions in otuput_wavefunction stand for?????
+
         This function initialises the initial and output batch wavefunctions as sampling data and sets self._output_wavefunctions.
         
         Parameters
@@ -241,54 +243,31 @@ class UtCost(Objective):
                 np.linalg.matrix_power( wavefunction, self._time_steps[step]))) / self._N)**self._exponent
         return 1 / len(self._time_steps) * cost
     
-    def evaluate_batch(self, wavefunction: np.ndarray, options: dict = {}) -> np.float64:
-        #assert (options['indices'] is not None), 'Please provide indices for batch'
-        #assert wavefunction.size == (len(self._time_steps) * len(options['indices']) * self._N), 'Please provide one wavefunction for each time step. Expected: {} Received: {}'.\
-        #    format( len(self._time_steps), wavefunction.size / self._N )
+    def evaluate_batch( self,
+                       wavefunction: np.ndarray, 
+                       options: dict = {}) -> np.float64:
         cost = 0
-
-        #print("options['state_indices']: {}".format(options.get('state_indices')))
         if options.get('state_indices') is None:
-            #somehow batch size fails to be accurate atleast with pytest
-            #options['state_indices'] = range(self.batch_size)
-            #print(np.size(self._output_wavefunctions[0,:,0]))
             options['state_indices'] = range(np.size(self._output_wavefunctions[0,:,0]))
-        #print("options['state_indices']: {}".format(options['state_indices']))
-        #print(np.size(self._output_wavefunctions[0,:,0]))
 
         if options.get('time_indices') is None:
             options['time_indices'] = range(len(self._time_steps))
+        ####
+        # Print outs
+        #print("np.shape(self._output_wavefunctions): {}".format(np.shape(self._output_wavefunctions)))
+        ####
+        #This seems better? But test fail:
+        #if len(options.get('time_indices')) == 1:
+        #    _tmp = [np.vdot(wavefunction[0], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
+        #    return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
+        #else:
+        # Past comment: seems wrong? -> No test to that shows that?
+        for step in options.get('time_indices'):
+            cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
+                                        self._output_wavefunctions[step][options.get('state_indices')], 
+                                        axis=1))/len(options.get('state_indices')))**self._exponent )
+            return 1 / len(self._time_steps) * cost
 
-        
-        #The question is also the expected behaviour
-        if len(options.get('time_indices')) == 1:
-            #print("np.shape(wavefunction): {}\tnp.shape(self._output_wavefunctions[0][options.get('state_indices')]): {}\t"\
-            #    .format(np.shape(wavefunction), np.shape(self._output_wavefunctions[0][options.get('state_indices')])))
-            #print(np.einsum('ij,ij->j', wavefunction, self._output_wavefunctions[0][options.get('state_indices')]))
-            
-            #print(np.shape(wavefunction))
-            #print(np.size(np.array(wavefunction)[:,0]))
-            _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
-            return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
-            #print(len(wavefunction[:,0]))
-            print("1- abs(np.sum(_tmp))/len(wavefunction[:,0]): {}".format(1- abs(np.sum(_tmp))/len(wavefunction[:,0])))
-            #print(1 - abs(np.sum(np.einsum('ij,ij->j', np.conjugate(wavefunction),
-            #                                            self._output_wavefunctions[0][options.get('state_indices')])))/4)
-            
-            return  1 - abs(np.sum(np.einsum('ij,ij->j', np.conjugate(wavefunction),
-                                                        self._output_wavefunctions[0][options.get('state_indices')])))/len(options.get('state_indices'))
-        #TODO This almost certainly is wrong
-        else:
-            for step in options.get('time_indices'):
-                cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
-                                            self._output_wavefunctions[step][options.get('state_indices')], 
-                                            axis=1))/len(options.get('state_indices')))**self._exponent )
-                return 1 / len(self._time_steps) * cost
-
-            #print(np.einsum('ij,ij->j', wavefunction[step],self._output_wavefunctions[step][options.get('indices')]))
-            #cost += np.sum(1 - abs(np.sum(np.einsum('ij,ij->j', wavefunction[step],
-            #                                                    self._output_wavefunctions[step][options.get('indices')])))/len(options.get('indices')) )
-        
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
