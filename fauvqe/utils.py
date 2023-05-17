@@ -38,31 +38,6 @@ def chained_matrix_multiplication(multiplication_rule:callable, *args) -> np.nda
             R = multiplication_rule(R, M)
     return R
 
-def pi_kron(*args) -> np.ndarray:
-    """Compute the tensor product of all matrices given as input
-
-    Returns:
-        np.ndarray: the tensor product of the matrices
-    """
-    R = np.kron(args[0], args[1])
-    if len(args) > 2:
-        for M in args[2:]:
-            R = np.kron(R, M)
-    return R
-
-
-def pi_direct_sum(*args):
-    """Compute the direct sum of all matrices given as arguments (i.e. creates a large matrix where all args are set as a block)
-
-    Returns:
-        np.ndarray: the output matrix whose diagonal is made of blocks of the input matrices
-    """
-    R = direct_sum(args[0], args[1])
-    if len(args) > 2:
-        for M in args[2:]:
-            R = direct_sum(R, M)
-    return R
-
 def direct_sum(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Computes the direct sum between two matrices
 
@@ -81,20 +56,6 @@ def direct_sum(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
     R = np.block([[a, np.zeros((ax, by))], [np.zeros((bx, ay)), b]])
     return R
-
-def pi_matmul(*args) -> np.ndarray:
-    """This function takes in multiple matrices (as different arguments) and multiplies them together
-    Returns:
-        Matrix: The matrix resulting from the multiplication
-    """
-    R = np.matmul(args[0], args[1])
-    if len(args) > 2:
-        for M in args[2:]:
-            R = np.matmul(R, M)
-    return R
-
-
-
 
 def flatten(a) -> Iterable:
     """This function takes in a list of list or another nested iterable object and flattens it
@@ -591,7 +552,7 @@ def fidelity(a: np.ndarray, b: np.ndarray) -> float:
 
         items[0] = sqrtm(items[0])
         print(items)
-        rho_sigma_rho = pi_matmul(items[0], items[1], items[0])
+        rho_sigma_rho = chained_matrix_multiplication(np.matmul,items[0], items[1], items[0])
         final_mat = sqrtm(rho_sigma_rho)
         return np.trace(final_mat)
 

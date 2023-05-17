@@ -57,34 +57,6 @@ def test_chained_matrix_multiplication(multiplication_rule,l, correct):
 
 
 @pytest.mark.parametrize(
-    "l,correct",
-    [
-        (
-            [[[1, 2, 3], [0, 0, 0], [1, 1, 1]], [[1, 1, 1], [1, 1, 1], [1, 1, 1]]],
-            [
-                [1, 1, 1, 2, 2, 2, 3, 3, 3],
-                [1, 1, 1, 2, 2, 2, 3, 3, 3],
-                [1, 1, 1, 2, 2, 2, 3, 3, 3],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-                [1, 1, 1, 1, 1, 1, 1, 1, 1],
-            ],
-        ),
-        (
-            [np.eye(2), np.ones((2, 2)), np.ones((2, 2))],
-            np.kron(np.eye(2), np.ones((4, 4))),
-        ),
-
-    ],
-)
-def test_pi_kron(l, correct):
-    assert (np.array(utils.pi_kron(*l)) == np.array(correct)).all()
-
-
-@pytest.mark.parametrize(
     "a,b,correct",
     [
         (
@@ -103,35 +75,6 @@ def test_pi_kron(l, correct):
 )
 def test_direct_sum(a, b, correct):
     assert (utils.direct_sum(np.array(a), np.array(b)) == np.array(correct)).all()
-
-
-@pytest.mark.parametrize(
-    "l,correct",
-    [
-        (
-            [
-                np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
-                np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
-                np.array([[2, 2, 2], [2, 2, 2], [3, 3, 3]]),
-            ],
-            np.array(
-                [
-                    [1, 2, 3, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
-                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
-                    [0, 0, 0, 0, 0, 0, 3, 3, 3],
-                ]
-            ),
-        ),
-    ],
-)
-def test_pi_direct_sum(l, correct):
-    assert (utils.pi_direct_sum(*l) == correct).all()
 
 
 @pytest.mark.parametrize(
@@ -361,13 +304,6 @@ def test_hamming_weight_error():
 def test_index_bits(a, correct, ones):
     assert utils.index_bits(a, ones) == correct
 
-
-@pytest.mark.parametrize(
-    "l,correct",
-    [(([[3, 0], [0, 2]], [[0, 2], [2, 0]], [[1, 1], [1, 1]]), [[6, 6], [4, 4]])],
-)
-def test_pi_matmul(l, correct):
-    assert np.array(utils.pi_matmul(*l) == correct).all()
 
 
 @pytest.mark.parametrize(
