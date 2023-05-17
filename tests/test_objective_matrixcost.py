@@ -104,7 +104,7 @@ def test_evaluate(n):
                 Ising("GridQubit", [1, 2], np.zeros((0, 2)), np.zeros((1, 1)), np.ones((1, 2))),
                 cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.CNOT.on(cirq.GridQubit(0, 0),cirq.GridQubit(0, 1))),
                 cirq.ParamResolver(),
-                np.array((np.sqrt(2)/2, 0, 0,np.sqrt(2)/2), dtype=np.float128),
+                np.array((np.sqrt(2)/2, 0, 0,np.sqrt(2)/2), dtype=np.longdouble),
             ]
         ),
         (
