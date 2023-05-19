@@ -261,9 +261,6 @@ class UtCost(Objective):
             return 1- abs(np.vdot(wavefunction, self._output_wavefunctions[0,0,:]) )**self._exponent
         elif len(options.get('time_indices')) == 1 and wavefunction.ndim == 2:
             #This covers the expected behaviour for using UTCost together with a batch of random vectors and 1 final simulation time
-            #
-            print(np.shape(self._output_wavefunctions))
-            print(np.shape(wavefunction))
             _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0,i,:]) for i in range(np.size(wavefunction[:,0]))]
             return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
         else:
@@ -273,9 +270,9 @@ class UtCost(Objective):
          #Note here the inconsistent use of wavefunction compared to all other objects as
          # dim 1: time steps dim 2: batc vector dim3: vector entries
             for step in options.get('time_indices'):
-                cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
+                cost += (1/len(options.get('state_indices')))*np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
                                             self._output_wavefunctions[step][options.get('state_indices')], 
-                                            axis=1))/len(options.get('state_indices')))**self._exponent )
+                                            axis=1)))**self._exponent )
         return (1 /len(options.get('time_indices'))) * cost
 
     #Need to overwrite simulate from parent class in order to work
