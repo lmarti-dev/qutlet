@@ -150,6 +150,7 @@ def test_simulate_batch(t, m, q, times):
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
+    print(np.array(op).shape)
     assert (objective.evaluate(np.array(op), options={'state_indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
@@ -341,7 +342,7 @@ def test_vec_cost(  model,
 
 
 @pytest.mark.parametrize(
-    "model, n_states, get_states_metod, m_trotter, q_trotter, t_final, rtol, atol",
+    "model, get_states_metod, m_trotter, q_trotter, t_final, rtol, atol",
     [
         (
             Ising(  "GridQubit", 
@@ -350,9 +351,8 @@ def test_vec_cost(  model,
                     1 * np.ones((2, 1)), 
                     1 * np.ones((2, 2)),
                     "X"),
-            2,
             uniform,
-            250,
+            101,
             2,
             np.pi/3,
             1e-5,
@@ -365,9 +365,8 @@ def test_vec_cost(  model,
                     1 * np.ones((1, 2)), 
                     0.1 * np.ones((1, 3)),
                     "X"),
-            2,
             haar,
-            150,
+            75,
             2,
             np.pi/3,
             1e-6,
@@ -377,7 +376,6 @@ def test_vec_cost(  model,
 )
 @pytest.mark.ultrahigheffort
 def test_high_order_vec_cost(   model, 
-                                n_states, 
                                 get_states_metod, 
                                 m_trotter, 
                                 q_trotter, 
@@ -387,10 +385,10 @@ def test_high_order_vec_cost(   model,
     model.set_simulator("cirq", {"dtype": np.complex128 })
     
     cost_states=get_states_metod(model.n[0]*model.n[1],
-                                n_states)
+                                2**(model.n[0]*model.n[1]))
 
     test_states = np.eye(2**(model.n[0]*model.n[1]), dtype=np.complex128)
-    #test_states = cost_states
+    #Note that number of test_states must be equal to number of cost_states
 
     ut_cost = UtCost(   model,
                         t = t_final,
@@ -398,7 +396,7 @@ def test_high_order_vec_cost(   model,
                         q= 0,
                         initial_wavefunctions=cost_states)
     cost_unitary_final_states = np.empty(shape=( cost_states.shape), dtype=np.complex128)
-    for k in range(n_states): cost_unitary_final_states[k] = ut_cost._Ut @ cost_states[k]
+    for k in range(2**(model.n[0]*model.n[1])): cost_unitary_final_states[k] = ut_cost._Ut @ cost_states[k]
 
     ut_cost_vec = UtCost(   model,
                         t = t_final,

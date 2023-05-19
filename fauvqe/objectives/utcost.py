@@ -250,12 +250,21 @@ class UtCost(Objective):
         if options.get('state_indices') is None:
             options['state_indices'] = range(np.size(self._output_wavefunctions[0,:,0]))
 
+        # Time_steps and time_indices are both lists of int
+        # Idea to have them seperate is to be evaluate not all times steps with
+        # evaluate_batch but only a few of them
         if options.get('time_indices') is None:
             options['time_indices'] = range(len(self._time_steps))
         
-        if len(options.get('time_indices')) == 1 and wavefunction.ndim <= 2:
+        if wavefunction.ndim == 1:
+            # This assumes a single state vector is given
+            return 1- abs(np.vdot(wavefunction, self._output_wavefunctions[0,0,:]) )**self._exponent
+        elif len(options.get('time_indices')) == 1 and wavefunction.ndim == 2:
             #This covers the expected behaviour for using UTCost together with a batch of random vectors and 1 final simulation time
-            _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
+            #
+            print(np.shape(self._output_wavefunctions))
+            print(np.shape(wavefunction))
+            _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0,i,:]) for i in range(np.size(wavefunction[:,0]))]
             return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
         else:
         # Past comment: seems wrong? -> No test to that shows that?
