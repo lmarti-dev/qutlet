@@ -253,24 +253,21 @@ class UtCost(Objective):
         if options.get('time_indices') is None:
             options['time_indices'] = range(len(self._time_steps))
         
-        # Suggestion Refik:
-        #if len(options.get('time_indices')) == 1:
-        #    wavefunction = [wavefunction]
-        
-        
-        #This fails ADAM batch tests:
-        if len(options.get('time_indices')) == 1:
+        if len(options.get('time_indices')) == 1 and wavefunction.ndim <= 2:
+            #This covers the expected behaviour for using UTCost together with a batch of random vectors and 1 final simulation time
             _tmp = [np.vdot(wavefunction[i], self._output_wavefunctions[0][i]) for i in range(np.size(wavefunction[:,0]))]
             return 1- (abs(np.sum(_tmp))/len(wavefunction[:,0]))**self._exponent
         else:
         # Past comment: seems wrong? -> No test to that shows that?
         # This fails UtCost self-consistency tests:
+         #This covers using UTCost together with a batch of more than one final simulation time
+         #Note here the inconsistent use of wavefunction compared to all other objects as
+         # dim 1: time steps dim 2: batc vector dim3: vector entries
             for step in options.get('time_indices'):
                 cost += np.sum(1 - (abs(np.sum(np.conjugate(wavefunction[step])*
                                             self._output_wavefunctions[step][options.get('state_indices')], 
                                             axis=1))/len(options.get('state_indices')))**self._exponent )
-                return (1 / len(self._time_steps)) * cost
-
+        return (1 /len(options.get('time_indices'))) * cost
 
     #Need to overwrite simulate from parent class in order to work
     def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:

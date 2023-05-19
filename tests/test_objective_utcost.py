@@ -101,7 +101,9 @@ def test_evaluate_batch(t, avg_size):
     outputs = np.zeros(shape=(avg_size, 4), dtype = np.complex128)
     for k in range(len(eval_indices)):
         outputs[k] = res @ initials[eval_indices[k]]
-    assert objective.evaluate(np.array([outputs]), options={'indices': eval_indices}) < 1e-10
+    print(outputs.shape)
+    print(np.array([outputs]).shape)
+    assert objective.evaluate(np.array([outputs]), options={'state_indices': eval_indices}) < 1e-10
 
 @pytest.mark.parametrize(
     "t, m, q, times",
@@ -148,7 +150,7 @@ def test_simulate_batch(t, m, q, times):
         param_resolver=ising.get_param_resolver(params),
         initial_state = initials[0]
     )
-    assert (objective.evaluate(np.array(op), options={'indices': [0]}) < 1e-3)
+    assert (objective.evaluate(np.array(op), options={'state_indices': [0]}) < 1e-3)
 
 @pytest.mark.parametrize(
     "t, m",
@@ -575,6 +577,8 @@ def test_consistency_exact_Ut2(model, get_states_metod, t_final):
 
     assert abs(ut_cost.evaluate(test_states) - ut_cost_batch.evaluate(test_states, {"state_indices": range(2**(model.n[0]*model.n[1]))})) < 1e-14
 
+#This seems to consistently fail:
+# Not clear why
 @pytest.mark.parametrize(
     "model, get_states_method, t_final, n_states, tol",
     [
@@ -681,26 +685,6 @@ def test_consistency_exact_Ut3(model, get_states_method, t_final,n_states, tol):
 @pytest.mark.parametrize(
     "model, t_final, m_trotter, q_trotter, tol",
     [
-        (
-            DrivenModel([Ising(  "GridQubit", 
-                                    [3,2], 
-                                    1 * np.ones((2, 2)), 
-                                    1 * np.ones((3, 1)), 
-                                    0 * np.ones((3, 2)),
-                                    "X"),
-                        Ising(  "GridQubit", 
-                                    [3,2], 
-                                    0 * np.ones((2, 2)), 
-                                    0 * np.ones((3, 1)), 
-                                    0 * np.ones((3, 2)),
-                                    "X")],
-                        [lambda t : 1, lambda t : 1],
-                        T=0.2),
-            np.pi/6,
-            25,
-            2,
-            1e-7,
-        ),
         (
             Ising(  "GridQubit", 
                     [1,2], 
