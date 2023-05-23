@@ -328,10 +328,10 @@ def test_set_circuit(n, boundaries, options, solution):
             [1, 1], 
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), 
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),),
                         cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
                                         z_exponent= sympy.Symbol('z0'), 
                                         axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 0)),
@@ -346,10 +346,10 @@ def test_set_circuit(n, boundaries, options, solution):
             [1, 1], 
             {"p": 2},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), 
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
                         cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
                                         z_exponent= sympy.Symbol('z0'), 
                                         axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 0)),
@@ -372,13 +372,13 @@ def test_set_circuit(n, boundaries, options, solution):
             [1, 1], 
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
                         cirq.Moment(cirq.PhasedXZGate(x_exponent= sympy.Symbol('x0'), 
                                         z_exponent= sympy.Symbol('z0'), 
                                         axis_phase_exponent= sympy.Symbol('a0')).on(cirq.GridQubit(0, 0)),
@@ -403,9 +403,6 @@ def test_set_circuit(n, boundaries, options, solution):
             },
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)),
                         cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(1, 1)), cirq.H.on(cirq.GridQubit(1, 2)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 1)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 2)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(1, 2)),
@@ -418,6 +415,9 @@ def test_set_circuit(n, boundaries, options, solution):
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 0)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 1)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 2)),
+                        cirq.Moment(    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 1)), (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 2))),
                         cirq.Moment(cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 0)),
                         cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 1)),
                         cirq.PhasedXPowGate(exponent=sympy.Symbol('x0'), phase_exponent=sympy.Symbol('z0')).on(cirq.GridQubit(0, 2)),
@@ -493,7 +493,25 @@ def test_numbers(options, solution):
     print('Solution:\n', solution)
     assert ising.circuit == solution
 
-def test_erros():
+@pytest.mark.parametrize(
+    "error_type, circuit_options",
+    [
+        (
+            AssertionError,
+            {
+                "parametrisation": "test",
+            },
+        ),
+        (
+            NotImplementedError,
+            {
+                "parametrisation": "layerwise",
+                "fully_connected" : True,
+            },
+        ),
+    ]
+)
+def test_errors_1(error_type, circuit_options):
     n0 = 1;n1 = 3
     b0 = 1; b1 = 1
     ising = Ising("GridQubit",
@@ -503,16 +521,38 @@ def test_erros():
                 np.ones((n0, n1)),
                 "X")
 
-    with pytest.raises(AssertionError):
-        ising.set_circuit("hea", {'parametrisation': "test"})
+    with pytest.raises(error_type):
+        ising.set_circuit("hea", circuit_options)
+
+@pytest.mark.parametrize(
+    "error_type, update_options",
+    [
+        (
+            AssertionError,
+            {
+                'parametrisation': "test",
+            },
+        ),      
+        (
+            AssertionError,
+            {
+                "parametrisation": "test",
+                'SingleQubitGates': None,
+            },
+        ),
+    ]
+)
+def test_errors_2(error_type, update_options,):
+    n0 = 1;n1 = 3
+    b0 = 1; b1 = 1
+    ising = Ising("GridQubit",
+                [n0, n1],
+                np.ones((n0-b0, n1)),
+                np.ones((n0, n1-b1)),
+                np.ones((n0, n1)),
+                "X")
 
     ising.set_circuit("hea")
-    ising.hea.options.update({'parametrisation': "test"})
-
-    with pytest.raises(AssertionError):
+    ising.hea.options.update(update_options)
+    with pytest.raises(error_type):
         ising.hea.set_circuit(ising)
-    
-    ising.hea.options.update({"SingleQubitGates": None})
-    with pytest.raises(AssertionError):
-        ising.hea.set_circuit(ising)
-    
