@@ -11,8 +11,8 @@ import cirq
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.models.spinmodel import SpinModel
 
-if TYPE_CHECKING:
-    from fauvqe.models.coolingmodel import CoolingModel
+#if TYPE_CHECKING:
+#    from fauvqe.models.coolingmodel import CoolingModel
 
 class SpinModelFC(AbstractModel):
     """
