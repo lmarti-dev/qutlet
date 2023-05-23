@@ -113,9 +113,10 @@ def set_circuit(self):
 
     for i in range(p):
         self.circuit.append(self.qaoa._UC_layer(self, self.circuit_param[i0 + 2 * i + 1]))
-        self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[i0 + 2 * i])))
         if hasattr(self, 'field') and self.field == "Z":
             self.circuit.append(cirq.Moment(self.qaoa._Z_layer(self, self.circuit_param[i0 + 2 * i + 1])))
+        self.circuit.append(cirq.Moment(self.qaoa._UB_layer(self, self.circuit_param[i0 + 2 * i])))
+        
 
 
 def _UB_layer(self, beta):

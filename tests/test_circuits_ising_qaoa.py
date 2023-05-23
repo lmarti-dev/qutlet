@@ -33,6 +33,7 @@ What to test:
 def test_set_circuit_wf():
     ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
     ising.set_circuit("qaoa")
+    ising.set_simulator("cirq", {"dtype": np.complex128})
     print(ising.circuit)
     assert ising.qaoa.options["p"]== 1
     assert ising.circuit_param == [sympy.Symbol("b0"), sympy.Symbol("g0")]
@@ -70,16 +71,17 @@ def test_set_circuit_wf():
     }
     obj_param_resolver = cirq.ParamResolver(joined_dict)
 
-    wf_z = ising.simulator.simulate(
+    wf_z = np.array(ising.simulator.simulate(
         ising.circuit, param_resolver=obj_param_resolver
-    ).state_vector()
+    ).state_vector())
     #Normalise wavevector
     wf_z = wf_z/np.linalg.norm(wf_z)
+
     assert np.allclose(
         wf_z,
-        np.array([0.5 + 0.0j, -0.5 + 0.0j, -0.5 + 0.0j, -0.5 + 0.0j]),
+        np.array((-0.5, -0.5, -0.5, 0.5), dtype=complex),
         rtol=0,
-        atol=1e-7,
+        atol=1e-14,
     )
 
 @pytest.mark.parametrize(
@@ -91,10 +93,11 @@ def test_set_circuit_wf():
             "X",
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), 
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
                         (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1))),
+            )
                         
         ),
         (
@@ -103,13 +106,15 @@ def test_set_circuit_wf():
             "X",
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
-                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2))),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), 
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
+            )
         ),
          (
             [1, 3], 
@@ -117,14 +122,15 @@ def test_set_circuit_wf():
             "X",
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
-                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
-                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2))),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                       (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
+            )
                         
         ),
         (
@@ -133,24 +139,25 @@ def test_set_circuit_wf():
             "X",
             {"p":2},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(0, 2)), 
-                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), 
+                        (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2)),
-                        cirq.Moment((cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 0)),
-                                    (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 1)),
-                                    (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 2))),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 2)),
-                        (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 0)), (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1)),
+                        (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 0)), 
+                        (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 1)),
                         (cirq.Z**(1.0*sympy.Symbol('g1'))).on(cirq.GridQubit(0, 2)), 
+                        cirq.Moment((cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 1)),
+                                    (cirq.X**sympy.Symbol('b1')).on(cirq.GridQubit(0, 2))),
                         ),
-                        
         ),
         (
             [3, 1], 
@@ -158,16 +165,16 @@ def test_set_circuit_wf():
             "Z",
             {},
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(2, 0)),  
-                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 0))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 0), cirq.GridQubit(0, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 0), cirq.GridQubit(2, 0)),
                         cirq.Moment((cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)),
                                     (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 0)),
-                                    (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 0)))),
-                        
+                                    (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 0))),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 0))),
+            ),            
         ),
         (
             [3, 3], 
@@ -177,15 +184,6 @@ def test_set_circuit_wf():
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), cirq.H.on(cirq.GridQubit(2, 0)), 
                         cirq.H.on(cirq.GridQubit(0, 1)), cirq.H.on(cirq.GridQubit(1, 1)), cirq.H.on(cirq.GridQubit(2, 1)), 
                         cirq.H.on(cirq.GridQubit(0, 2)), cirq.H.on(cirq.GridQubit(1, 2)), cirq.H.on(cirq.GridQubit(2, 2)), 
-                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 1)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 2)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 0)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 1)),
-                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 2))),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
                         (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 2), cirq.GridQubit(1, 2)),
@@ -212,7 +210,17 @@ def test_set_circuit_wf():
                                     (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 2)),
                                     (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 0)),
                                     (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 1)),
-                                    (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 2)))),
+                                    (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(2, 2))),
+                        cirq.Moment((cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 1)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 2)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 1)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 2)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 0)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 1)),
+                                    (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(2, 2))),
+            ),
                         
         ),
     ]
