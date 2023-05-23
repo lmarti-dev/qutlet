@@ -1,21 +1,11 @@
 """
-This is a submodule for Ising()
-
-This file is not exectuded, rather called within Ising() class when:
--set_circuit('qaoa') is called 
-
-or functions are handed over to classical optimiser
+This is a circuit submodule implements vanilla QAOA 
 """
 import cirq
 import numpy as np
 from importlib import import_module
 import itertools
 import sympy
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fauvqe.models.ising import Ising
 
 def set_p(self, p):
     if self.qaoa.options.get("p") != p:
@@ -34,11 +24,7 @@ def set_p(self, p):
 
 
 def set_symbols(self):
-    # Creat beta/gamma symbols for parametrised circuit
-    # self.betas = [sympy.Symbol("b" + str(i)) for i in range(p)]
-    # self.gammas = [sympy.Symbol("g" + str(i)) for i in range(p)]
-    #
-    # WANT: circuit-param to be a list like [b0, g0, b1, g1 ] etc
+    # This creats a circuit-param list like [b0, g0, b1, g1 ] etc
     p = self.qaoa.options.get("p")
     assert isinstance(p, (int, np.int_)), "Error: p needs to be int, received {}".format(type(p))
     temp = []
