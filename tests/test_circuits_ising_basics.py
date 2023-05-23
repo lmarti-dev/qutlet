@@ -187,17 +187,20 @@ def test__exact_layer_cc(n,subsystem_qubits):
         #Here the "subsystem" is already the entire system
         #These are included here as less convoluted tests
         #Having them pass but the real subsystem fail helps 
+        # n0
         (
             [1, 2],
             {"subsystem_qubits": [[cirq.GridQubit(0,0), cirq.GridQubit(0,1)]]}
         ),
         #Mix qubit order to get non-standard one
+        # n1
         (
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,1),
                                     cirq.GridQubit(1,0), cirq.GridQubit(0,1)]]}
         ),
         #Test [2,4] block as largest block in real sim
+        # n2
         (
             [2, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(0,1), cirq.GridQubit(1,1),
@@ -205,23 +208,27 @@ def test__exact_layer_cc(n,subsystem_qubits):
         ),
         #Below the "subsystem" is already the entire system
         # 2 subsystems
+        # n3
         (
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
                                     [cirq.GridQubit(1,0), cirq.GridQubit(1,1)]]}
         ),
+        # n4
         (
             [2, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
                                     [cirq.GridQubit(0,1), cirq.GridQubit(1,1)]]}
         ),
         # 3 and more subsystems
+        # n5
         (
             [2, 3],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
                                     [cirq.GridQubit(0,1), cirq.GridQubit(1,1)],
                                     [cirq.GridQubit(0,2), cirq.GridQubit(1,2)]]}
         ),
+        # n6
         (
             [3, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
@@ -230,11 +237,19 @@ def test__exact_layer_cc(n,subsystem_qubits):
         ),
         #Mix up subsystem qubit order
         #Mixing subsystems work
+        # n7
         (
             [3, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
                                     [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
                                     [cirq.GridQubit(2,0), cirq.GridQubit(2,1)]]}
+        ),
+        # n8
+        (
+            [3, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
+                                    [cirq.GridQubit(1,0), cirq.GridQubit(1,1),
+                                    cirq.GridQubit(2,0), cirq.GridQubit(2,1)]]}
         ),
         #Mixing qubit order within the subsystems still fails:
         #(
@@ -243,18 +258,27 @@ def test__exact_layer_cc(n,subsystem_qubits):
         #                            [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
         #                            [cirq.GridQubit(2,1), cirq.GridQubit(2,0)]]}
         #),
+        # n9
         (
             [2, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0)],
                                     [cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(1,1), cirq.GridQubit(1,2)],
                                     [cirq.GridQubit(0,3), cirq.GridQubit(1,3)]]}
         ),
+        # n10
         (
             [4, 2],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1)],
                                     [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(2,0), cirq.GridQubit(2,1)],
                                     [cirq.GridQubit(3,0), cirq.GridQubit(3,1)]]}
         ),
+        # n11
+        (
+            [4, 2],
+            {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(1,0), cirq.GridQubit(1,1)],
+                                    [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(3,0), cirq.GridQubit(3,1)]]}
+        ),
+        # n12
         (
             [3, 3],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)],
@@ -270,6 +294,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
         #                            [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3)]]}
         #),
         #This works but takes long
+        # n13
         (
             [3, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0)],
@@ -279,6 +304,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
         ),
         #Test coverings like used in later simulations:
         #1x4, 4x1 covering
+        # n14
         (
             [4, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(1,0), cirq.GridQubit(2,0), cirq.GridQubit(3,0)],
@@ -286,14 +312,16 @@ def test__exact_layer_cc(n,subsystem_qubits):
                                     [cirq.GridQubit(0,2), cirq.GridQubit(1,2), cirq.GridQubit(2,2), cirq.GridQubit(3,2)],
                                     [cirq.GridQubit(0,3), cirq.GridQubit(1,3), cirq.GridQubit(2,3), cirq.GridQubit(3,3)]]}
         ),
+        # n15
         (
             [4, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],
                                     [cirq.GridQubit(1,0), cirq.GridQubit(1,1), cirq.GridQubit(1,2), cirq.GridQubit(1,3)],
                                     [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3)],
-                                    [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
+                                    [cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]    ]}
         ),
         #2x4, 1x4_2x4_1x4 covering
+        # n16
         (
             [4, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3),
@@ -301,6 +329,7 @@ def test__exact_layer_cc(n,subsystem_qubits):
                                     [cirq.GridQubit(2,0), cirq.GridQubit(2,1), cirq.GridQubit(2,2), cirq.GridQubit(2,3),
                                     cirq.GridQubit(3,0), cirq.GridQubit(3,1), cirq.GridQubit(3,2), cirq.GridQubit(3,3)]]}
         ),
+        # n17
         (
             [4, 4],
             {"subsystem_qubits": [  [cirq.GridQubit(0,0), cirq.GridQubit(0,1), cirq.GridQubit(0,2), cirq.GridQubit(0,3)],

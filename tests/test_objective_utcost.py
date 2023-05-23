@@ -15,7 +15,22 @@ def hamiltonian():
     X = np.array([[0, 1], 
                   [1, 0]])
     return -np.kron(Z, Z) - np.kron(X, np.eye(2)) - np.kron(np.eye(2), X)
-    
+
+@pytest.mark.parametrize(
+    "t",
+    [
+        (0),
+        (0.5),
+        (np.pi/3),
+        (-1),
+    ],
+)
+def test_repr(t):
+    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)), "X")
+    objective = UtCost(ising, t, 0)
+
+    assert repr(objective) == "<UtCost t={}>".format(t)
+
 @pytest.mark.parametrize(
     "t",
     [
@@ -731,26 +746,26 @@ def test_consistency_exact_Ut3(model, get_states_method, t_final,n_states, tol):
             2,
             1e-7,
         ),
-        #(
-        #    DrivenModel([Ising(  "GridQubit", 
-        #                            [3,2], 
-        #                            1 * np.ones((2, 2)), 
-        #                            1 * np.ones((3, 1)), 
-        #                            0 * np.ones((3, 2)),
-        #                            "X"),
-        #                Ising(  "GridQubit", 
-        #                            [3,2], 
-        #                            0 * np.ones((2, 2)), 
-        #                            0 * np.ones((3, 1)), 
-        #                            1 * np.ones((3, 2)),
-        #                            "X")],
-        #                [lambda t : 1, lambda t : 1],
-        #                T=0.2),
-        #    np.pi/6,
-        #    25,
-        #    2,
-        #    1e-7,
-        #),
+        (
+            DrivenModel([Ising(  "GridQubit", 
+                                    [3,2], 
+                                    1 * np.ones((2, 2)), 
+                                    1 * np.ones((3, 1)), 
+                                    0 * np.ones((3, 2)),
+                                    "X"),
+                        Ising(  "GridQubit", 
+                                    [3,2], 
+                                    0 * np.ones((2, 2)), 
+                                    0 * np.ones((3, 1)), 
+                                    1 * np.ones((3, 2)),
+                                    "X")],
+                        [lambda t : 1, lambda t : 1],
+                        T=0.2),
+            np.pi/6,
+            25,
+            2,
+            1e-7,
+        ),
     ],
 )
 def test_consistency_high_order_trotter(model, t_final, m_trotter, q_trotter, tol):
@@ -761,10 +776,7 @@ def test_consistency_high_order_trotter(model, t_final, m_trotter, q_trotter, to
     #print(model.__dict__)
     print( model.hamiltonian(t_final) )
     print("model.circuit: {}:".format(model.circuit))
-    if isinstance(model, DrivenModel):
-        model.set_Ut(m=1, q=1)
-    else:
-        model.set_Ut()
+    model.set_Ut()
     print(np.shape(model._Ut))
     unitary_exact_cost = UtCost(   model,
                         t = t_final,
