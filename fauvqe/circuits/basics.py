@@ -19,6 +19,7 @@ import warnings
 
 #Internal import
 from fauvqe.models.abstractmodel import AbstractModel
+from fauvqe.utilities.generic import flatten
 
 def set_circuit(self):
     if self.basics.options.get('append') is False:
@@ -57,42 +58,6 @@ def set_circuit(self):
     else:
         assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
                 'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("end")  )
-
-    #Match case the python version of switch case only works
-    #starting with Python 3.10
-    #match self.basics.options.get("start"):
-    #    case None:
-    #        pass
-    #    case "exact":
-    #        self.circuit.insert(0,self.basics._exact_layer(self))
-    #    case "hadamard":
-    #        self.circuit.insert(0,self.basics._hadamard_layer(self))
-    #    case "identity":
-    #        self.circuit.insert(0,self.basics._identity_layer(self))
-    #    case "mf":
-    #        self.circuit.insert(0,self.basics._mf_layer(self))
-    #    case "neel":
-    #        self.circuit.insert(0,self.basics._neel_layer(self))
-    #    case _:
-    #        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-    #            'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("start") )
-
-    #match self.basics.options.get("end"):
-    #    case None:
-    #        pass
-    #    case "exact":
-    #        self.circuit.append(self.basics._exact_layer(self))
-    #    case "hadamard":
-    #        self.circuit.append(self.basics._hadamard_layer(self))
-    #    case "identity":
-    #        self.circuit.append(self.basics._identity_layer(self))
-    #    case "neel":
-    #        self.circuit.append(self.basics._neel_layer(self))
-    #    case "mf":
-    #        self.circuit.append(self.basics._mf_layer(self))
-    #    case _:
-    #        assert (False), "Invalid self.basics option, received: '{}', allowed is \n \
-    #            'exact', 'hadamard', 'identity', 'mf' and 'neel'".format(self.basics.options.get("end")  )
 
 def _exact_layer(self):
     """
@@ -273,10 +238,10 @@ def _exact_layer(self):
         
         #Check whether set of qubits match and non is there twice
         subsystem_qubits = self.basics.options.get("subsystem_qubits")
-        assert ( set(self.basics.flatten(self.qubits)) == set(self.basics.flatten(subsystem_qubits)) 
+        assert ( set(flatten(self.qubits)) == set(flatten(subsystem_qubits)) 
             ), "Subsystem qubits do not match system qubits;\nProvided system qubits are:\n{}\nProvided sub system qubits are:\n{}\n".format(
-            set(self.basics.flatten(self.qubits)), 
-            set(self.basics.flatten(subsystem_qubits))
+            set(flatten(self.qubits)), 
+            set(flatten(subsystem_qubits))
             )
         
         #Store subsystem qubits
@@ -335,7 +300,6 @@ def _exact_layer(self):
                                     n_offset=[min(subsystem_qubits[i])._row, min(subsystem_qubits[i])._col] )
                                     
             #Store cirq PauliSums of subsystem Hamiltonians
-            #print(temp_model.hamiltonian)
             self.subsystem_hamiltonians.append(temp_model._hamiltonian)
             
             #To not loose qubits with no gates/ 0 qubits
@@ -345,11 +309,6 @@ def _exact_layer(self):
                 temp_model.diagonalise( solver = "scipy", 
                                         solver_options={"subset_by_index": [0, 2**(n_exact[0]*n_exact[1]) - 1]},
                                         matrix= temp_matrix)
-                #tmp_eig_val=temp_model.eig_val
-                #temp_model.diagonalise( solver = "numpy", 
-                #                        matrix= temp_matrix)
-                #print(tmp_eig_val-temp_model.eig_val)
-                #print("type(temp_model.eig_val[0]): {}".format(type(temp_model.eig_val[0])))
 
                 self.subsystem_energies.append(temp_model.eig_val)
                 self.subsystem_U.append(temp_model.eig_vec)
@@ -501,9 +460,6 @@ def rm_unused_cpv(self):
         del self.circuit_param[index]
     self.circuit_param_values = np.delete(self.circuit_param_values, _erase_ind, None)
 
-def flatten(nested_list):
-    return [item for sublist in nested_list for item in sublist]
-
 def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder = True):
     #To Do Add qubit_map from subsystem qubits
     #Set a subsystem qubit_map -> need later for simulations
@@ -535,12 +491,6 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
         # Here subsystem_energies should only be np.ndarray
         return np.squeeze(subsystem_energies)
     else:
-        #print(subsystem_energies)
-        #energy_filter = np.add(np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]
-        #                            .reshape((1,2**np.size( self.subsystem_qubits[0]))), 
-        #                       np.size( self.subsystem_qubits[1])*self.subsystem_energies[1]
-        #                            .reshape((2**np.size( self.subsystem_qubits[1]),1))
-        #                        ).reshape((1,2**np.size( self.subsystem_qubits[0] + self.subsystem_qubits[1]))) 
         energy_filter = np.add(np.size( self.subsystem_qubits[1])*self.subsystem_energies[1]
                                     .reshape((1,2**np.size( self.subsystem_qubits[1]))), 
                                np.size( self.subsystem_qubits[0])*self.subsystem_energies[0]
@@ -554,13 +504,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
         
         # If the subsystems are not in standard order return energy filter in standard order
         ordering = self.basics.get_reordering_from_subsystem(self)
-        #print("ordering: {}\nnp.size(energy_filter): {}\nnp.squeeze(energy_filter)/np.size(self.qubits) {}\nself.basics.permute_state_vector: {}"
-        #.format(ordering, 
-        #        np.size(energy_filter),
-        #        np.size(np.squeeze(energy_filter)/np.size(self.qubits)),
-        #        np.size(self.basics.permute_state_vector(   self,
-        #                                                np.squeeze(energy_filter)/np.size(self.qubits), 
-        #                                               ordering))))
+
         if (ordering == range(np.size(self.qubits))) or (not do_reorder):
             return np.squeeze(energy_filter)/np.size(self.qubits)
         else:
@@ -626,10 +570,10 @@ def permute_state_vector(   self,
 def get_reordering_from_subsystem(self):
     # from assert in exact_layer know that qubits and subsystems are the same
     #Get qubit flatten list
-    _system_qubits= self.basics.flatten(self.qubits)
+    _system_qubits= list(flatten(self.qubits))
 
     #Get subsystem qubits flatten list
-    _subsystem_qubits= self.basics.flatten(self.subsystem_qubits)
+    _subsystem_qubits= list(flatten(self.subsystem_qubits))
 
     #Return index reordering
     return [_system_qubits.index(_subsystem_qubits[i]) for i in range(len(_system_qubits))]

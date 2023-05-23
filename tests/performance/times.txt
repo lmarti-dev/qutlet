@@ -9312,3 +9312,111 @@ Test Adam + ExpectationValue
 Sequential Time: 14.375311851501465
 Parallel Time: 5.125030517578125
 
+===Di, 23 Mai 2023 18:54:57 +0000===
+Test No Indices 
+
+Sequential Time: 2.66674542427063
+Parallel Time: 1.2401463985443115
+
+===Di, 23 Mai 2023 18:55:09 +0000===
+Test Indices 
+
+Sequential Time: 6.432768106460571
+Parallel Time: 5.321011543273926
+
+===Di, 23 Mai 2023 18:55:15 +0000===
+Test Indices 
+
+Sequential Time: 3.469026803970337
+Parallel Time: 2.7328872680664062
+
+===Di, 23 Mai 2023 18:55:32 +0000===
+Test Indices 
+
+Sequential Time: 11.460746765136719
+Parallel Time: 4.752351760864258
+
+===Di, 23 Mai 2023 18:55:41 +0000===
+Test Indices 
+
+Sequential Time: 6.061121225357056
+Parallel Time: 2.949528455734253
+
+===Di, 23 Mai 2023 18:56:03 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.910444498062134
+Parallel Time: 8.783602476119995
+
+===Di, 23 Mai 2023 18:56:16 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.460184574127197
+Parallel Time: 5.058520317077637
+
+===Di, 23 Mai 2023 18:56:53 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 27.157078981399536
+Parallel Time: 9.608789682388306
+
+===Di, 23 Mai 2023 18:57:13 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.483617782592773
+Parallel Time: 5.720795154571533
+
+===Di, 23 Mai 2023 19:12:36 +0000===
+Test No Indices 
+
+Sequential Time: 2.5814688205718994
+Parallel Time: 1.1235406398773193
+
+===Di, 23 Mai 2023 19:12:47 +0000===
+Test Indices 
+
+Sequential Time: 6.1405699253082275
+Parallel Time: 5.067866563796997
+
+===Di, 23 Mai 2023 19:12:53 +0000===
+Test Indices 
+
+Sequential Time: 3.2443058490753174
+Parallel Time: 2.5518786907196045
+
+===Di, 23 Mai 2023 19:13:08 +0000===
+Test Indices 
+
+Sequential Time: 11.138345718383789
+Parallel Time: 4.600179672241211
+
+===Di, 23 Mai 2023 19:13:17 +0000===
+Test Indices 
+
+Sequential Time: 6.33542275428772
+Parallel Time: 2.61565899848938
+
+===Di, 23 Mai 2023 19:13:40 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.470328330993652
+Parallel Time: 9.385955095291138
+
+===Di, 23 Mai 2023 19:13:52 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.367297649383545
+Parallel Time: 4.85085916519165
+
+===Di, 23 Mai 2023 19:14:29 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 27.020200967788696
+Parallel Time: 9.31642484664917
+
+===Di, 23 Mai 2023 19:14:49 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.439305782318115
+Parallel Time: 5.4560277462005615
+
