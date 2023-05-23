@@ -1,15 +1,127 @@
 # external imports
 import cirq
-import pytest
-import numpy as np
-import scipy
 from numbers import Real
+import numpy as np
+import pytest
+import scipy
+import sympy
+
 
 # internal imports
 from fauvqe import Ising, HeisenbergFC, MatrixCost, UtCost
 
 @pytest.mark.parametrize(
-    "n, boundaries, field, options, t",
+    "n, boundaries, jx,jy,h, field, t, options, solution",
+    [
+        (
+            [2, 1], 
+            [1, 1], 
+            np.ones((1, 1)), 
+            np.ones((2, 0)), 
+            np.ones((2,1)), 
+            "X",
+            0.3,
+            {
+                "trotter_order":1,
+                "trotter_number":1,
+            },
+            cirq.Circuit(cirq.ZZPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(1, 0)),
+            )
+        ),
+        (
+            [2, 1], 
+            [1, 1], 
+            np.ones((1, 1)), 
+            np.ones((2, 0)), 
+            np.ones((2,1)), 
+            "Z",
+            0.3,
+            {
+                "trotter_order":1,
+                "trotter_number":1,
+            },
+            cirq.Circuit(cirq.ZZPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.ZPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.ZPowGate(exponent=-0.3*2/np.pi).on(cirq.GridQubit(1, 0)),
+            )
+        ),
+        (
+            [2, 1], 
+            [1, 1], 
+            np.ones((1, 1)), 
+            np.ones((2, 0)), 
+            np.ones((2,1)), 
+            "X",
+            0.3,
+            {
+                "trotter_order":2,
+                "trotter_number":1,
+            },
+            cirq.Circuit(cirq.ZZPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(1, 0)),
+            )
+        ),
+        (
+            [2, 1], 
+            [1, 1], 
+            np.ones((1, 1)), 
+            np.ones((2, 0)), 
+            np.ones((2,1)), 
+            "X",
+            1.0,
+            {
+                "trotter_order":1,
+                "trotter_number":3,
+            },
+            cirq.Circuit(cirq.ZZPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-1/3*2/np.pi).on(cirq.GridQubit(1, 0)),
+            )
+        ),
+        (
+            [2, 1], 
+            [1, 1], 
+            np.zeros((1, 1)), 
+            np.zeros((2, 0)), 
+            np.zeros((2,1)), 
+            "X",
+            1.0,
+            {
+                "trotter_order":1,
+                "trotter_number":2,
+            }, 
+            cirq.Circuit()
+        ),
+    ]
+)
+def test_set_ising_trotter(n, boundaries, jx,jy,h, field, t, options, solution):
+    ising = Ising(  "GridQubit", 
+                    n, 
+                    jx,jy,h, 
+                    field, 
+                    t=t)
+    ising.set_circuit("trotter", options)
+
+    print("ising.circuit: \n{}".format(ising.circuit))
+    print("solution: \n{}".format(solution))
+    
+    assert ising.circuit == solution
+    
+    #ising.set_simulator("cirq", {"dtype": np.complex128})
+    #cost = UtCost(ising, t)
+    #assert cost.evaluate(cost.simulate({})) < 1e-2
+
+@pytest.mark.parametrize(
+    "n, boundaries, field, options, t, solution",
     [
         (
             [2, 1], 
@@ -19,53 +131,103 @@ from fauvqe import Ising, HeisenbergFC, MatrixCost, UtCost
                 "trotter_order":1,
                 "trotter_number":1,
             },
-            0.3
+            0.1,
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), 
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.1*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.1*2/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.1*2/np.pi).on(cirq.GridQubit(1, 0)),
+            )
         ),
+        #(
+        #    [2, 1], 
+        #    [1, 1], 
+        #    "Z",
+        #    {
+        #        "trotter_order":1,
+        #        "trotter_number":1,
+        #    },
+        #    0.1,
+        #    cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), 
+        #                (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+        #                (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0)), 
+        #                (cirq.Z**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(1, 0)),
+        #                (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+        #                (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+        #                cirq.ZZPowGate(exponent=-0.2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+        #                cirq.XPowGate(exponent=-0.2/np.pi).on(cirq.GridQubit(0, 0)),
+        #                cirq.XPowGate(exponent=-0.2/np.pi).on(cirq.GridQubit(1, 0)),
+        #    )
+        #),
         (
             [2, 1], 
             [1, 1], 
-            "Z",
+            "X",
             {
-                "trotter_order":1,
+                "trotter_order":2,
                 "trotter_number":1,
             },
-            0.3
+            0.3,
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), 
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.3/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            )
         ),
         (
             [2, 1], 
             [1, 1], 
             "X",
             {
-                "trotter_order":4,
-                "trotter_number":1,
-            },
-            0.3
-        ),
-        (
-            [2, 1], 
-            [1, 1], 
-            "X",
-            {
                 "trotter_order":1,
-                "trotter_number":4,
+                "trotter_number":2,
             },
-            1.0
+            0.3*np.pi,
+            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)), 
+                        (cirq.ZZ**(1.0*sympy.Symbol('g0'))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(0, 0)),
+                        (cirq.X**sympy.Symbol('b0')).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.3).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.3).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.3).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.3).on(cirq.GridQubit(1, 0)),
+            )
         ),
     ]
 )
-def test_set_ising_trotter(n, boundaries, field, options, t):
+def test_set_ising_trotter_append(n, boundaries, field, options, t,solution):
     ising = Ising(  "GridQubit", 
                     n, 
                     np.ones((n[0]-boundaries[0], n[1])), 
                     np.ones((n[0], n[1]-boundaries[1])), 
                     np.ones((n[0], n[1])), 
-                    field, 
-                    t=t)
-    ising.set_circuit("trotter", options)
-    ising.set_simulator("cirq", {"dtype": np.complex128})
-    cost = UtCost(ising, t)
+                    field,
+                    t)
     
-    assert cost.evaluate(cost.simulate({})) < 1e-2
+    if field == "X":
+        qaoa_options= {"SingleQubitGates": []}
+    else:
+        qaoa_options= {}
+    print(qaoa_options)
+    ising.set_circuit("qaoa", qaoa_options)
+
+    circuit_options={'append': True}
+    circuit_options.update(options)                   
+    ising.set_circuit("trotter", circuit_options)
+    
+    print("ising.circuit: \n{}".format(ising.circuit))
+    print("solution: \n{}".format(solution))
+    assert ising.circuit == solution
 
 @pytest.mark.parametrize(
     "n, options, t",
