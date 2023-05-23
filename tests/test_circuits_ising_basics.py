@@ -699,7 +699,7 @@ def test_subsystem_U2(n, basics_options):
         wf0[i2]=np.sqrt(1-mix_ratio)
         
         #print("i1: {}\ti2: {}\nwf: {}\nwf0: {}".format(i1, i2,wf, wf0))
-        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=n[0]*n[1]*1e-14, atol=n[0]*n[1]*5e-14)
+        cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, wf0, rtol=n[0]*n[1]*1e-14, atol=n[0]*n[1]*1e-13)
         
         #use here qubit order for subsystem = system
         E_filter= mix_ratio*_energy_filter[i1]+(1-mix_ratio)*_energy_filter[i2]

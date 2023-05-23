@@ -514,6 +514,7 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
 
     #Do this two step if to away issue that all() not applicable for None
     #But also all() needed if subsystem_energies not None
+    #The expected structure of subsystem energies is List[np.array] 
     if np.size(subsystem_energies) == 1:
         if (subsystem_energies == None):
             if hasattr(self, 'subsystem_energies') is True:
@@ -521,11 +522,17 @@ def get_energy_filter_from_subsystem(self, subsystem_energies = None, do_reorder
             else:
                 assert False, "No subsystem energies provided"
 
-    print(np.size(self.qubits))
-    print(np.squeeze(subsystem_energies))
-    print(np.size(subsystem_energies))
+    # This if catches if the provided subsystem_energies are already the entire subsystem spectrum
+    # Hence subsystem_energies could be List[np.array] (with potentially different sized array sizes) or np.ndarray
+    # np.size(np.concatenate(subsystem_energies)) will fail for np.ndarray
+    # np.size(subsystem_energies) will fail for List[np.array]
+    if isinstance(subsystem_energies, np.ndarray):
+        _tmp_count = np.size(subsystem_energies) 
+    else:
+        _tmp_count = np.size(np.concatenate(subsystem_energies)) 
 
-    if np.size(subsystem_energies) == 2**np.size(self.qubits):
+    if _tmp_count == 2**np.size(self.qubits):
+        # Here subsystem_energies should only be np.ndarray
         return np.squeeze(subsystem_energies)
     else:
         #print(subsystem_energies)
