@@ -129,11 +129,19 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
                                             #print("Gate1: {}\tGate2: {}".format(type(current_op.gate), type(inter_op.gate)))
                                             _IsMergable = cirq.commutes(current_op.gate, inter_op.gate)
                                         except:
+                                            #print("cirq.commutes fails:")
                                             #print("Gate1: {}\tGate2: {}".format(type(current_op.gate), type(inter_op.gate)))
+                                            #print("Current_op: {}\tInter_op: {}".format(current_op, inter_op))
                                             #print("cirq.commutes fails:")
                                             #print("Moment: {}\tCurrent op: {}\nMoment: {}\tInter op: {}\nMoment: {}\tPrevious op: {}\n"\
                                             #     .format(i_moment, current_op.__dict__,i_inter_moment, inter_op.__dict__, i_previous_moment, previous_op.__dict__))
-                                            _IsMergable = False
+
+                                            # As cirq.commutes fails, Compare unitaries instead
+                                            # Here we ensured already that the operations act on common qubits:
+                                            _IsMergable = cirq.equal_up_to_global_phase(cirq.unitary(cirq.Circuit(current_op, inter_op) ),
+                                                                                        cirq.unitary(cirq.Circuit(inter_op, current_op) ),
+                                                                                        atol = 1e-10)
+
                             if _IsMergable:
                                 # print("Mergeable operations: ")
                                 # print("Moment: {}\tCurrent op: {}\nMoment: {}\tPrevious op: {}\n"\

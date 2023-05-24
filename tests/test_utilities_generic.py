@@ -154,7 +154,6 @@ def test_direct_sum(a,b,correct):
 def test_generalized_matmul(multiplication_function,test_args,ground_truth):
     assert (generalized_matmul(multiplication_function,*test_args) == ground_truth).all()
 
-
 @pytest.mark.parametrize(
     "a,correct",
     [
@@ -231,7 +230,6 @@ def test_alternating_indices_to_sectors(M,correct,even_first):
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
     assert (sectors_to_alternating_indices(M, even_first, axis)== correct).all()
-
 
 @pytest.mark.parametrize(
     "M,correct,flip_odd",
@@ -572,8 +570,8 @@ def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
                     (cirq.ZZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
             ),
             cirq.Circuit(
-                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                     (cirq.Z.on(cirq.GridQubit(0, 0))),
+                    (cirq.ZZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),   
             ),
         ),
         (
@@ -640,8 +638,19 @@ def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
                     (cirq.CZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
             ),
             cirq.Circuit(
-                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                     (cirq.Z.on(cirq.GridQubit(0, 0))),
+                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),    
+            ),
+        ),
+        (
+            cirq.Circuit(
+                    (cirq.CZ**(-0.333)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                    (cirq.Z.on(cirq.GridQubit(1, 0))),
+                    (cirq.CZ**(-0.334)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+            ),
+            cirq.Circuit(
+                    (cirq.Z.on(cirq.GridQubit(1, 0))),
+                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
             ),
         ),
         (
@@ -654,15 +663,18 @@ def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
             ),
             cirq.Circuit(
                     cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
-                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                     (cirq.Z.on(cirq.GridQubit(1, 0))),
+                    (cirq.CZ**(-0.667)).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
                     cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
             ),
         ),
     ]
 )
 def test_merge_same_gates(init_circuit, final_circuit):
-    print(merge_same_gates(init_circuit) )
-    print(final_circuit)
+    # Note that currently the merging happens from the end of the circuit
+    # Effectively this moves 2 qubit gates towards the end and 1 qubit gates towards the beginning
+    print("init_circuit:\n{}".format(init_circuit ))
+    print("merge_same_gates(init_circuit):\n{}".format(merge_same_gates(init_circuit) ))
+    print("final_circuit:\n{}".format(final_circuit))
     assert merge_same_gates(init_circuit) == final_circuit
 
