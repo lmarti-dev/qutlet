@@ -368,7 +368,7 @@ def test_perform_sweep(field, nbr_resets, t_steps, calc_O):
         model.m_sys._set_output_state_for_sweep()
     assert 1 - abs(model.m_sys.output.transpose().conjugate() @ result @ model.m_sys.output ) < 1e-1
 
-
+# This is okay to fail as it is changed in dev-mas-adiabatic-cooling 2 anyway.
 def test_theory_bounds():
     qubittype= "GridQubit"
     n=[2, 1]

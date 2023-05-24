@@ -517,7 +517,7 @@ def test_set_circuit_trotter_options_no_overwrite(n, boundaries, field, cooling_
     if len(trotter_options) == 0:
         model.set_circuit("cooling", cooling_options)
     else:
-        model.set_circuit("trotter", trotter_options)444
+        model.set_circuit("trotter", trotter_options)
         model.set_circuit("cooling", cooling_options)
 
         default_trotter_options= {    "append": False,

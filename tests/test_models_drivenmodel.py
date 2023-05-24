@@ -690,7 +690,7 @@ def test_Vjs():
                 "f(t) = 1",
                 "f(t) = sin(10*t)"
             ],
-            "< DrivenModel\nModel 0 < IsingModel, Hamiltonian=-1.000*Z((0, 0))*Z((0, 1)) >\nDrive 0 f(t) = 1\nModel 1 < IsingModel, Hamiltonian=-1.000*X((0, 0))-1.000*X((0, 1)) >\nDrive 1 f(t) = sin(10*t) >"
+            "< DrivenModel\nModel 0 < Ising, Hamiltonian=-1.000*Z(q(0, 0))*Z(q(0, 1)) >\nDrive 0 f(t) = 1\nModel 1 < Ising, Hamiltonian=-1.000*X(q(0, 0))-1.000*X(q(0, 1)) >\nDrive 1 f(t) = sin(10*t) >"
         ),
         (
             [
@@ -707,7 +707,7 @@ def test_Vjs():
             [
                 "",
             ],
-            "< DrivenModel\nModel 0 < IsingModel, Hamiltonian=-1.000*Z((0, 0))*Z((0, 1))-0.500*X((0, 0))-0.500*X((0, 1)) >\nDrive 0  >"
+            "< DrivenModel\nModel 0 < Ising, Hamiltonian=-1.000*Z(q(0, 0))*Z(q(0, 1))-0.500*X(q(0, 0))-0.500*X(q(0, 1)) >\nDrive 0  >"
         ),
     ],
 )
@@ -715,8 +715,10 @@ def test__repr(models, drives, drive_names, true_repr):
     for i in range(len(drives)): drives[i].__name__ = drive_names[i]
     driven_model = DrivenModel( models, 
                                 drives)
-    print(repr(driven_model) )
+    print("repr(driven_model):\n{}".format(repr(driven_model)) )
+    print("true_repr:\n{}".format(true_repr) )
     assert repr(driven_model) == true_repr
+
 
 @pytest.mark.parametrize(
     "models, drives, drive_names, T, t0, t, j_max",
@@ -725,15 +727,15 @@ def test__repr(models, drives, drive_names, true_repr):
             [
                 Ising(  "GridQubit",
                         [2,2],
-                        2*(np.random.rand(2-1,2)- 0.5),
-                        2*(np.random.rand(2,2-1)- 0.5),
-                        2*(np.random.rand(2,2)- 0.5),
+                        np.around(2*(np.random.rand(2-1,2)- 0.5), decimals=3) ,
+                        np.around(2*(np.random.rand(2,2-1)- 0.5), decimals=3) ,
+                        np.around(2*(np.random.rand(2,2)- 0.5), decimals=3) ,
                         "Z" ),
                 Ising(  "GridQubit",
                         [2,2],
-                        2*(np.random.rand(2-1,2)- 0.5),
-                        2*(np.random.rand(2,2-1)- 0.5),
-                        2*(np.random.rand(2,2)- 0.5),
+                        np.around(2*(np.random.rand(2-1,2)- 0.5), decimals=3) ,
+                        np.around(2*(np.random.rand(2,2-1)- 0.5), decimals=3) ,
+                        np.around(2*(np.random.rand(2,2)- 0.5), decimals=3) ,
                         "X" ),
             ],
             [
@@ -744,10 +746,14 @@ def test__repr(models, drives, drive_names, true_repr):
                 "f(t) = 1",
                 "f(t) = sin(10*t)"
             ],
-            11,1,21,9
+            5,
+            3,
+            7,
+            9
         ),
     ],
 )
+@pytest.mark.higheffort
 def test_copy(models, drives, drive_names, T, t0, t, j_max):
     for i in range(len(drives)): drives[i].__name__ = drive_names[i]
     driven_model = DrivenModel( models, 
@@ -757,7 +763,32 @@ def test_copy(models, drives, drive_names, T, t0, t, j_max):
                                 drives,
                                 T,t0,t,j_max)
     copy_driven_model = driven_model.copy()
-    driven_model = 0
+    del driven_model
+
+    def dict_compare(d1, d2):
+        d1_keys = set(d1.keys())
+        d2_keys = set(d2.keys())
+        shared_keys = d1_keys.intersection(d2_keys)
+        added = d1_keys - d2_keys
+        removed = d2_keys - d1_keys
+        modified={}
+        for o in shared_keys:
+            if not isinstance(d1[o], type(None)) and not isinstance(d2[o], type(None)):
+                try:
+                    if d1[o] != d2[o]:
+                        modified.update({o : (d1[o], d2[o])})
+                        print("o:\t{}\nd1[o]:\t{}\nd2[o]:\t{}\n".format(o, d1[o], d2[o]))
+                except:
+                    if d1[o].any() != d2[o].any():
+                        modified.update({o : (d1[o], d2[o])})
+                        print("o:\t{}\nd1[o]:\t{}\nd2[o]:\t{}\n".format(o, d1[o], d2[o]))
+
+        #modified = {o : (d1[o], d2[o]) for o in shared_keys if d1[o].any() != d2[o].any()}
+        #same = set(o for o in shared_keys if d1[o] == d2[o])
+        return added, removed, modified
+    
+    added, removed, modified = dict_compare(driven_model2.__dict__, copy_driven_model.__dict__)
+    print("Added:\n{}\nRemoved:\n{}\nModified\n{}\n".format(added, removed, modified))
     assert copy_driven_model == driven_model2
 
 

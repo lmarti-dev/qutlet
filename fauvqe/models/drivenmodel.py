@@ -479,12 +479,20 @@ class DrivenModel(AbstractModel):
         models_copy =[model.copy() for model in self.models]
         drives_copy =[deepcopy(drive) for drive in self.drives]
         
-        self_copy = DrivenModel( models_copy,
-                                drives_copy, 
-                                deepcopy(self.T),
-                                deepcopy(self.t0),
-                                deepcopy(self._t),
-                                deepcopy(self.j_max))
+        # models: Union[  List[AbstractModel], AbstractModel],
+        # drives: Union[  List[Callable[[float], float]], Callable[[float], float]],
+        # T: Real = 0.1*2*sympy.pi,
+        # t0: Real = 0, #potentially introduce tf here as well
+        # tf: Real = None,
+        # t: Real = None,
+        # j_max: int = 10)
+        self_copy = DrivenModel( models=models_copy,
+                                drives=drives_copy, 
+                                T=deepcopy(self.T),
+                                t0=deepcopy(self.t0),
+                                tf=deepcopy(self.tf),
+                                t=deepcopy(self._t),
+                                j_max=deepcopy(self.j_max))
 
         self_copy.circuit = self.circuit.copy()
         if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
