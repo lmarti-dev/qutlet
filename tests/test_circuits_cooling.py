@@ -321,8 +321,18 @@ def test_set_circuit_na(n, boundaries, field, options, solution):
     ]
 )
 def test_set_circuit_1a(n, boundaries, field, options, solution):
-    m_sys = Ising("GridQubit", n, np.ones((n[0]-boundaries[0], n[1])), np.ones((n[0], n[1]-boundaries[1])), np.ones((n[0], n[1])), field)
-    m_anc = Ising("GridQubit", [1, n[1]], np.zeros((1, n[1])), np.zeros((1, n[1])), np.ones((1, n[1])), "Z")
+    m_sys = Ising("GridQubit", 
+                  n, 
+                  np.ones((n[0]-boundaries[0], n[1])), 
+                  np.ones((n[0], n[1]-boundaries[1])), 
+                  np.ones((n[0], n[1])), 
+                  field)
+    m_anc = Ising("GridQubit", 
+                  [1, n[1]], 
+                  np.zeros((1, n[1])), 
+                  np.zeros((1, n[1])), 
+                  np.ones((1, n[1])), 
+                  "Z")
     j_int = np.ones((1, n[0], n[1]))
     
     model = CoolingModel(
@@ -346,6 +356,187 @@ def test_set_circuit_1a(n, boundaries, field, options, solution):
     #energy_final = energy.evaluate(model.cooling.ptrace(wf, range(np.size(n), np.size(n)+1)))
     #print(energy_initial, "vs.", energy_final)
     #assert energy_initial > energy_final 
+
+@pytest.mark.parametrize(
+    "n, boundaries, field, cooling_options, NA_flag,trotter_options",
+    [
+        # BangBangProtocol + NA w.o. existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":1,
+                "m":1,
+                "time_steps":1,
+            },
+            True,
+            {
+
+            },
+        ),
+        # LogSweepProtocol + NA w.o. existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":2,
+                "time_steps":1,
+                 "m":1,
+                 "emax":2,
+                 "emin":0.1
+            },
+            True,
+            {
+
+            },
+        ),
+        # BangBangProtocol + 1A w.o. existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":1,
+                "m":1,
+                "time_steps":1,
+            },
+            False,
+            {
+
+            },
+        ),
+        # LogSweepProtocol + 1A w.o. existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":2,
+                "time_steps":1,
+                 "m":1,
+                 "emax":2,
+                 "emin":0.1
+            },
+            False,
+            {
+
+            },
+        ),
+        # BangBangProtocol + NA with existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":1,
+                "m":1,
+                "time_steps":1,
+            },
+            True,
+            {
+                "tf": 1
+            },
+        ),
+        # LogSweepProtocol + NA with existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":2,
+                "time_steps":1,
+                 "m":1,
+                 "emax":2,
+                 "emin":0.1
+            },
+            True,
+            {
+                "tf": 1
+            },
+        ),
+        # BangBangProtocol + 1A with existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":1,
+                "m":1,
+                "time_steps":1,
+            },
+            False,
+            {
+                "tf": 1
+            },
+        ),
+        # LogSweepProtocol + 1A with existing trotter options
+        (
+            [2, 1], 
+            [1, 1], 
+            "X",
+            {   "K":2,
+                "time_steps":1,
+                 "m":1,
+                 "emax":2,
+                 "emin":0.1
+            },
+            False,
+            {
+                "tf": 1
+            },
+        ),
+    ]
+)
+def test_set_circuit_trotter_options_no_overwrite(n, boundaries, field, cooling_options, NA_flag,trotter_options):
+    m_sys = Ising(  "GridQubit", 
+                    n, 
+                    np.ones((n[0]-boundaries[0], n[1])), 
+                    np.ones((n[0], n[1]-boundaries[1])), 
+                    np.ones((n[0], n[1])), 
+                    field)
+    if NA_flag:      
+        m_anc = Ising(  "GridQubit",
+                        n, 
+                        np.zeros((n[0], n[1])), 
+                        np.zeros((n[0], n[1])), 
+                        np.ones((n[0], n[1])), 
+                        "Z")
+    else:
+        m_anc = Ising("GridQubit", 
+                  [1, n[1]], 
+                  np.zeros((1, n[1])), 
+                  np.zeros((1, n[1])), 
+                  np.ones((1, n[1])), 
+                  "Z")
+
+    j_int = np.ones((1, n[0], n[1]))
+    
+    model = CoolingModel(
+                    m_sys,
+                    m_anc,
+                    [lambda q1, q2: cirq.X(q1)*cirq.X(q2)],
+                    j_int
+    )
+
+
+    if len(trotter_options) == 0:
+        model.set_circuit("cooling", cooling_options)
+    else:
+        model.set_circuit("trotter", trotter_options)444
+        model.set_circuit("cooling", cooling_options)
+
+        default_trotter_options= {    "append": False,
+                                    "return": False,
+                                    "hamiltonian": model.hamiltonian,
+                                    "trotter_number" : 1,
+                                    "trotter_order" : 1,
+                                    "t0": 0}
+        trotter_options.update(default_trotter_options)
+    
+    print("model.trotter.options: {}".format(model.trotter.options))
+
+    # This is necessary otherwise model.trotter.options exists already
+    if model.trotter.options == trotter_options:
+        del model.trotter.options
+        assert True
+    else:
+        del model.trotter.options
+        assert False
 
 def test_set_K():
     n=[2,1]

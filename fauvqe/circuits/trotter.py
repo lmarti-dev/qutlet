@@ -160,7 +160,9 @@ def _get_gate_from_paulistring( self,
         else:
             return cirq.YPowGate(exponent=_exponent).on(*_qubits)
     else:
-        return cirq.IdentityGate
+        # It seems very hard to cock up a test case for this
+        # Application for somehow empty paulistrings, but hard to generate those 
+        return cirq.IdentityGate #pragma: no cover
 
 def get_parameters(self, name: str='', delim: str = ','):
     #TODO extend this to time dependent models

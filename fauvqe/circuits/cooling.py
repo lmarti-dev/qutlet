@@ -111,6 +111,7 @@ def LogSweepProtocol(self) -> None:
             if hasattr(self.trotter, "options"):
                 _tmp_trotter_options = self.trotter.options.copy()
             else:
+                #print("LogSweepProtocol + NA")
                 _tmp_trotter_options = {}
             self.trotter.options = {    "append": False,
                         "return": True,
@@ -139,6 +140,7 @@ def LogSweepProtocol(self) -> None:
                         if hasattr(self.trotter, "options"):
                             _tmp_trotter_options = self.trotter.options.copy()
                         else:
+                            #print("LogSweepProtocol + 1A")
                             _tmp_trotter_options = {}
                         self.trotter.options = {    "append": False,
                                     "return": True,
@@ -256,6 +258,7 @@ def BangBangProtocol(self) -> None:
             if hasattr(system.trotter, "options"):
                 _tmp_trotter_options = system.trotter.options.copy()
             else:
+                #print("BangBangProtocol + NA")
                 _tmp_trotter_options = {}
             system.trotter.options = {    "append": False,
                         "return": True,
@@ -285,6 +288,7 @@ def BangBangProtocol(self) -> None:
                     if hasattr(system.trotter, "options"):
                         _tmp_trotter_options = system.trotter.options.copy()
                     else:
+                        #print("BangBangProtocol + 1A")
                         _tmp_trotter_options = {}
                     system.trotter.options = {    "append": False,
                                 "return": True,

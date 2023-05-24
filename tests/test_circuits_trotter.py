@@ -54,14 +54,17 @@ from fauvqe import Ising, HeisenbergFC, MatrixCost, UtCost
             np.ones((2, 0)), 
             np.ones((2,1)), 
             "X",
-            0.3,
+            0.2*np.pi,
             {
                 "trotter_order":2,
                 "trotter_number":1,
             },
-            cirq.Circuit(cirq.ZZPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
-                        cirq.XPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(0, 0)),
-                        cirq.XPowGate(exponent=-0.3/4*5/6*2/np.pi).on(cirq.GridQubit(1, 0)),
+            cirq.Circuit(cirq.ZZPowGate(exponent=-0.2).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.2).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.2).on(cirq.GridQubit(1, 0)),
+                        cirq.XPowGate(exponent=-0.2).on(cirq.GridQubit(0, 0)),
+                        cirq.XPowGate(exponent=-0.2).on(cirq.GridQubit(1, 0)),
+                        cirq.ZZPowGate(exponent=-0.2).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
             )
         ),
         (
@@ -230,6 +233,93 @@ def test_set_ising_trotter_append(n, boundaries, field, options, t,solution):
     assert ising.circuit == solution
 
 @pytest.mark.parametrize(
+    "model, t, options, tolerance",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+                    0.3,
+            {
+                "trotter_order":1,
+                "trotter_number":1,
+            },
+            7.5e-3,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+                    0.3,
+            {
+                "trotter_order":2,
+                "trotter_number":1,
+            },
+            5e-4,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+                    0.3,
+            {
+                "trotter_order":4,
+                "trotter_number":1,
+            },
+            3e-8,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+                    0.3,
+            {
+                "trotter_order":2,
+                "trotter_number":2,
+            },
+            2e-5,
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+                    0.3,
+            {
+                "trotter_order":4,
+                "trotter_number":4,
+            },
+            4e-13,
+        ),
+    ]
+)
+def test_trotter_small_scale_accuracy(model, t, options, tolerance):
+    model.set_circuit("trotter", options)
+    model.set_simulator("cirq", {"dtype": np.complex128})
+    cost = UtCost(model, t)
+
+    assert cost.evaluate(cirq.unitary(model.circuit)) < tolerance
+
+@pytest.mark.parametrize(
     "n, options, t",
     [
         (
@@ -377,6 +467,55 @@ def test_get_heisenbergfc_trotter_params(n, J, J2, options, t, sol):
     print((params))
     print(sol)
     assert (abs(params - sol) < 1e-13).all()
+
+@pytest.mark.parametrize(
+    "mock_model, test_hamiltonian, trotter_options, solution",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [2, 1], 
+                    np.ones((1, 1)), 
+                    np.ones((2, 0)), 
+                    np.ones((2,1)), 
+                    "X",
+                    0.3),
+            cirq.PauliSum(),
+            {
+                "trotter_order":1,
+                "trotter_number":1,
+            },
+            cirq.Circuit()
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [3, 1], 
+                    np.ones((2, 1)), 
+                    np.ones((3, 0)), 
+                    np.ones((3,1)), 
+                    "X",
+                    0.3),
+            cirq.PauliSum.from_pauli_strings(0.25*cirq.X.on(cirq.GridQubit(0, 0))*cirq.X.on(cirq.GridQubit(1, 0))*cirq.X.on(cirq.GridQubit(2, 0))),
+            {
+                "trotter_order":1,
+                "trotter_number":1,
+            },
+            cirq.Circuit((cirq.X.on(cirq.GridQubit(0, 0))*cirq.X.on(cirq.GridQubit(1, 0))*cirq.X.on(cirq.GridQubit(2, 0)))**(0.3*0.25*2/np.pi))
+        ),
+    ]
+)
+def test_non_2_local_hamiltonians(mock_model, test_hamiltonian, trotter_options, solution):
+    mock_model._hamiltonian = test_hamiltonian
+    mock_model.set_circuit("trotter", trotter_options)
+
+    print("test_hamiltonian: \n{}".format(test_hamiltonian))
+    print("mock_model.circuit: \n{}".format(mock_model.circuit))
+    print("solution: \n{}".format(solution))
+    
+    # If this is False compare unitaries
+    if mock_model.circuit == solution:
+        assert True
+    else:
+        cirq.testing.assert_allclose_up_to_global_phase(cirq.unitary(mock_model.circuit),cirq.unitary(solution), atol=1e-15)
 
 @pytest.mark.parametrize(
     "n, boundaries, J, h, options, t",
