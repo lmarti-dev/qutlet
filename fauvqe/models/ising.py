@@ -17,7 +17,14 @@ class Ising(SpinModel):
     is mother of different quantum circuit methods
     """
     
-    def __init__(self, qubittype, n, j_v = None, j_h = None, h = None, field: Literal["Z", "X"] = "X", t: Real = 0):
+    def __init__(   self,
+                 qubittype, 
+                 n, 
+                 j_v = None, 
+                 j_h = None, 
+                 h = None, 
+                 field: Literal["Z", "X"] = "X", 
+                 t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -81,61 +88,6 @@ class Ising(SpinModel):
                     super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h)]
         else:
             return [super().energy( self.j_v, self.j_h, self.h)]
-
-    def get_spin_vm(self, wf):
-        assert np.size(self.n) == 2, "Expect 2D qubit grid"
-        # probability from wf
-        prob = abs(wf * np.conj(wf))
-
-        # cumulative probability
-        n_temp = round(np.log2(wf.shape[0]))
-        com_prob = np.zeros(n_temp)
-        # now sum it
-        # this is a potential openmp sum; loop over com_prob, use index arrays to select correct
-
-        for i in np.arange(n_temp):
-            # com_prob[i] = sum wf over index array all in np
-            # maybe write on
-            # does not quite work so do stupid version with for loop
-            # declaring cpython types can maybe help,
-            # Bad due to nested for for if instead of numpy, but not straight forward
-            for j in np.arange(2 ** n_temp):
-                # np.binary_repr(3, width=4) use as mask
-                if np.binary_repr(j, width=n_temp)[i] == "1":
-                    com_prob[i] += prob[j]
-        # This is for qubits:
-        # {(i1, i2): com_prob[i2 + i1*q4.n[1]] for i1 in np.arange(q4.n[0]) for i2 in np.arange(q4.n[1])}
-        # But we want for spins:
-        return {
-            (i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1
-            for i0 in np.arange(self.n[0])
-            for i1 in np.arange(self.n[1])
-        }
-
-    def print_spin(self, wf):
-        """
-        Currently does not work due to Cirq update...
-
-        For cirq. heatmap see example:
-        https://github.com/quantumlib/Cirq/blob/master/examples/bristlecone_heatmap_example.py
-        https://github.com/quantumlib/Cirq/blob/master/examples/heatmaps.py
-        https://github.com/quantumlib/Cirq/blob/master/cirq-core/cirq/vis/heatmap_test.py
-        value_map = {
-            (qubit.row, qubit.col): np.random.random() for qubit in cirq.google.Bristlecone.qubits
-        }
-        heatmap = cirq.Heatmap(value_map)
-        heatmap.plot()
-
-        This is hard to test, but self.get_spin_vm(wf) is covered
-        Possibly add test similar to cirq/vis/heatmap_test.py
-
-        Further: add colour scale
-        """
-        value_map = self.get_spin_vm(wf)
-        # Create heatmap object
-        heatmap = cirq.Heatmap(value_map)
-        # Plot heatmap
-        heatmap.plot()
 
     def energy_pfeuty_sol(self):
         """
