@@ -84,16 +84,9 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
         https://quantumcomputing.stackexchange.com/questions/13488/reordering-commuting-gates-in-cirq-to-reduce-circuit-depth
         https://quantumai.google/reference/python/cirq/Circuit
     
-    This currently does not manage following trafo:
-        Initial circuit:
-        (0, 0): ───ZZ──────────Z───ZZ──────────
-                │               │
-        (1, 0): ───ZZ^(-1/3)───────ZZ^(-1/3)───
-
-        Target circuit:
-        (0, 0): ───ZZ──────────Z───
-                │
-        (1, 0): ───ZZ^(-2/3)───────
+    TODO:   Merge similar gates with different name e.g. X, Z into PhasedXZ?
+            Very possibly exists already within Cirq.
+            Remove identity gates
     """
     new_circuit = circuit.copy()
     #for i_moment in range(len(new_circuit)-1,-1,-1):
@@ -158,7 +151,7 @@ def merge_same_gates(circuit: cirq.Circuit) -> cirq.Circuit:
                                         setattr(new_gate, key, value+value2)
                                     else:
                                         setattr(new_gate, key, None)
-                                print(new_gate)
+                                #print(new_gate)
 
                                 new_operation = new_gate.on(*current_op.qubits)
                                 new_circuit.batch_replace([[i_moment,current_op, new_operation]])

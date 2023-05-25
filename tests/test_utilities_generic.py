@@ -668,13 +668,38 @@ def test_greedy_grouping(pauli_sum, grouped_pauli_sum):
                     cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(1, 0)),
             ),
         ),
+        #Note that here cirq.Z^2 is not dropped despite using
+        # cirq.drop_negligible_operations
+        (
+            cirq.Circuit(
+                        cirq.Y.on(cirq.GridQubit(0, 0)), cirq.Y.on(cirq.GridQubit(0, 1)),
+                        (cirq.H**(-0.333)).on(cirq.GridQubit(0, 0)),
+                        cirq.H.on(cirq.GridQubit(0, 1)),
+                        (cirq.H**(-0.333)).on(cirq.GridQubit(0, 0)),
+                        cirq.X.on(cirq.GridQubit(0, 1)),
+                        cirq.Y.on(cirq.GridQubit(0, 0)), cirq.Y.on(cirq.GridQubit(0, 1)), 
+                        ),
+            cirq.Circuit(
+                            cirq.Moment(cirq.Y(cirq.GridQubit(0, 0)),
+                                        cirq.Y(cirq.GridQubit(0, 1)),
+                                    ), 
+                            cirq.Moment(cirq.H(cirq.GridQubit(0, 1)),
+                                    ), 
+                            cirq.Moment((cirq.H**-0.666).on(cirq.GridQubit(0, 0)),
+                                        cirq.X(cirq.GridQubit(0, 1)),
+                                    ), 
+                            cirq.Moment(cirq.Y(cirq.GridQubit(0, 0)),
+                                        cirq.Y(cirq.GridQubit(0, 1)),
+                                    )   
+            ),
+        ),
     ]
 )
 def test_merge_same_gates(init_circuit, final_circuit):
     # Note that currently the merging happens from the end of the circuit
     # Effectively this moves 2 qubit gates towards the end and 1 qubit gates towards the beginning
     print("init_circuit:\n{}".format(init_circuit ))
-    print("merge_same_gates(init_circuit):\n{}".format(merge_same_gates(init_circuit) ))
+    print("merge_same_gates(init_circuit):\n{}".format(merge_same_gates(init_circuit)))
     print("final_circuit:\n{}".format(final_circuit))
     assert merge_same_gates(init_circuit) == final_circuit
 
