@@ -281,13 +281,6 @@ def generalized_matmul(multiplication_rule = np.matmul,
             R=multiplication_rule(R,M)
     return R
 
-def print_non_zero( M,
-                    name: str=None, 
-                    eq_tol: float=1E-15):
-    if name is not None:                # pragma: no cover 
-        print(name)                     # pragma: no cover 
-    print((abs(M)>eq_tol).astype(int))  # pragma: no cover 
-
 #This seems somewhat specific to a fermion problem?
 def sectors_to_alternating_indices(M, 
                                    even_first: bool = True, 
