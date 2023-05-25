@@ -106,35 +106,28 @@ class Ising(SpinModel):
                 For numeric reasons include h in \Lambda_k
             - Return E/N = - h* sum \Lambda_k/N
         """
-        assert self.n[0] * self.n[1] == np.max(
-            self.n
-        ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
-        assert np.min(self.h) == np.max(
-            self.h
-        ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
+        assert self.n[0] * self.n[1] == np.max(self.n),\
+            "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
+        assert np.min(self.h) == np.max(self.h),\
+            "Ising class error, external field h = {} is not the same for all spins".format(self.h)
         
         # Use initial parameter to catch empty array
-        assert (
-            np.min(self.j_h, initial=np.finfo(np.float_).max)
-            == np.max(self.j_h, initial=np.finfo(np.float_).min)
-        ) or (
-            np.size(self.j_h) == 0
-        ), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
+        #if self.n[0] > self.n[1]:
+        #
+        #else: 
+        assert np.min(self.j_h, initial=np.iinfo(int).max) == np.max(self.j_h, initial=np.iinfo(int).min)\
+            or (np.size(self.j_h) == 0), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_h,
-            np.min(self.j_h, initial=np.finfo(np.float_).max),
-            np.max(self.j_h, initial=np.finfo(np.float_).min),
+            np.min(self.j_h, initial=np.iinfo(int).max),
+            np.max(self.j_h, initial=np.iinfo(int).min),
         )
 
         # Use initial parameter to catch empty array
-        assert (
-            np.min(self.j_v, initial=np.finfo(np.float_).max)
-            == np.max(self.j_v, initial=np.finfo(np.float_).min)
-        ) or (
-            np.size(self.j_v) == 0
-        ), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
+        assert (np.min(self.j_v, initial=np.iinfo(int).max)== np.max(self.j_v, initial=np.iinfo(int).min))\
+            or (np.size(self.j_v) == 0), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_v,
-            np.min(self.j_v, initial=np.finfo(np.float_).max),
-            np.max(self.j_v, initial=np.finfo(np.float_).min),
+            np.min(self.j_v, initial=np.iinfo(int).max),
+            np.max(self.j_v, initial=np.iinfo(int).min),
         )
 
         lambda_k = self._get_lambda_k()
