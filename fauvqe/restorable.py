@@ -22,8 +22,8 @@ class Restorable(abc.ABC):
         
         #Most general: avoid to define Attributes
         temp_bools = []
-        print(self.__dict__.keys())
-        print(other.__dict__.keys())
+        #print(self.__dict__.keys())
+        #print(other.__dict__.keys())
         for key in self.__dict__.keys():
             if isinstance(getattr(self, key), np.ndarray):
                 if isinstance(getattr(other, key), np.ndarray):

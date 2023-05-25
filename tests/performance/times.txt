@@ -10284,3 +10284,57 @@ Test Adam + ExpectationValue
 Sequential Time: 14.543258666992188
 Parallel Time: 5.630899429321289
 
+===Thu, 25 May 2023 16:58:43 +0000===
+Test No Indices 
+
+Sequential Time: 2.710352897644043
+Parallel Time: 1.0832314491271973
+
+===Thu, 25 May 2023 16:58:54 +0000===
+Test Indices 
+
+Sequential Time: 6.424587249755859
+Parallel Time: 5.051048994064331
+
+===Thu, 25 May 2023 16:59:00 +0000===
+Test Indices 
+
+Sequential Time: 3.442549467086792
+Parallel Time: 2.580531597137451
+
+===Thu, 25 May 2023 16:59:17 +0000===
+Test Indices 
+
+Sequential Time: 11.399940490722656
+Parallel Time: 4.9253990650177
+
+===Thu, 25 May 2023 16:59:26 +0000===
+Test Indices 
+
+Sequential Time: 6.123955965042114
+Parallel Time: 2.9489011764526367
+
+===Thu, 25 May 2023 16:59:49 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 13.913894891738892
+Parallel Time: 9.206839084625244
+
+===Thu, 25 May 2023 17:00:01 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 7.401787757873535
+Parallel Time: 5.064573287963867
+
+===Thu, 25 May 2023 17:00:39 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 27.638362884521484
+Parallel Time: 10.017126321792603
+
+===Thu, 25 May 2023 17:01:00 +0000===
+Test Adam + ExpectationValue 
+
+Sequential Time: 14.964142322540283
+Parallel Time: 5.7518980503082275
+

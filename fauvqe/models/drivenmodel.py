@@ -510,7 +510,11 @@ class DrivenModel(AbstractModel):
             "constructor_params": {
                 "models": self.models,
                 "drives": self.drives,
+                "T": self.T,
+                "t0": self.t0,
+                "tf": self.tf,
                 "t": self._t,
+                "j_max": self.j_max,
             },
             "params": {
                 "circuit": self.circuit,
@@ -528,10 +532,3 @@ class DrivenModel(AbstractModel):
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
         
         return inst
-
-#    def _commutator(self, a,b):
-#        if isinstance(a, Number) or isinstance(b, Number):
-#            return 0
-#        else:
-#            print("a: {}\ttype(a): {}\nb: {}\ttype(b): {}".format(a,type(a),b,type(b)))
-#            commutator(a,b)
