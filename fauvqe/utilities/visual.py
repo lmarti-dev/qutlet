@@ -33,7 +33,7 @@ def get_value_map_from_state(   model: AbstractModel,
     # {(i1, i2): com_prob[i2 + i1*q4.n[1]] for i1 in np.arange(q4.n[0]) for i2 in np.arange(q4.n[1])}
     # But we want for spins:
     return {
-        (i0, i1): 2 * cumulative_probability[i1 + i0 * model.n[1]] - 1
+        (model.qubits[i0][i1],): 2 * cumulative_probability[i1 + i0 * model.n[1]] - 1
         for i0 in np.arange(model.n[0])
         for i1 in np.arange(model.n[1])
         }
