@@ -276,7 +276,7 @@ class UtCost(Objective):
         return (1 /len(options.get('time_indices'))) * cost
 
     #Need to overwrite simulate from parent class in order to work
-    def simulate(self, param_resolver, initial_state: Optional[np.ndarray] = None) -> np.ndarray:
+    def simulate(self, param_resolver = cirq.ParamResolver(), initial_state: Optional[np.ndarray] = None) -> np.ndarray:
         #TODO Rewrite this!
         #return unitary if self.batch_size == 0
         if self.batch_size == 0:
@@ -303,7 +303,7 @@ class UtCost(Objective):
             output_state[0] = wf/np.linalg.norm(wf)
 
             #Run through all states given in initial state
-            for i_state in range(1,round(len(initial_state)/self._N)):
+            for i_state in range(1,round(np.size(initial_state)/self._N)):
                 wf = self._model.simulator.simulate(
                     mul * self._model.circuit,
                     param_resolver=param_resolver,

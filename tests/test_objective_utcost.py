@@ -1,13 +1,16 @@
-import pytest
+# External imports
+import cirq
 import joblib
-from multiprocessing import cpu_count
 import numpy as np
+import pytest
 import scipy
 import scipy.linalg
 import sympy
-import cirq
 
-from fauvqe import UtCost, Ising, DrivenModel, haar, haar_1qubit, uniform
+from multiprocessing import cpu_count
+
+# Internal Imports
+from fauvqe import DrivenModel, Ising, UtCost, haar, haar_1qubit, uniform
 
 def hamiltonian():
     Z = np.array([[1, 0],
@@ -167,6 +170,59 @@ def test_simulate_batch(t, m, q, times):
     )
     print(np.array(op).shape)
     assert (objective.evaluate(np.array(op), options={'state_indices': [0]}) < 1e-3)
+
+@pytest.mark.parametrize(
+    "initial_states, model, m, q, t",
+    [
+        # making this artifically 2D should not be necessary, but curently is....
+        (
+            np.array([[1,0,0,0]], dtype=np.complex128), 
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  2*np.ones((1, 2)),
+                  "X",
+                  0.2),
+            7,
+            4,
+            0.2,
+        ),
+        (
+            np.array([[1,0,0,0],
+                      [np.sqrt(2)/2,0,0,np.sqrt(2)/2]], dtype=np.complex128), 
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  2*np.ones((1, 2)),
+                  "X",
+                  0.2),
+            7,
+            4,
+            0.2,
+        ),
+    ],
+)
+@pytest.mark.higheffort
+def test_simulate_batch_multiple_init_states(initial_states, model, m, q, t): 
+    model.set_simulator("cirq", {"dtype": np.complex128})
+    objective = UtCost(model,t,m,q,initial_states)
+    
+    # This line is needed but a bit arbitrary....
+    objective._model.circuit=objective.trotter_circuit
+
+    # Similarly here no empty entry should be required: 
+    test_output_states = objective.simulate()
+
+    #print("np.size(initial_states): {}, objective._N: {},range(1,round(len(initial_states)/objective._N)). {}"\
+    # .format(np.size(initial_states), objective._N, range(1,round(np.size(initial_states)/objective._N))))
+
+    objective = UtCost(model,t,0,1,initial_states)
+    cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase( test_output_states, 
+                                                                    np.squeeze(objective._output_wavefunctions),
+                                                                    rtol=1e-6, atol=1e-6)
+
 
 @pytest.mark.parametrize(
     "t, m",
@@ -343,15 +399,15 @@ def test_vec_cost(  model,
     cost_model_final_states = np.empty(shape=( cost_states.shape), dtype=np.complex128)
     for k in range(n_states): cost_model_final_states[k] = tmp[k].state_vector() / np.linalg.norm(tmp[k].state_vector())
 
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
+    cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
                                                                     cost_utcost_vec_final_states,
                                                                     rtol=1e-7, atol=1e-7)
                                                                 
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
+    cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase( cost_unitary_final_states, 
                                                                     cost_model_final_states,
                                                                     rtol=1e-7, atol=1e-7)
 
-    cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( cost_utcost_vec_final_states, 
+    cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase( cost_utcost_vec_final_states, 
                                                                     cost_model_final_states,
                                                                     rtol=1e-7, atol=1e-7)
 
@@ -746,6 +802,8 @@ def test_consistency_exact_Ut3(model, get_states_method, t_final,n_states, tol):
             2,
             1e-7,
         ),
+        # This should be equivalent to the previous example
+        # But somehow it is not....
         (
             DrivenModel([Ising(  "GridQubit", 
                                     [3,2], 
