@@ -120,7 +120,7 @@ class OptimisationResult:
     def storetxt(self,
         path: Union[pathlib.Path, str],  # Todo: Support File-like objects
         overwrite: bool = False,
-        additional_objectives: List[Objective] = None,
+        additional_objectives: Union[List[Objective], Objective] = None,
         header_string: str = None,
         ) -> None:
         """

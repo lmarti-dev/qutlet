@@ -135,11 +135,23 @@ def test_continue_at():
 
     for i in range(len(steps1)):
         np.testing.assert_equal(steps2[i].params, steps1[i].params)
+
 @pytest.mark.parametrize(
-    "additional_objective, n_objectives, header_string",
+    "additional_objective, n_objectives, header_string, set_heaser_string",
     [
         (
-            None, 0, "# ExpectationValue \t\n"
+            None, 0, "# ExpectationValue \t\n", False
+        ),
+        (
+            ExpectationValue(   Ising(  "GridQubit",
+                                            [2, 2],
+                                            0.1 * np.ones((1, 2)),
+                                            0.5 * np.ones((2, 1)),
+                                            0.2 * np.ones((2, 2)),
+                                            field="Z")),
+            1, 
+            "Custom header", 
+            True
         ),
         (
             [ExpectationValue(   Ising(  "GridQubit",
@@ -149,7 +161,8 @@ def test_continue_at():
                                             0.2 * np.ones((2, 2)),
                                             field="Z"))],
             1, 
-            "# ExpectationValue \tExpectationValue \t\n"
+            "# ExpectationValue \tExpectationValue \t\n",
+            False
         ),
         (
             [ExpectationValue(   Ising(  "GridQubit",
@@ -171,32 +184,26 @@ def test_continue_at():
             #                            0.5 * np.ones((2, 1)),
             #                            0.2 * np.ones((2, 2))), alpha=1, field="X")],
             2, 
-            "# ExpectationValue \tExpectationValue \tExpectationValue \t\n"
-
+            "# ExpectationValue \tExpectationValue \tExpectationValue \t\n",
+            False
         ),
     ]
 )
 @pytest.mark.higheffort
-def test_storetxt(additional_objective, n_objectives,header_string):
+def test_storetxt(additional_objective, n_objectives,header_string, set_heaser_string):
     res = get_simple_result()
-    #print(res.objective.__dict__)
-    #print(additional_objective[0].__dict__)
-    #ising = Ising(  "GridQubit",
-    #                                    [2, 2],
-    #                                    0.1 * np.ones((1, 2)),
-    #                                    0.5 * np.ones((2, 1)),
-    #                                    0.2 * np.ones((2, 2)),
-    #                                    field="Z")
-    #additional_objective = ExpectationValue(ising)
-
     temp_path = os.path.dirname(os.path.abspath(__file__)) + "/fauvqe-pytest.txt"
 
-    res.storetxt(   temp_path, 
+    if set_heaser_string:
+        res.storetxt(   temp_path, 
                     overwrite=True,
-                    additional_objectives=additional_objective)
-    #res.storetxt(   temp_path, 
-    #                overwrite=True,
-    #                additional_objectives=[res.objective, res.objective])
+                    additional_objectives=additional_objective,
+                    header_string=header_string)
+        header_string="# "+header_string+"\n"
+    else:
+        res.storetxt(   temp_path, 
+                        overwrite=True,
+                        additional_objectives=additional_objective)
 
     temp_data = np.loadtxt(temp_path)
 
@@ -217,8 +224,15 @@ def test_storetxt(additional_objective, n_objectives,header_string):
             print("res.get_objectives()/temp_data[:,i]:\n{}".format(res.get_objectives()/temp_data[:,i]))
             np.testing.assert_allclose(res.get_objectives(), temp_data[:,i], rtol=1e-15, atol=1e-15)
 
+@pytest.mark.parametrize(
+    "additional_objective",
+    [
+        None,
+        ExpectationValue,
+    ]
+)
 @pytest.mark.higheffort
-def test_get_wf_from_i():
+def test_get_wf_from_i(additional_objective):
     res = get_simple_result(1, a0 = 1e-100)
 
     ising = Ising(
@@ -241,9 +255,15 @@ def test_get_wf_from_i():
     #With np.complex128 this should pass:
     #cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase(wf, res._get_wf_from_i(0), rtol=1e-15, atol=1e-15)
 
+    if additional_objective is not None:
+        additional_objective=additional_objective(ising)
+
+    test_state=res._get_wf_from_i(0, additional_objective)
+    
+
     #With np.complex64 only have square root tolerances
     cirq.testing .lin_alg_utils.assert_allclose_up_to_global_phase( wf/np.linalg.norm(wf), 
-                                                                    res._get_wf_from_i(0)/np.linalg.norm(res._get_wf_from_i(0)), 
+                                                                    test_state/np.linalg.norm(test_state), 
                                                                     rtol=np.sqrt(1e-15), 
                                                                     atol=np.sqrt(1e-15))
     
