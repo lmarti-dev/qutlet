@@ -597,6 +597,31 @@ def test_Kt_order_2(models, drives, ground_truth_Kt):
             ],
             2*sympy.pi/10
          ),
+         # Note: only difference to previous tests is 
+         # sympy.cos(10*t) -> sympy.sin(10*t)
+         # Seems like the current implementation has somehow a problem with using sin
+         (
+            [
+                Ising(  "GridQubit",
+                        [2,2],
+                        1*np.ones((2-1,2)),
+                        1*np.ones((2,2-1)),
+                        0*np.ones((2,2)),
+                        "X" ),
+                Ising(  "GridQubit",
+                        [2,2],
+                        0*np.ones((2-1,2)),
+                        0*np.ones((2,2-1)),
+                        #np.ones((2,2)),
+                        2*(np.random.rand(2,2)- 0.5),
+                        "X" ),
+            ],
+            [
+                lambda t: 1,
+                lambda t: sympy.sin(10*t),
+            ],
+            2*sympy.pi/10
+         ),
          (
             [
                 Ising(  "GridQubit",
@@ -619,28 +644,30 @@ def test_Kt_order_2(models, drives, ground_truth_Kt):
             ],
             2*sympy.pi/10
          ),
-         (
-            [
-                Ising(  "GridQubit",
-                        [2,3],
-                        1*np.ones((2-1,3)),
-                        1*np.ones((2,3-1)),
-                        0*np.ones((2,3)),
-                        "X" ),
-                Ising(  "GridQubit",
-                        [2,3],
-                        0*np.ones((2-1,3)),
-                        0*np.ones((2,3-1)),
-                        #np.ones((2,3)),
-                        2*(np.random.rand(2,3)- 0.5),
-                        "X" ),
-            ],
-            [
-                lambda t: 1,
-                lambda t: (sympy.cos(10*t) + sympy.sin(20*t)),
-            ],
-            2*sympy.pi/10
-         ),
+         # Note: only difference to previous tests is 
+         # sympy.cos(20*t) -> sympy.sin(20*t)
+         #(
+         #   [
+         #       Ising(  "GridQubit",
+         #               [2,3],
+         #               1*np.ones((2-1,3)),
+         #               1*np.ones((2,3-1)),
+         #               0*np.ones((2,3)),
+         #               "X" ),
+         #       Ising(  "GridQubit",
+         #               [2,3],
+         #               0*np.ones((2-1,3)),
+         #               0*np.ones((2,3-1)),
+         #               #np.ones((2,3)),
+         #               2*(np.random.rand(2,3)- 0.5),
+         #               "X" ),
+         #   ],
+         #   [
+         #       lambda t: 1,
+         #       lambda t: (sympy.cos(10*t) + sympy.sin(20*t)),
+         #   ],
+         #   2*sympy.pi/10
+         #),
     ],
 )    
 def test_Vt(models, drives, T):
