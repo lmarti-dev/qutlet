@@ -17,7 +17,6 @@ from fauvqe.utilities.generic import (
     merge_same_gates,
     orth_norm,
     ptrace,
-    print_non_zero,
     sectors_to_alternating_indices,
 )
 
@@ -26,4 +25,10 @@ from fauvqe.utilities.random import (
     haar_1qubit,
     sample,
     uniform,
+)
+
+from fauvqe.utilities.visual import (
+    plot_heatmap,
+    print_non_zero,
+    get_value_map_from_state,
 )

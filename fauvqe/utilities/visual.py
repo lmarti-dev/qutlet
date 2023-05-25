@@ -13,11 +13,11 @@ from fauvqe.models.abstractmodel import (
 
 
 def get_value_map_from_state(   model: AbstractModel, 
-                                state: np.array,):
+                                state: np.array):
     assert np.size(model.n) == 2, "Expect 2D qubit grid"
     
     # probability from state
-    probability = abs(np.vdot(state, state))
+    probability = abs(state * np.conj(state))
 
     # cumulative probability
     _n = round(np.log2(state.shape[0]))
