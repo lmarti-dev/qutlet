@@ -1,4 +1,5 @@
-import fauvqe.optimisers.scipy_optimisers as scipop
+import fauvqe.optimisers.scipy_optimisers
 
-def test_opts(mehtod):
+
+def test_opts(method):
     pass
