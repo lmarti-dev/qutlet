@@ -295,5 +295,5 @@ def test_jw_spin_correct_indices_error():
 )
 def test_jw_computational_wf(indices, Nqubits, correct):
     assert (
-        fauvqe.fauvqe.utilities.fermion.jw_computational_wf(indices, Nqubits) == correct
+        fauvqe.utilities.fermion.jw_computational_wf(indices, Nqubits) == correct
     ).all()

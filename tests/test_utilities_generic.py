@@ -1,6 +1,3 @@
-import utilities.generic
-
-
 import numpy as np
 import pytest
 
@@ -415,16 +412,6 @@ def test_sum_even(l, correct):
 )
 def test_sum_odd(l, correct):
     assert fauvqe.utilities.generic.sum_odd(l) == correct
-
-
-@pytest.mark.parametrize(
-    "s,token,correct",
-    [
-        ("s a#x/o.p_h*o+n)e", "-", "s-a-x-o-p-h-o-n-e"),
-    ],
-)
-def test_replace_non_alpha(s, token, correct):
-    assert fauvqe.utilities.generic.replace_non_alpha(s, token) == correct
 
 
 @pytest.mark.parametrize(

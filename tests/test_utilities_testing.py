@@ -1,6 +1,3 @@
-import utilities.generic
-
-
 import numpy as np
 import pytest
 
@@ -19,7 +16,7 @@ import fauvqe.utilities.generic
 )
 def test_non_zero_matrix(M, correct, eq_tol):
     assert np.array(
-        fauvqe.utilities.generic.non_zero_matrix(M=M, eq_tol=eq_tol) == correct
+        fauvqe.utilities.testing.non_zero_matrix(M=M, eq_tol=eq_tol) == correct
     ).all()
 
 

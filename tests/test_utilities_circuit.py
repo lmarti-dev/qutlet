@@ -1,5 +1,5 @@
 import numpy as np
-from models.ising import Ising
+from fauvqe.models.ising import Ising
 import sympy
 
 
@@ -243,4 +243,4 @@ def test_pauli_str_is_identity_err():
     ],
 )
 def test_all_pauli_str_commute(psum, correct):
-    assert fauvqe.utilities.fermion.all_pauli_str_commute(psum) == correct
+    assert fauvqe.utilities.circuit.all_pauli_str_commute(psum) == correct

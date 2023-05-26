@@ -1,5 +1,5 @@
-import fauvqe.optimisers.scipy_optimisers
+import pytest
 
 
-def test_opts(method):
+def test_opts():
     pass

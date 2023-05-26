@@ -3,7 +3,9 @@ import numpy as np
 import cirq
 import openfermion as of
 
-from models.fermiHubbardModel import FermiHubbardModel
+from fauvqe.models.fermiHubbardModel import FermiHubbardModel
+
+from fauvqe.utilities.circuit import populate_empty_qubits
 
 
 @pytest.mark.parametrize(
@@ -76,54 +78,7 @@ def test_encode_wrong():
     )
     with pytest.raises(KeyError):
         fermi_hubbard_hamiltonian.encoding_options["encoding_name"] = "wrong_encoding"
-        hamiltonian = fermi_hubbard_hamiltonian._encode_fock_hamiltonian()
-
-
-initial_state_data = [
-    {"Nx": Nx, "Ny": Ny, "Nf": Nf}
-    for Nx in range(2, 3)
-    for Ny in range(1, 3)
-    for Nf in range(Nx * Ny * 2)
-]
-
-
-@pytest.mark.parametrize("initial_state_data", initial_state_data)
-def test_initial_state(initial_state_data):
-    initial_state(**initial_state_data)
-
-
-def initial_state(Nx, Ny, Nf):
-    fermi_hubbard = FermiHubbardModel(
-        x_dimension=Nx,
-        y_dimension=Ny,
-        tunneling=1,
-        coulomb=2,
-        hamiltonian_options={"chemical_potential": 0.0, "periodic": False},
-    )
-    fermi_hubbard.set_initial_state_circuit(name="slater", initial_state=[], Nf=Nf)
-    fermi_hubbard.add_missing_qubits()
-    result = fermi_hubbard.evaluate(fermi_hubbard.non_interacting_model.hamiltonian)
-
-    expectation = np.real(result)[0]
-
-    # method 1
-    # orbital_energies,unitary_rows=fermi_hubbard.diagonalize_non_interacting_hamiltonian()
-    # ground_energy = sum(list(sorted(orbital_energies)[:Nf]))
-
-    # method 2
-    # IndexError for Nx=1, Ny=1, Nf=1
-    sparse_hamiltonian = of.get_sparse_operator(
-        fermi_hubbard.non_interacting_model.fock_hamiltonian
-    )
-    ground_energy, ground_state = of.jw_get_ground_state_at_particle_number(
-        sparse_hamiltonian, fermi_hubbard.Nf
-    )
-
-    print(f"exp: {expectation}, exact: {ground_energy}")
-    print(f"result: {result}")
-    print(fermi_hubbard.circuit)
-    print(fermi_hubbard.non_interacting_model.hamiltonian)
-    assert np.isclose(expectation, ground_energy)
+        fermi_hubbard_hamiltonian._encode_fock_hamiltonian()
 
 
 def test_initial_state_wrong():

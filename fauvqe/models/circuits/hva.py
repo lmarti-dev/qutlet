@@ -4,7 +4,7 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from models.fermiHubbardModel import FermiHubbardModel
+from fauvqe.models.fermiHubbardModel import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 
 from fauvqe.utilities.circuit import qubits_shape

@@ -3,7 +3,7 @@ import cirq
 import numpy as np
 import fauvqe.utilities.generic
 
-from models.abstractmodel import AbstractModel
+from fauvqe.models.abstractmodel import AbstractModel
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:

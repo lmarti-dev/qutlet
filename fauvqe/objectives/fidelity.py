@@ -57,7 +57,7 @@ class Fidelity(Objective):
     ) -> np.float64:
         if target_state is None:
             target_state = self._target_state
-        n_qubits = np.prod(self.model.n)
+        n_qubits = len(self.model.flattened_qubits)
         qid_shape = (2,) * n_qubits
         # cirq fidelity is the square of qutip fidelity
         return np.sqrt(fidelity(target_state, wavefunction, qid_shape=qid_shape))

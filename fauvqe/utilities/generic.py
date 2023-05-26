@@ -323,7 +323,6 @@ def linear_to_grid(n: int, dimx: int, dimy: int, horizontal: bool = True) -> np.
         return np.unravel_index((n), (dimx, dimy), order="F")
 
 
-# TODO: normalize_vec
 def normalize_vec(v: np.ndarray) -> np.ndarray:
     """Normalizes a vector by its Frobenius norm
     Args:
@@ -342,7 +341,7 @@ def sum_divisible(l: list, i: int):
     Returns:
         int: the sum of divisble integers in the list
     """
-    return np.sum(np.where(np.mod(l, i) == 0))
+    return np.sum(np.mod(l, i) == 0)
     return sum([1 if x % i == 0 else 0 for x in l])
 
 

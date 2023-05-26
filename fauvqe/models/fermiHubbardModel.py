@@ -6,7 +6,7 @@ import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
 
-from fauvqe.utilities.generic import index_bits, alternating_indices_to_sectors
+from fauvqe.utilities.generic import index_bits
 
 
 class FermiHubbardModel(FermionicModel):
