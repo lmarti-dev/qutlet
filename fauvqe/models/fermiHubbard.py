@@ -5,7 +5,7 @@ import numpy as np
 import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
-import fauvqe.utils as utils
+import fauvqe.utilities.generic as utils
 import fauvqe.utils_cirq as cqutils
 
 
@@ -57,10 +57,15 @@ class FermiHubbardModel(FermionicModel):
             # derby-klassen uses 1.5N qubits in a checkerboard, but here we'll go with 2N and remove a quarter, that's easier
             # considering how abstractmodel is setup,
             n = (self.y_dimension, 2 * self.x_dimension)
-        elif encoding_options["encoding_name"] in ("local_fermionic_encoding", "derby_klassen"):
+        elif encoding_options["encoding_name"] in (
+            "local_fermionic_encoding",
+            "derby_klassen",
+        ):
             raise NotImplementedError
 
-        super().__init__(n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs)
+        super().__init__(
+            n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs
+        )
 
     def copy(self):
         self_copy = copy.deepcopy(self)
@@ -107,14 +112,19 @@ class FermiHubbardModel(FermionicModel):
             self.fock_hamiltonian = of.FermionOperator.identity()
 
     def _get_initial_state(
-        self, name: str, initial_state: Union[int, Sequence[int]], Nf: Union[int, Sequence[int]]
+        self,
+        name: str,
+        initial_state: Union[int, Sequence[int]],
+        Nf: Union[int, Sequence[int]],
     ) -> cirq.OP_TREE:
         self.Nf = Nf
         self.initial_state_name = name
         if name == "none":
             return []
         if name == "gaussian":
-            quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
+            quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+                self.fock_hamiltonian
+            )
             op_tree = of.prepare_gaussian_state(
                 qubits=self.flattened_qubits,
                 quadratic_hamiltonian=quadratic_hamiltonian,
@@ -195,7 +205,10 @@ class FermiHubbardModel(FermionicModel):
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
         last_qubit = max(self.flattened_qubits)
         mat = np.array(
-            [["0" for y in range(last_qubit.col + 1)] for x in range(last_qubit.row + 1)]
+            [
+                ["0" for y in range(last_qubit.col + 1)]
+                for x in range(last_qubit.row + 1)
+            ]
         )
 
         for k, v in pauli_string.items():

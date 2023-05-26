@@ -6,7 +6,7 @@ import sympy
 from fauvqe.models.fermiHubbard import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 from fauvqe.models.abstractmodel import AbstractModel
-import fauvqe.utils as utils
+import fauvqe.utilities.generic as utils
 import fauvqe.utils_cirq as cqutils
 import numpy as np
 import itertools
@@ -34,7 +34,9 @@ def generic_ansatz(model: AbstractModel, layers, ansatz: callable):
     )
 
 
-def brickwall_ansatz(model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True):
+def brickwall_ansatz(
+    model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
+):
     def ansatz(model: FermionicModel, symbols, layers):
         qubits = model.flattened_qubits
         circuit = cirq.Circuit()
@@ -48,12 +50,18 @@ def brickwall_ansatz(model: FermionicModel, layers: int = 1, shared_layer_parame
                 sub_op_tree = []
                 for iii in range(a, len(qubits) - 1, 2):
                     if not shared_layer_parameter:
-                        layer_symbols.append(sympy.Symbol("theta_{}_{}_{}".format(layer, iii, a)))
-                        layer_symbols.append(sympy.Symbol("phi_{}_{}_{}".format(layer, iii, a)))
+                        layer_symbols.append(
+                            sympy.Symbol("theta_{}_{}_{}".format(layer, iii, a))
+                        )
+                        layer_symbols.append(
+                            sympy.Symbol("phi_{}_{}_{}".format(layer, iii, a))
+                        )
                     qi = qubits[iii]
                     qj = qubits[iii + 1]
                     sub_op_tree.append(
-                        cirq.FSimGate(theta=layer_symbols[-2], phi=layer_symbols[-1]).on(qi, qj)
+                        cirq.FSimGate(
+                            theta=layer_symbols[-2], phi=layer_symbols[-1]
+                        ).on(qi, qj)
                     )
                 circuit.append(sub_op_tree, strategy=InsertStrategy.EARLIEST)
             symbols.append(layer_symbols)
@@ -77,7 +85,9 @@ def pyramid_ansatz(model: FermionicModel, layers=1):
                     qi = qubits[jjj]
                     qj = qubits[jjj + 1]
                     sub_op_tree.append(
-                        cirq.FSimGate(theta=layer_symbols[-2], phi=layer_symbols[-1]).on(qi, qj)
+                        cirq.FSimGate(
+                            theta=layer_symbols[-2], phi=layer_symbols[-1]
+                        ).on(qi, qj)
                     )
             circuit.append(sub_op_tree, strategy=InsertStrategy.NEW_THEN_INLINE)
             symbols.append(layer_symbols)
@@ -86,7 +96,9 @@ def pyramid_ansatz(model: FermionicModel, layers=1):
     generic_ansatz(model=model, layers=layers, ansatz=ansatz)
 
 
-def totally_connected_ansatz(model: FermionicModel, layers=1, spin_conserving: bool = False):
+def totally_connected_ansatz(
+    model: FermionicModel, layers=1, spin_conserving: bool = False
+):
     def ansatz(model: FermionicModel, symbols, layers):
         qubits = model.flattened_qubits
         Nq = len(qubits)
@@ -99,7 +111,9 @@ def totally_connected_ansatz(model: FermionicModel, layers=1, spin_conserving: b
             for ni, nj in perms:
                 if ni % 2 == nj % 2 or not spin_conserving:
                     layer_symbols.append(
-                        sympy.Symbol("theta_{l}_{ni}_{nj}".format(l=layer, ni=ni, nj=nj))
+                        sympy.Symbol(
+                            "theta_{l}_{ni}_{nj}".format(l=layer, ni=ni, nj=nj)
+                        )
                     )
                 layer_symbols.append(
                     sympy.Symbol("phi_{l}_{ni}_{nj}".format(l=layer, ni=ni, nj=nj))
@@ -107,10 +121,14 @@ def totally_connected_ansatz(model: FermionicModel, layers=1, spin_conserving: b
                 qi = qubits[ni]
                 qj = qubits[nj]
                 if ni % 2 != nj % 2 and spin_conserving:
-                    sub_op_tree.append(cirq.FSimGate(theta=0, phi=layer_symbols[-1]).on(qi, qj))
+                    sub_op_tree.append(
+                        cirq.FSimGate(theta=0, phi=layer_symbols[-1]).on(qi, qj)
+                    )
                 else:
                     sub_op_tree.append(
-                        cirq.FSimGate(theta=layer_symbols[-2], phi=layer_symbols[-1]).on(qi, qj)
+                        cirq.FSimGate(
+                            theta=layer_symbols[-2], phi=layer_symbols[-1]
+                        ).on(qi, qj)
                     )
             circuit.append(sub_op_tree, strategy=InsertStrategy.EARLIEST)
             symbols.append(layer_symbols)
@@ -128,12 +146,18 @@ def stair_ansatz(model: FermionicModel, layers=1):
             sub_op_tree = []
             layer_symbols = []
             for nq in range(Nq - 1):
-                layer_symbols.append(sympy.Symbol("theta_{l}_{nq}".format(l=layer, nq=nq)))
-                layer_symbols.append(sympy.Symbol("phi_{l}_{nq}".format(l=layer, nq=nq)))
+                layer_symbols.append(
+                    sympy.Symbol("theta_{l}_{nq}".format(l=layer, nq=nq))
+                )
+                layer_symbols.append(
+                    sympy.Symbol("phi_{l}_{nq}".format(l=layer, nq=nq))
+                )
                 qi = qubits[nq]
                 qj = qubits[nq + 1]
                 sub_op_tree.append(
-                    cirq.FSimGate(theta=layer_symbols[-2], phi=layer_symbols[-1]).on(qi, qj)
+                    cirq.FSimGate(theta=layer_symbols[-2], phi=layer_symbols[-1]).on(
+                        qi, qj
+                    )
                 )
             circuit.append(sub_op_tree, strategy=InsertStrategy.EARLIEST)
             symbols.append(layer_symbols)

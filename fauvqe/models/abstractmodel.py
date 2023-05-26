@@ -30,7 +30,7 @@ from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 from scipy.sparse import dia_matrix as scipy_dia_matrix
 
 from fauvqe.restorable import Restorable
-import fauvqe.utils as utils
+import fauvqe.utilities.generic as utils
 
 
 class AbstractModel(Restorable):

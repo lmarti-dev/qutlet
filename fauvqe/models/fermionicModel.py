@@ -7,8 +7,8 @@ from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
 from fauvqe.models.fockModel import FockModel
-import fauvqe.utils as utils
-import fauvqe.utils_cirq as cqutils
+import fauvqe.utilities.generic as utils
+import fauvqe.utilities.fermion as cqutils
 
 
 class FermionicModel(FockModel):
@@ -50,10 +50,13 @@ class FermionicModel(FockModel):
         fermion_hamiltonian, qubits, encoding_name: str, Z_snake: Tuple
     ) -> cirq.PauliSum:
         encodings_dict = dict()
-        encodings_dict["jordan_wigner"] = FermionicModel.mapped_jordan_wigner_fermion_operator
+        encodings_dict[
+            "jordan_wigner"
+        ] = FermionicModel.mapped_jordan_wigner_fermion_operator
         if encoding_name in encodings_dict.keys():
             return of.qubit_operator_to_pauli_sum(
-                encodings_dict[encoding_name](fermion_hamiltonian, Z_snake), qubits=qubits
+                encodings_dict[encoding_name](fermion_hamiltonian, Z_snake),
+                qubits=qubits,
             )
         else:
             raise KeyError(
@@ -63,7 +66,9 @@ class FermionicModel(FockModel):
             )
 
     @staticmethod
-    def _non_mapped_encode_model(fermion_hamiltonian, qubits, encoding_name: str) -> cirq.PauliSum:
+    def _non_mapped_encode_model(
+        fermion_hamiltonian, qubits, encoding_name: str
+    ) -> cirq.PauliSum:
         """
         use an openfermion transform to encode the occupation basis hamiltonian
         into a qubit hamiltonian.
@@ -91,7 +96,9 @@ class FermionicModel(FockModel):
 
     @staticmethod
     def remap_fermion_hamiltonian(
-        fermion_hamiltonian: of.SymbolicOperator, fock_map: Callable, fock_map_kwargs: dict() = None
+        fermion_hamiltonian: of.SymbolicOperator,
+        fock_map: Callable,
+        fock_map_kwargs: dict() = None,
     ):
         """Use a function on the fock hamilotnian's indices
 
@@ -109,7 +116,8 @@ class FermionicModel(FockModel):
         for terms, coeff in fermion_hamiltonian.terms.items():
             new_term = " ".join(
                 (
-                    str(fock_map(term[0], **fock_map_kwargs)) + action_strings[actions[term[1]]]
+                    str(fock_map(term[0], **fock_map_kwargs))
+                    + action_strings[actions[term[1]]]
                     if fock_map_kwargs is not None
                     else str(fock_map(term[0])) + action_strings[actions[term[1]]]
                     for term in terms
@@ -133,14 +141,17 @@ class FermionicModel(FockModel):
             _type_: _description_
         """
         flat_fock_map_arr = tuple(utils.flatten(fock_map_arr))
-        FermionicModel.assert_map_matches_operator(fermion_hamiltonian, flat_fock_map_arr)
+        FermionicModel.assert_map_matches_operator(
+            fermion_hamiltonian, flat_fock_map_arr
+        )
         action_strings = fermion_hamiltonian.action_strings
         actions = fermion_hamiltonian.actions
         new_fermion_operator = of.FermionOperator()
         for terms, coeff in fermion_hamiltonian.terms.items():
             new_term = " ".join(
                 (
-                    str(flat_fock_map_arr.index(term[0])) + action_strings[actions[term[1]]]
+                    str(flat_fock_map_arr.index(term[0]))
+                    + action_strings[actions[term[1]]]
                     for term in terms
                 )
             )
@@ -155,9 +166,12 @@ class FermionicModel(FockModel):
                     self.fock_hamiltonian = self.remap_fermion_hamiltonian(
                         fermion_hamiltonian=self.fock_hamiltonian, fock_map=fock_map
                     )
-            elif isinstance(self.fock_maps[0], list) or isinstance(self.fock_maps[0], int):
+            elif isinstance(self.fock_maps[0], list) or isinstance(
+                self.fock_maps[0], int
+            ):
                 self.fock_hamiltonian = self.reindex_fermion_hamiltonian(
-                    fermion_hamiltonian=self.fock_hamiltonian, fock_map_arr=self.fock_maps
+                    fermion_hamiltonian=self.fock_hamiltonian,
+                    fock_map_arr=self.fock_maps,
                 )
             else:
                 raise ValueError(
@@ -202,9 +216,13 @@ class FermionicModel(FockModel):
             for ladder_operator in term:
                 z_factors = tuple(
                     (int(index), "Z")
-                    for index in np.nonzero(np.array(Z_snake) < Z_snake[ladder_operator[0]])[0]
+                    for index in np.nonzero(
+                        np.array(Z_snake) < Z_snake[ladder_operator[0]]
+                    )[0]
                 )
-                pauli_x_component = of.QubitOperator(z_factors + ((ladder_operator[0], "X"),), 0.5)
+                pauli_x_component = of.QubitOperator(
+                    z_factors + ((ladder_operator[0], "X"),), 0.5
+                )
                 if ladder_operator[1]:
                     pauli_y_component = of.QubitOperator(
                         z_factors + ((ladder_operator[0], "Y"),), -0.5j
@@ -226,17 +244,23 @@ class FermionicModel(FockModel):
         return list(set(utils.flatten(operator.terms.keys())))
 
     def jw_fermion_number_expectation(self, state):
-        _,_,n_total_op=self.fermion_spin_number_operator()
+        _, _, n_total_op = self.fermion_spin_number_operator()
         n_qubits = of.count_qubits(self.fock_hamiltonian)
-        Nf=np.real(of.expectation(of.get_sparse_operator(n_total_op,n_qubits),state))
+        Nf = np.real(
+            of.expectation(of.get_sparse_operator(n_total_op, n_qubits), state)
+        )
         return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
 
     def fermion_spin_number_operator(self):
         n_qubits = of.count_qubits(self.fock_hamiltonian)
-        n_up_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(0,n_qubits,2)])
-        n_down_op = sum([of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(1,n_qubits,2)])
-        n_total_op=sum(n_up_op,n_down_op)
-        return n_up_op,n_down_op,n_total_op
+        n_up_op = sum(
+            [of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(0, n_qubits, 2)]
+        )
+        n_down_op = sum(
+            [of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(1, n_qubits, 2)]
+        )
+        n_total_op = sum(n_up_op, n_down_op)
+        return n_up_op, n_down_op, n_total_op
 
     def get_encoded_terms(self, anti_hermitian: bool) -> "list[cirq.PauliSum]":
         operators = self.fock_hamiltonian.get_operators()

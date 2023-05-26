@@ -2,8 +2,8 @@ import scipy
 from fauvqe.optimisers.optimiser import Optimiser
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
-import fauvqe.utils as utils
-import fauvqe.utils_cirq as cqutils
+import fauvqe.utilities.generic as utils
+import fauvqe.utilities.circuit as cqutils
 
 from scipy.optimize import minimize, OptimizeResult
 import numpy as np
@@ -47,7 +47,9 @@ class ScipyOptimisers(Optimiser):
 
     def simulate(self, x):
         wf = self._objective.simulate(
-            param_resolver=cqutils.get_param_resolver(model=self._objective.model, param_values=x),
+            param_resolver=cqutils.get_param_resolver(
+                model=self._objective.model, param_values=x
+            ),
             initial_state=self.initial_state,
         )
         return wf
@@ -57,7 +59,9 @@ class ScipyOptimisers(Optimiser):
         wf = self.simulate(x)
         objective_value = self._objective.evaluate(wavefunction=wf)
         if self.save_each_function_call:
-            self._fauvqe_res.add_step(params=x, wavefunction=wf, objective=objective_value)
+            self._fauvqe_res.add_step(
+                params=x, wavefunction=wf, objective=objective_value
+            )
         return objective_value
 
     def optimise(self, objective: Objective):
@@ -71,7 +75,9 @@ class ScipyOptimisers(Optimiser):
         def process_step(xk):
             wf = self.simulate(xk)
             objective_value = self._objective.evaluate(wavefunction=wf)
-            self._fauvqe_res.add_step(params=xk, wavefunction=wf, objective=objective_value)
+            self._fauvqe_res.add_step(
+                params=xk, wavefunction=wf, objective=objective_value
+            )
 
         # add the initial step
         process_step(x0)
@@ -80,7 +86,11 @@ class ScipyOptimisers(Optimiser):
         else:
             callback = None
         scipy_res = minimize(
-            self.fun, x0, **self.minimize_options, callback=callback, options=self.method_options
+            self.fun,
+            x0,
+            **self.minimize_options,
+            callback=callback,
+            options=self.method_options
         )
         # add the last step when the simulation is done
         x_final = scipy_res.x

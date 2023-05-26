@@ -4,7 +4,7 @@ import cirq
 import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
-import fauvqe.utils as utils
+import fauvqe.utilities.generic as utils
 import fauvqe.utils_cirq as cqutils
 
 
@@ -17,13 +17,17 @@ class ChemicalFermionModel(FermionicModel):
         **kwargs
     ):
         if not isinstance(fermion_operator, of.FermionOperator):
-            raise TypeError("Expected a FermionOperator, got: {}".format(type(fermion_operator)))
+            raise TypeError(
+                "Expected a FermionOperator, got: {}".format(type(fermion_operator))
+            )
         self.fermion_operator = fermion_operator
         if n is None:
             n = (1, of.count_qubits(operator=self.fermion_operator))
         if encoding_options is None:
             encoding_options = {"encoding_name": "jordan_wigner"}
-        super().__init__(n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs)
+        super().__init__(
+            n=n, qubittype="GridQubit", encoding_options=encoding_options, **kwargs
+        )
 
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         self.fock_hamiltonian = self.fermion_operator

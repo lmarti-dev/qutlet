@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 import sympy
 from timeit import default_timer
-import fauvqe.utils as utils
+import fauvqe.utilities.generic as utils
 
 # internal import
 from fauvqe import AbstractModel, Converter
@@ -213,7 +213,9 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
     for i in range(np.size(gates)):
         gate = gates[i]
         if qubittype == "GridQubit":
-            np_sol.hamiltonian += coefficients[i] * gate(np_sol.qubits[qubits[i][0]][qubits[i][1]])
+            np_sol.hamiltonian += coefficients[i] * gate(
+                np_sol.qubits[qubits[i][0]][qubits[i][1]]
+            )
             scipy_sol.hamiltonian += coefficients[i] * gate(
                 np_sol.qubits[qubits[i][0]][qubits[i][1]]
             )
@@ -223,7 +225,9 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
         else:
             np_sol.hamiltonian += coefficients[i] * gate(np_sol.qubits[qubits[i]])
             scipy_sol.hamiltonian += coefficients[i] * gate(np_sol.qubits[qubits[i]])
-            sparse_scipy_sol.hamiltonian += coefficients[i] * gate(np_sol.qubits[qubits[i]])
+            sparse_scipy_sol.hamiltonian += coefficients[i] * gate(
+                np_sol.qubits[qubits[i]]
+            )
 
     # Calculate analytic results by different methods
     np_sol.diagonalise(solver="numpy")
@@ -231,11 +235,15 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
     sparse_scipy_sol.diagonalise()
 
     # Test whether found eigenvalues are all close up to tolerance
-    np.testing.assert_allclose(scipy_sol.eig_val, sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15)
+    np.testing.assert_allclose(
+        scipy_sol.eig_val, sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15
+    )
     np.testing.assert_allclose(
         np_sol.eig_val[0:2], sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15
     )
-    np.testing.assert_allclose(val_exp, sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15)
+    np.testing.assert_allclose(
+        val_exp, sparse_scipy_sol.eig_val, rtol=1e-15, atol=1e-15
+    )
 
     # Test whether found eigenvectors are all close up to tolerance and global phase
     # Note that different eigen vectors can have a different global phase; hence we assert them one by one
@@ -245,7 +253,10 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
         if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val[1]) > 1e-14:
             # assert(sparse_scipy_sol.val[0] == sparse_scipy_sol.val[1] )
             cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(
-                scipy_sol.eig_vec[:, i], sparse_scipy_sol.eig_vec[:, i], rtol=1e-15, atol=1e-15
+                scipy_sol.eig_vec[:, i],
+                sparse_scipy_sol.eig_vec[:, i],
+                rtol=1e-15,
+                atol=1e-15,
             )
 
         cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(
@@ -266,7 +277,9 @@ def test_diagonalise(qubittype, n, coefficients, gates, qubits, val_exp, vec_exp
                     for i in range(8)
                 ]
             )
-            + cirq.PauliSum.from_pauli_strings([-i * cirq.Z(cirq.LineQubit(i)) for i in range(8)])
+            + cirq.PauliSum.from_pauli_strings(
+                [-i * cirq.Z(cirq.LineQubit(i)) for i in range(8)]
+            )
             + cirq.PauliSum.from_pauli_strings(
                 [-cirq.X(cirq.LineQubit(i)) / (i + 1) for i in range(8)]
             )
@@ -303,7 +316,10 @@ def test_diagonalise_dense_sparse_speedup(paulisum):
     for i in range(2):
         if np.abs(sparse_scipy_sol.eig_val[0] - sparse_scipy_sol.eig_val[1]) > 1e-14:
             cirq.testing.lin_alg_utils.assert_allclose_up_to_global_phase(
-                np_sol.eig_vec[:, i], sparse_scipy_sol.eig_vec[:, i], rtol=1e-14, atol=1e-13
+                np_sol.eig_vec[:, i],
+                sparse_scipy_sol.eig_vec[:, i],
+                rtol=1e-14,
+                atol=1e-13,
             )
 
 
@@ -314,19 +330,27 @@ def test_diagonalise_dense_sparse_speedup(paulisum):
             [1, 1],
             cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0))),
             dict(),
-            cirq.Circuit(cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 0))),
+            cirq.Circuit(
+                cirq.H.on(cirq.GridQubit(0, 0)), cirq.H.on(cirq.GridQubit(0, 0))
+            ),
         ),
         (
             [1, 2],
             cirq.Circuit(
                 cirq.H.on(cirq.GridQubit(0, 0)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
             ),
             dict(),
             cirq.Circuit(
                 cirq.H.on(cirq.GridQubit(0, 0)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
                 cirq.H.on(cirq.GridQubit(0, 0)),
             ),
         ),
@@ -334,14 +358,20 @@ def test_diagonalise_dense_sparse_speedup(paulisum):
             [2, 1],
             cirq.Circuit(
                 cirq.H.on(cirq.GridQubit(0, 0)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
             ),
             {"start": 0, "end": 1},
             cirq.Circuit(
                 cirq.H.on(cirq.GridQubit(0, 0)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
                 cirq.H.on(cirq.GridQubit(0, 0)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
             ),
         ),
         (
@@ -351,9 +381,15 @@ def test_diagonalise_dense_sparse_speedup(paulisum):
                 cirq.X.on(cirq.GridQubit(1, 0)),
                 cirq.Y.on(cirq.GridQubit(0, 1)),
                 cirq.Z.on(cirq.GridQubit(1, 1)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
-                (cirq.YY ** (sympy.Symbol("b"))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
-                (cirq.XX ** (sympy.Symbol("c"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
+                (cirq.YY ** (sympy.Symbol("b"))).on(
+                    cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)
+                ),
+                (cirq.XX ** (sympy.Symbol("c"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
                 cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
             ),
             {"start": 2, "end": 1},
@@ -362,14 +398,26 @@ def test_diagonalise_dense_sparse_speedup(paulisum):
                 cirq.X.on(cirq.GridQubit(1, 0)),
                 cirq.Y.on(cirq.GridQubit(0, 1)),
                 cirq.Z.on(cirq.GridQubit(1, 1)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
-                (cirq.YY ** (sympy.Symbol("b"))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
-                (cirq.XX ** (sympy.Symbol("c"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
+                (cirq.YY ** (sympy.Symbol("b"))).on(
+                    cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)
+                ),
+                (cirq.XX ** (sympy.Symbol("c"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
                 cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
-                (cirq.XX ** (sympy.Symbol("c"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)),
+                (cirq.XX ** (sympy.Symbol("c"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)
+                ),
                 cirq.CNOT.on(cirq.GridQubit(1, 0), cirq.GridQubit(1, 1)),
-                (cirq.ZZ ** (sympy.Symbol("a"))).on(cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)),
-                (cirq.YY ** (sympy.Symbol("b"))).on(cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)),
+                (cirq.ZZ ** (sympy.Symbol("a"))).on(
+                    cirq.GridQubit(0, 0), cirq.GridQubit(1, 0)
+                ),
+                (cirq.YY ** (sympy.Symbol("b"))).on(
+                    cirq.GridQubit(0, 1), cirq.GridQubit(1, 1)
+                ),
             ),
         ),
     ],
@@ -393,6 +441,8 @@ def test_glue_circuit_error():
 
 def test_flattened_qubits():
     mam = MockAbstractModel("GridQubit", (2, 3))
-    assert all(q is fq for q, fq in zip(utils.flatten(mam.qubits), mam.flattened_qubits))
+    assert all(
+        q is fq for q, fq in zip(utils.flatten(mam.qubits), mam.flattened_qubits)
+    )
     mam2 = MockAbstractModel("LineQubit", 6)
     assert mam2.qubits is mam2.flattened_qubits

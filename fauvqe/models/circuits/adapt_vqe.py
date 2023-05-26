@@ -3,8 +3,6 @@ import numpy as np
 
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.models.fermionicModel import FermionicModel
-import fauvqe.utils_cirq as cqutils
-import fauvqe.utils as utils
 import sympy
 import openfermion as of
 import itertools
@@ -16,6 +14,9 @@ from typing import Tuple
 from fauvqe.optimisers.optimiser import Optimiser
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
+import fauvqe.utilities.circuit
+import fauvqe.utilities.fermion
+import fauvqe.utilities.generic
 
 
 def print_if_verbose(s: str, verbose: bool):
@@ -53,12 +54,17 @@ def pauli_string_set(
     coeff = 1 * coeff
     if anti_hermitian:
         coeff = 1j * coeff
-    shape = cqutils.qubits_shape(qubits)
+    shape = fauvqe.utilities.circuit.qubits_shape(qubits)
     numrows, numcols = shape
     for i in range(numcols * numrows):
         # get the neighbours up to the order on the grid of the given shape
-        neighbours = utils.grid_neighbour_list(
-            i, shape, neighbour_order, periodic=periodic, diagonal=diagonal, origin="topleft"
+        neighbours = fauvqe.utilities.generic.grid_neighbour_list(
+            i,
+            shape,
+            neighbour_order,
+            periodic=periodic,
+            diagonal=diagonal,
+            origin="topleft",
         )
         # do all the possible pauli strings combinations on this list of neighbours up to the given order
         max_length = len(neighbours)
@@ -97,8 +103,13 @@ def fermionic_fock_set(
     numrows, numcols = shape
     fock_set = []
     for i in range(numcols * numrows):
-        neighbours = utils.grid_neighbour_list(
-            i, shape, neighbour_order, periodic=periodic, diagonal=diagonal, origin="topleft"
+        neighbours = fauvqe.utilities.generic.grid_neighbour_list(
+            i,
+            shape,
+            neighbour_order,
+            periodic=periodic,
+            diagonal=diagonal,
+            origin="topleft",
         )
         for term_order in range(2, 2 * (excitation_order) + 1, 2):
             half_order = int(term_order / 2)
@@ -111,14 +122,14 @@ def fermionic_fock_set(
                 combinations = itertools.product(half_combs, half_combs)
                 for comb in combinations:
                     # flatten
-                    comb = list(utils.flatten(comb))
+                    comb = list(fauvqe.utilities.generic.flatten(comb))
                     # not elegant but gotta avoid doubles
                     if (
                         i in comb
                         and comb not in all_combs
                         and list(reversed(comb)) not in all_combs
                     ):
-                        term = cqutils.even_excitation(
+                        term = fauvqe.utilities.fermion.even_excitation(
                             coeff=coeff, indices=comb, anti_hermitian=anti_hermitian
                         )
                         fock_set.append(term)
@@ -150,7 +161,7 @@ def fermionic_paulisum_set(model: FermionicModel, set_options: dict):
     Returns:
         "list[cirq.PauliSum]": a list of PauliSums to be used in ADAPT VQE
     """
-    shape = cqutils.qubits_shape(model.flattened_qubits)
+    shape = fauvqe.utilities.circuit.qubits_shape(model.flattened_qubits)
     fermionic_set = fermionic_fock_set(shape=shape, **set_options)
     paulisum_set = []
 
@@ -186,13 +197,21 @@ def compute_preprocessed_fidelity_gradient(
     wf: np.ndarray, preprocessed_fid_state: np.ndarray, verbose: bool = False
 ) -> float:
     # preprocessed_fid_op is e^(-theta A) A |gs>
-    fidelity = utils.fidelity(wf, preprocessed_fid_state)
-    print_if_verbose("preprocessed fidelity gradient: {}".format(fidelity), verbose=verbose)
+    n_qubits = int(np.log2(wf.shape[0]))
+    qid_shape = (2,) * n_qubits
+    fidelity = cirq.fidelity(wf, preprocessed_fid_state, qid_shape=qid_shape)
+    print_if_verbose(
+        "preprocessed fidelity gradient: {}".format(fidelity), verbose=verbose
+    )
     return fidelity
 
 
 def compute_fidelity_gradient(
-    op: np.ndarray, wf: np.ndarray, true_wf: np.ndarray, eps: float = 1e-5, verbose: bool = False
+    op: np.ndarray,
+    wf: np.ndarray,
+    true_wf: np.ndarray,
+    eps: float = 1e-5,
+    verbose: bool = False,
 ) -> float:
     # fidelity is |<psi|e^(-theta A)|gs>|
     # then df/dthetha = -<psi|Ae^(-theta A)|gs>
@@ -200,7 +219,9 @@ def compute_fidelity_gradient(
     # here we compute (e^(theta A)|ket>)*
     bra = -scipy.sparse.linalg.expm_multiply(A=eps * op, B=wf)
     ket = op.dot(true_wf)
-    fidelity = utils.fidelity(bra.conj(), ket)
+    n_qubits = int(np.log2(bra.shape[0]))
+    qid_shape = (2,) * n_qubits
+    fidelity = cirq.fidelity(bra.conj(), ket, qid_shape=qid_shape)
     print_if_verbose("fidelity gradient: {}".format(fidelity), verbose=verbose)
     return fidelity
 
@@ -283,7 +304,7 @@ def compute_energy_gradient(
 def filter_out_identity(psum):
     psum_out = []
     if isinstance(psum, cirq.PauliString):
-        if cqutils.pauli_str_is_identity(pstr=psum):
+        if fauvqe.utilities.circuit.pauli_str_is_identity(pstr=psum):
             raise ValueError(
                 "Trying to filter out the remove the identity in a PauliString consisting only of the identity: {}".format(
                     psum
@@ -293,7 +314,7 @@ def filter_out_identity(psum):
             return psum
 
     for pstr in psum:
-        if not cqutils.pauli_str_is_identity(pstr=pstr):
+        if not fauvqe.utilities.circuit.pauli_str_is_identity(pstr=pstr):
             psum_out.append(pstr)
     return cirq.PauliSum.from_pauli_strings(psum_out)
 
@@ -358,10 +379,10 @@ def get_best_gate(
     # not very useful for now, might come in handy later.
     # initial_state is the state to input in the circuit
     if trial_wf is None:
-        circ = cqutils.populate_empty_qubits(model=model)
+        circ = fauvqe.utilities.circuit.populate_empty_qubits(model=model)
         trial_wf = model.simulator.simulate(
             circ,
-            param_resolver=cqutils.get_param_resolver(
+            param_resolver=fauvqe.utilities.circuit.get_param_resolver(
                 model=model, param_values=model.circuit_param_values
             ),
             initial_state=initial_state,
@@ -371,7 +392,8 @@ def get_best_gate(
     # grad_values_full = []
     print_if_verbose("number of gates: {}".format(len(paulisum_set)), verbose=verbose)
     print_if_verbose(
-        "measure chosen: {}, preprocessing: {}".format(measure, preprocess), verbose=verbose
+        "measure chosen: {}, preprocessing: {}".format(measure, preprocess),
+        verbose=verbose,
     )
     for ind, ps in enumerate(paulisum_set):
         op = ps.matrix(qubits=model.flattened_qubits)
@@ -388,7 +410,11 @@ def get_best_gate(
             )
         else:
             gradient_measure = gate_measure(
-                measure=measure, wf=trial_wf, op=op, grad_opts=grad_opts, verbose=verbose
+                measure=measure,
+                wf=trial_wf,
+                op=op,
+                grad_opts=grad_opts,
+                verbose=verbose,
             )
 
         grad_values.append(gradient_measure)
@@ -416,6 +442,10 @@ def get_best_gate(
         return exp_from_pauli_sum(pauli_sum=best_ps, theta=theta), theta
 
 
+def param_name_from_depth(circ: cirq.Circuit) -> str:
+    return "p_" + str(fauvqe.utilities.circuit.depth(circ))
+
+
 def append_best_gate_to_circuit(
     model: AbstractModel,
     paulisum_set: list,
@@ -431,7 +461,7 @@ def append_best_gate_to_circuit(
     res = get_best_gate(
         model=model,
         paulisum_set=paulisum_set,
-        param_name=utils.random_word(lenw=4, Nwords=1),
+        param_name=param_name_from_depth(circ=model.circuit),
         tol=tol,
         trial_wf=trial_wf,
         initial_state=initial_state,
@@ -449,7 +479,7 @@ def append_best_gate_to_circuit(
         for gate in exp_gates:
             model.circuit += gate
         model.circuit_param.append(theta)
-        cqutils.match_param_values_to_symbols(
+        fauvqe.utilities.circuit.match_param_values_to_symbols(
             model=model, symbols=model.circuit_param, default_value="random"
         )
         print_if_verbose(
@@ -468,16 +498,18 @@ def append_random_gate_to_circuit(
     default_value: str = "random",
 ):
     ind = np.random.choice(len(paulisum_set))
-    param_name = utils.random_word(lenw=4, Nwords=1)
+    param_name = param_name_from_depth(circ=model.circuit)
     theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
     exp_gates = exp_from_pauli_sum(pauli_sum=paulisum_set[ind], theta=theta)
     for gate in exp_gates:
         model.circuit += gate
     model.circuit_param.append(theta)
-    cqutils.match_param_values_to_symbols(
+    fauvqe.utilities.circuit.match_param_values_to_symbols(
         model=model, symbols=model.circuit_param, default_value=default_value
     )
-    print_if_verbose("adding random gate: {rgate}".format(rgate=exp_gates), verbose=verbose)
+    print_if_verbose(
+        "adding random gate: {rgate}".format(rgate=exp_gates), verbose=verbose
+    )
     return False
 
 
@@ -499,7 +531,9 @@ def adapt_loop(
     preprocessed_ps_set = []
     grad_opts = {}
     if preprocess:
-        print_if_verbose("Preprocessing pauli sums for {}".format(measure), verbose=verbose)
+        print_if_verbose(
+            "Preprocessing pauli sums for {}".format(measure), verbose=verbose
+        )
         if measure == "energy":
             ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
             preprocess_opts = {"ham": ham}
@@ -509,7 +543,9 @@ def adapt_loop(
             op = ps.matrix(qubits=model.flattened_qubits)
             print_if_verbose("Preprocessing {}".format(ps), verbose=verbose)
             preprocessed_ps_set.append(
-                preprocess_for_measure(measure=measure, op=op, preprocess_opts=preprocess_opts)
+                preprocess_for_measure(
+                    measure=measure, op=op, preprocess_opts=preprocess_opts
+                )
             )
         print_if_verbose("Preprocessing over", verbose=verbose)
     else:
@@ -535,12 +571,13 @@ def adapt_loop(
         if threshold_reached == False:
             print("optimizing {}-th step".format(step + 1))
             # optimize to get a result everytime
-            model.circuit = cqutils.populate_empty_qubits(model=model)
+            model.circuit = fauvqe.utilities.circuit.populate_empty_qubits(model=model)
             result = optimiser.optimise(objective=objective)
             model.circuit_param_values = result.get_latest_step().params
             print(
                 "circuit depth: {d}, number of params: {p}".format(
-                    d=cqutils.depth(model.circuit), p=len(model.circuit_param)
+                    d=fauvqe.utilities.circuit.depth(model.circuit),
+                    p=len(model.circuit_param),
                 )
             )
         else:
