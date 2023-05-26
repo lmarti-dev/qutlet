@@ -107,7 +107,7 @@ class FermiHubbardModel(FermionicModel):
             self.fock_hamiltonian = of.FermionOperator.identity()
 
     def _get_initial_state(
-        self, name: str, initial_state: Union[int, Sequence[int]], Nf: int
+        self, name: str, initial_state: Union[int, Sequence[int]], Nf: Union[int, Sequence[int]]
     ) -> cirq.OP_TREE:
         self.Nf = Nf
         self.initial_state_name = name
@@ -143,6 +143,7 @@ class FermiHubbardModel(FermionicModel):
             op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
             self.Nf = len(initial_state)
             if name == "hadamard":
+                # TODO: change this to preserve Nf and N spin up
                 op_tree.extend([cirq.H(q) for q in self.flattened_qubits])
             return op_tree
         else:

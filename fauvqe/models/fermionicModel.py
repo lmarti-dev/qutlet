@@ -225,20 +225,10 @@ class FermionicModel(FockModel):
     def get_ops_action_indices(operator):
         return list(set(utils.flatten(operator.terms.keys())))
 
-    @property
-    def jw_number_operator(self) -> cirq.PauliSum:
-        number_op = of.number_operator(
-            n_modes=len(self.flattened_qubits), mode=None, coefficient=-1
-        )
-        jw_number_op = of.jordan_wigner(number_op)
-        qubit_number_op = of.qubit_operator_to_pauli_sum(
-            operator=jw_number_op, qubits=self.flattened_qubits
-        )
-        return qubit_number_op
-
     def jw_fermion_number_expectation(self, state):
-        qmap = {k: v for k, v in zip(self.flattened_qubits, range(len(self.flattened_qubits)))}
-        Nf = self.jw_number_operator.expectation_from_state_vector(state, qubit_map=qmap)
+        _,_,n_total_op=self.fermion_spin_number_operator()
+        n_qubits = of.count_qubits(self.fock_hamiltonian)
+        Nf=np.real(of.expectation(of.get_sparse_operator(n_total_op,n_qubits),state))
         return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
 
     def fermion_spin_number_operator(self):
