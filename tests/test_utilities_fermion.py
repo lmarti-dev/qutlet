@@ -5,7 +5,7 @@ from scipy.sparse import csc_matrix
 import openfermion as of
 import pytest
 
-import fauvqe.utilities.testing
+from fauvqe.utilities import testing
 import fauvqe.utilities.fermion
 
 

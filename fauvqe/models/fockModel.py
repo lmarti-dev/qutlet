@@ -5,7 +5,7 @@ from typing import Callable, Optional, Tuple, Union, Sequence
 
 
 from fauvqe.models.abstractmodel import AbstractModel
-import fauvqe.utils as utils
+from fauvqe.utilities.generic import flatten
 import openfermion as of
 import cirq
 import scipy
@@ -82,7 +82,7 @@ class FockModel(AbstractModel):
 
     @property
     def flattened_mapped_qubits(self):
-        return utils.flatten_qubits(self.apply_qubit_maps())
+        return flatten(self.apply_qubit_maps())
 
     def apply_qubit_maps(self):
         if self.qubit_maps is not None:
@@ -99,7 +99,9 @@ class FockModel(AbstractModel):
 
     def get_expectation(self, observables):
         return self.simulator.simulate_expectation_values(
-            program=self.circuit, observables=observables, qubit_order=cirq.ops.QubitOrder.DEFAULT
+            program=self.circuit,
+            observables=observables,
+            qubit_order=cirq.ops.QubitOrder.DEFAULT,
         )
 
     def evaluate(self, observables: cirq.PauliSum):

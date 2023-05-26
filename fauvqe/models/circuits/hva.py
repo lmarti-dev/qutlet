@@ -4,11 +4,12 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from fauvqe.models.fermiHubbard import FermiHubbardModel
+from models.fermiHubbardModel import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 
-import fauvqe.utilities.circuit as cqutils
-import fauvqe.utilities.generic as utils
+from fauvqe.utilities.circuit import qubits_shape
+
+from fauvqe.utilities.generic import flatten
 import numpy as np
 
 """
@@ -122,7 +123,7 @@ def hva_with_swaps(model: FermiHubbardModel, layers: int = 1):
 
     # give everything to the model
     model.circuit.append(circuit)
-    model.circuit_param.extend(list(utils.flatten(symbols)))
+    model.circuit_param.extend(list(flatten(symbols)))
     if model.circuit_param_values is None:
         model.circuit_param_values = np.array([])
     model.circuit_param_values = np.concatenate(
@@ -395,7 +396,7 @@ def swap_row_or_column(model, index, left=True, row=True):
 
 
 def f_or_swap_row_or_column(model, index, left=True, row=True, fswap=True):
-    (dimx, dimy) = cqutils.qubits_shape(model.flattened_qubits)
+    (dimx, dimy) = qubits_shape(model.flattened_qubits)
     if left and index < 1:
         raise ValueError(
             "Cannot f/swap with left column when index is {}".format(index)
@@ -421,7 +422,7 @@ def f_or_swap_row_or_column(model, index, left=True, row=True, fswap=True):
 
 # don't use
 def fswap_all_rows_or_columns(model, even=True, rows=True):
-    (dimx, dimy) = cqutils.qubits_shape(model.flattened_qubits)
+    (dimx, dimy) = qubits_shape(model.flattened_qubits)
     op_tree = []
     if even:
         a = 1

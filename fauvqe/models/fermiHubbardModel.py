@@ -5,8 +5,8 @@ import numpy as np
 import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
-import fauvqe.utilities.generic as utils
-import fauvqe.utils_cirq as cqutils
+
+from fauvqe.utilities.generic import index_bits
 
 
 class FermiHubbardModel(FermionicModel):
@@ -149,7 +149,7 @@ class FermiHubbardModel(FermionicModel):
                     initial_state = [x for x in range(Nf)]
             if isinstance(initial_state, int):
                 # convert int to bin and then index
-                initial_state = utils.index_bits(bin(initial_state))
+                initial_state = index_bits(bin(initial_state))
             op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
             self.Nf = len(initial_state)
             if name == "hadamard":

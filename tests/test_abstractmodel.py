@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 import sympy
 from timeit import default_timer
-import fauvqe.utilities.generic as utils
+from fauvqe.utilities.generic import flatten
 
 # internal import
 from fauvqe import AbstractModel, Converter
@@ -441,8 +441,6 @@ def test_glue_circuit_error():
 
 def test_flattened_qubits():
     mam = MockAbstractModel("GridQubit", (2, 3))
-    assert all(
-        q is fq for q, fq in zip(utils.flatten(mam.qubits), mam.flattened_qubits)
-    )
+    assert all(q is fq for q, fq in zip(flatten(mam.qubits), mam.flattened_qubits))
     mam2 = MockAbstractModel("LineQubit", 6)
     assert mam2.qubits is mam2.flattened_qubits

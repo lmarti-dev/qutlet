@@ -4,11 +4,10 @@ import cirq
 import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
-import fauvqe.utilities.generic as utils
-import fauvqe.utils_cirq as cqutils
+from fauvqe.utilities.generic import flatten, index_bits
 
 
-class ChemicalFermionModel(FermionicModel):
+class FermionOperatorModel(FermionicModel):
     def __init__(
         self,
         fermion_operator: of.FermionOperator,
@@ -43,7 +42,7 @@ class ChemicalFermionModel(FermionicModel):
                 raise ValueError("initial_state cannot be None")
             if isinstance(initial_state, int):
                 # convert int to bin and then index
-                initial_state = utils.index_bits(bin(initial_state))
+                initial_state = index_bits(bin(initial_state))
             op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
             if name == "hadamard":
                 op_tree.extend([cirq.H(q) for q in self.flattened_qubits])

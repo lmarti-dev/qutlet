@@ -3,11 +3,10 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from fauvqe.models.fermiHubbard import FermiHubbardModel
+from models.fermiHubbardModel import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 from fauvqe.models.abstractmodel import AbstractModel
-import fauvqe.utilities.generic as utils
-import fauvqe.utils_cirq as cqutils
+from fauvqe.utilities.generic import flatten
 import numpy as np
 import itertools
 
@@ -26,7 +25,7 @@ def generic_ansatz(model: AbstractModel, layers, ansatz: callable):
     symbols = []
     circuit, symbols = ansatz(model=model, symbols=symbols, layers=layers)
     model.circuit.append(circuit)
-    model.circuit_param.extend(list(utils.flatten(symbols)))
+    model.circuit_param.extend(list(flatten(symbols)))
     if model.circuit_param_values is None:
         model.circuit_param_values = np.array([])
     model.circuit_param_values = np.concatenate(

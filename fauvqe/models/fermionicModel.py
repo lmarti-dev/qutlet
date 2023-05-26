@@ -7,8 +7,8 @@ from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
 from fauvqe.models.fockModel import FockModel
-import fauvqe.utilities.generic as utils
-import fauvqe.utilities.fermion as cqutils
+from fauvqe.utilities.generic import flatten
+from fauvqe.utilities.fermion import bravyi_kitaev_fast_wrapper
 
 
 class FermionicModel(FockModel):
@@ -76,7 +76,7 @@ class FermionicModel(FockModel):
         encodings_dict = dict()
         encodings_dict["jordan_wigner"] = of.jordan_wigner
         encodings_dict["bravyi_kitaev"] = of.bravyi_kitaev
-        encodings_dict["bravyi_kitaev_fast"] = cqutils.bravyi_kitaev_fast_wrapper
+        encodings_dict["bravyi_kitaev_fast"] = bravyi_kitaev_fast_wrapper
 
         if encoding_name in encodings_dict.keys():
             # need to specify the flattened_qubits here otherwise some validation methods will fail when evaluating the expectation
@@ -140,7 +140,7 @@ class FermionicModel(FockModel):
         Returns:
             _type_: _description_
         """
-        flat_fock_map_arr = tuple(utils.flatten(fock_map_arr))
+        flat_fock_map_arr = tuple(flatten(fock_map_arr))
         FermionicModel.assert_map_matches_operator(
             fermion_hamiltonian, flat_fock_map_arr
         )
@@ -241,7 +241,7 @@ class FermionicModel(FockModel):
 
     @staticmethod
     def get_ops_action_indices(operator):
-        return list(set(utils.flatten(operator.terms.keys())))
+        return list(set(flatten(operator.terms.keys())))
 
     def jw_fermion_number_expectation(self, state):
         _, _, n_total_op = self.fermion_spin_number_operator()

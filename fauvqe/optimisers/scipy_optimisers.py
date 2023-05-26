@@ -2,8 +2,8 @@ import scipy
 from fauvqe.optimisers.optimiser import Optimiser
 from fauvqe.objectives.objective import Objective
 from fauvqe.optimisers.optimisation_result import OptimisationResult
-import fauvqe.utilities.generic as utils
-import fauvqe.utilities.circuit as cqutils
+from fauvqe.utilities.generic import default_value_handler
+from fauvqe.utilities.circuit import get_param_resolver
 
 from scipy.optimize import minimize, OptimizeResult
 import numpy as np
@@ -47,7 +47,7 @@ class ScipyOptimisers(Optimiser):
 
     def simulate(self, x):
         wf = self._objective.simulate(
-            param_resolver=cqutils.get_param_resolver(
+            param_resolver=get_param_resolver(
                 model=self._objective.model, param_values=x
             ),
             initial_state=self.initial_state,
@@ -67,7 +67,7 @@ class ScipyOptimisers(Optimiser):
     def optimise(self, objective: Objective):
         self._objective = objective
         self._fauvqe_res = OptimisationResult(self._objective)
-        x0 = utils.default_value_handler(
+        x0 = default_value_handler(
             shape=np.shape(self._objective.model.circuit_param_values.view()),
             value=self.initial_params,
         )

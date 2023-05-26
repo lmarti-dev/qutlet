@@ -3,8 +3,7 @@ import numpy as np
 import cirq
 import openfermion as of
 
-from fauvqe.models.fermiHubbard import FermiHubbardModel
-import fauvqe.utils as utils
+from models.fermiHubbardModel import FermiHubbardModel
 
 
 @pytest.mark.parametrize(
@@ -22,14 +21,24 @@ import fauvqe.utils as utils
             2,
             1,
             1,
-            {"chemical_potential": 1.0, "magnetic_field": 0.0, "periodic": True, "spinless": False},
+            {
+                "chemical_potential": 1.0,
+                "magnetic_field": 0.0,
+                "periodic": True,
+                "spinless": False,
+            },
         ),
         (
             1,
             2,
             1,
             1,
-            {"chemical_potential": 0.0, "magnetic_field": 1.0, "periodic": False, "spinless": True},
+            {
+                "chemical_potential": 0.0,
+                "magnetic_field": 1.0,
+                "periodic": False,
+                "spinless": True,
+            },
         ),
     ],
 )
