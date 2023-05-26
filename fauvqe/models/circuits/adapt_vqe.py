@@ -358,7 +358,7 @@ def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta):
     psum_exp = cirq.PauliSumExponential(pauli_sum_like=psum_no_identity, exponent=theta)
     return psum_exp
     # PauliSumExponential only accept A,B st exp(A)*exp(B) = exp(A+B) so might as well break them and "trotterize" them if they dont commute
-    # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not cqutils.pauli_str_is_identity(pstr)]
+    # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not pauli_str_is_identity(pstr)]
 
 
 def get_best_gate(

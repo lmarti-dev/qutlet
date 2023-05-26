@@ -6,7 +6,7 @@ import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
 
-from fauvqe.utilities.generic import index_bits
+from fauvqe.utilities.generic import index_bits, alternating_indices_to_sectors
 
 
 class FermiHubbardModel(FermionicModel):
@@ -48,7 +48,7 @@ class FermiHubbardModel(FermionicModel):
             # encoding_options["Z_snake"]=self.common_Z_snakes(name="weaved_double_s",dimx=self.x_dimension,dimy=self.y_dimension)
             # moves the spins into sectors ududud -> uuuddd (only along the horizontal axis)
         # if "fock_maps" not in kwargs.keys():
-        #     kwargs["fock_maps"] = utils.alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
+        #     kwargs["fock_maps"] = alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
         #     # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
         if encoding_options["encoding_name"] in (
             "jordan_wigner",

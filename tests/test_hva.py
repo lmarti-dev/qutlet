@@ -1,5 +1,5 @@
 import pytest
-import fauvqe.models.fermiHubbard as fh
+import models.fermiHubbardModel as fh
 import fauvqe.models.circuits.hva as hva
 import openfermion as of
 
