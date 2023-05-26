@@ -43,6 +43,8 @@ def qubits_shape(qubits: Tuple[cirq.Qid]) -> tuple:
 # shamelessly taken from stack
 def depth(circuit: cirq.Circuit) -> int:
     """Get the depth of a circuit
+    We create a new circuit to repack it, since the original circuit whose depth we want to compute has not been optimised.
+
 
     Args:
         circuit (cirq.Circuit): the circuit to evaluate
@@ -83,15 +85,21 @@ def jw_spin_correct_indices(n_electrons: Union[list, int], n_qubits: int) -> lis
         n_spin_down = n_electrons[1]
     else:
         raise TypeError(
-            "Expected n_electrons to be either a list or an int, got {}".format(type(n_electrons))
+            "Expected n_electrons to be either a list or an int, got {}".format(
+                type(n_electrons)
+            )
         )
-    combinations = itertools.combinations(range(n_qubits), sum([n_spin_up, n_spin_down]))
+    combinations = itertools.combinations(
+        range(n_qubits), sum([n_spin_up, n_spin_down])
+    )
     correct_combinations = [
         list(c)
         for c in combinations
         if utils.sum_even(c) == n_spin_up and utils.sum_odd(c) == n_spin_down
     ]
-    jw_indices = [sum([2**iii for iii in combination]) for combination in correct_combinations]
+    jw_indices = [
+        sum([2**iii for iii in combination]) for combination in correct_combinations
+    ]
     return jw_indices
 
 
@@ -101,7 +109,9 @@ def jw_spin_correct_indices(n_electrons: Union[list, int], n_qubits: int) -> lis
 
 
 def jw_spin_restrict_operator(
-    sparse_operator: scipy.sparse.csc_matrix, particle_number: Union[list, int], n_qubits: int
+    sparse_operator: scipy.sparse.csc_matrix,
+    particle_number: Union[list, int],
+    n_qubits: int,
 ) -> scipy.sparse.csc_matrix:
     """Restrict a sparse operator to the subspace which contains only the allowed particle number
 
@@ -116,7 +126,9 @@ def jw_spin_restrict_operator(
     if n_qubits is None:
         n_qubits = int(np.log2(sparse_operator.shape[0]))
 
-    select_indices = jw_spin_correct_indices(n_electrons=particle_number, n_qubits=n_qubits)
+    select_indices = jw_spin_correct_indices(
+        n_electrons=particle_number, n_qubits=n_qubits
+    )
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
 
@@ -140,7 +152,7 @@ def eigenspectrum_at_particle_number(
         k (int, optional): if using a sparse solver, the number of eigenstates to find (must be smaller than the total number of eigenstates). Defaults to None.
 
     Returns:
-        Tuple[np.ndarray,np.ndarray]: the eigenvalues and eigenvectors
+        Tuple[np.ndarray,np.ndarray]: _description_
     """
 
     n_qubits = int(np.log2(sparse_operator.shape[0]))
@@ -155,10 +167,14 @@ def eigenspectrum_at_particle_number(
             particle_number = sum(particle_number)
         restricted_operator_func = of.jw_number_restrict_operator
         indices_func = of.jw_number_indices
-    restricted_operator = restricted_operator_func(sparse_operator, particle_number, n_qubits)
+    restricted_operator = restricted_operator_func(
+        sparse_operator, particle_number, n_qubits
+    )
     # Compute eigenvalues and eigenvectors
     if sparse:
-        eigvals, eigvecs = scipy.sparse.linalg.eigsh(restricted_operator, k=k, which="SA")
+        eigvals, eigvecs = scipy.sparse.linalg.eigsh(
+            restricted_operator, k=k, which="SA"
+        )
     else:
         dense_restricted_operator = restricted_operator.toarray()
         eigvals, eigvecs = np.linalg.eigh(dense_restricted_operator)
@@ -206,7 +222,9 @@ def jw_get_true_ground_state_at_particle_number(
     return eigvals[0], state
 
 
-def get_param_resolver(model: AbstractModel, param_values: np.ndarray) -> cirq.ParamResolver:
+def get_param_resolver(
+    model: AbstractModel, param_values: np.ndarray
+) -> cirq.ParamResolver:
     """Get a param resolver for cirq, i.e. put some numerical values in some symbolic items
 
     Args:
@@ -217,7 +235,10 @@ def get_param_resolver(model: AbstractModel, param_values: np.ndarray) -> cirq.P
         cirq.ParamResolver: the param resolver
     """
     joined_dict = {
-        **{str(model.circuit_param[i]): param_values[i] for i in range(len(model.circuit_param))}
+        **{
+            str(model.circuit_param[i]): param_values[i]
+            for i in range(len(model.circuit_param))
+        }
     }
     return cirq.ParamResolver(joined_dict)
 
@@ -242,7 +263,9 @@ def pauli_sum_is_hermitian(psum: cirq.PauliSum, anti: bool = False):
     return all(pauli_str_is_hermitian(pstr=pstr, anti=anti) for pstr in psum)
 
 
-def make_pauli_str_hermitian(pstr: cirq.PauliString, anti: bool = False) -> cirq.PauliString:
+def make_pauli_str_hermitian(
+    pstr: cirq.PauliString, anti: bool = False
+) -> cirq.PauliString:
     """Make a
 
     Args:
@@ -327,7 +350,9 @@ def match_param_values_to_symbols(
         model.circuit_param_values = np.array([])
     missing_size = np.size(symbols) - np.size(model.circuit_param_values)
 
-    param_default_values = utils.default_value_handler(shape=(missing_size,), value=default_value)
+    param_default_values = utils.default_value_handler(
+        shape=(missing_size,), value=default_value
+    )
     if missing_size > 0:
         model.circuit_param_values = np.concatenate(
             (model.circuit_param_values, param_default_values)
@@ -348,7 +373,10 @@ def pauli_str_is_identity(pstr: cirq.PauliString) -> bool:
     """
     if not isinstance(pstr, cirq.PauliString):
         raise ValueError("expected PauliString, got: {}".format(type(pstr)))
-    return all(pstr.gate.pauli_mask == np.array([0] * len(pstr.gate.pauli_mask)).astype(np.uint8))
+    return all(
+        pstr.gate.pauli_mask
+        == np.array([0] * len(pstr.gate.pauli_mask)).astype(np.uint8)
+    )
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
@@ -368,7 +396,9 @@ def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
     return True
 
 
-def even_excitation(coeff: float, indices: List[int], anti_hermitian: bool) -> of.FermionOperator:
+def even_excitation(
+    coeff: float, indices: List[int], anti_hermitian: bool
+) -> of.FermionOperator:
     """Returns an even fock operator of the type a*i a*j a*k al am an
 
     Args:
@@ -384,7 +414,9 @@ def even_excitation(coeff: float, indices: List[int], anti_hermitian: bool) -> o
     """
     if len(indices) % 2 != 0:
         raise ValueError(
-            "expected an even length for the indices list but got: {}".format(len(indices))
+            "expected an even length for the indices list but got: {}".format(
+                len(indices)
+            )
         )
 
     half_len = int(len(indices) / 2)
@@ -411,7 +443,9 @@ def even_excitation(coeff: float, indices: List[int], anti_hermitian: bool) -> o
         return op + opdagg
 
 
-def single_excitation(coeff: float, i: int, j: int, anti_hermitian: bool) -> of.FermionOperator:
+def single_excitation(
+    coeff: float, i: int, j: int, anti_hermitian: bool
+) -> of.FermionOperator:
     """Returns a fock operator of the type a*i aj +- aj a*i
 
     Args:
@@ -442,10 +476,14 @@ def double_excitation(
     Returns:
         of.FermionOperator: the fock operator
     """
-    return even_excitation(coeff=coeff, indices=[i, j, k, l], anti_hermitian=anti_hermitian)
+    return even_excitation(
+        coeff=coeff, indices=[i, j, k, l], anti_hermitian=anti_hermitian
+    )
 
 
-def bravyi_kitaev_fast_wrapper(fermionic_operator: of.FermionOperator) -> of.QubitOperator:
+def bravyi_kitaev_fast_wrapper(
+    fermionic_operator: of.FermionOperator,
+) -> of.QubitOperator:
     """Openfermion Bravyi-Kitaev wrapper for use in internal classes
 
     Args:

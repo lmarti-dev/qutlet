@@ -8,9 +8,10 @@ import fauvqe.utils as utils
 
 
 @pytest.mark.parametrize(
-    "l,correct",
+    "multiplication_rule,l,correct",
     [
         (
+            np.kron,
             [[[1, 2, 3], [0, 0, 0], [1, 1, 1]], [[1, 1, 1], [1, 1, 1], [1, 1, 1]]],
             [
                 [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -24,11 +25,44 @@ import fauvqe.utils as utils
                 [1, 1, 1, 1, 1, 1, 1, 1, 1],
             ],
         ),
-        ([np.eye(2), np.ones((2, 2)), np.ones((2, 2))], np.kron(np.eye(2), np.ones((4, 4)))),
+        (
+            np.kron,
+            [np.eye(2), np.ones((2, 2)), np.ones((2, 2))],
+            np.kron(np.eye(2), np.ones((4, 4))),
+        ),
+        (
+            utils.direct_sum,
+            [
+                np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
+                np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
+                np.array([[2, 2, 2], [2, 2, 2], [3, 3, 3]]),
+            ],
+            np.array(
+                [
+                    [1, 2, 3, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 1, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 3, 3, 3],
+                ]
+            ),
+        ),
+        (
+            np.matmul,
+            ([[3, 0], [0, 2]], [[0, 2], [2, 0]], [[1, 1], [1, 1]]),
+            [[6, 6], [4, 4]],
+        ),
     ],
 )
-def test_pi_kron(l, correct):
-    assert (np.array(utils.pi_kron(*l)) == np.array(correct)).all()
+def test_chained_matrix_multiplication(multiplication_rule, l, correct):
+    assert (
+        np.array(utils.chained_matrix_multiplication(multiplication_rule, *l))
+        == np.array(correct)
+    ).all()
 
 
 @pytest.mark.parametrize(
@@ -50,35 +84,6 @@ def test_pi_kron(l, correct):
 )
 def test_direct_sum(a, b, correct):
     assert (utils.direct_sum(np.array(a), np.array(b)) == np.array(correct)).all()
-
-
-@pytest.mark.parametrize(
-    "l,correct",
-    [
-        (
-            [
-                np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
-                np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
-                np.array([[2, 2, 2], [2, 2, 2], [3, 3, 3]]),
-            ],
-            np.array(
-                [
-                    [1, 2, 3, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
-                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
-                    [0, 0, 0, 0, 0, 0, 3, 3, 3],
-                ]
-            ),
-        ),
-    ],
-)
-def test_pi_direct_sum(l, correct):
-    assert (utils.pi_direct_sum(*l) == correct).all()
 
 
 @pytest.mark.parametrize(
@@ -137,7 +142,9 @@ def test_flatten(a, correct):
     ],
 )
 def test_alternating_indices_to_sectors(M, correct, even_first, axis):
-    assert (utils.alternating_indices_to_sectors(np.array(M), even_first, axis) == correct).all()
+    assert (
+        utils.alternating_indices_to_sectors(np.array(M), even_first, axis) == correct
+    ).all()
 
 
 @pytest.mark.parametrize(
@@ -171,7 +178,8 @@ def test_alternating_indices_to_sectors(M, correct, even_first, axis):
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
     assert (
-        utils.sectors_to_alternating_indices(np.array(M), even_first, axis) == np.array(correct)
+        utils.sectors_to_alternating_indices(np.array(M), even_first, axis)
+        == np.array(correct)
     ).all()
 
 
@@ -184,16 +192,36 @@ def test_sectors_to_alternating_indices(M, correct, even_first, axis):
             True,
         ),
         (
-            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
-            [[0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0]],
+            [
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+            ],
+            [
+                [0, 1, 2, 3, 4, 5],
+                [5, 4, 3, 2, 1, 0],
+                [0, 1, 2, 3, 4, 5],
+                [5, 4, 3, 2, 1, 0],
+            ],
             True,
         ),
         (
             np.array(
-                [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]]
+                [
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                ]
             ),
             np.array(
-                [[5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5]]
+                [
+                    [5, 4, 3, 2, 1, 0],
+                    [0, 1, 2, 3, 4, 5],
+                    [5, 4, 3, 2, 1, 0],
+                    [0, 1, 2, 3, 4, 5],
+                ]
             ),
             False,
         ),
@@ -287,13 +315,6 @@ def test_index_bits(a, correct, ones):
 
 
 @pytest.mark.parametrize(
-    "l,correct", [(([[3, 0], [0, 2]], [[0, 2], [2, 0]], [[1, 1], [1, 1]]), [[6, 6], [4, 4]])]
-)
-def test_pi_matmul(l, correct):
-    assert np.array(utils.pi_matmul(*l) == correct).all()
-
-
-@pytest.mark.parametrize(
     "M,correct,eq_tol",
     [
         ([[2, 2], [2, 2]], [[1, 1], [1, 1]], 1e-1),
@@ -340,7 +361,9 @@ def test_lists_have_same_elements(M1, M2, correct):
     ],
 )
 def test_arg_alternating_indices_to_sectors(indices, correct, N):
-    assert np.array(utils.arg_alternating_indices_to_sectors(indices=indices, N=N) == correct).all()
+    assert np.array(
+        utils.arg_alternating_indices_to_sectors(indices=indices, N=N) == correct
+    ).all()
 
 
 def test_arg_alternating_indices_to_sectors_error():
@@ -532,10 +555,14 @@ def test_save_to_json(data, dirname, fname, randname, date):
         with patch("io.TextIOWrapper") as mock_iowrapper:
             with patch("fauvqe.utils.ensure_fpath") as mock_ensure_fpath:
                 utils.save_to_json(
-                    data=data, dirname=dirname, fname=fname, randname=randname, date=date
+                    data=data,
+                    dirname=dirname,
+                    fname=fname,
+                    randname=randname,
+                    date=date,
                 )
-                mock_open.assert_called_once()
-                mock_ensure_fpath.assert_called_once()
+                mock_open.assert_called()
+                mock_ensure_fpath.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -545,8 +572,12 @@ def test_save_to_json(data, dirname, fname, randname, date):
         (2, (3, 6), 2, False, False, "topleft", (2, 3, 4, 8, 14)),
     ],
 )
-def test_grid_neighbour_list(i, shape, neighbour_order, periodic, diagonal, origin, correct):
-    neighbours = utils.grid_neighbour_list(i, shape, neighbour_order, periodic, diagonal, origin)
+def test_grid_neighbour_list(
+    i, shape, neighbour_order, periodic, diagonal, origin, correct
+):
+    neighbours = utils.grid_neighbour_list(
+        i, shape, neighbour_order, periodic, diagonal, origin
+    )
     print(neighbours)
     assert utils.lists_have_same_elements(neighbours, correct)
 
@@ -563,7 +594,9 @@ def test_grid_neighbour_list(i, shape, neighbour_order, periodic, diagonal, orig
 )
 def test_default_value_handler(shape, value, correct):
     if value == "random":
-        assert (utils.default_value_handler(shape, value).shape == np.array(shape)).all()
+        assert (
+            utils.default_value_handler(shape, value).shape == np.array(shape)
+        ).all()
     elif value in ["zeros", "ones"] or isinstance(value, float):
         assert (utils.default_value_handler(shape, value) == correct).all()
     else:

@@ -154,7 +154,7 @@ class AbstractModel(Restorable):
 
     # set simualtor to be written better, aka more general
     def set_simulator(
-        self, simulator_name="cirq", simulator_options: dict = {}, dtype=np.complex64
+        self, simulator_name="qsim", simulator_options: dict = {}, dtype=np.complex64
     ):
         if simulator_name == "qsim":
             """
@@ -207,7 +207,10 @@ class AbstractModel(Restorable):
 
     def get_param_resolver(self, temp_cpv):
         joined_dict = {
-            **{str(self.circuit_param[i]): temp_cpv[i] for i in range(len(self.circuit_param))}
+            **{
+                str(self.circuit_param[i]): temp_cpv[i]
+                for i in range(len(self.circuit_param))
+            }
         }
 
         return cirq.ParamResolver(joined_dict)
@@ -225,7 +228,10 @@ class AbstractModel(Restorable):
         raise NotImplementedError()  # pragma: no cover
 
     def diagonalise(
-        self, solver="scipy.sparse", solver_options: dict = {}, matrix: np.ndarray = None
+        self,
+        solver="scipy.sparse",
+        solver_options: dict = {},
+        matrix: np.ndarray = None,
     ):
         """
         Implementation of an exact solver for an AbstractModel object.
@@ -300,9 +306,14 @@ class AbstractModel(Restorable):
             self._Ut = np.identity(_N)
             return True
 
-        if np.size(self.eig_val) != _N or (np.shape(self.eig_vec) != np.array((_N, _N))).all():
+        if (
+            np.size(self.eig_val) != _N
+            or (np.shape(self.eig_vec) != np.array((_N, _N))).all()
+        ):
             # self.diagonalise(solver = "numpy")
-            self.diagonalise(solver="scipy", solver_options={"subset_by_index": [0, _N - 1]})
+            self.diagonalise(
+                solver="scipy", solver_options={"subset_by_index": [0, _N - 1]}
+            )
 
         # print("eig_val: \t {}, eig_vec \t {}, _N \t {}".\
         #                format(np.size(self.eig_val), np.shape(self.eig_vec) ,_N))
@@ -439,7 +450,9 @@ class AbstractModel(Restorable):
                         # Add _g$i to any sympy.Symbol name
                         # Change if require qubit positions
                         new_circuit.append(
-                            self._get_operation_for_gc(operation, axis, i, "_g" + str(i))
+                            self._get_operation_for_gc(
+                                operation, axis, i, "_g" + str(i)
+                            )
                         )
             # 2b
             for operation in glueing_gates[m]:
@@ -456,7 +469,9 @@ class AbstractModel(Restorable):
         new_cricuit_param = []
         for i in range(repetitions):
             for j in range(len(self.circuit_param)):
-                new_cricuit_param.append(sympy.Symbol(self.circuit_param[j].name + "_g" + str(i)))
+                new_cricuit_param.append(
+                    sympy.Symbol(self.circuit_param[j].name + "_g" + str(i))
+                )
 
         ###########################################################################
         #   3. overwrite qubits, circuit_param, circuit_param_values
@@ -512,7 +527,9 @@ class AbstractModel(Restorable):
                         # print("key: \t{}\ntype: \t {}\ndict: \t {}"\
                         #    .format(key, type(_gate_params.get(key)), _gate_params.get(key).as_coeff_Mul()))
                         temp = _gate_params.pop(key).as_coeff_Mul()
-                        _gate_params[key[1:]] = temp[0] * sympy.Symbol(temp[1].name + add_string)
+                        _gate_params[key[1:]] = temp[0] * sympy.Symbol(
+                            temp[1].name + add_string
+                        )
                 else:
                     _gate_params[key[1:]] = _gate_params.pop(key)
 
@@ -531,14 +548,16 @@ class AbstractModel(Restorable):
             _qubits = list(_qubits)
             if i == 0:
                 _qubits[1] = cirq.GridQubit(
-                    _qubits[1]._row + self.n[0] * (1 - axis), _qubits[1]._col + self.n[1] * axis
+                    _qubits[1]._row + self.n[0] * (1 - axis),
+                    _qubits[1]._col + self.n[1] * axis,
                 )
             else:
                 for l in range(len(_qubits)):
                     _qubits[l] = cirq.GridQubit(
                         (_qubits[l]._row + self.n[0] * (i + l) * (1 - axis))
                         % (repetitions * self.n[0]),
-                        (_qubits[l]._col + self.n[1] * (i + l) * axis) % (repetitions * self.n[1]),
+                        (_qubits[l]._col + self.n[1] * (i + l) * axis)
+                        % (repetitions * self.n[1]),
                     )
 
         yield _gate(**_gate_params).on(*_qubits)
@@ -555,7 +574,9 @@ class AbstractModel(Restorable):
         if temp_sign == 0:
             self.circuit.append(self.circuit._moments[0])
         else:
-            for i in range(temp_options["start"], temp_options["end"] + temp_sign, temp_sign):
+            for i in range(
+                temp_options["start"], temp_options["end"] + temp_sign, temp_sign
+            ):
                 self.circuit.append(self.circuit._moments[i])
 
     @property

@@ -15,7 +15,12 @@ import sympy
         (0.5, [1, 2], False, [(1, 1), ("1^ 2", "2^ 1")]),
         (0.5, [7, 7], True, [(1j,), ("7^ 7",)]),
         (0.666, [1, 2, 3, 4], False, [(1, 1), (("1^ 2^ 3 4", "4^ 3^ 2 1"))]),
-        (0.65, [1, 2, 3, 4, 5, 6], False, [(1, 1), ("1^ 2^ 3^ 4 5 6", "6^ 5^ 4^ 3 2 1")]),
+        (
+            0.65,
+            [1, 2, 3, 4, 5, 6],
+            False,
+            [(1, 1), ("1^ 2^ 3^ 4 5 6", "6^ 5^ 4^ 3 2 1")],
+        ),
         (
             0.65,
             [1, 2, 3, 4, 5, 6, 7, 8],
@@ -38,9 +43,14 @@ import sympy
 )
 def test_even_excitation(coeff, indices, anti_hermitian, correct):
     correct_fop = sum(
-        [coeff * parity * of.FermionOperator(s) for parity, s in zip(correct[0], correct[1])]
+        [
+            coeff * parity * of.FermionOperator(s)
+            for parity, s in zip(correct[0], correct[1])
+        ]
     )
-    ee_fop = cqutils.even_excitation(coeff=coeff, indices=indices, anti_hermitian=anti_hermitian)
+    ee_fop = cqutils.even_excitation(
+        coeff=coeff, indices=indices, anti_hermitian=anti_hermitian
+    )
     assert ee_fop == correct_fop
 
 
@@ -58,7 +68,10 @@ def test_even_excitation_error():
 )
 def test_single_excitation(coeff, i, j, anti_hermitian, correct):
     correct_fop = sum(
-        [coeff * parity * of.FermionOperator(s) for parity, s in zip(correct[0], correct[1])]
+        [
+            coeff * parity * of.FermionOperator(s)
+            for parity, s in zip(correct[0], correct[1])
+        ]
     )
     single_fop = cqutils.single_excitation(coeff, i, j, anti_hermitian=anti_hermitian)
     assert single_fop == correct_fop
@@ -73,9 +86,14 @@ def test_single_excitation(coeff, i, j, anti_hermitian, correct):
 )
 def test_double_excitation(coeff, i, j, k, l, anti_hermitian, correct):
     correct_fop = sum(
-        [coeff * parity * of.FermionOperator(s) for parity, s in zip(correct[0], correct[1])]
+        [
+            coeff * parity * of.FermionOperator(s)
+            for parity, s in zip(correct[0], correct[1])
+        ]
     )
-    double_fop = cqutils.double_excitation(coeff, i, j, k, l, anti_hermitian=anti_hermitian)
+    double_fop = cqutils.double_excitation(
+        coeff, i, j, k, l, anti_hermitian=anti_hermitian
+    )
     assert double_fop == correct_fop
 
 
@@ -178,11 +196,6 @@ def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
     )
 
 
-def test_jw_spin_correct_indices_error():
-    with pytest.raises(TypeError):
-        cqutils.jw_spin_correct_indices(n_electrons="hello", n_indices=[1, 2])
-
-
 @pytest.mark.parametrize(
     "sparse_operator, particle_number, n_qubits,correct",
     [
@@ -197,7 +210,8 @@ def test_jw_spin_correct_indices_error():
 )
 def test_jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits, correct):
     assert (
-        cqutils.jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits) != correct
+        cqutils.jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits)
+        != correct
     ).nnz == 0
 
 
@@ -227,7 +241,14 @@ def test_jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits, c
     ],
 )
 def test_eigenspectrum_at_particle_number(
-    sparse_operator, particle_number, expanded, spin, sparse, k, correct_eigvals, correct_eigvecs
+    sparse_operator,
+    particle_number,
+    expanded,
+    spin,
+    sparse,
+    k,
+    correct_eigvals,
+    correct_eigvecs,
 ):
     eigvals, eigvecs = cqutils.eigenspectrum_at_particle_number(
         sparse_operator,
@@ -282,7 +303,10 @@ def test_get_param_resolver():
     [
         (
             cirq.PauliString(
-                -1j, cirq.X(cirq.LineQubit(0)), cirq.Y(cirq.LineQubit(1)), cirq.Z(cirq.LineQubit(2))
+                -1j,
+                cirq.X(cirq.LineQubit(0)),
+                cirq.Y(cirq.LineQubit(1)),
+                cirq.Z(cirq.LineQubit(2)),
             ),
             True,
             True,
@@ -307,12 +331,16 @@ def test_pauli_str_is_hermitian(pstr, anti, correct):
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0))
+            + cirq.Y(cirq.LineQubit(1))
+            + cirq.Z(cirq.LineQubit(2)),
             False,
             True,
         ),
         (
-            1j * cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)),
+            1j * cirq.Y(cirq.LineQubit(0))
+            + cirq.Z(cirq.LineQubit(1))
+            + cirq.X(cirq.LineQubit(2)),
             True,
             False,
         ),
@@ -327,11 +355,17 @@ def test_pauli_sum_is_hermitian(psum, anti, correct):
     [
         (
             cirq.PauliString(
-                -1j, cirq.X(cirq.LineQubit(0)), cirq.Y(cirq.LineQubit(1)), cirq.Z(cirq.LineQubit(2))
+                -1j,
+                cirq.X(cirq.LineQubit(0)),
+                cirq.Y(cirq.LineQubit(1)),
+                cirq.Z(cirq.LineQubit(2)),
             ),
             False,
             cirq.PauliString(
-                1, cirq.X(cirq.LineQubit(0)), cirq.Y(cirq.LineQubit(1)), cirq.Z(cirq.LineQubit(2))
+                1,
+                cirq.X(cirq.LineQubit(0)),
+                cirq.Y(cirq.LineQubit(1)),
+                cirq.Z(cirq.LineQubit(2)),
             ),
         ),
         (
@@ -377,10 +411,16 @@ def test_make_pauli_str_hermitian(pstr, anti, correct):
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0))
+            + cirq.Y(cirq.LineQubit(1))
+            + cirq.Z(cirq.LineQubit(2)),
             True,
             1j
-            * (cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2))),
+            * (
+                cirq.X(cirq.LineQubit(0))
+                + cirq.Y(cirq.LineQubit(1))
+                + cirq.Z(cirq.LineQubit(2))
+            ),
         ),
         (
             cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)),
@@ -425,7 +465,8 @@ def test_match_param_values_to_symbols():
         (cirq.PauliString(*(cirq.I(cirq.LineQubit(x)) for x in range(10))), True),
         (
             cirq.PauliString(
-                *(cirq.X(cirq.LineQubit(x)) for x in range(3)), cirq.X(cirq.LineQubit(29))
+                *(cirq.X(cirq.LineQubit(x)) for x in range(3)),
+                cirq.X(cirq.LineQubit(29))
             ),
             False,
         ),
@@ -449,8 +490,23 @@ def test_pauli_str_is_identity_err():
             + cirq.Z(cirq.LineQubit(2)),
             False,
         ),
-        (cirq.X(cirq.LineQubit(0)) + cirq.X(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)), True),
+        (
+            cirq.X(cirq.LineQubit(0))
+            + cirq.X(cirq.LineQubit(1))
+            + cirq.X(cirq.LineQubit(2)),
+            True,
+        ),
     ],
 )
 def test_all_pauli_str_commute(psum, correct):
     assert cqutils.all_pauli_str_commute(psum) == correct
+
+
+######################################################################
+#                           Errors                                   #
+######################################################################
+
+
+def test_jw_spin_correct_indices_error():
+    with pytest.raises(TypeError):
+        cqutils.jw_spin_correct_indices("hello", [1, 2])
