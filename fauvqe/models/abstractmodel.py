@@ -30,7 +30,7 @@ from scipy.sparse.linalg import eigsh as scipy_sparse_solver
 from scipy.sparse import dia_matrix as scipy_dia_matrix
 
 from fauvqe.restorable import Restorable
-import fauvqe.utilities.generic as utils
+from fauvqe.utilities.generic import flatten
 
 
 class AbstractModel(Restorable):
@@ -593,6 +593,6 @@ class AbstractModel(Restorable):
         7 8 9
         """
         if self.qubittype == "GridQubit" and isinstance(self.qubits[0], list):
-            return list(utils.flatten(self.qubits))
+            return list(flatten(self.qubits))
         else:
             return self.qubits
