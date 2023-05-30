@@ -3,7 +3,10 @@ import cirq
 import numpy as np
 import fauvqe.utilities.generic
 
-from fauvqe.models.abstractmodel import AbstractModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fauvqe.models.abstractmodel import AbstractModel
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
@@ -39,7 +42,7 @@ def pauli_str_is_identity(pstr: cirq.PauliString) -> bool:
 
 
 def match_param_values_to_symbols(
-    model: AbstractModel, symbols: list, default_value: str = "zeros"
+    model: "AbstractModel", symbols: list, default_value: str = "zeros"
 ):
     """add values to param_values when some are missing wrt. the param array
     Args:
@@ -60,7 +63,7 @@ def match_param_values_to_symbols(
         )
 
 
-def populate_empty_qubits(model: AbstractModel) -> cirq.Circuit:
+def populate_empty_qubits(model: "AbstractModel") -> cirq.Circuit:
     """Add I gates to qubits without operations. This is mainly to avoid some errors with measurement in cirq
     Args:
         model (AbstractModel): the model to check
@@ -79,7 +82,7 @@ def populate_empty_qubits(model: AbstractModel) -> cirq.Circuit:
     return circ
 
 
-def qmap(model: AbstractModel) -> dict:
+def qmap(model: "AbstractModel") -> dict:
     """Get a qmap necessary for some openfermion functions
     Args:
         model (AbstractModel): the model we will use to generate the qmap
@@ -144,7 +147,7 @@ def pauli_sum_is_hermitian(psum: cirq.PauliSum, anti: bool = False):
 
 
 def get_param_resolver(
-    model: AbstractModel, param_values: np.ndarray
+    model: "AbstractModel", param_values: np.ndarray
 ) -> cirq.ParamResolver:
     """Get a param resolver for cirq, i.e. put some numerical values in some symbolic items
     Args:
