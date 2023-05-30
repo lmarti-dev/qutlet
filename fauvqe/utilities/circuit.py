@@ -6,7 +6,8 @@ import fauvqe.utilities.generic
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from fauvqe.models.abstractmodel import AbstractModel
+    # avoids circular dependency issue from lifting utility packages
+    from fauvqe.models.abstractmodel import AbstractModel  # pragma: no cover
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
