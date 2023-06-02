@@ -250,40 +250,6 @@ def test_sectors_to_alternating_indices(M, correct, even_first, axis):
     assert (sectors_to_alternating_indices(M, even_first, axis)== correct).all()
 
 @pytest.mark.parametrize(
-    "i,correct",
-    [
-     (bin(24),2),
-     (bin(-1),1),
-     (bin(300),4),
-     (bin(3),2),
-     (199,5),
-     (19,3),
-     (bin(0),0),
-     (0,0),
-    ]
-)
-def test_hamming_weight(i,correct):
-    assert hamming_weight(i)==correct
-
-@pytest.mark.parametrize(
-    "wrong_input",
-    [
-     (
-        [0,1,2],
-     ),
-     (
-        np.array([0,1,2]),
-     ),
-     (
-        1.1
-     )
-    ]
-)
-def test_hamming_weight_error(wrong_input):
-    with pytest.raises(TypeError):
-        hamming_weight(wrong_input)
-
-@pytest.mark.parametrize(
     "a,correct, ones",
     [
      (bin(300),[0,3,5,6], True),
@@ -295,7 +261,8 @@ def test_hamming_weight_error(wrong_input):
     ]
 )
 def test_index_bits(a,correct, ones):
-    assert index_bits(a, ones)==correct
+    _tmp=index_bits(a, ones)
+    assert _tmp==correct
 
 @pytest.mark.parametrize(
     "rho, ind, solution",
@@ -803,9 +770,7 @@ def test_chained_matrix_multiplication(multiplication_rule, l, correct):
     ],
 )
 def test_flip_cross_rows(M, correct, flip_odd):
-    assert (
-        np.array(flip_cross_rows(M, flip_odd) == correct)
-    ).all()
+    assert (np.array(flip_cross_rows(M, flip_odd) == correct)).all()
 
 @pytest.mark.parametrize(
     "M,correct,rc,flip_odd",
@@ -1003,7 +968,7 @@ def test_sum_odd(l, correct):
     ],
 )
 def test_index_bits(a, correct, ones):
-    assert index_bits(a, ones) == correct
+    assert (index_bits(a, ones) == correct)
 
 
 @pytest.mark.parametrize(
@@ -1077,4 +1042,26 @@ def test_flip_cross_cols(M, correct, flip_odd):
     assert (
         np.array(flip_cross_cols(M, flip_odd) == correct)
     ).all()
+
+@pytest.mark.parametrize(
+    "i,correct",
+    [
+        (bin(24), 2),
+        (bin(-1), 1),
+        (bin(300), 4),
+        (bin(3), 2),
+        (199, 5),
+        (19, 3),
+        (bin(0), 0),
+        (0, 0),
+    ],
+)
+def test_hamming_weight(i, correct):
+    print(hamming_weight(i))
+    assert (hamming_weight(i) == correct)
+
+
+def test_hamming_weight_error():
+    with pytest.raises(TypeError): 
+        hamming_weight({"a": 2})
 

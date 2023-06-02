@@ -5,8 +5,9 @@ from scipy.sparse import csc_matrix
 import openfermion as of
 import pytest
 
-import fauvqe.utilities.testing
 import fauvqe.utilities.fermion
+
+from tests.test_helper_functions import do_lists_have_same_elements 
 
 
 @pytest.mark.parametrize(
@@ -176,7 +177,7 @@ def test_mean_coeff_n_terms(fop, n, correct):
     ],
 )
 def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
-    assert fauvqe.utilities.testing.do_lists_have_same_elements(
+    assert do_lists_have_same_elements(
         fauvqe.utilities.fermion.jw_spin_correct_indices(n_electrons, n_indices),
         correct,
     )

@@ -482,3 +482,7 @@ def test_glue_circuit(n, axis, repetitions,
     assert model.circuit == final_circuit
     assert model.circuit_param == final_circuit_param
     np.allclose(model.circuit_param_values, final_circuit_param_values, rtol=0, atol=1e-15)
+
+def test_flattened_qubits():
+    model = MockAbstractModel("LineQubit", 2)
+    assert model.qubits==model.flattened_qubits
