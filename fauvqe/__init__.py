@@ -4,7 +4,7 @@
 # .. import global to use them also in submodule
 # https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
 # subpackages
-from fauvqe import models, objectives, optimisers
+from fauvqe import models, objectives, optimisers, utilities 
 
 # Flattened sub-modules
 from fauvqe.models import (
