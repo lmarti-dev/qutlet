@@ -75,8 +75,3 @@ class Fidelity(Objective):
 
     def __repr__(self) -> str:
         return "<Fidelity target_state={}>".format(self._target_state)
-
-
-class Infidelity(Fidelity):
-    def evaluate(self, wavefunction: np.ndarray) -> np.float64:
-        return 1 - super().evaluate(wavefunction=wavefunction)
