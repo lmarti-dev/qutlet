@@ -28,10 +28,12 @@ from fauvqe.objectives import (
     Entanglement,
     ExpectationValue,
     Fidelity,
+    Infidelity,
     Magnetisation,
     MatrixCost,
     Objective,
     ObjectiveSum,
+    Overlap,
     TraceDistance,
     UtCost,
     Variance
@@ -46,28 +48,22 @@ from fauvqe.optimisers import (
 )
 
 from fauvqe.utilities  import (
-    alternating_indices_to_sectors,
     commutator,
     Converter,
     direct_sum,
     flatten,
-    flip_cross_rows,
-    generalized_matmul,
     get_gate_count,
     get_value_map_from_state,
     greedy_grouping,
     haar,
     haar_1qubit,
     hamming_weight,
-    index_bits,
-    interweave,
     merge_same_gates,
     orth_norm,
     plot_heatmap,
     ptrace,
     print_non_zero,
     sample,
-    sectors_to_alternating_indices,
     uniform,
 )
 """
