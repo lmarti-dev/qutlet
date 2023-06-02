@@ -6,23 +6,41 @@ import sympy
 
 # internal imports
 from fauvqe import (
-    alternating_indices_to_sectors,
     commutator,
     direct_sum,
     flatten,
-    flip_cross_rows,
-    generalized_matmul,
     get_gate_count,
     greedy_grouping,
     hamming_weight,
-    index_bits,
-    interweave,
     merge_same_gates,
     orth_norm,
-    ptrace,
-    print_non_zero,
-    sectors_to_alternating_indices,
+    ptrace,  
 )
+
+from fauvqe.utilities.generic import (
+    alternating_indices_to_sectors,   
+    arg_alternating_indices_to_sectors,
+    arg_flip_cross_row,
+    chained_matrix_multiplication,
+    default_value_handler,
+    flip_cross,
+    flip_cross_cols,
+    flip_cross_rows,
+    generalized_matmul,
+    grid_neighbour_list,
+    grid_to_linear,
+    interweave,
+    index_bits,
+    linear_to_grid,
+    normalize_vec,
+    sectors_to_alternating_indices,
+    sum_divisible,
+    sum_even,
+    sum_odd,
+    wrapping_slice,
+)
+
+from tests.test_helper_functions import do_lists_have_same_elements
 
 @pytest.mark.parametrize(
     "test_circuit, gate_count",
@@ -230,29 +248,6 @@ def test_alternating_indices_to_sectors(M,correct,even_first):
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
     assert (sectors_to_alternating_indices(M, even_first, axis)== correct).all()
-
-@pytest.mark.parametrize(
-    "M,correct,flip_odd",
-    [
-     (
-        [[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5]]
-        ,[[0,1,2,3,4,5],[5,4,3,2,1,0],[0,1,2,3,4,5]]
-        ,True
-     ),
-    (
-        [[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5]]
-        ,[[0,1,2,3,4,5],[5,4,3,2,1,0],[0,1,2,3,4,5],[5,4,3,2,1,0]]
-        ,True
-    ),
-    (
-        [[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5],[0,1,2,3,4,5]]
-        ,[[5,4,3,2,1,0],[0,1,2,3,4,5],[5,4,3,2,1,0],[0,1,2,3,4,5]]
-        ,False
-    ),
-    ]
-)
-def test_flip_cross_rows(M,correct,flip_odd):
-    assert (flip_cross_rows(np.array(M),flip_odd)==correct).all()
 
 @pytest.mark.parametrize(
     "i,correct",
@@ -702,4 +697,384 @@ def test_merge_same_gates(init_circuit, final_circuit):
     print("merge_same_gates(init_circuit):\n{}".format(merge_same_gates(init_circuit)))
     print("final_circuit:\n{}".format(final_circuit))
     assert merge_same_gates(init_circuit) == final_circuit
+
+@pytest.mark.parametrize(
+    "multiplication_rule,l,correct",
+    [
+        (
+            np.kron,
+            [[[1, 2, 3], [0, 0, 0], [1, 1, 1]], [[1, 1, 1], [1, 1, 1], [1, 1, 1]]],
+            [
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [1, 1, 1, 2, 2, 2, 3, 3, 3],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ],
+        ),
+        (
+            np.kron,
+            [np.eye(2), np.ones((2, 2)), np.ones((2, 2))],
+            np.kron(np.eye(2), np.ones((4, 4))),
+        ),
+        (
+            direct_sum,
+            [
+                np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
+                np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
+                np.array([[2, 2, 2], [2, 2, 2], [3, 3, 3]]),
+            ],
+            np.array(
+                [
+                    [1, 2, 3, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 1, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 2, 2, 2],
+                    [0, 0, 0, 0, 0, 0, 3, 3, 3],
+                ]
+            ),
+        ),
+        (
+            np.matmul,
+            ([[3, 0], [0, 2]], [[0, 2], [2, 0]], [[1, 1], [1, 1]]),
+            [[6, 6], [4, 4]],
+        ),
+    ],
+)
+def test_chained_matrix_multiplication(multiplication_rule, l, correct):
+    assert (
+        np.array(chained_matrix_multiplication(
+                multiplication_rule, *l
+            )
+        )
+        == np.array(correct)
+    ).all()
+
+@pytest.mark.parametrize(
+    "M,correct,flip_odd",
+    [
+        (
+            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]],
+            [[0, 1, 2, 3, 4, 5], [5, 4, 3, 2, 1, 0], [0, 1, 2, 3, 4, 5]],
+            True,
+        ),
+        (
+            [
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+                [0, 1, 2, 3, 4, 5],
+            ],
+            [
+                [0, 1, 2, 3, 4, 5],
+                [5, 4, 3, 2, 1, 0],
+                [0, 1, 2, 3, 4, 5],
+                [5, 4, 3, 2, 1, 0],
+            ],
+            True,
+        ),
+        (
+            np.array(
+                [
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                    [0, 1, 2, 3, 4, 5],
+                ]
+            ),
+            np.array(
+                [
+                    [5, 4, 3, 2, 1, 0],
+                    [0, 1, 2, 3, 4, 5],
+                    [5, 4, 3, 2, 1, 0],
+                    [0, 1, 2, 3, 4, 5],
+                ]
+            ),
+            False,
+        ),
+    ],
+)
+def test_flip_cross_rows(M, correct, flip_odd):
+    assert (
+        np.array(flip_cross_rows(M, flip_odd) == correct)
+    ).all()
+
+@pytest.mark.parametrize(
+    "M,correct,rc,flip_odd",
+    [
+        (
+            [[1, 2], [3, 4]],
+            [[1, 2], [4, 3]],
+            "r",
+            True,
+        ),
+        (
+            [[1, 2], [3, 4]],
+            [[3, 2], [1, 4]],
+            "c",
+            False,
+        ),
+    ],
+)
+def test_flip_cross(M, correct, rc, flip_odd):
+    assert (
+        flip_cross(np.array(M), rc, flip_odd) == correct
+    ).all()
+
+@pytest.mark.parametrize(
+    "M1,M2,correct",
+    [
+        (
+            [1, 2, 3, 4], 
+            [8, 9, 10, 11], 
+            [1, 8, 2, 9, 3, 10, 4, 11],
+        ),
+        (
+            [1, 2, 3, 4, 5], 
+            [8, 9, 10, 11], 
+            [1, 8, 2, 9, 3, 10, 4, 11, 5],
+        ),
+        #(
+        #    [1, 2], 
+        #    [8, 9, 10, 11], 
+        #    [1, 8, 2, 9, 10, 11],
+        #),
+    ],
+)
+def test_interweave(M1, M2, correct):
+    M1 = np.array(M1)
+    M2 = np.array(M2)
+    correct = np.array(correct)
+    assert np.array(interweave(M1, M2) == correct).all()
+
+@pytest.mark.parametrize(
+    "indices,correct,N",
+    [
+        ((0, 1, 2, 3, 4, 5, 6, 7), (0, 4, 1, 5, 2, 6, 3, 7), 8),
+        ((3, 2), (6, 1), 10),
+        ((0, 2), (0, 1), (2, 4)),
+    ],
+)
+def test_arg_alternating_indices_to_sectors(indices, correct, N):
+    assert np.array(
+        arg_alternating_indices_to_sectors(
+            indices=indices, N=N
+        )
+        == correct
+    ).all()
+
+
+def test_arg_alternating_indices_to_sectors_error():
+    with pytest.raises(ValueError):
+        arg_alternating_indices_to_sectors(
+            indices=[1, 2],
+            N=[
+                2,
+            ],
+        )
+    with pytest.raises(TypeError):
+        arg_alternating_indices_to_sectors(
+            indices=[1, 2], N="a"
+        )
+
+
+@pytest.mark.parametrize(
+    "x,y,dimy,correct,flip_odd",
+    [
+        (2, 1, 4, (2, 1), True),
+        (1, 1, 4, (1, 2), True),
+        (1, 0, 4, (1, 3), True),
+        (12, 1, 4, (12, 2), False),
+        (11, 1, 4, (11, 1), False),
+    ],
+)
+def test_arg_flip_cross_row(x, y, dimy, correct, flip_odd):
+    assert (
+        arg_flip_cross_row(
+            x=x, y=y, dimy=dimy, flip_odd=flip_odd
+        )
+        == correct
+    )
+
+
+@pytest.mark.parametrize(
+    "x,y,dimy",
+    [
+        (-2, 1, 4),
+        (2, -1, 4),
+        (2, 1, -4),
+        (2, 10, 4),
+    ],
+)
+def test_arg_flip_cross_row_error(x, y, dimy):
+    with pytest.raises(ValueError):
+        arg_flip_cross_row(x, y, dimy)
+
+
+@pytest.mark.parametrize(
+    "x,y,dimx,dimy,correct,horizontal",
+    [
+        (1, 2, 2, 4, 6, True),
+        (0, 0, 2, 4, 0, True),
+        (0, 3, 2, 4, 3, True),
+        (2, 1, 4, 2, 5, True),
+        (3, 1, 4, 2, 7, True),
+        (4, 1, 4, 2, 8, False),
+    ],
+)
+def test_grid_to_linear(x, y, dimx, dimy, correct, horizontal):
+    assert (
+        grid_to_linear(x, y, dimx, dimy, horizontal) == correct
+    )
+
+
+@pytest.mark.parametrize(
+    "n,dimx,dimy,correct,horizontal",
+    [
+        (6, 2, 4, (1, 2), True),
+        (6, 4, 2, (3, 0), True),
+        (0, 10, 10, (0, 0), True),
+        (6, 2, 4, (1, 2), True),
+        (6, 4, 4, (2, 1), False),
+    ],
+)
+def test_linear_to_grid(n, dimx, dimy, correct, horizontal):
+    assert linear_to_grid(n, dimx, dimy, horizontal) == correct
+
+
+@pytest.mark.parametrize(
+    "v,correct",
+    [((1, 1), np.array((1 / np.sqrt(2), 1 / np.sqrt(2)))), ((1, 0), (1, 0))],
+)
+def test_normalize_vec(v, correct):
+    assert (normalize_vec(v) == correct).all()
+
+
+@pytest.mark.parametrize(
+    "l,i,correct",
+    [
+        ([2, 4, 6, 8], 2, 4),
+        ([1, 3, 7, 9], 2, 0),
+    ],
+)
+def test_sum_divisible(l, i, correct):
+    assert sum_divisible(l, i) == correct
+
+
+@pytest.mark.parametrize(
+    "l,correct",
+    [
+        ([10, 20], 2),
+        ([11, 21, 22], 1),
+    ],
+)
+def test_sum_even(l, correct):
+    assert sum_even(l) == correct
+
+
+@pytest.mark.parametrize(
+    "l,correct",
+    [
+        ([10, 20], 0),
+        ([11, 21, 22], 2),
+    ],
+)
+def test_sum_odd(l, correct):
+    assert sum_odd(l) == correct
+
+
+@pytest.mark.parametrize(
+    "a,correct,ones",
+    [
+        (bin(300), [0, 3, 5, 6], True),
+        (bin(399), [0, 1, 5, 6, 7, 8], True),
+        (bin(1), [0], True),
+        (bin(0), [], True),
+        (bin(-29), [0, 1, 2, 4], True),
+        (10, [1, 3], False),
+    ],
+)
+def test_index_bits(a, correct, ones):
+    assert index_bits(a, ones) == correct
+
+
+@pytest.mark.parametrize(
+    "i,shape,neighbour_order,periodic,diagonal,origin,correct",
+    [
+        (3, (4, 4), 1, True, True, "center", (0, 2, 3, 4, 6, 7, 12, 14, 15)),
+        (2, (3, 6), 2, False, False, "topleft", (2, 3, 4, 8, 14)),
+    ],
+)
+def test_grid_neighbour_list(
+    i, shape, neighbour_order, periodic, diagonal, origin, correct
+):
+    neighbours = grid_neighbour_list(
+        i, shape, neighbour_order, periodic, diagonal, origin
+    )
+    print(neighbours)
+    assert do_lists_have_same_elements(neighbours, correct)
+
+@pytest.mark.parametrize(
+    "shape,value,correct",
+    [
+        ((3, 3), 3.3, np.full(shape=(3, 3), fill_value=3.3)),
+        ((2, 2), "zeros", np.zeros(shape=(2, 2))),
+        ((1, 1), "ones", np.ones(shape=(1, 1))),
+        ((3, 3), "random", np.random.rand(3, 3)),
+        ((10, 10), "zoink", None),
+    ],
+)
+def test_default_value_handler(shape, value, correct):
+    if value == "random":
+        assert (
+            default_value_handler(shape, value).shape
+            == np.array(shape)
+        ).all()
+    elif value in ["zeros", "ones"] or isinstance(value, float):
+        assert (
+            default_value_handler(shape, value) == correct
+        ).all()
+    else:
+        with pytest.raises(ValueError):
+            default_value_handler(shape, value)
+
+
+@pytest.mark.parametrize(
+    "arr,indices,correct",
+    [("abcde", [1, 2, 5, 6, 7], "bcabc"), ([10, 20, 30], [100, 200, 0], [20, 30, 10])],
+)
+def test_wrapping_slice(arr, indices, correct):
+    assert wrapping_slice(arr, indices) == correct
+
+def test_flip_cross_error():
+    with pytest.raises(ValueError):
+        flip_cross(M=[1, 2], rc="u")
+
+@pytest.mark.parametrize(
+    "M,correct,flip_odd",
+    [
+        (
+            [[1, 2], [3, 4]],
+            [[1, 4], [3, 2]],
+            True,
+        ),
+        (
+            np.array([[1, 2], [3, 4]]),
+            np.array([[3, 2], [1, 4]]),
+            False,
+        ),
+    ],
+)
+def test_flip_cross_cols(M, correct, flip_odd):
+    assert (
+        np.array(flip_cross_cols(M, flip_odd) == correct)
+    ).all()
 
