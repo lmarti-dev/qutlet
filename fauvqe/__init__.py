@@ -3,19 +3,16 @@
 # ..level for the moment until better solution
 # .. import global to use them also in submodule
 # https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
-
-# imports within package
-from fauvqe.converter import (
-    Converter
-)
-
 # subpackages
-from fauvqe import models, objectives, optimisers
+from fauvqe import models, objectives, optimisers, utilities 
 
 # Flattened sub-modules
 from fauvqe.models import (
     AbstractModel,
     Adiabatic,
+    ANNNI,
+    DrivenModel,
+    CooledAdiabatic,
     CoolingModel,
     Ising,
     IsingXY,
@@ -31,11 +28,15 @@ from fauvqe.objectives import (
     Entanglement,
     ExpectationValue,
     Fidelity,
+    Infidelity,
     Magnetisation,
     MatrixCost,
     Objective,
+    ObjectiveSum,
+    Overlap,
     TraceDistance,
-    UtCost
+    UtCost,
+    Variance
 )
 from fauvqe.optimisers import (
     ADAM,
@@ -46,6 +47,25 @@ from fauvqe.optimisers import (
     Optimiser
 )
 
+from fauvqe.utilities  import (
+    commutator,
+    Converter,
+    direct_sum,
+    flatten,
+    get_gate_count,
+    get_value_map_from_state,
+    greedy_grouping,
+    haar,
+    haar_1qubit,
+    hamming_weight,
+    merge_same_gates,
+    orth_norm,
+    plot_heatmap,
+    ptrace,
+    print_non_zero,
+    sample,
+    uniform,
+)
 """
 All within fauvqe imported libaries:
 #Standard libaries

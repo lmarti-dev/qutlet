@@ -8,7 +8,7 @@ import itertools
 import numpy as np
 import cirq
 
-from fauvqe.models.spinModel import SpinModel
+from fauvqe.models.spinmodel import SpinModel
 
 
 class Ising(SpinModel):
@@ -17,7 +17,14 @@ class Ising(SpinModel):
     is mother of different quantum circuit methods
     """
     
-    def __init__(self, qubittype, n, j_v = None, j_h = None, h = None, field: Literal["Z", "X"] = "X", t: Real = 0):
+    def __init__(   self,
+                 qubittype, 
+                 n, 
+                 j_v = None, 
+                 j_h = None, 
+                 h = None, 
+                 field: Literal["Z", "X"] = "X", 
+                 t: Real = 0):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -26,6 +33,8 @@ class Ising(SpinModel):
         h  strength external field
         field: basis of external field X or Z
         """
+        self.__name__ = "IsingModel"
+
         # convert all input to np array to be sure
         if j_v is None:
             j_v = np.zeros((n[0], n[1]))
@@ -63,9 +72,9 @@ class Ising(SpinModel):
                 self.t )
 
         self_copy.circuit = self.circuit.copy()
-        self_copy.circuit_param = self.circuit_param.copy()
-        self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        if self.circuit_param is not None: self_copy.circuit_param = self.circuit_param.copy()
+        if self.circuit_param_values is not None: self_copy.circuit_param_values = self.circuit_param_values.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
 
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
@@ -79,61 +88,6 @@ class Ising(SpinModel):
                     super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h)]
         else:
             return [super().energy( self.j_v, self.j_h, self.h)]
-
-    def get_spin_vm(self, wf):
-        assert np.size(self.n) == 2, "Expect 2D qubit grid"
-        # probability from wf
-        prob = abs(wf * np.conj(wf))
-
-        # cumulative probability
-        n_temp = round(np.log2(wf.shape[0]))
-        com_prob = np.zeros(n_temp)
-        # now sum it
-        # this is a potential openmp sum; loop over com_prob, use index arrays to select correct
-
-        for i in np.arange(n_temp):
-            # com_prob[i] = sum wf over index array all in np
-            # maybe write on
-            # does not quite work so do stupid version with for loop
-            # declaring cpython types can maybe help,
-            # Bad due to nested for for if instead of numpy, but not straight forward
-            for j in np.arange(2 ** n_temp):
-                # np.binary_repr(3, width=4) use as mask
-                if np.binary_repr(j, width=n_temp)[i] == "1":
-                    com_prob[i] += prob[j]
-        # This is for qubits:
-        # {(i1, i2): com_prob[i2 + i1*q4.n[1]] for i1 in np.arange(q4.n[0]) for i2 in np.arange(q4.n[1])}
-        # But we want for spins:
-        return {
-            (i0, i1): 2 * com_prob[i1 + i0 * self.n[1]] - 1
-            for i0 in np.arange(self.n[0])
-            for i1 in np.arange(self.n[1])
-        }
-
-    def print_spin(self, wf):
-        """
-        Currently does not work due to Cirq update...
-
-        For cirq. heatmap see example:
-        https://github.com/quantumlib/Cirq/blob/master/examples/bristlecone_heatmap_example.py
-        https://github.com/quantumlib/Cirq/blob/master/examples/heatmaps.py
-        https://github.com/quantumlib/Cirq/blob/master/cirq-core/cirq/vis/heatmap_test.py
-        value_map = {
-            (qubit.row, qubit.col): np.random.random() for qubit in cirq.google.Bristlecone.qubits
-        }
-        heatmap = cirq.Heatmap(value_map)
-        heatmap.plot()
-
-        This is hard to test, but self.get_spin_vm(wf) is covered
-        Possibly add test similar to cirq/vis/heatmap_test.py
-
-        Further: add colour scale
-        """
-        value_map = self.get_spin_vm(wf)
-        # Create heatmap object
-        heatmap = cirq.Heatmap(value_map)
-        # Plot heatmap
-        heatmap.plot()
 
     def energy_pfeuty_sol(self):
         """
@@ -152,35 +106,28 @@ class Ising(SpinModel):
                 For numeric reasons include h in \Lambda_k
             - Return E/N = - h* sum \Lambda_k/N
         """
-        assert self.n[0] * self.n[1] == np.max(
-            self.n
-        ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
-        assert np.min(self.h) == np.max(
-            self.h
-        ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
+        assert self.n[0] * self.n[1] == np.max(self.n),\
+            "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
+        assert np.min(self.h) == np.max(self.h),\
+            "Ising class error, external field h = {} is not the same for all spins".format(self.h)
         
         # Use initial parameter to catch empty array
-        assert (
-            np.min(self.j_h, initial=np.finfo(np.float_).max)
-            == np.max(self.j_h, initial=np.finfo(np.float_).min)
-        ) or (
-            np.size(self.j_h) == 0
-        ), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
+        #if self.n[0] > self.n[1]:
+        #
+        #else: 
+        assert np.min(self.j_h, initial=np.iinfo(int).max) == np.max(self.j_h, initial=np.iinfo(int).min)\
+            or (np.size(self.j_h) == 0), "Ising class error, interaction strength j_h = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_h,
-            np.min(self.j_h, initial=np.finfo(np.float_).max),
-            np.max(self.j_h, initial=np.finfo(np.float_).min),
+            np.min(self.j_h, initial=np.iinfo(int).max),
+            np.max(self.j_h, initial=np.iinfo(int).min),
         )
 
         # Use initial parameter to catch empty array
-        assert (
-            np.min(self.j_v, initial=np.finfo(np.float_).max)
-            == np.max(self.j_v, initial=np.finfo(np.float_).min)
-        ) or (
-            np.size(self.j_v) == 0
-        ), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
+        assert (np.min(self.j_v, initial=np.iinfo(int).max)== np.max(self.j_v, initial=np.iinfo(int).min))\
+            or (np.size(self.j_v) == 0), "Ising class error, interaction strength j_v = {} is not the same for all spins. max: {} , min: {}".format(
             self.j_v,
-            np.min(self.j_v, initial=np.finfo(np.float_).max),
-            np.max(self.j_v, initial=np.finfo(np.float_).min),
+            np.min(self.j_v, initial=np.iinfo(int).max),
+            np.max(self.j_v, initial=np.iinfo(int).min),
         )
 
         lambda_k = self._get_lambda_k()

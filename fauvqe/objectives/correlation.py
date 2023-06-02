@@ -35,7 +35,7 @@ class Correlation(AbstractExpectationValue):
     def __init__(self, model: AbstractModel, field: Union[Literal["X", "Y", "Z"], cirq.PauliString] = "Z", points: List[cirq.ops.Qid]=[cirq.GridQubit(0, 0), cirq.GridQubit(0, 1)]):
         self._field = field
         self._points = points
-        if(isinstance(field, cirq.PauliString)):
+        if(isinstance(field, Union[cirq.PauliSum, cirq.PauliString])):
             super().__init__(model, field)
             return
         elif(field == "X"):

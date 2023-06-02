@@ -1,10 +1,11 @@
-from typing import Tuple, Dict
-
+# External Imports
 import pytest
 import numpy as np
 
-from fauvqe import CVaR, AbstractModel
+from typing import Tuple, Dict
 
+# Internal Imports
+from fauvqe import AbstractModel, CVaR, ExpectationValue, Ising
 
 class MockModel(AbstractModel):
     def __init__(self):
@@ -63,6 +64,69 @@ def test_calc_cvar(probabilities, energies, alpha, expected_result, uncertainty)
 
     assert np.abs(cvar - expected_result) <= uncertainty
 
+@pytest.mark.parametrize(
+    "model, state, alpha, expected_result, uncertainty",
+    [
+        (
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  np.ones((1, 2)),
+                  "X"),
+            np.array([np.sqrt(2)/2,0,0,np.sqrt(2)/2], dtype=np.complex64), 
+            1, 
+            -1/4, 
+            2e-7,
+         ),
+         (
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  np.ones((1, 2)),
+                  "X"),
+            np.array([np.sqrt(2)/2,0,0,np.sqrt(2)/2], dtype=np.complex64), 
+            1/2, 
+            -3/4, 
+            2e-7,
+         ),
+         (
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  np.ones((1, 2)),
+                  "X"),
+            np.array([1,0,0,0], dtype=np.complex64), 
+            1, 
+            -1/8, 
+            2e-7,
+         ),
+         (
+            Ising("GridQubit", 
+                  [1,2], 
+                  np.ones((0, 2)), 
+                  np.ones((1, 1)), 
+                  np.ones((1, 2)),
+                  "X"),
+            np.array([np.sqrt(2)/2,0,np.sqrt(2)/2,0], dtype=np.complex64), 
+            1/2, 
+            -3/4, 
+            2e-7,
+         ),
+    ],
+)
+def test_evaluate_X(model, state, alpha, expected_result, uncertainty):
+    #model.diagonalise("numpy")
+    print(model.energy())
+    
+    objective = CVaR(model, alpha=alpha, field="X") 
+    print(state)
+    result = objective.evaluate(state)
+    print(result)
+
+    assert np.abs(result - expected_result) <= uncertainty
 
 @pytest.mark.parametrize(
     "probabilities, energies, alpha",

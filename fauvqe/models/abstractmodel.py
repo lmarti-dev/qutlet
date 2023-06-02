@@ -14,24 +14,20 @@
 from __future__ import annotations
 
 import abc
-from typing import Tuple, List, Optional
-from numbers import Number, Real
-
-import numpy as np
-import sympy
 import cirq
+import numpy as np
 import qsimcirq
-import timeit
+import sympy
 
-# import fastmat
-
+from collections.abc import Iterable
+from numbers import Number, Real
 from scipy.linalg import eigh as scipy_solver
 from scipy.sparse.linalg import eigsh as scipy_sparse_solver
-from scipy.sparse import dia_matrix as scipy_dia_matrix
+from scipy.sparse import dia_matrix as scipy_dia_matrix 
+from typing import Tuple, List,Optional
 
 from fauvqe.restorable import Restorable
 from fauvqe.utilities.generic import flatten
-
 
 class AbstractModel(Restorable):
     """
@@ -59,7 +55,7 @@ class AbstractModel(Restorable):
         self.circuit = cirq.Circuit()
         self.circuit_param: List[sympy.Symbol] = []
         self.circuit_param_values: Optional[np.ndarray] = None
-        self.hamiltonian = cirq.PauliSum()
+        self._hamiltonian = cirq.PauliSum()
         self.init_qubits(qubittype, n)
         self.set_simulator()
         self.t: Real = 0
@@ -68,6 +64,9 @@ class AbstractModel(Restorable):
         self.eig_vec: Optional[np.ndarray] = None
         self._Ut: Optional[np.ndarray] = None
 
+    def __repr__(self) -> str:
+        return "< " + str(self.__class__.__name__) + ", Hamiltonian=" + str(self._hamiltonian) + " >"
+    
     # initialise qubits or device
     def init_qubits(self, qubittype, n):
         # cannot use switcher as initialisation parameters 'n' are of different type
@@ -152,12 +151,14 @@ class AbstractModel(Restorable):
             Issue: cannot handle this quite as GridQubits, LineQubits or NameQubits
         """
 
+    # Add time dependent Hamiltonian Function
+    # This ensures that UtCost can be adaped to time-dependent hamiltonians
+    def hamiltonian(self, t: Real = 0) -> cirq.PauliSum():
+        return self._hamiltonian
+
     # set simualtor to be written better, aka more general
-    def set_simulator(
-        self, simulator_name="qsim", simulator_options: dict = {}, dtype=np.complex64
-    ):
-        if simulator_name == "qsim":
-            """
+    def set_simulator(self, simulator_name="qsim", simulator_options: dict = {}):
+        """
             Possible qsim options:
                 Used/Usful options:
                 't' : number of threads; default 't' 1
@@ -188,16 +189,19 @@ class AbstractModel(Restorable):
                 noise: "cirq.NOISE_MODEL_LIKE" = None,
                 seed: "cirq.RANDOM_STATE_OR_SEED_LIKE" = None,
                 split_untangled_states: bool = True
-            """
+        """
+        if simulator_name == "qsim":
             self.simulator_options = {"t": 8, "f": 4}
             self.simulator_options.update(simulator_options)
             self.simulator = qsimcirq.QSimSimulator(self.simulator_options)
         elif simulator_name == "cirq":
-            self.simulator_options = {}
-            self.simulator = cirq.Simulator(dtype=dtype)
-        elif simulator_name == "dm":
-            self.simulator_options = {}
-            self.simulator = cirq.DensityMatrixSimulator(dtype=dtype)
+            self.simulator_options = {"dtype": np.complex64}
+            self.simulator_options.update(simulator_options)
+            self.simulator = cirq.Simulator(**self.simulator_options)
+        elif simulator_name == "density_matrix":
+            self.simulator_options = {"dtype": np.complex64}
+            self.simulator_options.update(simulator_options)
+            self.simulator = cirq.DensityMatrixSimulator(**self.simulator_options)
         else:
             assert (
                 False
@@ -260,7 +264,7 @@ class AbstractModel(Restorable):
             e.g. k = 2
         """
         if matrix is None:
-            matrix = self.hamiltonian.matrix()
+            matrix = self._hamiltonian.matrix()
 
         __n = np.size(self.qubits)
         if solver == "numpy":
@@ -281,6 +285,7 @@ class AbstractModel(Restorable):
         elif solver == "scipy.sparse":
             self.solver_options = {"k": 2, "which": "SA"}
             self.solver_options.update(solver_options)
+            #print(self.solver_options)
             self.eig_val, self.eig_vec = scipy_sparse_solver(
                 matrix,
                 **self.solver_options,
@@ -295,9 +300,10 @@ class AbstractModel(Restorable):
                 solver
             )
 
-    def set_Ut(self, use_dense: bool = False):
-        # https://docs.sympy.org/latest/modules/numeric-computation.html
-        # 1.If exact diagonalisation exists already, don't calculate it again
+    def set_Ut( self, 
+                use_dense: bool = False):
+        #https://docs.sympy.org/latest/modules/numeric-computation.html
+        #1.If exact diagonalisation exists already, don't calculate it again
         # Potentially rather use scipy here!
         _n = np.size(self.qubits)
         _N = 2 ** (_n)
@@ -346,7 +352,7 @@ class AbstractModel(Restorable):
         # t1 = timeit.default_timer()
         # print("Time Mat mult.: \t {}".format(t1-t0))
 
-    def normalise(self, spread: float = 2) -> None:
+    def set_spectrum_scale(self, spread: float = 2) -> None:
         """
         Scales and shifts the system Hamiltonian, B, J and shift to achieve
         specified minimum and maximum energies in the Hamiltonian
@@ -356,7 +362,7 @@ class AbstractModel(Restorable):
         """
         previous_spread = self.eig_val[-1] - self.eig_val[0]
         scale = spread / previous_spread
-        self.hamiltonian = scale * self.hamiltonian
+        self._hamiltonian = scale * self._hamiltonian
         self.eig_val *= scale
 
     def glue_circuit(self, axis: bool = 0, repetitions: int = 2):
@@ -374,8 +380,7 @@ class AbstractModel(Restorable):
         # 1.Find 2-qubit gates along the given axis
         # Throw error if there are none
         # Use 2D list, [Moment][Operation]
-
-        glueing_gates = [[] for _ in range(np.size(self.circuit.moments))]
+        glueing_gates = [[] for _ in range(len(self.circuit.moments))]
         m = 0
         for moment in self.circuit.moments:
             # print("{}.Moment: \n{}\n ".format(i, moment.__dict__))
@@ -480,8 +485,8 @@ class AbstractModel(Restorable):
         #       ISSUE: so far deepcopy(isng) does not work
         #   Need to overright this locally further to double further parameters locally!!
         ###########################################################################
-        # Reset n
-        self.n = self.n + (repetitions - 1) * [self.n[0] * (1 - axis), self.n[1] * axis]
+        #Reset n
+        self.n = self.n + (repetitions-1)*np.array([self.n[0]*(1-axis) ,self.n[1]*axis])
 
         # Reset qubits
         self.init_qubits(self.qubittype, self.n)
@@ -574,10 +579,30 @@ class AbstractModel(Restorable):
         if temp_sign == 0:
             self.circuit.append(self.circuit._moments[0])
         else:
-            for i in range(
-                temp_options["start"], temp_options["end"] + temp_sign, temp_sign
-            ):
+            for i in range(temp_options['start'],temp_options['end']+temp_sign, temp_sign):
                 self.circuit.append(self.circuit._moments[i])
+
+    def _update2nestedlist(self, options: dict(), key, new_nested_level: int = 1):
+        if options.get(key) is not None:
+            if isinstance(options.get(key), Iterable):
+                _tmp = list(options.get(key))
+                Is_nested_level = self._nest_level(_tmp) - 1
+            else:
+                _tmp = [options.get(key) ]
+                Is_nested_level=0
+
+            for i in range(1, new_nested_level-Is_nested_level):
+                _tmp = [_tmp]
+            options.update({key: _tmp})
+
+        return options
+
+    def _nest_level(self, lst):
+        if not isinstance(lst, list):
+            return 0
+        if not lst:
+            return 1
+        return max(self._nest_level(item) for item in lst) + 1
 
     @property
     def flattened_qubits(self):

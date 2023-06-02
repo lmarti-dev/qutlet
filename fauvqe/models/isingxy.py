@@ -7,8 +7,7 @@ from numbers import Real
 import numpy as np
 import cirq
 
-from fauvqe.models.spinModel import SpinModel
-
+from fauvqe.models.spinmodel import SpinModel
 
 class IsingXY(SpinModel):
     """
@@ -60,7 +59,7 @@ class IsingXY(SpinModel):
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
-        self_copy.hamiltonian = self.hamiltonian.copy()
+        self_copy._hamiltonian = self._hamiltonian.copy()
 
         if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
         if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()

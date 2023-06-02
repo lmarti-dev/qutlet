@@ -3,6 +3,8 @@ from typing import List, Optional, Any, Literal
 
 import numpy as np
 
+from fauvqe.objectives.objective import Objective
+
 
 class OptimisationStep:
     """A step of an optimisation.
@@ -30,8 +32,8 @@ class OptimisationStep:
         self.__wavefunction: Optional[np.ndarray] = wavefunction
         self.__objective: Optional[Real] = objective
 
-    @property
-    def wavefunction(self) -> np.ndarray:
+    def wavefunction(   self,
+                        objective: Optional[Objective] = None) -> np.ndarray:
         """Get the wavefunction after the circuit of this step.
 
         Calculates and stores the wavefunction if it is not stored.
@@ -42,9 +44,15 @@ class OptimisationStep:
             The wavefunction
         """
         if self.__wavefunction is None:
-            self.__wavefunction = self._parent.objective.simulate(
-                param_resolver=self._parent.objective.model.get_param_resolver(self.params),
-            )
+            if objective is None:
+                self.__wavefunction = self._parent.objective.simulate(
+                    param_resolver=self._parent.objective.model.get_param_resolver(self.params),
+                )
+            else:
+                #print(objective.__dict__)
+                self.__wavefunction = objective.simulate(
+                    param_resolver=self._parent.objective.model.get_param_resolver(self.params),
+                )
 
         return self.__wavefunction
 
@@ -61,7 +69,7 @@ class OptimisationStep:
             The objective value
         """
         if self.__objective is None:
-            self.__objective = self._parent.objective.evaluate(self.wavefunction)
+            self.__objective = self._parent.objective.evaluate(self.wavefunction())
 
         return self.__objective
     
@@ -111,7 +119,7 @@ class OptimisationStep:
             return self.params
 
         if column == "wavefunction":
-            return self.wavefunction
+            return self.wavefunction()
 
         if column == "objective":
             return self.objective

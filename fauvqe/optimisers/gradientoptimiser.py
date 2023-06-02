@@ -220,6 +220,7 @@ class GradientOptimiser(Optimiser):
                 dir_path = os.path.abspath(os.path.dirname(__file__)) #pragma: no cover
                 plt.savefig(dir_path + '/../../plots/GD_Optimisation.png') #pragma: no cover
             if(self.options['use_progress_bar']):
+                print("Line 223")
                 pbar.close() 
         return res
 

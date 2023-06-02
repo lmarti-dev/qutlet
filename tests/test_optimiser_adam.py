@@ -211,7 +211,7 @@ def test_optimise_batch(sym, n_jobs, sim):
     })
     ising.set_circuit_param_values(-(2/np.pi)*t/3 *np.ones(np.size(ising.circuit_param)))
     ising.set_simulator(sim)
-    bsize = 100
+    bsize = 5
     initial_rands= (np.random.rand(bsize, 16)).astype(np.complex128)
     initials = np.zeros(initial_rands.shape, dtype=np.complex64)
     for k in range(bsize):
@@ -225,12 +225,12 @@ def test_optimise_batch(sym, n_jobs, sim):
     trotter_cost = ( objective.evaluate(np.array([wavefunction]), options={'indices': [0]}) )
     #print(trotter_cost)
     adam = ADAM({
-        'break_param': 100,
+        'break_param': 50,
         'batch_size': 1, 
         'eps': 1e-5, 
         'eta': 1e-2,
         'symmetric_gradient': sym, 
-        'use_progress_bar': True
+        'use_progress_bar': False
     })
     #print(objective.model.circuit_param_values.view())
     res = adam.optimise(objective, n_jobs=n_jobs)

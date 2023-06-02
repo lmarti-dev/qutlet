@@ -59,7 +59,7 @@ def test_get_single_energy(sym):
     ],
 )
 @pytest.mark.higheffort
-def test__get_single_energy_batch(sym):
+def test_get_single_energy_batch(sym):
     ising = Ising(
         "GridQubit", [2, 2], 0.1 * np.ones((1, 2)), 0.5 * np.ones((2, 1)), 0.2 * np.ones((2, 2))
     )
@@ -70,7 +70,8 @@ def test__get_single_energy_batch(sym):
         'break_param': 1,
         'eta': 4e-2,
         'symmetric_gradient': sym,
-        'batch_size': 1
+        'batch_size': 1,
+        'use_progress_bar': True
     })
     obj = UtCost(ising, 0.1, 0, initial_wavefunctions=np.array([np.random.rand(16).astype(np.complex64)]))
     mockopt._objective = obj

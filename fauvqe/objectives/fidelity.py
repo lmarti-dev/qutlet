@@ -1,17 +1,15 @@
 """
     Implementation of the fidelity as objective function for an AbstractModel object.
 """
-from typing import Literal, Tuple, Dict, Optional, Union
-from numbers import Integral, Real
+from numpy import float64 as np_float64
+from numpy import ndarray as np_ndarray
+from numpy import size as np_size 
 
-import numpy as np
+from cirq import fidelity as cirq_fidelity
+from typing import Dict
 
-import qutip
-from cirq import fidelity
-
-from fauvqe.objectives.objective import Objective
 from fauvqe.models.abstractmodel import AbstractModel
-
+from fauvqe.objectives.objective import Objective
 
 class Fidelity(Objective):
     """
@@ -22,7 +20,7 @@ class Fidelity(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "target_state"    -> np.ndarray    target state to calculate fidelity with
+    options:    "target_state"    -> np_ndarray    target state to calculate fidelity with
 
     Methods
     ----------
@@ -32,35 +30,39 @@ class Fidelity(Objective):
         str:
             <Fidelity target state=self._target_state>
 
-    evaluate(self, wavefunction) : np.float64
+    evaluate(self, wavefunction) : np_float64
         Returns
         ---------
-        np.float64:
-            if(self.pure):
-                target^dagger @ wavefunction
-            else:
-                qutip.metrics.fidelity(target, wavefunction)
+        np_float64:
     """
-
-    def __init__(
-        self, model: AbstractModel, target_state: Union[np.ndarray, qutip.Qobj]
-    ):
+    def __init__(   self,
+                    model: AbstractModel, 
+                    target_state: np_ndarray):
         super().__init__(model)
-        self._n = np.size(model.qubits)
+        self._n = np_size(model.qubits)
         self.set_target_state(target_state)
 
-    def set_target_state(self, target_state: Union[np.ndarray, qutip.Qobj]) -> None:
+    def set_target_state(   self, 
+                            target_state: np_ndarray) -> None:
         self._target_state = target_state
-
-    def evaluate(
-        self, wavefunction: np.ndarray, target_state: np.ndarray = None
-    ) -> np.float64:
+    
+    def evaluate(   self, 
+                    wavefunction: np_ndarray,
+                    target_state: np_ndarray = None) -> np_float64:
         if target_state is None:
             target_state = self._target_state
-        n_qubits = len(self.model.flattened_qubits)
-        qid_shape = (2,) * n_qubits
-        # cirq fidelity is the square of qutip fidelity
-        return np.sqrt(fidelity(target_state, wavefunction, qid_shape=qid_shape))
+
+        #if(np_size(wavefunction) == 2**self._n):
+        #    return abs(wavefunction.transpose() @ self._target_state.full().conjugate())
+        #elif(np_size(wavefunction) == 4**self._n):
+        #    return abs(self._target_state.full().transpose().conjugate() @ wavefunction @ self._target_state.full())
+        #else:
+        assert (np_size(wavefunction) == 2**self._n or np_size(wavefunction) == 4**self._n),\
+            "State vector (2**self._n = {}) or density matrix (4**self._n = {}) expected; received dimensions: {}"\
+                .format(2**self._n, 4**self._n, np_size(wavefunction))
+        return cirq_fidelity(target_state, wavefunction, qid_shape=(2,) * self._n)
+
+
 
     def to_json_dict(self) -> Dict:
         return {
@@ -75,9 +77,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target_state={}>".format(self._target_state)
-
-
-class Infidelity(Fidelity):
-    def evaluate(self, wavefunction: Union[np.ndarray, qutip.Qobj]) -> np.float64:
-        return 1 - super().evaluate(wavefunction=wavefunction)
+        return "<{} target_state={}>".format(self.__class__.__name__, self._target_state)

@@ -9,6 +9,7 @@ import cirq
 import joblib
 import multiprocessing
 from pathos.multiprocessing import ProcessingPool as Pool
+from functools import partial
 
 import fauvqe.json
 from fauvqe.objectives.objective import Objective
@@ -119,7 +120,8 @@ class OptimisationResult:
     def storetxt(self,
         path: Union[pathlib.Path, str],  # Todo: Support File-like objects
         overwrite: bool = False,
-        additional_objectives: List[Objective] = None,
+        additional_objectives: Union[List[Objective], Objective] = None,
+        header_string: str = None,
         ) -> None:
         """
         Store Objective values of ths `OptimisationResult` in a txt file.
@@ -146,7 +148,11 @@ class OptimisationResult:
         if not overwrite and path.exists():
             raise FileExistsError("Not overwriting existing path {}".format(path))
 
-        header_string="{} \t".format(self.__objective.__class__.__name__)
+        if header_string is None:
+            _header_string="{} \t".format(self.__objective.__class__.__name__)
+        else:
+            _header_string = header_string
+
         if additional_objectives is None:
             save_data = self.get_objectives()
         else:
@@ -157,14 +163,15 @@ class OptimisationResult:
 
             i=1
             for objective in additional_objectives:
-                header_string+="{} \t".format(objective.__class__.__name__)
+                if header_string is None:
+                    _header_string+="{} \t".format(objective.__class__.__name__)
                 save_data[:,i]=self.get_objectives(objective)
                 i+=1
 
 
         np.savetxt( path, 
                     save_data,
-                    header=header_string,
+                    header=_header_string,
                     delimiter='\t')
 
 
@@ -284,11 +291,13 @@ class OptimisationResult:
         list of numpy.ndarray
         """
         # Todo: optimise with joblib?
-        return [step.wavefunction for step in self.__steps]
+        return [step.wavefunction() for step in self.__steps]
 
 
-    def _get_wf_from_i(self, i) -> np.ndarray:
-        return self.__steps[i].wavefunction
+    def _get_wf_from_i( self, 
+                        i, 
+                        objective: Optional[Objective] = None) -> np.ndarray:
+        return self.__steps[i].wavefunction(objective)
 
     def get_objectives(self, objective: Optional[Objective] = None) -> List[Real]:
         """Get all objective values.
@@ -302,18 +311,28 @@ class OptimisationResult:
         -------
         list of Real
         """
+        _n_jobs = 8     
+        pool = Pool(_n_jobs-1)
+
+        #Somehow parallel execution started to fail here
+        #TODO Fix it!!
         if objective == None:
             objective=self.objective
 
-        _n_jobs = 8
+            #_wfs = pool.map(self._get_wf_from_i, range(self.__index))
+            _wfs=[self.__steps[i].wavefunction() for i in range(self.__index)]
+        else:
+            #Compare https://python.omics.wiki/multiprocessing_map/multiprocessing_partial_function_multiple_arguments
+            objective_get_wf_from_i=partial(self._get_wf_from_i, objective=objective) 
+            _wfs = pool.map(objective_get_wf_from_i, range(self.__index))
         
-        pool = Pool(_n_jobs-1)
-        _wfs = pool.map(self._get_wf_from_i, range(self.__index))
-        
+            #_wfs=[self.__steps[i].wavefunction(objective) for i in range(self.__index)]
+
         _objective_values = joblib.Parallel(n_jobs=_n_jobs, backend="threading")(
             joblib.delayed(objective.evaluate)(_wfs[i])
             for i in range(len(_wfs))
         )
+        #print("in Optimisation_result:{} ".format(_objective_values))
 
         return _objective_values
         
