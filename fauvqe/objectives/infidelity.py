@@ -9,6 +9,3 @@ class Infidelity(Fidelity):
                  target_state: np_ndarray = None) -> np_float64:
         return 1 - super().evaluate(wavefunction=wavefunction, target_state=target_state)
     
-    def __repr__(self) -> str:
-        return "<Infidelity target_state={}>".format(self._target_state)
-    

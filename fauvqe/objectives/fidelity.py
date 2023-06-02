@@ -77,4 +77,4 @@ class Fidelity(Objective):
         return cls(**dct["constructor_params"])
 
     def __repr__(self) -> str:
-        return "<Fidelity target_state={}>".format(self._target_state)
+        return "<{} target_state={}>".format(self.__class__.__name__, self._target_state)
