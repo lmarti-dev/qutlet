@@ -1,14 +1,15 @@
 """
     Implementation of the fidelity as objective function for an AbstractModel object.
 """
+from numpy import float64 as np_float64
+from numpy import ndarray as np_ndarray
+from numpy import size as np_size 
+
 from cirq import fidelity as cirq_fidelity
-from numbers import Integral, Real
-import numpy as np
-from typing import Dict, Literal, Optional, Tuple, Union
+from typing import Dict
 
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.objectives.objective import Objective
-
 
 class Fidelity(Objective):
     """
@@ -19,7 +20,7 @@ class Fidelity(Objective):
     Parameters
     ----------
     model: AbstractModel, The linked model
-    options:    "target_state"    -> np.ndarray    target state to calculate fidelity with
+    options:    "target_state"    -> np_ndarray    target state to calculate fidelity with
 
     Methods
     ----------
@@ -29,34 +30,36 @@ class Fidelity(Objective):
         str:
             <Fidelity target state=self._target_state>
 
-    evaluate(self, wavefunction) : np.float64
+    evaluate(self, wavefunction) : np_float64
         Returns
         ---------
-        np.float64:
+        np_float64:
     """
     def __init__(   self,
                     model: AbstractModel, 
-                    target_state: np.ndarray):
+                    target_state: np_ndarray):
         super().__init__(model)
-        self._n = np.size(model.qubits)
+        self._n = np_size(model.qubits)
         self.set_target_state(target_state)
 
     def set_target_state(   self, 
-                            target_state: np.ndarray) -> None:
+                            target_state: np_ndarray) -> None:
         self._target_state = target_state
     
     def evaluate(   self, 
-                    wavefunction: np.ndarray,
-                    target_state: np.ndarray = None) -> np.float64:
+                    wavefunction: np_ndarray,
+                    target_state: np_ndarray = None) -> np_float64:
         if target_state is None:
             target_state = self._target_state
 
-        #if(np.size(wavefunction) == 2**self._n):
+        #if(np_size(wavefunction) == 2**self._n):
         #    return abs(wavefunction.transpose() @ self._target_state.full().conjugate())
-        #elif(np.size(wavefunction) == 2**(2*self._n)):
+        #elif(np_size(wavefunction) == 4**self._n):
         #    return abs(self._target_state.full().transpose().conjugate() @ wavefunction @ self._target_state.full())
         #else:
-        #    assert False, "State vector or density matrix expected got dimensions: {}".format(np.size(wavefunction))
+        assert (np_size(wavefunction) == 2**self._n or np_size(wavefunction) == 4**self._n),\
+            "State vector (2**self._n = {}) or density matrix (4**self._n = {}) expected; received dimensions: {}"\
+                .format(2**self._n, 4**self._n, np_size(wavefunction))
         return cirq_fidelity(target_state, wavefunction, qid_shape=(2,) * self._n)
 
 
