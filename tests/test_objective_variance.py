@@ -27,13 +27,13 @@ class MockAbstractModel(AbstractModel):
     [
         # 1 Qubit
         (
-            np.array([1,0]),
+            np.array([1,0]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.Z(cirq.LineQubit(i)) for i in range(1)]),
             0,
             1,
         ),
         (
-            np.array([1,0]),
+            np.array([1,0]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.X(cirq.LineQubit(i)) for i in range(1)]),
             1,
             1,
@@ -45,14 +45,14 @@ class MockAbstractModel(AbstractModel):
             1,
         ),
         (
-            np.array([1,0]),
+            np.array([1,0]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.X(cirq.LineQubit(0)), cirq.Z(cirq.LineQubit(0))]),
             1,
             1,
         ),
         # 1 Qubit & List of observables
         (
-            np.array([1,0]),
+            np.array([1,0]).astype(np.complex128),
             [cirq.PauliSum.from_pauli_strings([cirq.Z(cirq.LineQubit(i)) for i in range(1)]),
             cirq.PauliSum.from_pauli_strings([cirq.X(cirq.LineQubit(i)) for i in range(1)]),
             cirq.PauliSum.from_pauli_strings([cirq.Y(cirq.LineQubit(i)) for i in range(1)])],
@@ -61,19 +61,19 @@ class MockAbstractModel(AbstractModel):
         ),
         # 2 Qubits
         (
-            np.array([0.5,0.5, 0.5, 0.5]),
+            np.array([0.5,0.5, 0.5, 0.5]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.Z(cirq.LineQubit(i)) for i in range(2)]),
             2,
             2,
         ),
         (
-            np.array([0.5,0.5, 0.5, 0.5]),
+            np.array([0.5,0.5, 0.5, 0.5]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.X(cirq.LineQubit(i)) for i in range(2)]),
             0,
             2,
         ),
         (
-            np.array([0.5,0.5, 0.5, 0.5]),
+            np.array([0.5,0.5, 0.5, 0.5]).astype(np.complex128),
             cirq.PauliSum.from_pauli_strings([cirq.Y(cirq.LineQubit(i)) for i in range(2)]),
             2,
             2,
@@ -84,12 +84,22 @@ def test_evaluate_simple(state, observables, variances, n):
     model = MockAbstractModel("LineQubit", n)
     model.set_simulator("cirq")
     variance_obj = Variance(model, observables, state)
-    assert sum(abs(variance_obj.evaluate(_qubit_order={cirq.LineQubit(i): i for i in range(n)}) - variances)) < 1e-14
+
+    #print("Observable(s): {}".format(observables))
+
+    _qubit_map = {cirq.LineQubit(i): i for i in range(n)}
+    _tmp=variance_obj.evaluate(_qubit_order=_qubit_map) 
+
+    #print("variance_obj.evaluate(_qubit_order={}):\n{}".format(_qubit_map, _tmp))
+    #print("variances: \t{}\n".format(variances))
+
+    np.testing.assert_allclose(_tmp, variances, rtol=1e-14, atol=0)
 
 @pytest.mark.parametrize(
     "n, j_v, j_h , h, field, init_state, basics_options, variances",
     [
         #Test Z systems
+        #n0
         (
             [1,2],
             2*(np.random.rand(1-1,2)- 0.5),
@@ -100,6 +110,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "identity"},
             0
         ),
+        #n1
         (
             [2,2],
             2*(np.random.rand(2-1,2)- 0.5),
@@ -110,6 +121,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "identity"},
             0
         ),
+        #n2
         (
             [5,1],
             2*(np.random.rand(5-1,1)- 0.5),
@@ -120,6 +132,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "identity"},
             0
         ),
+        #n3
         (
             [3,2],
             2*(np.random.rand(3,2)- 0.5),
@@ -131,16 +144,18 @@ def test_evaluate_simple(state, observables, variances, n):
             0
         ),
         #Test X systems
+        #n4
         (
             [1,2],
-            np.zeros((1,2)),
-            np.zeros((1,2)),
-            2*(np.random.rand(1,2)- 0.5),
+            np.zeros((1,2)).astype(np.float64),
+            np.zeros((1,2)).astype(np.float64),
+            2*(np.random.rand(1,2).astype(np.float64)- 0.5),
             "X",
             randrange(2**2),
             {"append": False, "start": "hadamard"},
             0
         ),
+        #n5
         (
             [2,2],
             np.zeros((2,2)),
@@ -151,6 +166,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "hadamard"},
             0
         ),
+        #n6
         (
             [1,5],
             np.zeros((1,5)),
@@ -161,6 +177,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "hadamard"},
             0
         ),
+        #n7
         (
             [2,3],
             np.zeros((2,3)),
@@ -172,6 +189,7 @@ def test_evaluate_simple(state, observables, variances, n):
             0
         ),
         #Test Eigen basis
+        #n8
         (
             [1,2],
             2*(np.random.rand(1-1,2)- 0.5),
@@ -193,6 +211,7 @@ def test_evaluate_simple(state, observables, variances, n):
         #    {"append": False, "start": "exact", "n_exact": [2,2], "b_exact": [1,1]},
         #    0
         #),
+        #n9
         (
             [2,2],
             np.ones((1,2)),
@@ -203,6 +222,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "exact", "n_exact": [2,2], "b_exact": [1,1]},
             0
         ),
+        #n10
         (
             [1,3],
             2*(np.random.rand(1-1,3)- 0.5),
@@ -213,6 +233,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "exact", "n_exact": [1,3], "b_exact": [1,0]},
             0
         ),
+        #n11
         (
             [5,1],
             2*(np.random.rand(5,1)- 0.5),
@@ -223,6 +244,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "exact", "n_exact": [5,1], "b_exact": [0,1]},
             0
         ),
+        #n12
         (
             [2,3],
             2*(np.random.rand(2-1,3)- 0.5),
@@ -233,6 +255,7 @@ def test_evaluate_simple(state, observables, variances, n):
             {"append": False, "start": "exact", "n_exact": [2,3], "b_exact": [1,0]},
             0
         ),
+        #n13
         (
             [2,3],
             np.ones((1,3)),
@@ -241,28 +264,34 @@ def test_evaluate_simple(state, observables, variances, n):
             "X",
             0,
             {"append": False, "start": "exact", "n_exact": [2,3], "b_exact": [1,1]},
-            0
+            0,
+        ),
+        #n14
+        (
+            [2,3],
+            np.ones((1,3)),
+            np.ones((2,2)),
+            np.ones((2,3)),
+            "Z",
+            None,
+            {"append": False},
+            0,
         ),
     ],
 )
 def test_evaluate_Ising(n, j_v, j_h , h, field, init_state, basics_options, variances):
-    #j_v0 = 2*(np.random.rand(n[0]-1,n[1])- 0.5)
-    #j_h0 = 2*(np.random.rand(n[0],n[1]-1)- 0.5)
-    #h0 = 2*(np.random.rand(n[0],n[1])- 0.5)
     model = Ising("GridQubit", n, j_v, j_h , h , field)
-    model.set_simulator("cirq")
+    model.set_simulator("cirq", {"dtype": np.complex128})
     model.set_circuit("basics", basics_options)
 
-    #Important to hand over qubit order otherwise test fail
-    _qubit_order = {model.qubits[k][l]: int(k*model.n[1] + l) for l in range(model.n[1]) for k in range(model.n[0])}
-    state=model.simulator.simulate( model.circuit, 
-                                    initial_state=init_state,
-                                    qubit_order=_qubit_order).state_vector()
-    variance_obj = Variance(model, wavefunction=state)
+    if init_state is not None:
+        state=model.simulator.simulate( model.circuit, 
+                                        initial_state=init_state).state_vector()
+        variance_obj = Variance(model, wavefunction=state)
+    else:
+        variance_obj = Variance(model)
 
-    #The tolerance here is rather large...
-    #Maybe this is due to poor choice of data types somewhere?
-    assert sum(abs(variance_obj.evaluate() - variances)) < 2e-6
+    np.testing.assert_allclose(variances, variance_obj.evaluate(atol=1e-14), rtol=1e-14, atol=1e-13)
 
 @pytest.mark.parametrize(
     "n, j_v, j_h, h, basics_options1, basics_options2",
@@ -411,7 +440,6 @@ def test_evaluate_Ising(n, j_v, j_h , h, field, init_state, basics_options, vari
 def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options1, basics_options2):
     #Test here whether subsystems have smaller variance that X,Z for J=h=1
     ising1 = Ising("GridQubit", n, j_v, j_h, h, "X")
-    ising1.set_simulator("cirq")
 
     ising2 = ising1.copy()
     ising1.set_circuit("basics", basics_options1)
@@ -434,6 +462,7 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options1, basics_options2):
     ising1.diagonalise(solver = "scipy.sparse", 
                         solver_options= { "k": k_excited_states},
                         matrix=scipy_crsmatrix)
+    ising1.eig_vec = ising1.eig_vec.astype(np.complex128)
 
     #Print outs also take time hence comment them out:
     #ising1.set_circuit("basics", {"append": False, "start": "hadamard"})
@@ -444,13 +473,19 @@ def test_evaluate_H_partitions(n, j_v, j_h, h,basics_options1, basics_options2):
     #    #state_X = ising1.simulator.simulate(ising1.circuit, initial_state=ising1.eig_vec[:,i]).state_vector()
     #    print("{}. Excited state, Energy: {}".format(i, exp_obj.evaluate(ising1.eig_vec[:,i])))
     #    #print("Z basis\n{}\nX basis\n{}".format( ising1.eig_vec[:,i], state_X))
+    #    print(type(ising1.eig_vec[0,i]))
     #    print("Variances partition 1: {}".format(variance_obj.evaluate(observables=ising1.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i])))
     #    print("Variances partition 2: {}".format(variance_obj.evaluate(observables=ising2.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i])))
-    #    print("Variances full system: {}".format(variance_obj.evaluate(observables=ising1.hamiltonian, wavefunction=ising1.eig_vec[:,i])))
+    #    print("Variances full system: {}".format(variance_obj.evaluate(observables=ising1.hamiltonian(), wavefunction=ising1.eig_vec[:,i])))
 
     for i in range(k_excited_states):
-        assert(all(np.sort(abs(variance_obj.evaluate(observables=ising1.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) 
-                > np.sort(abs(variance_obj.evaluate(observables=ising2.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) ))
+        _tmp1 = np.sort(abs(np.array(variance_obj.evaluate(  observables=ising1.subsystem_hamiltonians, 
+                                                            wavefunction=ising1.eig_vec[:,i]))))
+
+        _tmp2 = np.sort(abs(np.array(variance_obj.evaluate(  observables=ising2.subsystem_hamiltonians, 
+                                                            wavefunction=ising1.eig_vec[:,i]))))
+
+        assert(all(_tmp1 > _tmp2))
 
 @pytest.mark.higheffort
 @pytest.mark.parametrize(
@@ -557,6 +592,7 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
     ising1.diagonalise(solver = "scipy.sparse", 
                         solver_options= { "k": k_excited_states},
                         matrix=scipy_crsmatrix)
+    ising1.eig_vec = ising1.eig_vec.astype(np.complex128)
 
     #Print outs:
     #ising1.set_circuit("basics", {"append": False, "start": "hadamard"})
@@ -572,8 +608,13 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
     #    print("Variances full system: {}".format(variance_obj.evaluate(observables=ising1.hamiltonian, wavefunction=ising1.eig_vec[:,i])))
 
     for i in range(k_excited_states):
-        assert(all(np.sort(abs(variance_obj.evaluate(observables=ising1.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) 
-                > np.sort(abs(variance_obj.evaluate(observables=ising2.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) ))   
+        _tmp1 = np.sort(abs(np.array(variance_obj.evaluate(  observables=ising1.subsystem_hamiltonians, 
+                                                            wavefunction=ising1.eig_vec[:,i]))))
+
+        _tmp2 = np.sort(abs(np.array(variance_obj.evaluate(  observables=ising2.subsystem_hamiltonians, 
+                                                            wavefunction=ising1.eig_vec[:,i]))))
+
+        assert(all(_tmp1 > _tmp2))
 
 @pytest.mark.parametrize(
     "model, atol",
@@ -703,8 +744,9 @@ def test_evaluate_eigenstates(model, atol):
     print("<ψ|H|ψ>² from Variance: \t{}".format(np.array(_tmp_E).T**2))
 
     _tmp_Eb=[exp_obj.evaluate(model.eig_vec[:,i]) for i in range(len(model.eig_vec[0,:]))]
-    print("<ψ|H|ψ> from ExpectationValue: \t\t{}".format(np.multiply(*model.n)*_tmp_Eb))
+    print("<ψ|H|ψ> from ExpectationValue: \t\t{}".format((np.multiply(*model.n)*np.array(_tmp_Eb))))
     print("<ψ|H|ψ>² from ExpectationValue: \t{}".format((np.multiply(*model.n)*np.array(_tmp_Eb))**2))
+    print("|E_exact - <ψ|H|ψ> from ExpectationValue|: {}".format(np.multiply(*model.n)*abs(_tmp_Eb-model.eig_val)))
 
     _tmp_E2=[model.simulator.simulate_expectation_values(
                     program = cirq.Circuit(), # to keep previous behaviour use empty circuit
@@ -743,8 +785,8 @@ def test_repr():
 #                    Assert tests                           #
 #                                                           #
 #############################################################
-def test_evaluate_assert():
-    model = MockAbstractModel("LineQubit", 1)
-    variance_obj = Variance(model,np.array([1,0]), cirq.Z(cirq.LineQubit(0)))
-    with pytest.raises(AssertionError):
-        variance_obj.evaluate() 
+#def test_evaluate_assert():
+#    model = MockAbstractModel("LineQubit", 1)
+#    variance_obj = Variance(model,np.array([1,0]), cirq.Z(cirq.LineQubit(0)))
+#    with pytest.raises(AssertionError):
+#        variance_obj.evaluate() 

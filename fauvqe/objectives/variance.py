@@ -57,12 +57,6 @@ class Variance(AbstractExpectationValue):
                     wavefunction: np.ndarray=None, 
                     _qubit_order: Mapping[cirq.ops.pauli_string.TKey, int]=None,
                     atol = 1e-7)-> Union[np.float64, List[np.float64]]:
-        #Returns variance of observables with respect to given wavefunction
-        #E.g. variance of X with respect to X or Z eigen state
-        #or variance of ground state |\psi_0> w.r.t. a subsystem Hamiltonian parition
-        #Require cirq simulator, as currently qsim gives segmentation fault
-        assert(isinstance(self._model.simulator, cirq.Simulator)), "Variance evalute currently requires cirq simulator due to segmentation fault of qsim"
- 
         if(observables is None):
             observables = self._observable
         
@@ -79,14 +73,12 @@ class Variance(AbstractExpectationValue):
                 # Use the stored wavefunction if no other wavefunction was given
                 wavefunction = self._wavefunction.view()
 
-        # Defined in AbstractExpectationValue already:
-        #if(_qubit_order is None):
-        #    _qubit_order = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
-
         #Implement <O²> - <O>²
         if isinstance(observables, list):
-            print([observable for observable in observables])
-            return [(super().evaluate(wavefunction= wavefunction,
+            variances = []
+            for observable in observables:
+                #print("Observable: \t{}".format(observable))
+                variances.append(super().evaluate(wavefunction= wavefunction,
                                 q_map = _qubit_order,
                                 atol = atol,
                                 observable = observable**2)
@@ -94,8 +86,7 @@ class Variance(AbstractExpectationValue):
                                 q_map = _qubit_order,
                                 atol = atol,
                                 observable = observable)**2) 
-                    for observable in observables]
-            square_observables = [observables[i]**2 for i in range(len(observables))]
+            return variances
         else:
             return (super().evaluate(wavefunction= wavefunction,
                                 q_map = _qubit_order,
@@ -105,35 +96,6 @@ class Variance(AbstractExpectationValue):
                                 q_map = _qubit_order,
                                 atol = atol,
                                 observable = observables)**2)
-
-        #evaluate(   self, 
-        #            wavefunction: np.ndarray, 
-        #            q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, 
-        #            atol: float = 1e-7,
-        #            observable = None)
-        return (super().evaluate(wavefunction= wavefunction,
-                                q_map = _qubit_order,
-                                atol = atol,
-                                observable = observables**2)
-                -super().evaluate(wavefunction= wavefunction,
-                                q_map = _qubit_order,
-                                atol = atol,
-                                observable = observables)**2)
-        #This is numerically un reliable:
-        #return np.real(np.array(self._model.simulator.simulate_expectation_values(
-        #            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-        #            qubit_order = _qubit_order,
-        #            observables=square_observables, # This allows for a list of observables
-        #            initial_state=wavefunction,
-        #            ))
-        #            - np.power(
-        #                np.array(self._model.simulator.simulate_expectation_values(
-        #                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-        #                    qubit_order = _qubit_order,
-        #                    observables=observables, # This allows for a list of observables
-        #                    initial_state=wavefunction,
-        #                    )),
-        #                2))
 
     def to_json_dict(self) -> Dict:
         return {
