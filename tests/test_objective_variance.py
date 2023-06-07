@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from random import randrange
 
-from fauvqe import AbstractModel, Converter, ExpectationValue, Ising, Variance
+from fauvqe import AbstractModel, ANNNI, Converter, ExpectationValue, Ising, Variance
 
 class MockAbstractModel(AbstractModel):
     def copy(self):
@@ -263,7 +263,6 @@ def test_evaluate_Ising(n, j_v, j_h , h, field, init_state, basics_options, vari
     #The tolerance here is rather large...
     #Maybe this is due to poor choice of data types somewhere?
     assert sum(abs(variance_obj.evaluate() - variances)) < 2e-6
-
 
 @pytest.mark.parametrize(
     "n, j_v, j_h, h, basics_options1, basics_options2",
@@ -576,6 +575,83 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
         assert(all(np.sort(abs(variance_obj.evaluate(observables=ising1.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) 
                 > np.sort(abs(variance_obj.evaluate(observables=ising2.subsystem_hamiltonians, wavefunction=ising1.eig_vec[:,i]))) ))   
 
+@pytest.mark.parametrize(
+    "model, atol",
+    [
+        (
+            Ising(  "GridQubit", 
+                    [1,2], 
+                    2*(np.random.rand(1-1,2)- 0.5),
+                    2*(np.random.rand(1,2-1)- 0.5),
+                    np.zeros((1,2)), 
+                    "Z"),
+            1e-10
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    np.ones((1,2)),
+                    np.ones((2,1)),
+                    np.ones((2,2)), 
+                    "X"),
+            1e-10
+        ),
+        # Currently this fails
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    2*(np.random.rand(2-1,2)- 0.5),
+                    2*(np.random.rand(2,2-1)- 0.5),
+                    np.ones((2,2)), 
+                    "X"),
+            1e-10
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,3], 
+                    np.ones((1,3)),
+                    np.ones((2,2)),
+                    np.ones((2,3)), 
+                    "X"),
+            1e-10
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [3,2], 
+                    np.ones((2,2)),
+                    np.ones((3,1)),
+                    np.ones((3,2)), 
+                    "X"),
+            1e-10
+        ),
+    ],
+)
+def test_evaluate_eigenstates(model, atol):
+    """
+        If |ψ> is an eigenstate of H then:
+            H ψ = E ψ
+        Thus:
+            Var_|ψ> (H) = <ψ| H²|ψ> - <ψ| H |ψ>² = E² - E² = 0 
+
+        Note: this kind of test could potentially be more efficent by storing & loading the eigenstates
+    """
+    model.set_simulator("cirq", {"dtype": np.complex128})
+    variance_obj = Variance(model)
+    
+    # If model is Ising or ANNNI, we can use sparse diagonalisation
+    if False:#isinstance(model, Ising) or isinstance(model, ANNNI):
+        converter_obj = Converter()
+        scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(model.hamiltonian() , dtype=np.float64)
+        model.diagonalise(solver = "scipy.sparse", 
+                            solver_options= { "k": 1},
+                            matrix=scipy_crsmatrix)
+    else:
+        model.diagonalise(solver_options= { "k": 1})
+
+    
+    assert abs(variance_obj.evaluate(wavefunction=model.eig_vec[:,0])) < atol
+
+
 def test_json():
     model = Ising("GridQubit", [2, 2], np.ones((1, 2)), np.ones((2, 1)), np.ones((2, 2)))
     model.set_simulator("cirq")
@@ -607,19 +683,3 @@ def test_evaluate_assert():
     variance_obj = Variance(model,np.array([1,0]), cirq.Z(cirq.LineQubit(0)))
     with pytest.raises(AssertionError):
         variance_obj.evaluate() 
-"""
-def test_exception():
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", {"p": 5})
-    with pytest.raises(AssertionError):
-        assert Correlation(ising, "Foo")
-
-def test_exception():
-    ising = Ising("GridQubit", [1, 2], np.ones((0, 2)), np.ones((1, 1)), np.ones((1, 2)))
-    ising.set_simulator("qsim")
-    ising.set_circuit("qaoa", {"p": 5})
-    obj = Correlation(ising, "Z")
-    with pytest.raises(AssertionError):
-        assert obj.evaluate(np.zeros(shape=(5, 5, 5)))
-"""
