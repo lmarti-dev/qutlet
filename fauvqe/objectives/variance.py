@@ -51,10 +51,12 @@ class Variance(AbstractExpectationValue):
         self._wavefunction=wavefunction
         super().__init__(model, observables)
     
+    #ToDo unfy order here with AbStractExpectationValue
     def evaluate(   self, 
                     observables: Optional[Union[cirq.PauliSum, List[cirq.PauliSum]]]=None,
                     wavefunction: np.ndarray=None, 
-                    _qubit_order: Mapping[cirq.ops.pauli_string.TKey, int]=None)-> Union[np.float64, List[np.float64]]:
+                    _qubit_order: Mapping[cirq.ops.pauli_string.TKey, int]=None,
+                    atol = 1e-7)-> Union[np.float64, List[np.float64]]:
         #Returns variance of observables with respect to given wavefunction
         #E.g. variance of X with respect to X or Z eigen state
         #or variance of ground state |\psi_0> w.r.t. a subsystem Hamiltonian parition
@@ -67,34 +69,71 @@ class Variance(AbstractExpectationValue):
         if(wavefunction is None):
             if(self._wavefunction is None):
                 # This sets the initial wavefunction to |00 ... 00 >
-                wavefunction = 0 
+                if isinstance(self._model.n,int):
+                    _N=2**self._model.n
+                else:
+                    _N=2**np.multiply(*self._model.n)
+                wavefunction = np.zeros((_N) ,dtype= np.complex64)
+                wavefunction[0]=1
             else:
                 # Use the stored wavefunction if no other wavefunction was given
                 wavefunction = self._wavefunction.view()
 
-        if(_qubit_order is None):
-            _qubit_order = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
+        # Defined in AbstractExpectationValue already:
+        #if(_qubit_order is None):
+        #    _qubit_order = {self._model.qubits[k][l]: int(k*self._model.n[1] + l) for l in range(self._model.n[1]) for k in range(self._model.n[0])}
 
         #Implement <O²> - <O>²
         if isinstance(observables, list):
+            print([observable for observable in observables])
+            return [(super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observable**2)
+                    -super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observable)**2) 
+                    for observable in observables]
             square_observables = [observables[i]**2 for i in range(len(observables))]
         else:
-            square_observables= observables**2
+            return (super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observables**2)
+                -super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observables)**2)
 
-        return np.real(np.array(self._model.simulator.simulate_expectation_values(
-                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-                    qubit_order = _qubit_order,
-                    observables=square_observables, # This allows for a list of observables
-                    initial_state=wavefunction,
-                    ))
-                    - np.power(
-                        np.array(self._model.simulator.simulate_expectation_values(
-                            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
-                            qubit_order = _qubit_order,
-                            observables=observables, # This allows for a list of observables
-                            initial_state=wavefunction,
-                            )),
-                        2))
+        #evaluate(   self, 
+        #            wavefunction: np.ndarray, 
+        #            q_map: Mapping[cirq.ops.pauli_string.TKey, int]=None, 
+        #            atol: float = 1e-7,
+        #            observable = None)
+        return (super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observables**2)
+                -super().evaluate(wavefunction= wavefunction,
+                                q_map = _qubit_order,
+                                atol = atol,
+                                observable = observables)**2)
+        #This is numerically un reliable:
+        #return np.real(np.array(self._model.simulator.simulate_expectation_values(
+        #            program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+        #            qubit_order = _qubit_order,
+        #            observables=square_observables, # This allows for a list of observables
+        #            initial_state=wavefunction,
+        #            ))
+        #            - np.power(
+        #                np.array(self._model.simulator.simulate_expectation_values(
+        #                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+        #                    qubit_order = _qubit_order,
+        #                    observables=observables, # This allows for a list of observables
+        #                    initial_state=wavefunction,
+        #                    )),
+        #                2))
 
     def to_json_dict(self) -> Dict:
         return {
