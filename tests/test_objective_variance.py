@@ -596,6 +596,24 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
                     "X"),
             1e-10
         ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    np.ones((1,2)),
+                    0.9*np.ones((2,1)),
+                    np.ones((2,2)), 
+                    "Z"),
+            1e-10
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [2,2], 
+                    np.ones((1,2)),
+                    0.9*np.ones((2,1)),
+                    np.ones((2,2)), 
+                    "X"),
+            1e-10
+        ),
         # Currently this fails
         (
             Ising(  "GridQubit", 
@@ -624,6 +642,24 @@ def test_evaluate_H_partitions_higheffort(n, j_v, j_h, h,basics_options1, basics
                     "X"),
             1e-10
         ),
+        (
+            Ising(  "GridQubit", 
+                    [1,6], 
+                    np.ones((0,6)),
+                    np.ones((1,5)),
+                    np.ones((1,6)), 
+                    "X"),
+            1e-10
+        ),
+        (
+            Ising(  "GridQubit", 
+                    [6,1], 
+                    np.ones((5,1)),
+                    np.ones((6,0)),
+                    np.ones((6,1)), 
+                    "X"),
+            1e-10
+        ),
     ],
 )
 def test_evaluate_eigenstates(model, atol):
@@ -637,18 +673,47 @@ def test_evaluate_eigenstates(model, atol):
     """
     model.set_simulator("cirq", {"dtype": np.complex128})
     variance_obj = Variance(model)
+    exp_obj=ExpectationValue(model)
     
     # If model is Ising or ANNNI, we can use sparse diagonalisation
     if False:#isinstance(model, Ising) or isinstance(model, ANNNI):
         converter_obj = Converter()
         scipy_crsmatrix = converter_obj.cirq_paulisum2scipy_crsmatrix(model.hamiltonian() , dtype=np.float64)
         model.diagonalise(solver = "scipy.sparse", 
-                            solver_options= { "k": 1},
+                            solver_options= { "k": 3},
                             matrix=scipy_crsmatrix)
     else:
-        model.diagonalise(solver_options= { "k": 1})
+        model.diagonalise(solver_options= { "k": 3})
 
-    
+    print("Exact diagonalisation Es: \t{}".format(np.multiply(*model.n)*model.eig_val))
+    print("Exact diagonalisation Es²: \t{}".format((np.multiply(*model.n)*model.eig_val)**2))
+
+    # Copied from Variance class
+    _qubit_order = {model.qubits[k][l]: int(l*model.n[0] + k) for l in range(model.n[1]) for k in range(model.n[0])}
+    _qubit_order = {model.qubits[k][l]: int(k*model.n[1] + l) for l in range(model.n[1]) for k in range(model.n[0])}
+    print("qubit_order: {}".format(_qubit_order))
+
+    _tmp_E=[model.simulator.simulate_expectation_values(
+                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+                    qubit_order = _qubit_order,
+                    observables=model._hamiltonian, # This allows for a list of observables
+                    initial_state=model.eig_vec[:,i],
+                    ) for i in range(len(model.eig_vec[0,:]))]
+    print("<ψ|H|ψ> from Variance: \t\t{}".format(_tmp_E))
+    print("<ψ|H|ψ>² from Variance: \t{}".format(np.array(_tmp_E).T**2))
+
+    _tmp_Eb=[exp_obj.evaluate(model.eig_vec[:,i]) for i in range(len(model.eig_vec[0,:]))]
+    print("<ψ|H|ψ> from ExpectationValue: \t\t{}".format(np.multiply(*model.n)*_tmp_Eb))
+    print("<ψ|H|ψ>² from ExpectationValue: \t{}".format((np.multiply(*model.n)*np.array(_tmp_Eb))**2))
+
+    _tmp_E2=[model.simulator.simulate_expectation_values(
+                    program = cirq.Circuit(), # to keep previous behaviour use empty circuit
+                    qubit_order = _qubit_order,
+                    observables=model._hamiltonian**2, # This allows for a list of observables
+                    initial_state=model.eig_vec[:,i],
+                    ) for i in range(len(model.eig_vec[0,:]))]
+    print("<ψ|H²|ψ>: \t\t\t{}".format(_tmp_E2))
+
     assert abs(variance_obj.evaluate(wavefunction=model.eig_vec[:,0])) < atol
 
 
