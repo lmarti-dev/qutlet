@@ -10,11 +10,6 @@ from fauvqe.utilities.generic import index_bits
 
 
 class FermiHubbardModel(FermionicModel):
-    """
-    implements VQEs on the Fermi-Hubbard Hamiltonian for a square lattice, using openfermion
-
-    """
-
     # bare * causes code to fail if everything is not keyworded
     def __init__(
         self,
@@ -58,7 +53,7 @@ class FermiHubbardModel(FermionicModel):
             # considering how abstractmodel is setup,
             n = (self.y_dimension, 2 * self.x_dimension)
         elif encoding_options["encoding_name"] in (
-            "local_fermionic_encoding",
+            "general_fermionic_encoding",
             "derby_klassen",
         ):
             raise NotImplementedError
@@ -111,53 +106,45 @@ class FermiHubbardModel(FermionicModel):
         if not self.fock_hamiltonian.terms:
             self.fock_hamiltonian = of.FermionOperator.identity()
 
+    def gaussian_state_circuit(self, initial_state):
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
+        op_tree = of.prepare_gaussian_state(
+            qubits=self.flattened_qubits,
+            quadratic_hamiltonian=quadratic_hamiltonian,
+            occupied_orbitals=list(range(sum(self.Nf))),
+            initial_state=initial_state,
+        )
+        return op_tree
+
+    def slater_state_circuit(self, initial_state):
+        _, unitary_rows = self.diagonalize_non_interacting_hamiltonian()
+        op_tree = of.prepare_slater_determinant(
+            qubits=self.flattened_qubits,
+            slater_determinant_matrix=unitary_rows[: sum(self.Nf), :],
+            initial_state=initial_state,
+        )
+        return op_tree
+
     def _get_initial_state(
         self,
         name: str,
         initial_state: Union[int, Sequence[int]],
         Nf: Union[int, Sequence[int]],
     ) -> cirq.OP_TREE:
-        self.Nf = Nf
-        self.initial_state_name = name
-        if name == "none":
-            return []
-        if name == "gaussian":
-            quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
-                self.fock_hamiltonian
+        try:
+            return super()._get_initial_state(
+                name=name, initial_state=initial_state, Nf=Nf
             )
-            op_tree = of.prepare_gaussian_state(
-                qubits=self.flattened_qubits,
-                quadratic_hamiltonian=quadratic_hamiltonian,
-                occupied_orbitals=list(range(Nf)),
-                initial_state=initial_state,
-            )
-            return op_tree
-        elif name == "slater":
-            _, unitary_rows = self.diagonalize_non_interacting_hamiltonian()
-
-            op_tree = of.prepare_slater_determinant(
-                qubits=self.flattened_qubits,
-                slater_determinant_matrix=unitary_rows[:Nf, :],
-                initial_state=initial_state,
-            )
-            return op_tree
-        elif name == "computational" or name == "hadamard":
-            if initial_state is None:
-                if Nf is None:
-                    raise ValueError("initial_state and Nf cannot both be None")
-                else:
-                    initial_state = [x for x in range(Nf)]
-            if isinstance(initial_state, int):
-                # convert int to bin and then index
-                initial_state = index_bits(bin(initial_state))
-            op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
-            self.Nf = len(initial_state)
-            if name == "hadamard":
-                # TODO: change this to preserve Nf and N spin up
-                op_tree.extend([cirq.H(q) for q in self.flattened_qubits])
-            return op_tree
-        else:
-            raise NameError("No initial state named {}".format(name))
+        # the state was not in the initial states common to all fermionic models
+        except NameError:
+            if name == "gaussian":
+                return self.gaussian_state_circuit(initial_state=initial_state)
+            elif name == "slater":
+                return self.slater_state_circuit(initial_state=initial_state)
+            else:
+                raise NameError("No initial state named {name}".format(name))
 
     def get_quadratic_hamiltonian_wrapper(self, fermion_hamiltonian):
         # not sure this is correct

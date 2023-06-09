@@ -188,6 +188,13 @@ def jw_eigenspectrum_at_particle_number(
         sparse_operator, particle_number, n_qubits
     )
     # Compute eigenvalues and eigenvectors
+    if restricted_operator.size == 1:
+        print(
+            "Restricted operator has shape {}, not solving sparsely".format(
+                restricted_operator.shape
+            )
+        )
+        sparse = False
     if sparse:
         eigvals, eigvecs = scipy.sparse.linalg.eigsh(
             restricted_operator, k=k, which="SA"

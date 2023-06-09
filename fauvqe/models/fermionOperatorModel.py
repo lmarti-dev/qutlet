@@ -32,23 +32,12 @@ class FermionOperatorModel(FermionicModel):
         self.fock_hamiltonian = self.fermion_operator
 
     def _get_initial_state(
-        self, name: str, initial_state: Union[int, Sequence[int]], Nf
+        self,
+        name: str,
+        initial_state: Union[int, Sequence[int]],
+        Nf: Union[int, Sequence[int]],
     ) -> cirq.OP_TREE:
-        self.Nf = Nf
-        if name == "none":
-            return []
-        elif name == "computational" or name == "hadamard":
-            if initial_state is None:
-                raise ValueError("initial_state cannot be None")
-            if isinstance(initial_state, int):
-                # convert int to bin and then index
-                initial_state = index_bits(bin(initial_state))
-            op_tree = [cirq.X(self.flattened_qubits[ind]) for ind in initial_state]
-            if name == "hadamard":
-                op_tree.extend([cirq.H(q) for q in self.flattened_qubits])
-            return op_tree
-        else:
-            raise NameError("No initial state named {}".format(name))
+        return super()._get_initial_state(name=name, initial_state=initial_state, Nf=Nf)
 
     def copy(self):
         self_copy = copy.deepcopy(self)

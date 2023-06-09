@@ -37,12 +37,13 @@ class ScipyOptimisers(Optimiser):
         method_options: dict = {},
     ):
         self.save_each_function_call = save_each_function_call
-        self.minimize_options = minimize_options
-        self.method_options = {}
-        self.method_options.update(method_options)
+        self._minimize_options = {}
+        self._minimize_options.update(minimize_options)
+        self._method_options = {}
+        self._method_options.update(method_options)
         self.initial_state = initial_state
         self.initial_params = initial_params
-        self.function_calls_count = 0
+        self._function_calls_count = 0
         super().__init__()
 
     def simulate(self, x):
@@ -55,7 +56,7 @@ class ScipyOptimisers(Optimiser):
         return wf
 
     def fun(self, x):
-        self.function_calls_count += 1
+        self._function_calls_count += 1
         wf = self.simulate(x)
         objective_value = self._objective.evaluate(wavefunction=wf)
         if self.save_each_function_call:
@@ -88,14 +89,14 @@ class ScipyOptimisers(Optimiser):
         scipy_res = minimize(
             self.fun,
             x0,
-            **self.minimize_options,
+            **self._minimize_options,
             callback=callback,
-            options=self.method_options
+            options=self._method_options
         )
         # add the last step when the simulation is done
         x_final = scipy_res.x
         process_step(x_final)
-        print("function calls: ", self.function_calls_count)
+        print("function calls: ", self._function_calls_count)
         return self._fauvqe_res
 
     def from_json_dict(self) -> Dict:

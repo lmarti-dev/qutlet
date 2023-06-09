@@ -8,7 +8,7 @@ import openfermion as of
 import itertools
 import scipy
 from math import prod
-from typing import Tuple
+from typing import Tuple, Union
 
 # necessary for the full loop
 from fauvqe.optimisers.optimiser import Optimiser
@@ -18,10 +18,268 @@ import fauvqe.utilities.circuit
 import fauvqe.utilities.fermion
 import fauvqe.utilities.generic
 
+import multiprocessing as mp
+from fauvqe.models.abstractmodel import AbstractModel
 
-def print_if_verbose(s: str, verbose: bool):
-    if verbose:
-        print(s)
+
+class ADAPT:
+    def __init__(
+        self,
+        model: AbstractModel,
+        gate_pool_options: Union[dict, list],
+        measure: dict,
+        preprocess: bool,
+        verbose: bool,
+    ):
+        self.model = model
+        self.measure = measure
+        self.verbose = verbose
+        self.preprocess = preprocess
+        if isinstance(gate_pool_options, list):
+            self.pool_name = "custom"
+            self.gate_pool = gate_pool_options
+        elif isinstance(gate_pool_options, dict):
+            self.pool_name = gate_pool_options.pop("pool_name", None)
+            self.gate_pool = self.pick_gate_pool(
+                pool_name=self.pool_name, gate_pool_options=gate_pool_options
+            )
+
+        self.verify_gate_pool(self.gate_pool)
+        if self.preprocess:
+            self.preprocessed_ops = self.preprocess_gate_gradients()
+
+    def verify_gate_pool(self, gate_pool):
+        self.verbose_print("Verifying gate pool, {} gates".format(len(gate_pool)))
+        for op in gate_pool:
+            opmat = op.matrix(qubits=self.model.flattened_qubits)
+            if np.any(np.conj(np.transpose(opmat)) != -opmat):
+                raise ValueError("Expected op to be anti-hermitian")
+
+    def measure_gradient(self, ind: int, trial_state: np.ndarray):
+        self.verbose_print(
+            "computing {g} gradient, preproc: {p}".format(
+                g=self.gate_pool[ind], p=self.preprocess
+            )
+        )
+        if self.measure["name"] == "energy":
+            if self.preprocess:
+                grad = compute_preprocessed_energy_gradient(
+                    trial_state=trial_state,
+                    preprocessed_energy_op=self.preprocessed_ops[ind],
+                )
+            else:
+                grad = compute_energy_gradient(
+                    ham=self.model.hamiltonian.matrix(
+                        qubits=self.model.flattened_qubits
+                    ),
+                    op=self.gate_pool[ind].matrix(qubits=self.model.flattened_qubits),
+                    trial_state=trial_state,
+                    full=True,
+                    eps=1e-5,
+                    sparse=False,
+                )
+        if self.measure["name"] == "fidelity":
+            if self.preprocess:
+                grad = compute_preprocessed_fidelity_gradient(
+                    trial_state=trial_state,
+                    preprocessed_fid_state=self.preprocessed_ops[ind],
+                )
+            else:
+                grad = compute_fidelity_gradient(
+                    op=self.gate_pool[ind].matrix(qubits=self.model.flattened_qubits),
+                    trial_state=trial_state,
+                    target_state=self.measure["target_state"],
+                )
+        self.verbose_print("gradient: {:.10f}".format(grad))
+        return grad
+
+    def verbose_print(self, s: str):
+        if self.verbose:
+            print(s)
+
+    def pick_gate_pool(self, pool_name, gate_pool_options):
+        if pool_name == "pauli_string":
+            set_options = {"qubits": self.model.flattened_qubits}
+            set_options.update(gate_pool_options)
+            return pauli_string_set(**set_options)
+        elif pool_name == "hamiltonian":
+            return hamiltonian_paulisum_set(model=self.model)
+        elif pool_name == "fermionic":
+            return fermionic_paulisum_set(
+                model=self.model, set_options=gate_pool_options
+            )
+
+    def preprocess_gate_gradients(self):
+        self.verbose_print(
+            "Preprocessing {n} gates of {p} pool for {m}".format(
+                n=len(self.gate_pool), p=self.pool_name, m=self.measure["name"]
+            )
+        )
+        preprocess_opts = {"ham": self.model.hamiltonian}
+        preprocess_ops = []
+        if self.measure["name"] == "energy":
+            preprocess_fn = preprocess_for_energy
+        elif self.measure["name"] == "fidelity":
+            preprocess_fn = preprocess_for_fidelity
+            preprocess_opts.update(
+                {
+                    "target_state": self.measure["target_state"],
+                }
+            )
+        for op in self.gate_pool:
+            preprocess_ops.append(preprocess_fn(op=op, **preprocess_opts))
+        self.verbose_print("Preprocessing over")
+        return preprocess_ops
+
+    def get_best_gate(
+        self,
+        tol: float,
+        trial_state: np.ndarray = None,
+        initial_state: np.ndarray = None,
+        n_jobs: int = 1,
+    ):
+        # we can set the trial wf (before computing the gradient of the energy)
+        # if we want some specific psi to apply the gate to.
+        # not very useful for now, might come in handy later.
+        # initial_state is the state to input in the circuit
+        if trial_state is None:
+            circ = fauvqe.utilities.circuit.populate_empty_qubits(model=self.model)
+            trial_state = self.model.simulator.simulate(
+                circ,
+                param_resolver=fauvqe.utilities.circuit.get_param_resolver(
+                    model=self.model, param_values=self.model.circuit_param_values
+                ),
+                initial_state=initial_state,
+            ).final_state_vector
+
+        grad_values = []
+        self.verbose_print("Gate pool size: {}".format(len(self.gate_pool)))
+        self.verbose_print(
+            "measure chosen: {}, preprocessing: {}".format(
+                self.measure["name"], self.preprocess
+            )
+        )
+        # TODO: implement multiprocessing
+        if n_jobs > 1:
+            pass
+        for ind in range(len(self.gate_pool)):
+            grad = self.measure_gradient(ind=ind, trial_state=trial_state)
+            grad_values.append(grad)
+        max_index = np.argmax(grad_values)
+        best_ps = self.gate_pool[max_index]
+        if tol is not None and grad_values[max_index] < tol:
+            self.verbose_print(
+                "gradient ({grad:.2f}) is smaller than tol ({tol}), exiting".format(
+                    grad=grad_values[max_index], tol=tol
+                )
+            )
+            # iteration process is done, gradient < tol, or if stopping is set with max depth, continue
+            return None
+        else:
+            self.verbose_print(
+                "gradient ({grad}) is larger than tolerance: ({tol}), continuing".format(
+                    grad=grad_values[max_index], tol=tol
+                ),
+            )
+            self.verbose_print("best Pauli sum: {psum}".format(psum=best_ps))
+
+            param_name = param_name_from_depth(circ=self.model.circuit)
+            theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
+            return exp_from_pauli_sum(pauli_sum=best_ps, theta=theta), theta
+
+    def append_best_gate_to_circuit(
+        self,
+        tol: float = 1e-15,
+        trial_state: np.ndarray = None,
+        initial_state: np.ndarray = None,
+    ) -> bool:
+        res = self.get_best_gate(
+            tol=tol,
+            trial_state=trial_state,
+            initial_state=initial_state,
+        )
+        if res is None:
+            self.verbose_print("No best gate found or threshold reached, exiting")
+            return True
+        else:
+            exp_gates, theta = res
+            for gate in exp_gates:
+                self.model.circuit += gate
+            self.model.circuit_param.append(theta)
+            fauvqe.utilities.circuit.match_param_values_to_symbols(
+                model=self.model,
+                symbols=self.model.circuit_param,
+                default_value="random",
+            )
+            self.verbose_print(
+                "best gate found and added: {best_gate}".format(best_gate=exp_gates)
+            )
+            return False
+
+    # pick random gate for benchmarking
+    def append_random_gate_to_circuit(
+        self,
+        default_value: str = "random",
+    ):
+        ind = np.random.choice(len(self.gate_pool))
+        param_name = param_name_from_depth(circ=self.model.circuit)
+        theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
+        exp_gates = exp_from_pauli_sum(pauli_sum=self.gate_pool[ind], theta=theta)
+        for gate in exp_gates:
+            self.model.circuit += gate
+        self.model.circuit_param.append(theta)
+        fauvqe.utilities.circuit.match_param_values_to_symbols(
+            model=self.model,
+            symbols=self.model.circuit_param,
+            default_value=default_value,
+        )
+        self.verbose_print("adding random gate: {rgate}".format(rgate=exp_gates))
+        return False
+
+    def loop(
+        self,
+        n_steps: int,
+        optimiser: Optimiser,
+        objective: AbstractExpectationValue,
+        trial_state: np.ndarray = None,
+        initial_state: np.ndarray = None,
+        callback: callable = None,
+    ) -> Tuple[OptimisationResult, AbstractModel]:
+        result = None
+        for step in range(n_steps):
+            threshold_reached = self.append_best_gate_to_circuit(
+                trial_state=trial_state, initial_state=initial_state
+            )
+            # if the gradient is above the threshold, go on
+            if threshold_reached == False:
+                self.verbose_print("optimizing {}-th step".format(step + 1))
+                # optimize to get a result everytime
+                self.model.circuit = fauvqe.utilities.circuit.populate_empty_qubits(
+                    model=self.model
+                )
+                result = optimiser.optimise(objective=objective)
+                self.model.circuit_param_values = result.get_latest_step().params
+                print(
+                    "circuit depth: {d}, number of params: {p}".format(
+                        d=fauvqe.utilities.circuit.depth(self.model.circuit),
+                        p=len(self.model.circuit_param),
+                    )
+                )
+                if callback is not None:
+                    callback(result)
+            else:
+                print("treshold reached, exiting")
+                break
+
+        return result
+
+    def pool_gate_measure_jobs(n_jobs, data):
+        pool = mp.Pool(n_jobs)
+        result = pool.map(x, data)
+
+
+def param_name_from_depth(circ: cirq.Circuit) -> str:
+    return "p_" + str(fauvqe.utilities.circuit.depth(circ))
 
 
 def pauli_string_set(
@@ -176,131 +434,6 @@ def fermionic_paulisum_set(model: FermionicModel, set_options: dict):
     return paulisum_set
 
 
-def compute_lowrank(
-    ham: np.ndarray,
-    op: np.ndarray,
-    wf: np.ndarray,
-):
-    # this should be the lowrank method
-    pass
-
-
-def preprocess_for_fidelity(op: np.ndarray, true_wf: np.ndarray, eps: float = 1e-5):
-    # A * |gs>
-    ket = op.dot(true_wf)
-    # e^(-theta A)A|gs>
-    preprocessed_fid_state = scipy.sparse.linalg.expm_multiply(A=-eps * op, B=ket)
-    return preprocessed_fid_state
-
-
-def compute_preprocessed_fidelity_gradient(
-    wf: np.ndarray, preprocessed_fid_state: np.ndarray, verbose: bool = False
-) -> float:
-    # preprocessed_fid_op is e^(-theta A) A |gs>
-    n_qubits = int(np.log2(wf.shape[0]))
-    qid_shape = (2,) * n_qubits
-    fidelity = cirq.fidelity(wf, preprocessed_fid_state, qid_shape=qid_shape)
-    print_if_verbose(
-        "preprocessed fidelity gradient: {}".format(fidelity), verbose=verbose
-    )
-    return fidelity
-
-
-def compute_fidelity_gradient(
-    op: np.ndarray,
-    wf: np.ndarray,
-    true_wf: np.ndarray,
-    eps: float = 1e-5,
-    verbose: bool = False,
-) -> float:
-    # fidelity is |<psi|e^(-theta A)|gs>|
-    # then df/dthetha = -<psi|Ae^(-theta A)|gs>
-    #                 = -<psi|e^(-theta A)A|gs>
-    # here we compute (e^(theta A)|ket>)*
-    bra = -scipy.sparse.linalg.expm_multiply(A=eps * op, B=wf)
-    ket = op.dot(true_wf)
-    n_qubits = int(np.log2(bra.shape[0]))
-    qid_shape = (2,) * n_qubits
-    fidelity = cirq.fidelity(bra.conj(), ket, qid_shape=qid_shape)
-    print_if_verbose("fidelity gradient: {}".format(fidelity), verbose=verbose)
-    return fidelity
-
-
-def preprocess_for_energy(op: np.ndarray, ham: np.ndarray):
-    comm = np.matmul(ham, op)
-    return comm
-
-
-def compute_preprocessed_energy_gradient(
-    wf: np.ndarray, preprocessed_energy_op: np.ndarray, verbose: bool = False
-) -> float:
-    # dE/dt = 2Re<ps|HA|ps>
-    ket = preprocessed_energy_op.dot(wf)
-    bra = wf.conj()
-    grad = np.abs(2 * np.real(np.dot(bra, ket)))
-    print_if_verbose("gradient with preprocessing: {}".format(grad), verbose=verbose)
-    return grad
-
-
-def compute_energy_gradient(
-    ham: np.ndarray,
-    op: np.ndarray,
-    wf: np.ndarray,
-    full: bool = True,
-    eps: float = 1e-5,
-    verbose: bool = False,
-    sparse: bool = False,
-) -> float:
-    if sparse:
-        if not full:
-            # in the noiseless case dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps> (eval at theta=0)
-            spham = scipy.sparse.csc_matrix(ham)
-            spop = scipy.sparse.csc_matrix(op)
-            spwf = scipy.sparse.csc_matrix(wf)
-            comm = spham @ spop
-            ket = comm.dot(spwf.transpose())
-            bra = spwf.conj()
-            grad = float(np.abs(2 * np.real((bra @ ket).toarray())))
-        else:
-            # <p|exp(-eps*operator)[H,A(k)]exp(eps*operator)|p>
-            # = <p|exp(-eps*operator)(HA(k) - A(k)H)exp(eps*operator)|p> = dE/dk
-            # finite diff (f(theta + eps) - f(theta - eps))/ 2eps but theta = 0
-            # if A is anti hermitian
-            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
-            # if A is hermitian the theta needs to be multiplied by 1j
-            wfexp = scipy.sparse.linalg.expm_multiply(
-                A=op, B=wf, start=-eps, stop=eps, num=2, endpoint=True
-            )
-            spham = scipy.sparse.csc_matrix(ham)
-            # exp(-theta A)|psi>
-            spwf0 = scipy.sparse.csc_matrix(wfexp[0, :]).transpose()
-            # # exp(theta A)|psi>
-            spwf1 = scipy.sparse.csc_matrix(wfexp[1, :]).transpose()
-            grad_minus = (spwf1.getH() @ spham @ spwf1).toarray()
-            grad_plus = (spwf0.getH() @ spham @ spwf0).toarray()
-            grad = float(np.abs((grad_minus - grad_plus) / (2 * eps)))
-    # dense methods (get it?)
-    else:
-        if not full:
-            # dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps>
-            comm = np.matmul(ham, op)
-            grad = np.abs(2 * np.real(np.vdot(wf.T, comm.dot(wf))))
-        else:
-            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
-            wfexp = scipy.sparse.linalg.expm_multiply(
-                A=op, B=wf, start=-eps, stop=eps, num=2, endpoint=True
-            )
-            wfexp_plus = wfexp[1, :]
-            wfexp_minus = wfexp[0, :]
-            grad_minus = np.vdot(wfexp_minus, ham @ wfexp_minus)
-            grad_plus = np.vdot(wfexp_plus, ham @ wfexp_plus)
-            grad = np.abs((grad_minus - grad_plus) / (2 * eps))
-
-    if grad > 0:
-        print_if_verbose("gradient: {:.10f}".format(grad), verbose=verbose)
-    return grad
-
-
 def filter_out_identity(psum):
     psum_out = []
     if isinstance(psum, cirq.PauliString):
@@ -319,39 +452,6 @@ def filter_out_identity(psum):
     return cirq.PauliSum.from_pauli_strings(psum_out)
 
 
-def gate_measure(
-    measure: str, wf: np.ndarray, op: np.ndarray, grad_opts: dict, verbose: bool = False
-) -> float:
-    if measure == "energy":
-        # grad_opts has (ham,full,eps,sparse)
-        return compute_energy_gradient(op=op, wf=wf, verbose=verbose, **grad_opts)
-    elif measure == "fidelity":
-        # grad_opts has (true_wf,eps)
-        return compute_fidelity_gradient(op=op, wf=wf, verbose=verbose, **grad_opts)
-
-
-def preprocess_for_measure(measure: str, op: np.ndarray, preprocess_opts: dict):
-    if measure == "energy":
-        # preprocess_opts has (ham)
-        return preprocess_for_energy(op=op, **preprocess_opts)
-    elif measure == "fidelity":
-        # preprocess_opts has (true_wf,eps)
-        return preprocess_for_fidelity(op=op, **preprocess_opts)
-
-
-def preprocessed_gate_measure(
-    measure: str, preprocessed_op: np.ndarray, wf: np.ndarray, verbose: bool = False
-) -> float:
-    if measure == "energy":
-        return compute_preprocessed_energy_gradient(
-            wf=wf, preprocessed_energy_op=preprocessed_op, verbose=verbose
-        )
-    elif measure == "fidelity":
-        return compute_preprocessed_fidelity_gradient(
-            wf=wf, preprocessed_fid_state=preprocessed_op, verbose=verbose
-        )
-
-
 def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta):
     psum_no_identity = filter_out_identity(pauli_sum)
     # PauliSumExponential takes cares of hermitian/anti-hermitian matters
@@ -361,227 +461,114 @@ def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta):
     # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not pauli_str_is_identity(pstr)]
 
 
-def get_best_gate(
-    model: AbstractModel,
-    paulisum_set: list,
-    param_name: str,
-    tol: float,
-    trial_wf: np.ndarray = None,
-    initial_state: np.ndarray = None,
-    verbose: bool = False,
-    preprocess: bool = False,
-    measure: str = "energy",
-    preprocessed_ps_set: list = [],
-    grad_opts: dict = {},
+def preprocess_for_energy(ham: np.ndarray, op: np.ndarray):
+    comm = np.matmul(ham, op)
+    return comm
+
+
+def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
+    # A * |gs>
+    preprocessed_fid_state = op.dot(target_state)
+    return preprocessed_fid_state
+
+
+def compute_lowrank(
+    ham: np.ndarray,
+    op: np.ndarray,
+    wf: np.ndarray,
 ):
-    # we can set the trial wf (before computing the gradient of the energy)
-    # if we want some specific psi to apply the gate to.
-    # not very useful for now, might come in handy later.
-    # initial_state is the state to input in the circuit
-    if trial_wf is None:
-        circ = fauvqe.utilities.circuit.populate_empty_qubits(model=model)
-        trial_wf = model.simulator.simulate(
-            circ,
-            param_resolver=fauvqe.utilities.circuit.get_param_resolver(
-                model=model, param_values=model.circuit_param_values
-            ),
-            initial_state=initial_state,
-        ).final_state_vector
+    # this should be the lowrank method
+    pass
 
-    grad_values = []
-    # grad_values_full = []
-    print_if_verbose("number of gates: {}".format(len(paulisum_set)), verbose=verbose)
-    print_if_verbose(
-        "measure chosen: {}, preprocessing: {}".format(measure, preprocess),
-        verbose=verbose,
-    )
-    for ind, ps in enumerate(paulisum_set):
-        op = ps.matrix(qubits=model.flattened_qubits)
-        if np.any(np.conj(np.transpose(op)) != -op):
-            raise ValueError("Expected op to be anti-hermitian")
-        print_if_verbose("gate: {}".format(ps), verbose=verbose)
 
-        if preprocess:
-            gradient_measure = preprocessed_gate_measure(
-                measure=measure,
-                preprocessed_op=preprocessed_ps_set[ind],
-                wf=trial_wf,
-                verbose=verbose,
-            )
+def compute_preprocessed_fidelity_gradient(
+    trial_state: np.ndarray, preprocessed_fid_state: np.ndarray
+) -> float:
+    # preprocessed_fid_op is e^(-theta A) A |gs>
+    n_qubits = int(np.log2(trial_state.shape[0]))
+    qid_shape = (2,) * n_qubits
+    fidelity = cirq.fidelity(trial_state, preprocessed_fid_state, qid_shape=qid_shape)
+    return fidelity
+
+
+def compute_fidelity_gradient(
+    op: np.ndarray,
+    trial_state: np.ndarray,
+    target_state: np.ndarray,
+) -> float:
+    # fidelity is |<psi|e^(-theta A)|gs>|
+    # then df/dthetha = -<psi|Ae^(-theta A)|gs>
+    #                 = -<psi|e^(-theta A)A|gs>
+    # at theta=0, we have = -<psi|A|gs>
+    ket = op.dot(target_state)
+    n_qubits = int(np.log2(trial_state.shape[0]))
+    qid_shape = (2,) * n_qubits
+
+    fidelity = cirq.fidelity(-trial_state.conj(), ket, qid_shape=qid_shape)
+    return fidelity
+
+
+def compute_preprocessed_energy_gradient(
+    trial_state: np.ndarray, preprocessed_energy_op: np.ndarray
+) -> float:
+    # dE/dt = 2Re<ps|HA|ps>
+    ket = preprocessed_energy_op.dot(trial_state)
+    bra = trial_state.conj()
+    grad = np.abs(2 * np.real(np.dot(bra, ket)))
+    return grad
+
+
+def compute_energy_gradient(
+    ham: np.ndarray,
+    op: np.ndarray,
+    trial_state: np.ndarray,
+    full: bool = True,
+    eps: float = 1e-5,
+    sparse: bool = False,
+) -> float:
+    if sparse:
+        if not full:
+            # in the noiseless case dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps> (eval at theta=0)
+            spham = scipy.sparse.csc_matrix(ham)
+            spop = scipy.sparse.csc_matrix(op)
+            spwf = scipy.sparse.csc_matrix(trial_state)
+            comm = spham @ spop
+            ket = comm.dot(spwf.transpose())
+            bra = spwf.conj()
+            grad = float(np.abs(2 * np.real((bra @ ket).toarray())))
         else:
-            gradient_measure = gate_measure(
-                measure=measure,
-                wf=trial_wf,
-                op=op,
-                grad_opts=grad_opts,
-                verbose=verbose,
+            # <p|exp(-eps*operator)[H,A(k)]exp(eps*operator)|p>
+            # = <p|exp(-eps*operator)(HA(k) - A(k)H)exp(eps*operator)|p> = dE/dk
+            # finite diff (f(theta + eps) - f(theta - eps))/ 2eps but theta = 0
+            # if A is anti hermitian
+            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
+            # if A is hermitian the theta needs to be multiplied by 1j
+            wfexp = scipy.sparse.linalg.expm_multiply(
+                A=op, B=trial_state, start=-eps, stop=eps, num=2, endpoint=True
             )
-
-        grad_values.append(gradient_measure)
-    max_index = np.argmax(grad_values)
-    best_ps = paulisum_set[max_index]
-    if tol is not None and grad_values[max_index] < tol:
-        print_if_verbose(
-            "gradient ({grad:.2f}) is smaller than tol ({tol}), exiting".format(
-                grad=grad_values[max_index], tol=tol
-            ),
-            verbose=verbose,
-        )
-        # iteration process is done, gradient < tol, or if stopping is set with max depth, continue
-        return None
+            spham = scipy.sparse.csc_matrix(ham)
+            # exp(-theta A)|psi>
+            spwf0 = scipy.sparse.csc_matrix(wfexp[0, :]).transpose()
+            # # exp(theta A)|psi>
+            spwf1 = scipy.sparse.csc_matrix(wfexp[1, :]).transpose()
+            grad_minus = (spwf1.getH() @ spham @ spwf1).toarray()
+            grad_plus = (spwf0.getH() @ spham @ spwf0).toarray()
+            grad = float(np.abs((grad_minus - grad_plus) / (2 * eps)))
+    # dense methods (get it?)
     else:
-        print_if_verbose(
-            "gradient ({grad}) is larger than tolerance: ({tol}), continuing".format(
-                grad=grad_values[max_index], tol=tol
-            ),
-            verbose=verbose,
-        )
-        print_if_verbose("best Pauli sum: {psum}".format(psum=best_ps), verbose=verbose)
-
-        theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
-        return exp_from_pauli_sum(pauli_sum=best_ps, theta=theta), theta
-
-
-def param_name_from_depth(circ: cirq.Circuit) -> str:
-    return "p_" + str(fauvqe.utilities.circuit.depth(circ))
-
-
-def append_best_gate_to_circuit(
-    model: AbstractModel,
-    paulisum_set: list,
-    tol: float = 1e-15,
-    trial_wf: np.ndarray = None,
-    initial_state: np.ndarray = None,
-    verbose: bool = False,
-    preprocess: bool = False,
-    measure: str = "energy",
-    preprocessed_ps_set: list = [],
-    grad_opts: dict = {},
-) -> bool:
-    res = get_best_gate(
-        model=model,
-        paulisum_set=paulisum_set,
-        param_name=param_name_from_depth(circ=model.circuit),
-        tol=tol,
-        trial_wf=trial_wf,
-        initial_state=initial_state,
-        verbose=verbose,
-        preprocess=preprocess,
-        measure=measure,
-        preprocessed_ps_set=preprocessed_ps_set,
-        grad_opts=grad_opts,
-    )
-    if res is None:
-        print_if_verbose("no best gate found, exiting", verbose=verbose)
-        return True
-    else:
-        exp_gates, theta = res
-        for gate in exp_gates:
-            model.circuit += gate
-        model.circuit_param.append(theta)
-        fauvqe.utilities.circuit.match_param_values_to_symbols(
-            model=model, symbols=model.circuit_param, default_value="random"
-        )
-        print_if_verbose(
-            "best gate found and added: {best_gate}".format(best_gate=exp_gates),
-            verbose=verbose,
-        )
-        # print_if_verbose(model.circuit,verbose=verbose)
-        return False
-
-
-# pick random gate for benchmarking
-def append_random_gate_to_circuit(
-    model: AbstractModel,
-    paulisum_set: list,
-    verbose: bool = False,
-    default_value: str = "random",
-):
-    ind = np.random.choice(len(paulisum_set))
-    param_name = param_name_from_depth(circ=model.circuit)
-    theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
-    exp_gates = exp_from_pauli_sum(pauli_sum=paulisum_set[ind], theta=theta)
-    for gate in exp_gates:
-        model.circuit += gate
-    model.circuit_param.append(theta)
-    fauvqe.utilities.circuit.match_param_values_to_symbols(
-        model=model, symbols=model.circuit_param, default_value=default_value
-    )
-    print_if_verbose(
-        "adding random gate: {rgate}".format(rgate=exp_gates), verbose=verbose
-    )
-    return False
-
-
-# actual entire adapt_loop
-def adapt_loop(
-    model: AbstractModel,
-    Nsteps: int,
-    paulisum_set: list[cirq.PauliSum],
-    optimiser: Optimiser,
-    objective: AbstractExpectationValue,
-    trial_wf: np.ndarray = None,
-    initial_state: np.ndarray = None,
-    verbose: bool = False,
-    preprocess: bool = False,
-    measure: str = "energy",
-    true_wf: np.ndarray = None,
-) -> Tuple[OptimisationResult, AbstractModel]:
-    result = None
-    preprocessed_ps_set = []
-    grad_opts = {}
-    if preprocess:
-        print_if_verbose(
-            "Preprocessing pauli sums for {}".format(measure), verbose=verbose
-        )
-        if measure == "energy":
-            ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
-            preprocess_opts = {"ham": ham}
-        elif measure == "fidelity":
-            preprocess_opts = {"true_wf": true_wf, "eps": 1e-5}
-        for ps in paulisum_set:
-            op = ps.matrix(qubits=model.flattened_qubits)
-            print_if_verbose("Preprocessing {}".format(ps), verbose=verbose)
-            preprocessed_ps_set.append(
-                preprocess_for_measure(
-                    measure=measure, op=op, preprocess_opts=preprocess_opts
-                )
-            )
-        print_if_verbose("Preprocessing over", verbose=verbose)
-    else:
-        if measure == "energy":
-            ham = model.hamiltonian.matrix(qubits=model.flattened_qubits)
-            grad_opts = {"ham": ham, "full": True, "eps": 1e-5, "sparse": False}
-        elif measure == "fidelity":
-            grad_opts = {"true_wf": true_wf, "eps": 1e-5}
-    for step in range(Nsteps):
-        threshold_reached = append_best_gate_to_circuit(
-            model=model,
-            paulisum_set=paulisum_set,
-            verbose=verbose,
-            trial_wf=trial_wf,
-            initial_state=initial_state,
-            preprocess=preprocess,
-            preprocessed_ps_set=preprocessed_ps_set,
-            measure=measure,
-            grad_opts=grad_opts,
-        )
-        # if the gradient is above the threshold, go on
-
-        if threshold_reached == False:
-            print("optimizing {}-th step".format(step + 1))
-            # optimize to get a result everytime
-            model.circuit = fauvqe.utilities.circuit.populate_empty_qubits(model=model)
-            result = optimiser.optimise(objective=objective)
-            model.circuit_param_values = result.get_latest_step().params
-            print(
-                "circuit depth: {d}, number of params: {p}".format(
-                    d=fauvqe.utilities.circuit.depth(model.circuit),
-                    p=len(model.circuit_param),
-                )
-            )
+        if not full:
+            # dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps>
+            comm = np.matmul(ham, op)
+            grad = np.abs(2 * np.real(np.vdot(trial_state.T, comm.dot(trial_state))))
         else:
-            print("treshold reached, exiting")
-            break
+            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
+            wfexp = scipy.sparse.linalg.expm_multiply(
+                A=op, B=trial_state, start=-eps, stop=eps, num=2, endpoint=True
+            )
+            wfexp_plus = wfexp[1, :]
+            wfexp_minus = wfexp[0, :]
+            grad_minus = np.vdot(wfexp_minus, ham @ wfexp_minus)
+            grad_plus = np.vdot(wfexp_plus, ham @ wfexp_plus)
+            grad = np.abs((grad_minus - grad_plus) / (2 * eps))
 
-    return result, model
+    return grad

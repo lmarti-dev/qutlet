@@ -3,7 +3,7 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from models.fermiHubbardModel import FermiHubbardModel
+from fauvqe.models.fermiHubbardModel import FermiHubbardModel
 from fauvqe.models.fermionicModel import FermionicModel
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.utilities.generic import flatten

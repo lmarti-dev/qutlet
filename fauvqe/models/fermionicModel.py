@@ -7,8 +7,13 @@ from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
 from fauvqe.models.fockModel import FockModel
-from fauvqe.utilities.generic import flatten
-from fauvqe.utilities.fermion import bravyi_kitaev_fast_wrapper
+from fauvqe.utilities import (
+    flatten,
+    bravyi_kitaev_fast_wrapper,
+    index_bits,
+    sum_even,
+    sum_odd,
+)
 
 
 class FermionicModel(FockModel):
@@ -22,6 +27,9 @@ class FermionicModel(FockModel):
     """
 
     def __init__(self, **kwargs):
+        # Number of fermions present in the system, initialized with the set_initial_state method
+        # can be int or tuple of two ints with spin up and down fermions
+        self.Nf = None
         super().__init__(**kwargs)
         # this is a reminder of how up and down fermions are spread on the grid
         # the default value is the one given by the fermi_hubbard function, ie
@@ -237,7 +245,8 @@ class FermionicModel(FockModel):
 
     @staticmethod
     def assert_map_matches_operator(operator, map_arr):
-        assert set(map_arr) >= set(FermionicModel.get_ops_action_indices(operator))
+        if set(map_arr) < set(FermionicModel.get_ops_action_indices(operator)):
+            raise ValueError("map is has less indices than than qubits")
 
     @staticmethod
     def get_ops_action_indices(operator):
@@ -291,8 +300,87 @@ class FermionicModel(FockModel):
             rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators.
                                                                 Q diagonalizes Nf rows of the non-interacting hamiltonian
         """
-        if initial_state == None:
-            # default initial state is all 0s
-            initial_state = []
+        Nf, initial_state = self._process_initial_state_input(
+            Nf=Nf, initial_state=initial_state
+        )
         op_tree = self._get_initial_state(name=name, initial_state=initial_state, Nf=Nf)
         self.circuit.append(op_tree)
+
+    def _process_initial_state_input(self, Nf, initial_state):
+        # this method exists because the way to initiate the circuit is not so straight-forward
+        # one could either put a int in initial state to get a binary computational state
+        # or use nh to get some spin sectors. It's all very complex and deserves its own function
+        if Nf is None and initial_state is None:
+            raise ValueError("Number of fermions and initial state cannot be both None")
+        if isinstance(initial_state, int):
+            initial_state = index_bits(bin(initial_state))
+            if Nf is None:
+                Nf = sum(initial_state)
+        if isinstance(Nf, int):
+            # set up and down spin to be kinda equal
+            Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
+        if initial_state is None:
+            initial_state = list(
+                sorted(
+                    [2 * k for k in range(Nf[0])] + [2 * k + 1 for k in range(Nf[1])]
+                )
+            )
+        # check everything to be consistent
+        # number of fermions matches indices
+        # spin up matches spin up
+        # spin down matches spin down
+        if (
+            len(initial_state) != sum(Nf)
+            or sum_even(initial_state) != Nf[0]
+            or sum_odd(initial_state) != Nf[1]
+        ):
+            raise ValueError(
+                "Mismatch between initial state and desired number of fermions. Initial state: {}, Nf: {}".format(
+                    initial_state, Nf
+                )
+            )
+
+        self.Nf = Nf
+        return Nf, initial_state
+
+    @staticmethod
+    def computational_state_circuit(initial_state, qubits):
+        op_tree = [cirq.X(qubits[ind]) for ind in initial_state]
+        return op_tree
+
+    @staticmethod
+    def uniform_superposition_state_circuit(initial_state, qubits):
+        op_tree = FermionicModel.computational_state_circuit(initial_state, qubits)
+        op_tree += [cirq.H(qubits[ind]) for ind in initial_state]
+        return op_tree
+
+    @staticmethod
+    def spin_superposition_state_circuit(Nf, qubits):
+        op_tree = FermionicModel.computational_state_circuit(range(len(qubits)), qubits)
+
+        # TODO: finish this
+        return op_tree
+
+    def _get_initial_state(
+        self,
+        name: str,
+        initial_state: Union[int, Sequence[int]],
+        Nf: Union[int, Sequence[int]],
+    ):
+        if name is None:
+            self.initial_state_name = "none"
+            return None
+        elif name == "computational":
+            return FermionicModel.computational_state_circuit(
+                initial_state=initial_state, qubits=self.flattened_qubits
+            )
+        elif name == "uniform_superposition":
+            return FermionicModel.uniform_superposition_state_circuit(
+                initial_state=initial_state, qubits=self.flattened_qubits
+            )
+        elif name == "spin_superposition":
+            return FermionicModel.spin_superposition_state_circuit(
+                initial_state=initial_state, qubits=self.flattened_qubits
+            )
+        else:
+            raise NameError("No initial state named {}".format(name))

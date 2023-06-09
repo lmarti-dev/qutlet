@@ -204,7 +204,7 @@ def hamming_weight(n: Union[int, str]) -> int:
     return sum((1 for j in n if j == "1"))
 
 
-def index_bits(a: str, ones=True) -> list:
+def index_bits(a: Union[str, int], ones=True, reverse: bool = False) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
     Args:
         a (binary number): The binary number whose ones or zeroes will be indexed
@@ -213,8 +213,13 @@ def index_bits(a: str, ones=True) -> list:
         list: List of indices where a is one (or zero)
     """
     if isinstance(a, int):
-        a = bin(a)
-    b = a.split("b")[1]
+        b = bin(a)
+    else:
+        b = a
+    if "b" in b:
+        b = b.split("b")[1]
+    if reverse:
+        b = list(reversed(b))
     if ones:
         return [idx for idx, v in enumerate(b) if int(v)]
     elif not ones:
