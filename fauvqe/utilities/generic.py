@@ -449,3 +449,30 @@ def wrapping_slice(arr: Iterable, indices: list):
     if isinstance(arr, str):
         return "".join(out_arr)
     return out_arr
+
+
+def dicke_state(n: int, k: int) -> np.ndarray:
+    """returns the uniform superposuition of all bitstrings with hamming weight k
+
+    Args:
+        n (int): the lenght of the bitstrings
+        k (int): the desired hamming weight
+    Returns:
+        np.ndarray: the wavefunction representing the superposition
+    """
+    wf = np.zeros(2**n)
+    for ind in range(2**n):
+        if len(index_bits(ind)) == k:
+            wf[ind] = 1
+    return normalize_vec(wf)
+
+
+def spin_dicke_state(n_qubits: int, Nf: list):
+    if isinstance(Nf, int):
+        Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
+    wf = np.zeros(2**n_qubits)
+    for ind in range(2**n_qubits):
+        indices = index_bits(ind, reverse=True)
+        if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
+            wf[ind] = 1
+    return normalize_vec(wf)

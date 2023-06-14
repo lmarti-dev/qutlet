@@ -20,6 +20,7 @@ import fauvqe.utilities.generic
 
 import multiprocessing as mp
 from fauvqe.models.abstractmodel import AbstractModel
+from functools import partial
 
 
 class ADAPT:
@@ -30,11 +31,14 @@ class ADAPT:
         measure: dict,
         preprocess: bool,
         verbose: bool,
+        n_jobs: int = 1,
     ):
         self.model = model
-        self.measure = measure
+        self.measure = {"name": None, "target_state": None}
+        self.measure.update(measure)
         self.verbose = verbose
         self.preprocess = preprocess
+        self.n_jobs = n_jobs
         if isinstance(gate_pool_options, list):
             self.pool_name = "custom"
             self.gate_pool = gate_pool_options
@@ -45,51 +49,33 @@ class ADAPT:
             )
 
         self.verify_gate_pool(self.gate_pool)
+        self.preprocessed_ops = [None] * len(self.gate_pool)
         if self.preprocess:
             self.preprocessed_ops = self.preprocess_gate_gradients()
 
+    def gate_pool_op_matrix(self, ind: int):
+        return self.gate_pool[ind].matrix(qubits=self.model.flattened_qubits)
+
     def verify_gate_pool(self, gate_pool):
         self.verbose_print("Verifying gate pool, {} gates".format(len(gate_pool)))
-        for op in gate_pool:
-            opmat = op.matrix(qubits=self.model.flattened_qubits)
+        for ind in range(len(gate_pool)):
+            opmat = self.gate_pool_op_matrix(ind)
             if np.any(np.conj(np.transpose(opmat)) != -opmat):
                 raise ValueError("Expected op to be anti-hermitian")
+        self.verbose_print("All gates are anti-hermitian, proceeding.")
 
     def measure_gradient(self, ind: int, trial_state: np.ndarray):
-        self.verbose_print(
-            "computing {g} gradient, preproc: {p}".format(
-                g=self.gate_pool[ind], p=self.preprocess
-            )
+        self.verbose_print("computing {g} gradient".format(g=self.gate_pool[ind]))
+        ham = self.model.hamiltonian.matrix(qubits=self.model.flattened_qubits)
+        grad = measure_gradient_dispatcher(
+            measure_name=self.measure["name"],
+            preprocess=self.preprocess,
+            trial_state=trial_state,
+            preprocessed_op=self.preprocessed_ops[ind],
+            ham=ham,
+            operator=self.gate_pool_op_matrix[ind],
+            target_state=self.measure["target_state"],
         )
-        if self.measure["name"] == "energy":
-            if self.preprocess:
-                grad = compute_preprocessed_energy_gradient(
-                    trial_state=trial_state,
-                    preprocessed_energy_op=self.preprocessed_ops[ind],
-                )
-            else:
-                grad = compute_energy_gradient(
-                    ham=self.model.hamiltonian.matrix(
-                        qubits=self.model.flattened_qubits
-                    ),
-                    op=self.gate_pool[ind].matrix(qubits=self.model.flattened_qubits),
-                    trial_state=trial_state,
-                    full=True,
-                    eps=1e-5,
-                    sparse=False,
-                )
-        if self.measure["name"] == "fidelity":
-            if self.preprocess:
-                grad = compute_preprocessed_fidelity_gradient(
-                    trial_state=trial_state,
-                    preprocessed_fid_state=self.preprocessed_ops[ind],
-                )
-            else:
-                grad = compute_fidelity_gradient(
-                    op=self.gate_pool[ind].matrix(qubits=self.model.flattened_qubits),
-                    trial_state=trial_state,
-                    target_state=self.measure["target_state"],
-                )
         self.verbose_print("gradient: {:.10f}".format(grad))
         return grad
 
@@ -111,24 +97,52 @@ class ADAPT:
 
     def preprocess_gate_gradients(self):
         self.verbose_print(
-            "Preprocessing {n} gates of {p} pool for {m}".format(
-                n=len(self.gate_pool), p=self.pool_name, m=self.measure["name"]
+            "Preprocessing {n} gates of {p} pool for {m}, preprocessing: {b}".format(
+                n=len(self.gate_pool),
+                p=self.pool_name,
+                m=self.measure["name"],
+                b=self.preprocess,
             )
         )
-        preprocess_opts = {"ham": self.model.hamiltonian}
+
         preprocess_ops = []
+
         if self.measure["name"] == "energy":
+            preprocess_options = {
+                "ham": self.model.hamiltonian.matrix(qubits=self.model.flattened_qubits)
+            }
             preprocess_fn = preprocess_for_energy
         elif self.measure["name"] == "fidelity":
+            preprocess_options = {
+                "target_state": self.measure["target_state"],
+            }
             preprocess_fn = preprocess_for_fidelity
-            preprocess_opts.update(
-                {
-                    "target_state": self.measure["target_state"],
-                }
+        if self.n_jobs > 1:
+            self.verbose_print(
+                "Starting {n} jobs for parallel preprocessing".format(n=self.n_jobs)
             )
-        for op in self.gate_pool:
-            preprocess_ops.append(preprocess_fn(op=op, **preprocess_opts))
-        self.verbose_print("Preprocessing over")
+            process_pool = mp.Pool(self.n_jobs)
+            results = process_pool.map(
+                partial(preprocess_fn, **preprocess_options),
+                [
+                    op.matrix(qubits=self.model.flattened_qubits)
+                    for op in self.gate_pool
+                ],
+            )
+            # should the process pool be in init and kept throughout the instance life?
+            process_pool.close()
+            process_pool.join()
+            for result in results:
+                # pool.map result are ordered the same way as the input
+                preprocess_ops.append(result)
+
+        else:
+            for op in self.gate_pool:
+                op_mat = op.matrix(qubits=self.model.flattened_qubits)
+                preprocess_ops.append(preprocess_fn(op=op_mat, **preprocess_options))
+        self.verbose_print(
+            "Preprocessing finished, {} preprocessed ops".format(len(preprocess_ops))
+        )
         return preprocess_ops
 
     def get_best_gate(
@@ -136,7 +150,6 @@ class ADAPT:
         tol: float,
         trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
-        n_jobs: int = 1,
     ):
         # we can set the trial wf (before computing the gradient of the energy)
         # if we want some specific psi to apply the gate to.
@@ -159,12 +172,36 @@ class ADAPT:
                 self.measure["name"], self.preprocess
             )
         )
-        # TODO: implement multiprocessing
-        if n_jobs > 1:
-            pass
-        for ind in range(len(self.gate_pool)):
-            grad = self.measure_gradient(ind=ind, trial_state=trial_state)
-            grad_values.append(grad)
+        if self.n_jobs > 1:
+            ham = self.model.hamiltonian.matrix(qubits=self.model.flattened_qubits)
+            process_pool = mp.Pool(self.n_jobs)
+            # TODO: fix this
+            # the ind in the partial does't iterate
+            # need to find a way to make it iterate correctly
+            results = process_pool.starmap(
+                measure_gradient_dispatcher,
+                [
+                    (
+                        self.measure["name"],
+                        self.preprocess,
+                        trial_state,
+                        self.preprocessed_ops[ind],
+                        ham,
+                        self.gate_pool_op_matrix(ind),
+                        self.measure["target_state"],
+                    )
+                    for ind in range(len(self.gate_pool))
+                ],
+            )
+            # should the process pool be in init and kept?
+            process_pool.close()
+            process_pool.join()
+            grad_values = [grad for grad in results]
+
+        else:
+            for ind in range(len(self.gate_pool)):
+                grad = self.measure_gradient(ind=ind, trial_state=trial_state)
+                grad_values.append(grad)
         max_index = np.argmax(grad_values)
         best_ps = self.gate_pool[max_index]
         if tol is not None and grad_values[max_index] < tol:
@@ -273,9 +310,56 @@ class ADAPT:
 
         return result
 
-    def pool_gate_measure_jobs(n_jobs, data):
-        pool = mp.Pool(n_jobs)
-        result = pool.map(x, data)
+
+# ugly method, but necessary for multiprocessing
+def measure_gradient_dispatcher(
+    measure_name: str,
+    preprocess: bool,
+    trial_state: np.ndarray,
+    preprocessed_op: np.ndarray,
+    ham: np.ndarray,
+    operator: np.ndarray,
+    target_state: np.ndarray,
+):
+    if measure_name == "energy":
+        if preprocess:
+            grad = compute_preprocessed_energy_gradient(
+                trial_state=trial_state,
+                preprocessed_energy_op=preprocessed_op,
+            )
+        else:
+            grad = compute_energy_gradient(
+                ham=ham,
+                op=operator,
+                trial_state=trial_state,
+                full=True,
+                eps=1e-5,
+                sparse=False,
+            )
+    if measure_name == "fidelity":
+        if preprocess:
+            grad = compute_preprocessed_fidelity_gradient(
+                trial_state=trial_state,
+                preprocessed_fid_state=preprocessed_op,
+            )
+        else:
+            grad = compute_fidelity_gradient(
+                op=operator,
+                trial_state=trial_state,
+                target_state=target_state,
+            )
+    return grad
+
+
+def preprocess_for_energy(op: np.ndarray, ham: np.ndarray):
+    comm = np.matmul(ham, op)
+    return comm
+
+
+def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
+    # A * |gs>
+    preprocessed_fid_state = op.dot(target_state)
+    return preprocessed_fid_state
 
 
 def param_name_from_depth(circ: cirq.Circuit) -> str:
@@ -459,17 +543,6 @@ def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta):
     return psum_exp
     # PauliSumExponential only accept A,B st exp(A)*exp(B) = exp(A+B) so might as well break them and "trotterize" them if they dont commute
     # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not pauli_str_is_identity(pstr)]
-
-
-def preprocess_for_energy(ham: np.ndarray, op: np.ndarray):
-    comm = np.matmul(ham, op)
-    return comm
-
-
-def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
-    # A * |gs>
-    preprocessed_fid_state = op.dot(target_state)
-    return preprocessed_fid_state
 
 
 def compute_lowrank(

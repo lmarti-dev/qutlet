@@ -343,6 +343,27 @@ class FermionicModel(FockModel):
         self.Nf = Nf
         return Nf, initial_state
 
+    def gaussian_state_circuit(self):
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
+        op_tree = of.prepare_gaussian_state(
+            qubits=self.flattened_qubits,
+            quadratic_hamiltonian=quadratic_hamiltonian,
+            occupied_orbitals=list(range(sum(self.Nf))),
+            initial_state=0,
+        )
+        return op_tree
+
+    def slater_state_circuit(self):
+        _, unitary_rows = self.diagonalize_non_interacting_hamiltonian()
+        op_tree = of.prepare_slater_determinant(
+            qubits=self.flattened_qubits,
+            slater_determinant_matrix=unitary_rows[: sum(self.Nf), :],
+            initial_state=0,
+        )
+        return op_tree
+
     @staticmethod
     def computational_state_circuit(initial_state, qubits):
         op_tree = [cirq.X(qubits[ind]) for ind in initial_state]
@@ -355,10 +376,9 @@ class FermionicModel(FockModel):
         return op_tree
 
     @staticmethod
-    def spin_superposition_state_circuit(Nf, qubits):
-        op_tree = FermionicModel.computational_state_circuit(range(len(qubits)), qubits)
-
-        # TODO: finish this
+    def dicke_state_circuit(Nf, qubits):
+        # TODO: implement the circuit
+        op_tree = []
         return op_tree
 
     def _get_initial_state(
@@ -378,9 +398,44 @@ class FermionicModel(FockModel):
             return FermionicModel.uniform_superposition_state_circuit(
                 initial_state=initial_state, qubits=self.flattened_qubits
             )
-        elif name == "spin_superposition":
-            return FermionicModel.spin_superposition_state_circuit(
-                initial_state=initial_state, qubits=self.flattened_qubits
+        elif name == "dicke":
+            return FermionicModel.dicke_state_circuit(
+                Nf=Nf, qubits=self.flattened_qubits
             )
+        elif name == "slater":
+            return self.slater_state_circuit()
+        elif name == "gaussian":
+            return self.gaussian_state_circuit()
         else:
             raise NameError("No initial state named {}".format(name))
+
+    def get_quadratic_hamiltonian_wrapper(self, fermion_hamiltonian):
+        # not sure this is correct
+        # but in case the fermion operator is null (ie empty hamiltonian, get a zeros matrix)
+        if fermion_hamiltonian == of.FermionOperator.identity():
+            return of.QuadraticHamiltonian(np.zeros((np.prod(self.n), np.prod(self.n))))
+        quadratic_hamiltonian = of.get_quadratic_hamiltonian(
+            fermion_hamiltonian, ignore_incompatible_terms=True
+        )
+        return quadratic_hamiltonian
+
+    def diagonalize_non_interacting_hamiltonian(self):
+        # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
+        # get diagonalizing_bogoliubov_transform $b_j = \sum_i Q_{ji} a_i$ s.t $H = bDb*$ with $D$ diag.
+        # the bogoliubov transform conserves particle number, i.e. the bogops are single particle
+        (
+            orbital_energies,
+            unitary_rows,
+            _,
+        ) = quadratic_hamiltonian.diagonalizing_bogoliubov_transform()
+
+        # sort them so that you get them in order
+        idx = np.argsort(orbital_energies)
+
+        unitary_rows = unitary_rows[idx, :]
+        orbital_energies = orbital_energies[idx]
+
+        return orbital_energies, unitary_rows
