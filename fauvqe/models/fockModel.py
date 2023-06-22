@@ -73,7 +73,7 @@ class FockModel(AbstractModel):
         raise NotImplementedError()  # pragma: no cover
 
     @abc.abstractmethod
-    def _get_initial_state(self):
+    def _get_initial_state_circuit(self):
         raise NotImplementedError()  # pragma: no cover
 
     @abc.abstractmethod

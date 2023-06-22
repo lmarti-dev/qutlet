@@ -114,7 +114,11 @@ class OptimisationResult:
             fauvqe.json.dump(dct, outfile, indent=indent)
             outfile.close()
         t2 = timeit.default_timer()
-        print("Store, get objective value: {}s,\t write to json {}s".format(t1 - t0, t2 - t1))
+        print(
+            "Store, get objective value: {}s,\t write to json {}s".format(
+                t1 - t0, t2 - t1
+            )
+        )
 
     def storetxt(
         self,

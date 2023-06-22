@@ -467,12 +467,12 @@ def dicke_state(n: int, k: int) -> np.ndarray:
     return normalize_vec(wf)
 
 
-def spin_dicke_state(n_qubits: int, Nf: list):
+def spin_dicke_state(n_qubits: int, Nf: list, reverse: bool = False):
     if isinstance(Nf, int):
         Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
     wf = np.zeros(2**n_qubits)
     for ind in range(2**n_qubits):
-        indices = index_bits(ind, reverse=True)
+        indices = index_bits(ind, reverse=reverse)
         if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
             wf[ind] = 1
     return normalize_vec(wf)

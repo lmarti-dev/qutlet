@@ -86,7 +86,7 @@ def test_initial_state_wrong():
         x_dimension=3, y_dimension=3, tunneling=1, coulomb=1
     )
     with pytest.raises(NameError):
-        fermi_hubbard_hamiltonian._get_initial_state(
+        fermi_hubbard_hamiltonian._get_initial_state_circuit(
             "wrong_inital_state", initial_state=None, Nf=None
         )
 

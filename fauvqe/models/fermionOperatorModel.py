@@ -31,14 +31,6 @@ class FermionOperatorModel(FermionicModel):
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         self.fock_hamiltonian = self.fermion_operator
 
-    def _get_initial_state(
-        self,
-        name: str,
-        initial_state: Union[int, Sequence[int]],
-        Nf: Union[int, Sequence[int]],
-    ) -> cirq.OP_TREE:
-        return super()._get_initial_state(name=name, initial_state=initial_state, Nf=Nf)
-
     def copy(self):
         self_copy = copy.deepcopy(self)
         return self_copy

@@ -366,6 +366,17 @@ def param_name_from_depth(circ: cirq.Circuit) -> str:
     return "p_" + str(fauvqe.utilities.circuit.depth(circ))
 
 
+def single_gate_set(qubits: list[cirq.Qid], neighbour_order: int, gate: cirq.Gate):
+    k_locality = gate.num_qubits()
+    combs = itertools.combinations(range(len(qubits)), k_locality)
+    gate_pool = []
+    for comb in combs:
+        if abs(max(comb) - min(comb)) <= neighbour_order:
+            used_qubits = (qubits[x] for x in comb)
+            gate_pool.append(gate.on(*used_qubits))
+    return gate_pool
+
+
 def pauli_string_set(
     qubits: list[cirq.Qid],
     neighbour_order: int,
@@ -545,12 +556,12 @@ def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta):
     # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not pauli_str_is_identity(pstr)]
 
 
-def compute_lowrank(
+def compute_low_rank_energy_gradient(
     ham: np.ndarray,
     op: np.ndarray,
     wf: np.ndarray,
 ):
-    # this should be the lowrank method
+    # TODO: this should be the lowrank method
     pass
 
 
