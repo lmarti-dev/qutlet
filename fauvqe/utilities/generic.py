@@ -204,7 +204,14 @@ def hamming_weight(n: Union[int, str]) -> int:
     return sum((1 for j in n if j == "1"))
 
 
-def index_bits(a: Union[str, int], ones=True, reverse: bool = False) -> list:
+def binleftpad(i: int, lp: int):
+    b = format(i, "0{lp}b".format(lp=lp))
+    return b
+
+
+def index_bits(
+    a: Union[str, int], N: int = None, ones=True, right_to_left: bool = False
+) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
     Args:
         a (binary number): The binary number whose ones or zeroes will be indexed
@@ -213,12 +220,15 @@ def index_bits(a: Union[str, int], ones=True, reverse: bool = False) -> list:
         list: List of indices where a is one (or zero)
     """
     if isinstance(a, int):
-        b = bin(a)
+        if N is None:
+            b = bin(a)
+        else:
+            b = binleftpad(i=a, lp=N)
     else:
         b = a
     if "b" in b:
         b = b.split("b")[1]
-    if reverse:
+    if right_to_left:
         b = list(reversed(b))
     if ones:
         return [idx for idx, v in enumerate(b) if int(v)]
@@ -462,17 +472,17 @@ def dicke_state(n: int, k: int) -> np.ndarray:
     """
     wf = np.zeros(2**n)
     for ind in range(2**n):
-        if len(index_bits(ind)) == k:
+        if len(index_bits(ind, N=n)) == k:
             wf[ind] = 1
     return normalize_vec(wf)
 
 
-def spin_dicke_state(n_qubits: int, Nf: list, reverse: bool = False):
+def spin_dicke_state(n_qubits: int, Nf: list, right_to_left: bool = False):
     if isinstance(Nf, int):
         Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
     wf = np.zeros(2**n_qubits)
     for ind in range(2**n_qubits):
-        indices = index_bits(ind, reverse=reverse)
+        indices = index_bits(a=ind, right_to_left=right_to_left, N=n_qubits)
         if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
             wf[ind] = 1
     return normalize_vec(wf)

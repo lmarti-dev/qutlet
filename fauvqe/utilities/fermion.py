@@ -85,7 +85,11 @@ def single_excitation(
     return even_excitation(coeff=coeff, indices=[i, j], anti_hermitian=anti_hermitian)
 
 
-def jw_spin_correct_indices(n_electrons: Union[list, int], n_qubits: int) -> list:
+def jw_spin_correct_indices(
+    n_electrons: Union[list, int],
+    n_qubits: int,
+    right_to_left: bool = False,
+) -> list:
     """Get the indices corresponding to the spin sectors given by n_electrons
     Args:
         n_electrons (Union[list, int]): the n_electrons in the system, or the spin sectors
@@ -124,9 +128,17 @@ def jw_spin_correct_indices(n_electrons: Union[list, int], n_qubits: int) -> lis
         if fauvqe.utilities.generic.sum_even(c) == n_spin_up
         and fauvqe.utilities.generic.sum_odd(c) == n_spin_down
     ]
-    jw_indices = [
-        sum([2**iii for iii in combination]) for combination in correct_combinations
-    ]
+
+    if right_to_left:
+        jw_indices = [
+            sum([2 ** (n_qubits - 1 - iii) for iii in combination])
+            for combination in correct_combinations
+        ]
+    else:
+        jw_indices = [
+            sum([2**iii for iii in combination])
+            for combination in correct_combinations
+        ]
     return jw_indices
 
 
@@ -134,6 +146,7 @@ def jw_spin_restrict_operator(
     sparse_operator: scipy.sparse.csc_matrix,
     particle_number: Union[list, int],
     n_qubits: int,
+    right_to_left: bool = False,
 ) -> scipy.sparse.csc_matrix:
     """Restrict a sparse operator to the subspace which contains only the allowed particle number
     Args:
@@ -147,7 +160,7 @@ def jw_spin_restrict_operator(
         n_qubits = int(np.log2(sparse_operator.shape[0]))
 
     select_indices = jw_spin_correct_indices(
-        n_electrons=particle_number, n_qubits=n_qubits
+        n_electrons=particle_number, n_qubits=n_qubits, right_to_left=right_to_left
     )
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
@@ -175,9 +188,11 @@ def jw_eigenspectrum_at_particle_number(
     n_qubits = int(np.log2(sparse_operator.shape[0]))
     # Get the operator restricted to the subspace of the desired particle number
 
+    kwargs = {}
     if spin:
         restricted_operator_func = jw_spin_restrict_operator
         indices_func = jw_spin_correct_indices
+        kwargs.update({"right_to_left": True})
     else:
         # if you specified spin sectors but want to ignore spin, merge sectors
         if isinstance(particle_number, list):
@@ -185,7 +200,7 @@ def jw_eigenspectrum_at_particle_number(
         restricted_operator_func = of.jw_number_restrict_operator
         indices_func = of.jw_number_indices
     restricted_operator = restricted_operator_func(
-        sparse_operator, particle_number, n_qubits
+        sparse_operator, particle_number, n_qubits, **kwargs
     )
     # Compute eigenvalues and eigenvectors
     if restricted_operator.size == 1:
@@ -203,17 +218,17 @@ def jw_eigenspectrum_at_particle_number(
         dense_restricted_operator = restricted_operator.toarray()
         eigvals, eigvecs = np.linalg.eigh(dense_restricted_operator)
     if expanded:
-        if k is not None and sparse:
-            n_eigvecs = k
-        else:
-            n_eigvecs = 2**n_qubits
+        n_eigvecs = eigvecs.shape[-1]
         expanded_eigvecs = np.zeros((2**n_qubits, n_eigvecs), dtype=complex)
+        expanded_indices = indices_func(
+            n_electrons=particle_number, n_qubits=n_qubits, **kwargs
+        )
         for iii in range(n_eigvecs):
             expanded_eigvecs[
-                indices_func(n_electrons=particle_number, n_qubits=n_qubits),
+                expanded_indices,
                 iii,
             ] = eigvecs[:, iii]
-            return eigvals, expanded_eigvecs
+        return eigvals, expanded_eigvecs
     return eigvals, eigvecs
 
 
@@ -269,7 +284,9 @@ def mean_coeff_n_terms(fop: of.FermionOperator, n: int) -> float:
     return mean_coeff
 
 
-def jw_computational_wf(indices: list, Nqubits: int) -> np.ndarray:
+def jw_computational_wf(
+    indices: list, Nqubits: int, right_to_left: bool = False
+) -> np.ndarray:
     """Creates a 2**Nqubits wavefunction corresponding to the computational state of Nqubits with the qubits in indices set to one
     Args:
         indices (list): the indices of the qubits which are non-zero
@@ -278,6 +295,10 @@ def jw_computational_wf(indices: list, Nqubits: int) -> np.ndarray:
         np.ndarray: 2**Nqubits vector with a one in the entry correspknding to the desired computational state
     """
     wf = np.zeros((2**Nqubits))
-    jw_index = sum((2 ** (iii) for iii in indices))
+    if right_to_left:
+        jw_index = sum((2 ** (Nqubits - 1 - iii) for iii in indices))
+    else:
+        jw_index = sum((2 ** (iii) for iii in indices))
+
     wf[jw_index] = 1
     return wf

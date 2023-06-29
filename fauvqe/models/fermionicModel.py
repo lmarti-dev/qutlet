@@ -320,7 +320,7 @@ class FermionicModel(FockModel):
         if Nf is None and initial_state is None:
             raise ValueError("Number of fermions and initial state cannot be both None")
         if isinstance(initial_state, int):
-            initial_state = index_bits(bin(initial_state))
+            initial_state = index_bits(bin(initial_state), right_to_left=True)
             if Nf is None:
                 Nf = sum(initial_state)
         if isinstance(Nf, int):

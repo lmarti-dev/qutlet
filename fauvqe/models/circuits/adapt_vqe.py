@@ -30,15 +30,16 @@ class ADAPT:
         gate_pool_options: Union[dict, list],
         measure: dict,
         preprocess: bool,
-        verbose: bool,
+        verbosity: int = 0,
         n_jobs: int = 1,
     ):
         self.model = model
         self.measure = {"name": None, "target_state": None}
         self.measure.update(measure)
-        self.verbose = verbose
+        self.verbosity = verbosity
         self.preprocess = preprocess
         self.n_jobs = n_jobs
+        self.indices_to_ignore = []
         if isinstance(gate_pool_options, list):
             self.pool_name = "custom"
             self.gate_pool = gate_pool_options
@@ -49,6 +50,7 @@ class ADAPT:
             )
 
         self.verify_gate_pool(self.gate_pool)
+        # self.verbose_print(self.gate_pool)
         self.preprocessed_ops = [None] * len(self.gate_pool)
         if self.preprocess:
             self.preprocessed_ops = self.preprocess_gate_gradients()
@@ -73,14 +75,14 @@ class ADAPT:
             trial_state=trial_state,
             preprocessed_op=self.preprocessed_ops[ind],
             ham=ham,
-            operator=self.gate_pool_op_matrix[ind],
+            operator=self.gate_pool_op_matrix(ind),
             target_state=self.measure["target_state"],
         )
         self.verbose_print("gradient: {:.10f}".format(grad))
         return grad
 
-    def verbose_print(self, s: str):
-        if self.verbose:
+    def verbose_print(self, s: str, message_level: int = 1):
+        if int(self.verbosity) >= message_level:
             print(s)
 
     def pick_gate_pool(self, pool_name, gate_pool_options):
@@ -145,7 +147,7 @@ class ADAPT:
         )
         return preprocess_ops
 
-    def get_best_gate(
+    def get_max_gradient(
         self,
         tol: float,
         trial_state: np.ndarray = None,
@@ -175,9 +177,6 @@ class ADAPT:
         if self.n_jobs > 1:
             ham = self.model.hamiltonian.matrix(qubits=self.model.flattened_qubits)
             process_pool = mp.Pool(self.n_jobs)
-            # TODO: fix this
-            # the ind in the partial does't iterate
-            # need to find a way to make it iterate correctly
             results = process_pool.starmap(
                 measure_gradient_dispatcher,
                 [
@@ -202,8 +201,15 @@ class ADAPT:
             for ind in range(len(self.gate_pool)):
                 grad = self.measure_gradient(ind=ind, trial_state=trial_state)
                 grad_values.append(grad)
-        max_index = np.argmax(grad_values)
-        best_ps = self.gate_pool[max_index]
+
+        if not self.indices_to_ignore:
+            max_index = np.argmax(np.abs(grad_values))
+        else:
+            # in case we want to ignore some operators, we take the largest indice that we don't ignore
+            sorted_indices = (-np.array(np.abs(grad_values))).argsort()
+            max_index = [
+                ind for ind in sorted_indices if ind not in self.indices_to_ignore
+            ][0]
         if tol is not None and grad_values[max_index] < tol:
             self.verbose_print(
                 "gradient ({grad:.2f}) is smaller than tol ({tol}), exiting".format(
@@ -218,11 +224,15 @@ class ADAPT:
                     grad=grad_values[max_index], tol=tol
                 ),
             )
-            self.verbose_print("best Pauli sum: {psum}".format(psum=best_ps))
+            return max_index
 
-            param_name = param_name_from_depth(circ=self.model.circuit)
-            theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
-            return exp_from_pauli_sum(pauli_sum=best_ps, theta=theta), theta
+    def get_param_exp_op_from_ind(self, ind):
+        pauli_sum = self.gate_pool[ind]
+        self.verbose_print("exponentiating Pauli sum: {psum}".format(psum=pauli_sum))
+
+        param_name = param_name_from_circuit(circ=self.model.circuit)
+        theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
+        return exp_from_pauli_sum(pauli_sum=pauli_sum, theta=theta), theta
 
     def append_best_gate_to_circuit(
         self,
@@ -230,16 +240,16 @@ class ADAPT:
         trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
     ) -> bool:
-        res = self.get_best_gate(
+        max_index = self.get_max_gradient(
             tol=tol,
             trial_state=trial_state,
             initial_state=initial_state,
         )
-        if res is None:
+        if max_index is None:
             self.verbose_print("No best gate found or threshold reached, exiting")
-            return True
+            return None
         else:
-            exp_gates, theta = res
+            exp_gates, theta = self.get_param_exp_op_from_ind(ind=max_index)
             for gate in exp_gates:
                 self.model.circuit += gate
             self.model.circuit_param.append(theta)
@@ -251,7 +261,7 @@ class ADAPT:
             self.verbose_print(
                 "best gate found and added: {best_gate}".format(best_gate=exp_gates)
             )
-            return False
+            return max_index
 
     # pick random gate for benchmarking
     def append_random_gate_to_circuit(
@@ -259,7 +269,7 @@ class ADAPT:
         default_value: str = "random",
     ):
         ind = np.random.choice(len(self.gate_pool))
-        param_name = param_name_from_depth(circ=self.model.circuit)
+        param_name = param_name_from_circuit(circ=self.model.circuit)
         theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
         exp_gates = exp_from_pauli_sum(pauli_sum=self.gate_pool[ind], theta=theta)
         for gate in exp_gates:
@@ -278,17 +288,27 @@ class ADAPT:
         n_steps: int,
         optimiser: Optimiser,
         objective: AbstractExpectationValue,
+        tetris: bool = False,
+        discard_previous_best: Union[bool, int] = False,
         trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
         callback: callable = None,
+        random: bool = False,
     ) -> Tuple[OptimisationResult, AbstractModel]:
         result = None
         for step in range(n_steps):
-            threshold_reached = self.append_best_gate_to_circuit(
-                trial_state=trial_state, initial_state=initial_state
-            )
+            if random:
+                # in case you want to benchmark adapt by comparing it with a random circuit
+                self.append_random_gate_to_circuit("zeros")
+                max_index = -1
+            else:
+                # this returns the best index to be added to the blacklist
+                max_index = self.append_best_gate_to_circuit(
+                    trial_state=trial_state, initial_state=initial_state
+                )
+
             # if the gradient is above the threshold, go on
-            if threshold_reached == False:
+            if max_index is not None:
                 self.verbose_print("optimizing {}-th step".format(step + 1))
                 # optimize to get a result everytime
                 self.model.circuit = fauvqe.utilities.circuit.populate_empty_qubits(
@@ -302,8 +322,12 @@ class ADAPT:
                         p=len(self.model.circuit_param),
                     )
                 )
+                # callback every step so that we can process each optimisation round
                 if callback is not None:
-                    callback(result)
+                    callback(result, step)
+                # if we want to forbid adapt from adding the same gate every time (this happens sometimes)
+                if discard_previous_best:
+                    self.indices_to_ignore.append(max_index)
             else:
                 print("treshold reached, exiting")
                 break
@@ -362,8 +386,12 @@ def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
     return preprocessed_fid_state
 
 
-def param_name_from_depth(circ: cirq.Circuit) -> str:
-    return "p_" + str(fauvqe.utilities.circuit.depth(circ))
+def param_name_from_circuit(circ: cirq.Circuit, proptype="ops") -> str:
+    if proptype == "ops":
+        num = sum(1 for _ in circ.all_operations())
+    elif proptype == "depth":
+        num = fauvqe.utilities.depth(circuit=circ)
+    return "p_" + str(num)
 
 
 def single_gate_set(qubits: list[cirq.Qid], neighbour_order: int, gate: cirq.Gate):
@@ -380,17 +408,19 @@ def single_gate_set(qubits: list[cirq.Qid], neighbour_order: int, gate: cirq.Gat
 def pauli_string_set(
     qubits: list[cirq.Qid],
     neighbour_order: int,
+    max_length: int = None,
     pauli_list: list = None,
     periodic: bool = False,
     diagonal: bool = False,
     anti_hermitian: bool = True,
-    coeff: float = 0.5,
+    coeff: float = 1,
 ):
     """Creates a list of all possible pauli strings on a given geometry up to some neighbour order
 
     Args:
         qubits (list[cirq.Qid]): the qubits on which the paulis are applied
         neighbour_order (int): the neighbour order up to which operators go. 1 means nearest-neighbour only
+        max_length (int): the max length of Pauli strings. If None, defaults to length of neighbour list.
         pauli_list (list, optional): The list of available Pauli matrices. Defaults to None which means all 3 are used.
         periodic (bool, optional): whether the bounds of the qubit lattice are periodic. Defaults to False.
         diagonal (bool, optional): Whether to consider diagonal neighbours. Defaults to False.
@@ -404,7 +434,6 @@ def pauli_string_set(
     if pauli_list is None:
         # add I in case we want to go with non-local neighbours
         pauli_list = ["X", "Y", "Z"]
-    coeff = 1 * coeff
     if anti_hermitian:
         coeff = 1j * coeff
     shape = fauvqe.utilities.circuit.qubits_shape(qubits)
@@ -420,8 +449,9 @@ def pauli_string_set(
             origin="topleft",
         )
         # do all the possible pauli strings combinations on this list of neighbours up to the given order
-        max_length = len(neighbours)
-        for term_order in range(1, max_length + 1):
+        if max_length is None:
+            max_length = len(neighbours)
+        for term_order in range(1, min(max_length + 1, len(neighbours))):
             # all possible permutations with repetition 3**term_order
             combinations = itertools.product(pauli_list, repeat=term_order)
             for comb in combinations:

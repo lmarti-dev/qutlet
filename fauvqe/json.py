@@ -66,7 +66,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(obj, sympy.Symbol):
             return JSONEncoder.encode_sympy(obj)
 
-        if isinstance(obj, cirq.Circuit):
+        if isinstance(obj, cirq.Circuit) or isinstance(obj, cirq.PauliSum):
             return JSONEncoder.encode_cirq(obj)
 
         return json.JSONEncoder.default(self, obj)  # pragma: no cover (python internal)
@@ -145,7 +145,9 @@ class JSONEncoder(json.JSONEncoder):
 
     @staticmethod
     def decode_numpy_array(dct: Dict) -> np.ndarray:
-        return np.array(dct[JSONEncoder.NUMPY_ARRAY], dtype=dct[JSONEncoder.NUMPY_DTYPE])
+        return np.array(
+            dct[JSONEncoder.NUMPY_ARRAY], dtype=dct[JSONEncoder.NUMPY_DTYPE]
+        )
 
 
 def dumps(*args, **kwargs) -> str:
