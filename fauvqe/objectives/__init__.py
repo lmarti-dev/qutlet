@@ -7,7 +7,7 @@ from fauvqe.objectives.correlation import Correlation
 from fauvqe.objectives.cvar import CVaR
 from fauvqe.objectives.entanglement import Entanglement
 from fauvqe.objectives.expectationvalue import ExpectationValue
-from fauvqe.objectives.fidelity import Fidelity
+from fauvqe.objectives.fidelity import Fidelity, Infidelity
 from fauvqe.objectives.magnetisation import Magnetisation
 from fauvqe.objectives.matrixcost import MatrixCost
 from fauvqe.objectives.objective import Objective

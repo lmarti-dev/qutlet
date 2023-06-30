@@ -4,7 +4,6 @@ import cirq
 import copy
 
 from fauvqe.models.fermionicModel import FermionicModel
-from fauvqe.utilities.generic import flatten, index_bits
 
 
 class FermionOperatorModel(FermionicModel):
@@ -35,8 +34,26 @@ class FermionOperatorModel(FermionicModel):
         self_copy = copy.deepcopy(self)
         return self_copy
 
-    def from_json_dict(self):
-        pass
-
     def to_json_dict(self) -> Dict:
-        pass
+        return {
+            "constructor_params": {
+                "n": self.n,
+                "fermion_operator": self.fermion_operator,
+                "encoding_options": self.encoding_options,
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst

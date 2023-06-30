@@ -7,8 +7,9 @@ from fauvqe.utilities.circuit import get_param_resolver
 
 from scipy.optimize import minimize, OptimizeResult
 import numpy as np
-from typing import Dict
+from typing import Dict, Iterable, Union
 import cirq
+
 
 # available optimizers:
 # ‘Nelder-Mead’
@@ -32,7 +33,6 @@ class ScipyOptimisers(Optimiser):
         self,
         minimize_options={"method": "L-BFGS-B"},
         initial_state=None,
-        initial_params="random",
         save_each_function_call: bool = False,
         method_options: dict = {},
     ):
@@ -42,7 +42,6 @@ class ScipyOptimisers(Optimiser):
         self._method_options = {}
         self._method_options.update(method_options)
         self.initial_state = initial_state
-        self.initial_params = initial_params
         self._function_calls_count = 0
         super().__init__()
 
@@ -65,12 +64,14 @@ class ScipyOptimisers(Optimiser):
             )
         return objective_value
 
-    def optimise(self, objective: Objective):
+    def optimise(
+        self, objective: Objective, initial_params: Union[str, float, Iterable]
+    ):
         self._objective = objective
         self._fauvqe_res = OptimisationResult(self._objective)
         x0 = default_value_handler(
             shape=np.shape(self._objective.model.circuit_param_values.view()),
-            value=self.initial_params,
+            value=initial_params,
         )
 
         def process_step(xk):

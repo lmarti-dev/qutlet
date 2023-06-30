@@ -12,6 +12,7 @@ from typing import Tuple, Union
 
 # necessary for the full loop
 from fauvqe.optimisers.optimiser import Optimiser
+from fauvqe.optimisers.scipy_optimisers import ScipyOptimisers
 from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 import fauvqe.utilities.circuit
@@ -256,7 +257,7 @@ class ADAPT:
             fauvqe.utilities.circuit.match_param_values_to_symbols(
                 model=self.model,
                 symbols=self.model.circuit_param,
-                default_value="random",
+                default_value="zeros",
             )
             self.verbose_print(
                 "best gate found and added: {best_gate}".format(best_gate=exp_gates)
@@ -292,10 +293,17 @@ class ADAPT:
         discard_previous_best: Union[bool, int] = False,
         trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
-        callback: callable = None,
         random: bool = False,
+        callback: callable = None,
     ) -> Tuple[OptimisationResult, AbstractModel]:
         result = None
+        if isinstance(discard_previous_best, int):
+            # how many steps to wait until we can reuse a gate
+            reuse_countdown = discard_previous_best
+        else:
+            reuse_countdown = -1
+        if tetris:
+            raise NotImplementedError
         for step in range(n_steps):
             if random:
                 # in case you want to benchmark adapt by comparing it with a random circuit
@@ -314,7 +322,15 @@ class ADAPT:
                 self.model.circuit = fauvqe.utilities.circuit.populate_empty_qubits(
                     model=self.model
                 )
-                result = optimiser.optimise(objective=objective)
+
+                if isinstance(optimiser, ScipyOptimisers):
+                    # this will only work with the scipy optimiser, as setting the initial guess for the parameters
+                    result = optimiser.optimise(
+                        objective=objective,
+                        initial_params=self.model.circuit_param_values,
+                    )
+                else:
+                    result = optimiser.optimise(objective=objective)
                 self.model.circuit_param_values = result.get_latest_step().params
                 print(
                     "circuit depth: {d}, number of params: {p}".format(
@@ -327,7 +343,12 @@ class ADAPT:
                     callback(result, step)
                 # if we want to forbid adapt from adding the same gate every time (this happens sometimes)
                 if discard_previous_best:
+                    # if we reached the number of steps we've forbidden a gate to be used for, reset the blacklist
+                    if reuse_countdown == 0:
+                        self.indices_to_ignore = []
+                        reuse_countdown = discard_previous_best
                     self.indices_to_ignore.append(max_index)
+                    reuse_countdown -= 1
             else:
                 print("treshold reached, exiting")
                 break

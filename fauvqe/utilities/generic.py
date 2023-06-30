@@ -427,7 +427,7 @@ def grid_neighbour_list(
     return grid
 
 
-def default_value_handler(shape: tuple, value: Union[str, float]):
+def default_value_handler(shape: tuple, value: Union[str, float, Iterable]):
     """General function to have some consistency in default value handling names
     Args:
         shape (tuple): shape of the array
@@ -437,12 +437,22 @@ def default_value_handler(shape: tuple, value: Union[str, float]):
     """
     if isinstance(value, float):
         return np.full(shape=shape, fill_value=value)
-    if value == "zeros":
-        return np.zeros(shape=shape)
-    if value == "ones":
-        return np.ones(shape=shape)
-    if value == "random":
-        return np.random.rand(*shape)
+    elif isinstance(value, (str, bytes)):
+        if value == "zeros":
+            return np.zeros(shape=shape)
+        elif value == "ones":
+            return np.ones(shape=shape)
+        elif value == "random":
+            return np.random.rand(*shape)
+    elif isinstance(value, Iterable):
+        npvalue = np.array(value)
+        if not np.all(npvalue.shape == shape):
+            raise ValueError(
+                "Given shape {s1} doesn't match given value shape {s2}".format(
+                    s1=shape, s2=value.shape
+                )
+            )
+        return value
     else:
         raise ValueError("expected a valid option, got {}".format(value))
 

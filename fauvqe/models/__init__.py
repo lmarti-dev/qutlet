@@ -7,3 +7,7 @@ from fauvqe.models.heisenberg_fc import HeisenbergFC
 from fauvqe.models.abstractmodel import AbstractModel
 from fauvqe.models.spinModel import SpinModel
 from fauvqe.models.spinModel_fc import SpinModelFC
+from fauvqe.models.fockModel import FockModel
+from fauvqe.models.fermionicModel import FermionicModel
+from fauvqe.models.fermiHubbardModel import FermiHubbardModel
+from fauvqe.models.fermionOperatorModel import FermionOperatorModel

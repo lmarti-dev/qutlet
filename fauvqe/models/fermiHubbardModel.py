@@ -66,12 +66,6 @@ class FermiHubbardModel(FermionicModel):
         self_copy = copy.deepcopy(self)
         return self_copy
 
-    def from_json_dict(self):
-        pass
-
-    def to_json_dict(self) -> Dict:
-        pass
-
     def _set_fock_hamiltonian(self, reset: bool = True):
         """This function sets the fock hamiltonian from the fermihubbard function in open fermion
 
@@ -133,3 +127,30 @@ class FermiHubbardModel(FermionicModel):
         mat = mat.tolist()
         print(pauli_string)
         print("\n".join(["".join(row) for row in mat]))
+
+    def to_json_dict(self) -> Dict:
+        return {
+            "constructor_params": {
+                "x_dimension": self.x_dimension,
+                "y_dimension": self.y_dimension,
+                "tunneling": self.tunneling,
+                "coulomb": self.coulomb,
+                "hamiltonian_options": self.hamiltonian_options,
+                "encoding_options": self.encoding_options,
+            },
+            "params": {
+                "circuit": self.circuit,
+                "circuit_param": self.circuit_param,
+                "circuit_param_values": self.circuit_param_values,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct: Dict):
+        inst = cls(**dct["constructor_params"])
+
+        inst.circuit = dct["params"]["circuit"]
+        inst.circuit_param = dct["params"]["circuit_param"]
+        inst.circuit_param_values = dct["params"]["circuit_param_values"]
+
+        return inst

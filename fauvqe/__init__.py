@@ -5,9 +5,7 @@
 # https://stackoverflow.com/questions/11990556/how-to-make-global-imports-from-a-function
 
 # imports within package
-from fauvqe.converter import (
-    Converter
-)
+from fauvqe.converter import Converter
 
 # subpackages
 from fauvqe import models, objectives, optimisers
@@ -22,7 +20,11 @@ from fauvqe.models import (
     Heisenberg,
     HeisenbergFC,
     SpinModel,
-    SpinModelFC
+    SpinModelFC,
+    FockModel,
+    FermionicModel,
+    FermiHubbardModel,
+    FermionOperatorModel,
 )
 from fauvqe.objectives import (
     AbstractExpectationValue,
@@ -31,11 +33,12 @@ from fauvqe.objectives import (
     Entanglement,
     ExpectationValue,
     Fidelity,
+    Infidelity,
     Magnetisation,
     MatrixCost,
     Objective,
     TraceDistance,
-    UtCost
+    UtCost,
 )
 from fauvqe.optimisers import (
     ADAM,
@@ -43,7 +46,8 @@ from fauvqe.optimisers import (
     GradientOptimiser,
     OptimisationResult,
     OptimisationStep,
-    Optimiser
+    Optimiser,
+    scipy_optimisers,
 )
 
 """
