@@ -182,7 +182,7 @@ def jw_eigenspectrum_at_particle_number(
         sparse (bool, optional): whether to use a sparse solver. Defaults to False.
         k (int, optional): if using a sparse solver, the number of eigenstates to find (must be smaller than the total number of eigenstates). Defaults to None.
     Returns:
-        Tuple[np.ndarray,np.ndarray]: _description_
+        Tuple[np.ndarray,np.ndarray]: eigenvalues, eigenvectors
     """
 
     n_qubits = int(np.log2(sparse_operator.shape[0]))
