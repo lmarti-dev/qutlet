@@ -3,6 +3,7 @@ from typing import Any, Dict
 import json
 
 import cirq
+import openfermion as of
 import numpy as np
 import sympy
 
@@ -29,6 +30,9 @@ def decode_custom(dct: Dict) -> Any:
         if dtype == JSONEncoder.FLAG_CIRQ:
             return JSONEncoder.decode_cirq(dct)
 
+        if dtype == JSONEncoder.FLAG_OPENFERMION:
+            return JSONEncoder.decode_openfermion(dct)
+
     return dct
 
 
@@ -53,6 +57,9 @@ class JSONEncoder(json.JSONEncoder):
     FLAG_CIRQ = "cirq"
     CIRQ_CIRCUIT = "circuit"
 
+    FLAG_OPENFERMION = "of"
+    OF_FERMION_OP = "fermion_operator"
+
     def default(self, obj: Any) -> Any:
         if isinstance(obj, Complex):
             return JSONEncoder.encode_complex(obj)
@@ -68,6 +75,9 @@ class JSONEncoder(json.JSONEncoder):
 
         if isinstance(obj, cirq.Circuit) or isinstance(obj, cirq.PauliSum):
             return JSONEncoder.encode_cirq(obj)
+
+        if isinstance(obj, of.FermionOperator):
+            return JSONEncoder.encode_fermionoperator(obj)
 
         return json.JSONEncoder.default(self, obj)  # pragma: no cover (python internal)
 
@@ -92,6 +102,19 @@ class JSONEncoder(json.JSONEncoder):
     @staticmethod
     def decode_cirq(dct: Dict) -> cirq.Circuit:
         return cirq.read_json(json_text=dct[JSONEncoder.CIRQ_CIRCUIT])
+
+    @staticmethod
+    def encode_fermionoperator(obj: of.FermionOperator) -> Dict:
+        return {
+            JSONEncoder.FLAG: JSONEncoder.FLAG_OPENFERMION,
+            JSONEncoder.OF_FERMION_OP: str(obj),
+        }
+
+    @staticmethod
+    def decode_openfermion(dct: Dict) -> of.FermionOperator:
+        data = dct[JSONEncoder.OF_FERMION_OP]
+        operator = of.FermionOperator(data)
+        return operator
 
     @staticmethod
     def encode_complex(obj: Complex) -> Dict:

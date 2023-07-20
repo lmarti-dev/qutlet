@@ -169,7 +169,11 @@ class ADAPT:
             ).final_state_vector
 
         grad_values = []
-        self.verbose_print("Gate pool size: {}".format(len(self.gate_pool)))
+        self.verbose_print(
+            "Gate pool size: {}".format(
+                len(self.gate_pool) - len(self.indices_to_ignore)
+            )
+        )
         self.verbose_print(
             "measure chosen: {}, preprocessing: {}".format(
                 self.measure["name"], self.preprocess
@@ -347,6 +351,7 @@ class ADAPT:
                     if reuse_countdown == 0:
                         self.indices_to_ignore = []
                         reuse_countdown = discard_previous_best
+                        self.verbose_print("resetting blacklist")
                     self.indices_to_ignore.append(max_index)
                     reuse_countdown -= 1
             else:
@@ -381,7 +386,7 @@ def measure_gradient_dispatcher(
                 eps=1e-5,
                 sparse=False,
             )
-    if measure_name == "fidelity":
+    elif measure_name == "fidelity":
         if preprocess:
             grad = compute_preprocessed_fidelity_gradient(
                 trial_state=trial_state,
@@ -393,6 +398,8 @@ def measure_gradient_dispatcher(
                 trial_state=trial_state,
                 target_state=target_state,
             )
+    else:
+        raise ValueError("measure_name: {} unknown".format(measure_name))
     return grad
 
 
@@ -623,7 +630,7 @@ def compute_preprocessed_fidelity_gradient(
     n_qubits = int(np.log2(trial_state.shape[0]))
     qid_shape = (2,) * n_qubits
     fidelity = cirq.fidelity(trial_state, preprocessed_fid_state, qid_shape=qid_shape)
-    return fidelity
+    return fidelity**2
 
 
 def compute_fidelity_gradient(
@@ -640,7 +647,7 @@ def compute_fidelity_gradient(
     qid_shape = (2,) * n_qubits
 
     fidelity = cirq.fidelity(-trial_state.conj(), ket, qid_shape=qid_shape)
-    return fidelity
+    return fidelity**2
 
 
 def compute_preprocessed_energy_gradient(
@@ -661,6 +668,7 @@ def compute_energy_gradient(
     eps: float = 1e-5,
     sparse: bool = False,
 ) -> float:
+    # fastest is full non sparse, so those are the default
     if sparse:
         if not full:
             # in the noiseless case dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps> (eval at theta=0)

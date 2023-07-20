@@ -394,8 +394,11 @@ class FermionicModel(FockModel):
         initial_state: Union[int, Sequence[int]],
         Nf: Union[int, Sequence[int]],
     ):
-        if name is None or name == "none":
-            self.initial_state_name = "none"
+        if name is None:
+            name == "none"
+        self.initial_state_name = name
+
+        if name == "none":
             return None
         elif name == "computational":
             return FermionicModel.computational_state_circuit(
