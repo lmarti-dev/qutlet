@@ -646,6 +646,10 @@ def compute_fidelity_gradient(
     #                 = -<psi|e^(-theta A)A|gs>
     # at theta=0, we have = -<psi|A|gs>
     ket = op.dot(target_state)
+    if np.linalg.norm(ket) == 0:
+        return 0
+    else:
+        ket = fauvqe.utilities.generic.normalize_vec(ket)
     n_qubits = int(np.log2(trial_state.shape[0]))
     qid_shape = (2,) * n_qubits
 

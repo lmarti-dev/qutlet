@@ -60,7 +60,7 @@ class Fidelity(Objective):
         n_qubits = len(self.model.flattened_qubits)
         qid_shape = (2,) * n_qubits
         # cirq fidelity is the square of qutip fidelity
-        return np.sqrt(fidelity(target_state, wavefunction, qid_shape=qid_shape))
+        return fidelity(target_state, wavefunction, qid_shape=qid_shape)
 
     def to_json_dict(self) -> Dict:
         return {

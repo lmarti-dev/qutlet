@@ -4,7 +4,6 @@ from fauvqe.optimisers.scipy_optimisers import ScipyOptimisers
 from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 
 from fauvqe.models.abstractmodel import AbstractModel
-from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
 from typing import Dict, Tuple
 
 import cirq
@@ -24,7 +23,7 @@ class DummyModel(AbstractModel):
         pass
 
     def _set_hamiltonian(self, reset: bool = True):
-        self.hamiltonian = sum([cirq.Z(q) for q in self.flattened_qubits])
+        self._hamiltonian = sum([cirq.Z(q) for q in self.flattened_qubits])
 
     def set_circuit(self):
         symbols = [sympy.Symbol(str(q)) for q in self.flattened_qubits]
@@ -89,7 +88,7 @@ def test_optimize():
             result = optimiser.optimise(
                 objective=objective, initial_params=initial_params
             )
-            final_state = np.real(result.get_latest_step().wavefunction)
+            final_state = np.real(result.get_latest_step().wavefunction())
             ground_state = model.ground_state()
             assert (
                 cirq.fidelity(
