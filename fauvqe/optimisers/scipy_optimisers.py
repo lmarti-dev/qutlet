@@ -5,7 +5,7 @@ from fauvqe.optimisers.optimisation_result import OptimisationResult
 from fauvqe.utilities.generic import default_value_handler
 from fauvqe.utilities.circuit import get_param_resolver
 
-from scipy.optimize import minimize, OptimizeResult
+from scipy.optimize import OptimizeResult, minimize
 import numpy as np
 from typing import Dict, Iterable, Union
 import cirq
@@ -100,8 +100,16 @@ class ScipyOptimisers(Optimiser):
         print("function calls: ", self._function_calls_count)
         return self._fauvqe_res
 
-    def from_json_dict(self) -> Dict:
-        pass
-
     def to_json_dict(self) -> Dict:
-        pass
+        return {
+            "constructor_params": {
+                "save_each_function_call": self.save_each_function_call,
+                "minimize_options": self._minimize_options,
+                "method_options": self._method_options,
+                "initial_state": self.initial_state,
+            },
+        }
+
+    @classmethod
+    def from_json_dict(cls, dct) -> Dict:
+        return cls(**dct["constructor_params"])

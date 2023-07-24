@@ -182,6 +182,9 @@ class ADAPT:
         if self.n_jobs > 1:
             ham = self.model.hamiltonian.matrix(qubits=self.model.flattened_qubits)
             process_pool = mp.Pool(self.n_jobs)
+            self.verbose_print(
+                "Pooling {} jobs to compute gradient".format(self.n_jobs)
+            )
             results = process_pool.starmap(
                 measure_gradient_dispatcher,
                 [

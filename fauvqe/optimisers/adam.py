@@ -53,10 +53,7 @@ from fauvqe.optimisers.gradientoptimiser import GradientOptimiser
 class ADAM(GradientOptimiser):
     """ADAM class docstring"""
 
-    def __init__(
-        self,
-        options: dict = {}
-    ):
+    def __init__(self, options: dict = {}):
         """ADAM optimiser
 
         Parameters
@@ -65,52 +62,53 @@ class ADAM(GradientOptimiser):
             Dictionary containing additional options to individualise the optimisation routine. Contains:
                 eps: Real
                     :math:`\\epsilon` for gradient
-                
+
                 eps_2: Real
                     :math:`\\epsilon` for adam
-                
+
                 eta: Real
                     Step size :math:`\\alpha` for adam
-                
+
                 b_1: Real
                     :math:`\\beta_1` for adam
-                
+
                 b_2: Real
                     :math:`\\beta_2` for adam
-                
+
                 break_cond: {"iterations"} default "iterations"
                     Break condition for the optimisation
-                
+
                 break_param: Integral
                     Break parameter for the optimisation
-                
+
                 symmetric_gradient: bool
                     Specifies whether to use symmetric numerical gradient or asymmetric gradient (faster by ~ factor 2)
-                
+
                 plot_run: bool
                     Plot cost development in optimisation run and save to fauvqe/plots
-                
+
                 use_progress_bar: bool
                     Determines whether to use tqdm's progress bar when running the optimisation
-                
+
                 dtype: np.dtype
                     data type of wavefunction
         """
         self.options = {
-            'eps_2': 1e-8,
-            'b_1': 0.9,
-            'b_2': 0.999,
+            "eps_2": 1e-8,
+            "b_1": 0.9,
+            "b_2": 0.999,
         }
         self.options.update(options)
         super().__init__(self.options)
-        
+
         assert all(
-            isinstance(n, Real) and n > 0.0 for n in [self.options['eps_2'], self.options['b_1'], self.options['b_2']]
+            isinstance(n, Real) and n > 0.0
+            for n in [self.options["eps_2"], self.options["b_1"], self.options["b_2"]]
         ), "Parameters must be positive, real numbers"
-        
-        if(self.options['batch_size'] > 0):
+
+        if self.options["batch_size"] > 0:
             self._optimise_step = self._optimise_step_indices
-        
+
         # The following attributes change for each objective
         self._objective: Optional[Objective] = None
         self._v_t: np.ndarray = np.array([])
@@ -143,11 +141,11 @@ class ADAM(GradientOptimiser):
         -------
         OptimisationResult
         """
-        #Do we even need these two lines?
+        # Do we even need these two lines?
         self._v_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         self._m_t = np.zeros(np.shape(objective.model.circuit_param_values.view()))
         return super().optimise(objective, continue_at, n_jobs)
-        
+
     def _parameter_update(self, gradient_values: np.ndarray, step: Integral):
         """
         t ← t + 1
@@ -163,18 +161,36 @@ class ADAM(GradientOptimiser):
         θ_t ← θ_{t−1} − α_t · m_t  /( (v_t)^0.5 + eps)
 
         """
-        self._m_t = self.options['b_1'] * self._m_t + (1 - self.options['b_1']) * gradient_values
-        self._v_t = self.options['b_2'] * self._v_t + (1 - self.options['b_2']) * gradient_values ** 2
-        return self.options['eta'] * (1 - self.options['b_2'] ** step) ** 0.5 / (1 - self.options['b_1'] ** step) * self._m_t / (self._v_t ** 0.5 + self.options['eps_2'])
-    
+        self._m_t = (
+            self.options["b_1"] * self._m_t
+            + (1 - self.options["b_1"]) * gradient_values
+        )
+        self._v_t = (
+            self.options["b_2"] * self._v_t
+            + (1 - self.options["b_2"]) * gradient_values**2
+        )
+        return (
+            self.options["eta"]
+            * (1 - self.options["b_2"] ** step) ** 0.5
+            / (1 - self.options["b_1"] ** step)
+            * self._m_t
+            / (self._v_t**0.5 + self.options["eps_2"])
+        )
+
     def _optimise_step(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs)
         return temp_cpv - self._parameter_update(gradient_values, step), cost
-    
-    def _optimise_step_indices(self, temp_cpv: np.ndarray, _n_jobs: Integral, step: Integral, indices: Optional[List[int]] = None):
+
+    def _optimise_step_indices(
+        self,
+        temp_cpv: np.ndarray,
+        _n_jobs: Integral,
+        step: Integral,
+        indices: Optional[List[int]] = None,
+    ):
         gradient_values, cost = self._get_gradients(temp_cpv, _n_jobs, indices)
         return temp_cpv - self._parameter_update(gradient_values, step), cost
-    
+
     @classmethod
     def from_json_dict(cls, dct: Dict):
         return cls(**dct["constructor_params"])

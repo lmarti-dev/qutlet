@@ -262,12 +262,14 @@ class FermionicModel(FockModel):
 
     @staticmethod
     def spin_and_number_operator(n_qubits: int):
-        n_up_op = sum(
-            [of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(0, n_qubits, 2)]
-        )
-        n_down_op = sum(
-            [of.FermionOperator("{x}^ {x}".format(x=x)) for x in range(1, n_qubits, 2)]
-        )
+        n_up_op = of.FermionOperator()
+        for x in range(0, n_qubits, 2):
+            n_up_op += of.FermionOperator("{x}^ {x}".format(x=x))
+
+        n_down_op = of.FermionOperator()
+        for x in range(1, n_qubits, 2):
+            n_down_op += of.FermionOperator("{x}^ {x}".format(x=x))
+
         n_total_op = sum(n_up_op, n_down_op)
         return n_up_op, n_down_op, n_total_op
 

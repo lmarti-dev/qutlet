@@ -16,8 +16,17 @@ class Ising(SpinModel):
     2D Ising class inherits AbstractModel
     is mother of different quantum circuit methods
     """
-    
-    def __init__(self, qubittype, n, j_v = None, j_h = None, h = None, field: Literal["Z", "X"] = "X", t: Real = 0):
+
+    def __init__(
+        self,
+        qubittype,
+        n,
+        j_v=None,
+        j_h=None,
+        h=None,
+        field: Literal["Z", "X"] = "X",
+        t: Real = 0,
+    ):
         """
         qubittype as defined in AbstractModel
         n number of qubits
@@ -33,52 +42,65 @@ class Ising(SpinModel):
             j_h = np.zeros((n[0], n[1]))
         if h is None:
             h = np.zeros((n[0], n[1]))
-        if(field == "X"):
+        if field == "X":
             one_q_gate = [cirq.X]
             self.energy_fields = ["Z", "X"]
-        elif(field == "Z"):
+        elif field == "Z":
             one_q_gate = [cirq.Z]
             self.energy_fields = ["Z"]
         else:
-            assert False, "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
+            assert (
+                False
+            ), "Incompatible field name, expected: 'X' or 'Z', received: " + str(field)
         super().__init__(
-                    qubittype, 
-                    np.array(n),
-                    [j_v],
-                    [j_h],
-                    [h],
-                    [lambda q1, q2: cirq.Z(q1)*cirq.Z(q2)],
-                    one_q_gate,
-                    t
-                )
+            qubittype,
+            np.array(n),
+            [j_v],
+            [j_h],
+            [h],
+            [lambda q1, q2: cirq.Z(q1) * cirq.Z(q2)],
+            one_q_gate,
+            t,
+        )
         self.field = field
 
     def copy(self) -> Ising:
-        self_copy = Ising( self.qubittype,
-                self.n,
-                self.j_v[:,:,0],
-                self.j_h[:,:,0],
-                self.h[:,:,0],
-                self.field,
-                self.t )
+        self_copy = Ising(
+            self.qubittype,
+            self.n,
+            self.j_v[:, :, 0],
+            self.j_h[:, :, 0],
+            self.h[:, :, 0],
+            self.field,
+            self.t,
+        )
 
         self_copy.circuit = self.circuit.copy()
         self_copy.circuit_param = self.circuit_param.copy()
         self_copy.circuit_param_values = self.circuit_param_values.copy()
         self_copy.hamiltonian = self.hamiltonian.copy()
 
-        if self.eig_val is not None: self_copy.eig_val = self.eig_val.copy()
-        if self.eig_vec is not None: self_copy.eig_vec = self.eig_vec.copy()
-        if self._Ut is not None: self_copy._Ut = self._Ut.copy()
+        if self.eig_val is not None:
+            self_copy.eig_val = self.eig_val.copy()
+        if self.eig_vec is not None:
+            self_copy.eig_vec = self.eig_vec.copy()
+        if self._Ut is not None:
+            self_copy._Ut = self._Ut.copy()
 
         return self_copy
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:
-        if(self.field == "X"):
-            return [super().energy( self.j_v, self.j_h, np.zeros(self.h.shape)), 
-                    super().energy( np.zeros(self.j_v[:, :, 0].shape), np.zeros(self.j_h[:, :, 0].shape), self.h)]
+        if self.field == "X":
+            return [
+                super().energy(self.j_v, self.j_h, np.zeros(self.h.shape)),
+                super().energy(
+                    np.zeros(self.j_v[:, :, 0].shape),
+                    np.zeros(self.j_h[:, :, 0].shape),
+                    self.h,
+                ),
+            ]
         else:
-            return [super().energy( self.j_v, self.j_h, self.h)]
+            return [super().energy(self.j_v, self.j_h, self.h)]
 
     def get_spin_vm(self, wf):
         assert np.size(self.n) == 2, "Expect 2D qubit grid"
@@ -97,7 +119,7 @@ class Ising(SpinModel):
             # does not quite work so do stupid version with for loop
             # declaring cpython types can maybe help,
             # Bad due to nested for for if instead of numpy, but not straight forward
-            for j in np.arange(2 ** n_temp):
+            for j in np.arange(2**n_temp):
                 # np.binary_repr(3, width=4) use as mask
                 if np.binary_repr(j, width=n_temp)[i] == "1":
                     com_prob[i] += prob[j]
@@ -157,8 +179,10 @@ class Ising(SpinModel):
         ), "Ising class error, given system dimensions n = {} are not 1D".format(self.n)
         assert np.min(self.h) == np.max(
             self.h
-        ), "Ising class error, external field h = {} is not the same for all spins".format(self.h)
-        
+        ), "Ising class error, external field h = {} is not the same for all spins".format(
+            self.h
+        )
+
         # Use initial parameter to catch empty array
         assert (
             np.min(self.j_h, initial=np.finfo(np.float_).max)
@@ -184,7 +208,7 @@ class Ising(SpinModel):
         )
 
         lambda_k = self._get_lambda_k()
-        return -np.sum(lambda_k) /(self.n[0]*self.n[1])
+        return -np.sum(lambda_k) / (self.n[0] * self.n[1])
 
     def _get_lambda_k(self):
         """
@@ -193,7 +217,15 @@ class Ising(SpinModel):
         """
         _n = self.n[0] * self.n[1]
         _k = (
-            2 * np.pi * np.arange(start=-(_n - np.mod(_n, 2)) / 2, stop=_n / 2 , step=1, dtype=np.complex128) / _n
+            2
+            * np.pi
+            * np.arange(
+                start=-(_n - np.mod(_n, 2)) / 2,
+                stop=_n / 2,
+                step=1,
+                dtype=np.complex128,
+            )
+            / _n
         )
 
         if self.j_h.size > 0:
@@ -201,16 +233,19 @@ class Ising(SpinModel):
         else:
             _j = self.j_v[0][0]
 
-        return np.sqrt(self.h[0][0][0] ** 2 + _j ** 2 - (2 * _j) * self.h[0][0][0] * np.cos(_k), dtype=np.complex128)
+        return np.sqrt(
+            self.h[0][0][0] ** 2 + _j**2 - (2 * _j) * self.h[0][0][0] * np.cos(_k),
+            dtype=np.complex128,
+        )
 
     def to_json_dict(self) -> Dict:
         return {
             "constructor_params": {
                 "qubittype": self.qubittype,
                 "n": self.n,
-                "j_v": self.j_v[:,:,0],
-                "j_h": self.j_h[:,:,0],
-                "h": self.h[:,:,0],
+                "j_v": self.j_v[:, :, 0],
+                "j_h": self.j_h[:, :, 0],
+                "h": self.h[:, :, 0],
             },
             "params": {
                 "circuit": self.circuit,
@@ -226,5 +261,5 @@ class Ising(SpinModel):
         inst.circuit = dct["params"]["circuit"]
         inst.circuit_param = dct["params"]["circuit_param"]
         inst.circuit_param_values = dct["params"]["circuit_param_values"]
-        
+
         return inst
