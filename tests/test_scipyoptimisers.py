@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
-from fauvqe.optimisers.scipy_optimisers import ScipyOptimisers
-from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
+from qutlet.optimisers.scipy_optimisers import ScipyOptimisers
+from qutlet.objectives.abstractexpectationvalue import AbstractExpectationValue
 
-from fauvqe.models.qubitModel import AbstractModel
+from qutlet.models.qubitModel import AbstractModel
 from typing import Dict, Tuple
 
 import cirq
@@ -29,7 +29,10 @@ class DummyModel(QubitModel):
         self.circuit_param = symbols
         self.circuit_param_values = np.zeros(len(symbols))
         self.circuit = cirq.Circuit(
-            [cirq.ry(rads=symbols[ii]).on(self.qubits[ii]) for ii in range(len(self.qubits))]
+            [
+                cirq.ry(rads=symbols[ii]).on(self.qubits[ii])
+                for ii in range(len(self.qubits))
+            ]
         )
 
     def ground_state(self):
@@ -81,7 +84,9 @@ def test_optimize():
             save_each_function_call=save_function_calls,
         )
         for initial_params in ("zeros", "ones", "random"):
-            result = optimiser.optimise(objective=objective, initial_params=initial_params)
+            result = optimiser.optimise(
+                objective=objective, initial_params=initial_params
+            )
             final_state = np.real(result.get_latest_step().wavefunction())
             ground_state = model.ground_state()
             assert (

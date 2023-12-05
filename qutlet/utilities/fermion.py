@@ -4,7 +4,7 @@ import numpy as np
 import openfermion as of
 
 import scipy
-import fauvqe.utilities.generic
+import qutlet.utilities.generic
 
 
 def even_excitation(
@@ -125,8 +125,8 @@ def jw_spin_correct_indices(
     correct_combinations = [
         list(c)
         for c in combinations
-        if fauvqe.utilities.generic.sum_even(c) == n_spin_up
-        and fauvqe.utilities.generic.sum_odd(c) == n_spin_down
+        if qutlet.utilities.generic.sum_even(c) == n_spin_up
+        and qutlet.utilities.generic.sum_odd(c) == n_spin_down
     ]
 
     if right_to_left:

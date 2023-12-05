@@ -5,8 +5,8 @@ from scipy.sparse import csc_matrix
 import openfermion as of
 import pytest
 
-import fauvqe.utilities.testing
-import fauvqe.utilities.fermion
+import qutlet.utilities.testing
+import qutlet.utilities.fermion
 
 
 @pytest.mark.parametrize(
@@ -48,7 +48,7 @@ def test_even_excitation(coeff, indices, anti_hermitian, correct):
             for parity, s in zip(correct[0], correct[1])
         ]
     )
-    ee_fop = fauvqe.utilities.fermion.even_excitation(
+    ee_fop = qutlet.utilities.fermion.even_excitation(
         coeff=coeff, indices=indices, anti_hermitian=anti_hermitian
     )
     assert ee_fop == correct_fop
@@ -56,7 +56,7 @@ def test_even_excitation(coeff, indices, anti_hermitian, correct):
 
 def test_even_excitation_error():
     with pytest.raises(ValueError):
-        fauvqe.utilities.fermion.even_excitation(
+        qutlet.utilities.fermion.even_excitation(
             coeff=1, indices=[1, 2, 3, 4, 5], anti_hermitian=True
         )
 
@@ -75,7 +75,7 @@ def test_single_excitation(coeff, i, j, anti_hermitian, correct):
             for parity, s in zip(correct[0], correct[1])
         ]
     )
-    single_fop = fauvqe.utilities.fermion.single_excitation(
+    single_fop = qutlet.utilities.fermion.single_excitation(
         coeff, i, j, anti_hermitian=anti_hermitian
     )
     assert single_fop == correct_fop
@@ -95,7 +95,7 @@ def test_double_excitation(coeff, i, j, k, l, anti_hermitian, correct):
             for parity, s in zip(correct[0], correct[1])
         ]
     )
-    double_fop = fauvqe.utilities.fermion.double_excitation(
+    double_fop = qutlet.utilities.fermion.double_excitation(
         coeff, i, j, k, l, anti_hermitian=anti_hermitian
     )
     assert double_fop == correct_fop
@@ -134,7 +134,7 @@ def test_bravyi_kitaev_fast_wrapper(fop, correct):
             two_body_tensor=np.array(correct[2]),
         )
     )
-    assert fauvqe.utilities.fermion.bravyi_kitaev_fast_wrapper(fop) == correct_fop
+    assert qutlet.utilities.fermion.bravyi_kitaev_fast_wrapper(fop) == correct_fop
 
 
 @pytest.mark.parametrize(
@@ -158,7 +158,7 @@ def test_bravyi_kitaev_fast_wrapper(fop, correct):
     ],
 )
 def test_mean_coeff_n_terms(fop, n, correct):
-    assert np.isclose(fauvqe.utilities.fermion.mean_coeff_n_terms(fop, n), correct)
+    assert np.isclose(qutlet.utilities.fermion.mean_coeff_n_terms(fop, n), correct)
 
 
 @pytest.mark.parametrize(
@@ -176,8 +176,8 @@ def test_mean_coeff_n_terms(fop, n, correct):
     ],
 )
 def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
-    assert fauvqe.utilities.testing.do_lists_have_same_elements(
-        fauvqe.utilities.fermion.jw_spin_correct_indices(n_electrons, n_indices),
+    assert qutlet.utilities.testing.do_lists_have_same_elements(
+        qutlet.utilities.fermion.jw_spin_correct_indices(n_electrons, n_indices),
         correct,
     )
 
@@ -196,7 +196,7 @@ def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
 )
 def test_jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits, correct):
     assert (
-        fauvqe.utilities.fermion.jw_spin_restrict_operator(
+        qutlet.utilities.fermion.jw_spin_restrict_operator(
             sparse_operator, particle_number, n_qubits
         )
         != correct
@@ -238,7 +238,7 @@ def test_jw_eigenspectrum_at_particle_number(
     correct_eigvals,
     correct_eigvecs,
 ):
-    eigvals, eigvecs = fauvqe.utilities.fermion.jw_eigenspectrum_at_particle_number(
+    eigvals, eigvecs = qutlet.utilities.fermion.jw_eigenspectrum_at_particle_number(
         sparse_operator,
         particle_number,
         expanded,
@@ -269,7 +269,7 @@ def test_jw_get_true_ground_state_at_particle_number(
     (
         eigval,
         eigvec,
-    ) = fauvqe.utilities.fermion.jw_get_true_ground_state_at_particle_number(
+    ) = qutlet.utilities.fermion.jw_get_true_ground_state_at_particle_number(
         sparse_operator, particle_number, spin, sparse
     )
     assert np.isclose(eigval, correct_eigval).all()
@@ -283,7 +283,7 @@ def test_jw_get_true_ground_state_at_particle_number(
 
 def test_jw_spin_correct_indices_error():
     with pytest.raises(TypeError):
-        fauvqe.utilities.fermion.jw_spin_correct_indices("hello", [1, 2])
+        qutlet.utilities.fermion.jw_spin_correct_indices("hello", [1, 2])
 
 
 @pytest.mark.parametrize(
@@ -295,5 +295,5 @@ def test_jw_spin_correct_indices_error():
 )
 def test_jw_computational_wf(indices, Nqubits, correct):
     assert (
-        fauvqe.utilities.fermion.jw_computational_wf(indices, Nqubits) == correct
+        qutlet.utilities.fermion.jw_computational_wf(indices, Nqubits) == correct
     ).all()

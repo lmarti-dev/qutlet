@@ -1,7 +1,7 @@
 import pytest
 import openfermion as of
-from fauvqe.models.fermionicModel import FermionicModel
-from fauvqe.utilities import jw_computational_wf, index_bits
+from qutlet.models.fermionicModel import FermionicModel
+from qutlet.utilities import jw_computational_wf, index_bits
 
 
 @pytest.mark.parametrize(

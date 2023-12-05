@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import fauvqe.utilities.testing
-import fauvqe.utilities.generic
+import qutlet.utilities.testing
+import qutlet.utilities.generic
 
 
 @pytest.mark.parametrize(
@@ -16,7 +16,7 @@ import fauvqe.utilities.generic
 )
 def test_non_zero_matrix(M, correct, eq_tol):
     assert np.array(
-        fauvqe.utilities.testing.non_zero_matrix(M=M, eq_tol=eq_tol) == correct
+        qutlet.utilities.testing.non_zero_matrix(M=M, eq_tol=eq_tol) == correct
     ).all()
 
 
@@ -30,4 +30,4 @@ def test_non_zero_matrix(M, correct, eq_tol):
     ],
 )
 def test_do_lists_have_same_elements(M1, M2, correct):
-    assert fauvqe.utilities.testing.do_lists_have_same_elements(M1, M2) == correct
+    assert qutlet.utilities.testing.do_lists_have_same_elements(M1, M2) == correct

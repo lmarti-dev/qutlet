@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import fauvqe.utilities.testing
-import fauvqe.utilities.generic
+import qutlet.utilities.testing
+import qutlet.utilities.generic
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,7 @@ import fauvqe.utilities.generic
             np.kron(np.eye(2), np.ones((4, 4))),
         ),
         (
-            fauvqe.utilities.generic.direct_sum,
+            qutlet.utilities.generic.direct_sum,
             [
                 np.array([[1, 2, 3], [0, 0, 0], [1, 1, 1]]),
                 np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]),
@@ -59,7 +59,7 @@ import fauvqe.utilities.generic
 def test_chained_matrix_multiplication(multiplication_rule, l, correct):
     assert (
         np.array(
-            fauvqe.utilities.generic.chained_matrix_multiplication(
+            qutlet.utilities.generic.chained_matrix_multiplication(
                 multiplication_rule, *l
             )
         )
@@ -77,7 +77,7 @@ def test_chained_matrix_multiplication(multiplication_rule, l, correct):
     ],
 )
 def test_flatten(a, correct):
-    assert list(fauvqe.utilities.generic.flatten(a)) == correct
+    assert list(qutlet.utilities.generic.flatten(a)) == correct
 
 
 @pytest.mark.parametrize(
@@ -99,7 +99,7 @@ def test_flatten(a, correct):
 )
 def test_direct_sum(a, b, correct):
     assert (
-        fauvqe.utilities.generic.direct_sum(np.array(a), np.array(b))
+        qutlet.utilities.generic.direct_sum(np.array(a), np.array(b))
         == np.array(correct)
     ).all()
 
@@ -148,7 +148,7 @@ def test_direct_sum(a, b, correct):
 )
 def test_alternating_indices_to_sectors(M, correct, even_first, axis):
     assert (
-        fauvqe.utilities.generic.alternating_indices_to_sectors(
+        qutlet.utilities.generic.alternating_indices_to_sectors(
             np.array(M), even_first, axis
         )
         == correct
@@ -186,7 +186,7 @@ def test_alternating_indices_to_sectors(M, correct, even_first, axis):
 )
 def test_sectors_to_alternating_indices(M, correct, even_first, axis):
     assert (
-        fauvqe.utilities.generic.sectors_to_alternating_indices(
+        qutlet.utilities.generic.sectors_to_alternating_indices(
             np.array(M), even_first, axis
         )
         == np.array(correct)
@@ -239,7 +239,7 @@ def test_sectors_to_alternating_indices(M, correct, even_first, axis):
 )
 def test_flip_cross_rows(M, correct, flip_odd):
     assert (
-        np.array(fauvqe.utilities.generic.flip_cross_rows(M, flip_odd) == correct)
+        np.array(qutlet.utilities.generic.flip_cross_rows(M, flip_odd) == correct)
     ).all()
 
 
@@ -262,7 +262,7 @@ def test_flip_cross_rows(M, correct, flip_odd):
 )
 def test_flip_cross(M, correct, rc, flip_odd):
     assert (
-        fauvqe.utilities.generic.flip_cross(np.array(M), rc, flip_odd) == correct
+        qutlet.utilities.generic.flip_cross(np.array(M), rc, flip_odd) == correct
     ).all()
 
 
@@ -275,7 +275,7 @@ def test_flip_cross(M, correct, rc, flip_odd):
     ],
 )
 def test_interweave(M1, M2, correct):
-    assert np.array(fauvqe.utilities.generic.interweave(M1, M2) == correct).all()
+    assert np.array(qutlet.utilities.generic.interweave(M1, M2) == correct).all()
 
 
 @pytest.mark.parametrize(
@@ -288,7 +288,7 @@ def test_interweave(M1, M2, correct):
 )
 def test_arg_alternating_indices_to_sectors(indices, correct, N):
     assert np.array(
-        fauvqe.utilities.generic.arg_alternating_indices_to_sectors(
+        qutlet.utilities.generic.arg_alternating_indices_to_sectors(
             indices=indices, N=N
         )
         == correct
@@ -297,14 +297,14 @@ def test_arg_alternating_indices_to_sectors(indices, correct, N):
 
 def test_arg_alternating_indices_to_sectors_error():
     with pytest.raises(ValueError):
-        fauvqe.utilities.generic.arg_alternating_indices_to_sectors(
+        qutlet.utilities.generic.arg_alternating_indices_to_sectors(
             indices=[1, 2],
             N=[
                 2,
             ],
         )
     with pytest.raises(TypeError):
-        fauvqe.utilities.generic.arg_alternating_indices_to_sectors(
+        qutlet.utilities.generic.arg_alternating_indices_to_sectors(
             indices=[1, 2], N="a"
         )
 
@@ -321,7 +321,7 @@ def test_arg_alternating_indices_to_sectors_error():
 )
 def test_arg_flip_cross_row(x, y, dimy, correct, flip_odd):
     assert (
-        fauvqe.utilities.generic.arg_flip_cross_row(
+        qutlet.utilities.generic.arg_flip_cross_row(
             x=x, y=y, dimy=dimy, flip_odd=flip_odd
         )
         == correct
@@ -339,7 +339,7 @@ def test_arg_flip_cross_row(x, y, dimy, correct, flip_odd):
 )
 def test_arg_flip_cross_row_error(x, y, dimy):
     with pytest.raises(ValueError):
-        fauvqe.utilities.generic.arg_flip_cross_row(x, y, dimy)
+        qutlet.utilities.generic.arg_flip_cross_row(x, y, dimy)
 
 
 @pytest.mark.parametrize(
@@ -355,7 +355,7 @@ def test_arg_flip_cross_row_error(x, y, dimy):
 )
 def test_grid_to_linear(x, y, dimx, dimy, correct, horizontal):
     assert (
-        fauvqe.utilities.generic.grid_to_linear(x, y, dimx, dimy, horizontal) == correct
+        qutlet.utilities.generic.grid_to_linear(x, y, dimx, dimy, horizontal) == correct
     )
 
 
@@ -370,7 +370,7 @@ def test_grid_to_linear(x, y, dimx, dimy, correct, horizontal):
     ],
 )
 def test_linear_to_grid(n, dimx, dimy, correct, horizontal):
-    assert fauvqe.utilities.generic.linear_to_grid(n, dimx, dimy, horizontal) == correct
+    assert qutlet.utilities.generic.linear_to_grid(n, dimx, dimy, horizontal) == correct
 
 
 @pytest.mark.parametrize(
@@ -378,7 +378,7 @@ def test_linear_to_grid(n, dimx, dimy, correct, horizontal):
     [((1, 1), np.array((1 / np.sqrt(2), 1 / np.sqrt(2)))), ((1, 0), (1, 0))],
 )
 def test_normalize_vec(v, correct):
-    assert (fauvqe.utilities.generic.normalize_vec(v) == correct).all()
+    assert (qutlet.utilities.generic.normalize_vec(v) == correct).all()
 
 
 @pytest.mark.parametrize(
@@ -389,7 +389,7 @@ def test_normalize_vec(v, correct):
     ],
 )
 def test_sum_divisible(l, i, correct):
-    assert fauvqe.utilities.generic.sum_divisible(l, i) == correct
+    assert qutlet.utilities.generic.sum_divisible(l, i) == correct
 
 
 @pytest.mark.parametrize(
@@ -400,7 +400,7 @@ def test_sum_divisible(l, i, correct):
     ],
 )
 def test_sum_even(l, correct):
-    assert fauvqe.utilities.generic.sum_even(l) == correct
+    assert qutlet.utilities.generic.sum_even(l) == correct
 
 
 @pytest.mark.parametrize(
@@ -411,7 +411,7 @@ def test_sum_even(l, correct):
     ],
 )
 def test_sum_odd(l, correct):
-    assert fauvqe.utilities.generic.sum_odd(l) == correct
+    assert qutlet.utilities.generic.sum_odd(l) == correct
 
 
 @pytest.mark.parametrize(
@@ -426,7 +426,7 @@ def test_sum_odd(l, correct):
     ],
 )
 def test_index_bits(a, correct, ones):
-    assert fauvqe.utilities.generic.index_bits(a, ones) == correct
+    assert qutlet.utilities.generic.index_bits(a, ones) == correct
 
 
 @pytest.mark.parametrize(
@@ -439,11 +439,11 @@ def test_index_bits(a, correct, ones):
 def test_grid_neighbour_list(
     i, shape, neighbour_order, periodic, diagonal, origin, correct
 ):
-    neighbours = fauvqe.utilities.generic.grid_neighbour_list(
+    neighbours = qutlet.utilities.generic.grid_neighbour_list(
         i, shape, neighbour_order, periodic, diagonal, origin
     )
     print(neighbours)
-    assert fauvqe.utilities.testing.do_lists_have_same_elements(neighbours, correct)
+    assert qutlet.utilities.testing.do_lists_have_same_elements(neighbours, correct)
 
 
 @pytest.mark.parametrize(
@@ -460,13 +460,13 @@ def test_grid_neighbour_list(
     ],
 )
 def test_hamming_weight(i, correct):
-    assert fauvqe.utilities.generic.hamming_weight(i) == correct
+    assert qutlet.utilities.generic.hamming_weight(i) == correct
 
 
 def test_hamming_weight_error():
     with pytest.raises(TypeError):
-        fauvqe.utilities.generic.hamming_weight("lol")
-        fauvqe.utilities.generic.hamming_weight({"a": 2})
+        qutlet.utilities.generic.hamming_weight("lol")
+        qutlet.utilities.generic.hamming_weight({"a": 2})
 
 
 @pytest.mark.parametrize(
@@ -482,16 +482,16 @@ def test_hamming_weight_error():
 def test_default_value_handler(shape, value, correct):
     if value == "random":
         assert (
-            fauvqe.utilities.generic.default_value_handler(shape, value).shape
+            qutlet.utilities.generic.default_value_handler(shape, value).shape
             == np.array(shape)
         ).all()
     elif value in ["zeros", "ones"] or isinstance(value, float):
         assert (
-            fauvqe.utilities.generic.default_value_handler(shape, value) == correct
+            qutlet.utilities.generic.default_value_handler(shape, value) == correct
         ).all()
     else:
         with pytest.raises(ValueError):
-            fauvqe.utilities.generic.default_value_handler(shape, value)
+            qutlet.utilities.generic.default_value_handler(shape, value)
 
 
 @pytest.mark.parametrize(
@@ -499,12 +499,12 @@ def test_default_value_handler(shape, value, correct):
     [("abcde", [1, 2, 5, 6, 7], "bcabc"), ([10, 20, 30], [100, 200, 0], [20, 30, 10])],
 )
 def test_wrapping_slice(arr, indices, correct):
-    assert fauvqe.utilities.generic.wrapping_slice(arr, indices) == correct
+    assert qutlet.utilities.generic.wrapping_slice(arr, indices) == correct
 
 
 def test_flip_cross_error():
     with pytest.raises(ValueError):
-        fauvqe.utilities.generic.flip_cross(M=[1, 2], rc="u")
+        qutlet.utilities.generic.flip_cross(M=[1, 2], rc="u")
 
 
 @pytest.mark.parametrize(
@@ -524,5 +524,5 @@ def test_flip_cross_error():
 )
 def test_flip_cross_cols(M, correct, flip_odd):
     assert (
-        np.array(fauvqe.utilities.generic.flip_cross_cols(M, flip_odd) == correct)
+        np.array(qutlet.utilities.generic.flip_cross_cols(M, flip_odd) == correct)
     ).all()

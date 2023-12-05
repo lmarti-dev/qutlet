@@ -1,14 +1,14 @@
 """
-Objectives used in the `fauvqe` optimisation.
+Objectives used in the `qutlet` optimisation.
 """
 
-from fauvqe.objectives.abstractexpectationvalue import AbstractExpectationValue
-from fauvqe.objectives.cvar import CVaR
-from fauvqe.objectives.entanglement import Entanglement
-from fauvqe.objectives.expectationvalue import ExpectationValue
-from fauvqe.objectives.fidelity import Fidelity, Infidelity
-from fauvqe.objectives.magnetisation import Magnetisation
-from fauvqe.objectives.matrixcost import MatrixCost
-from fauvqe.objectives.objective import Objective
-from fauvqe.objectives.tracedistance import TraceDistance
-from fauvqe.objectives.utcost import UtCost
+from qutlet.objectives.abstractexpectationvalue import AbstractExpectationValue
+from qutlet.objectives.cvar import CVaR
+from qutlet.objectives.entanglement import Entanglement
+from qutlet.objectives.expectationvalue import ExpectationValue
+from qutlet.objectives.fidelity import Fidelity, Infidelity
+from qutlet.objectives.magnetisation import Magnetisation
+from qutlet.objectives.matrixcost import MatrixCost
+from qutlet.objectives.objective import Objective
+from qutlet.objectives.tracedistance import TraceDistance
+from qutlet.objectives.utcost import UtCost

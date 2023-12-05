@@ -6,8 +6,8 @@ import numpy as np
 from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
-from fauvqe.models.fockModel import FockModel
-from fauvqe.utilities import (
+from qutlet.models.fockModel import FockModel
+from qutlet.utilities import (
     flatten,
     bravyi_kitaev_fast_wrapper,
     index_bits,
@@ -58,7 +58,9 @@ class FermionicModel(FockModel):
         fermion_hamiltonian, qubits, encoding_name: str, Z_snake: Tuple
     ) -> cirq.PauliSum:
         encodings_dict = dict()
-        encodings_dict["jordan_wigner"] = FermionicModel.mapped_jordan_wigner_fermion_operator
+        encodings_dict[
+            "jordan_wigner"
+        ] = FermionicModel.mapped_jordan_wigner_fermion_operator
         if encoding_name in encodings_dict.keys():
             return of.qubit_operator_to_pauli_sum(
                 encodings_dict[encoding_name](fermion_hamiltonian, Z_snake),
@@ -72,7 +74,9 @@ class FermionicModel(FockModel):
             )
 
     @staticmethod
-    def _non_mapped_encode_model(fermion_hamiltonian, qubits, encoding_name: str) -> cirq.PauliSum:
+    def _non_mapped_encode_model(
+        fermion_hamiltonian, qubits, encoding_name: str
+    ) -> cirq.PauliSum:
         """
         use an openfermion transform to encode the occupation basis hamiltonian
         into a qubit hamiltonian.
@@ -120,7 +124,8 @@ class FermionicModel(FockModel):
         for terms, coeff in fermion_hamiltonian.terms.items():
             new_term = " ".join(
                 (
-                    str(fock_map(term[0], **fock_map_kwargs)) + action_strings[actions[term[1]]]
+                    str(fock_map(term[0], **fock_map_kwargs))
+                    + action_strings[actions[term[1]]]
                     if fock_map_kwargs is not None
                     else str(fock_map(term[0])) + action_strings[actions[term[1]]]
                     for term in terms
@@ -144,14 +149,17 @@ class FermionicModel(FockModel):
             _type_: _description_
         """
         flat_fock_map_arr = tuple(flatten(fock_map_arr))
-        FermionicModel.assert_map_matches_operator(fermion_hamiltonian, flat_fock_map_arr)
+        FermionicModel.assert_map_matches_operator(
+            fermion_hamiltonian, flat_fock_map_arr
+        )
         action_strings = fermion_hamiltonian.action_strings
         actions = fermion_hamiltonian.actions
         new_fermion_operator = of.FermionOperator()
         for terms, coeff in fermion_hamiltonian.terms.items():
             new_term = " ".join(
                 (
-                    str(flat_fock_map_arr.index(term[0])) + action_strings[actions[term[1]]]
+                    str(flat_fock_map_arr.index(term[0]))
+                    + action_strings[actions[term[1]]]
                     for term in terms
                 )
             )
@@ -166,7 +174,9 @@ class FermionicModel(FockModel):
                     self.fock_hamiltonian = self.remap_fermion_hamiltonian(
                         fermion_hamiltonian=self.fock_hamiltonian, fock_map=fock_map
                     )
-            elif isinstance(self.fock_maps[0], list) or isinstance(self.fock_maps[0], int):
+            elif isinstance(self.fock_maps[0], list) or isinstance(
+                self.fock_maps[0], int
+            ):
                 self.fock_hamiltonian = self.reindex_fermion_hamiltonian(
                     fermion_hamiltonian=self.fock_hamiltonian,
                     fock_map_arr=self.fock_maps,
@@ -214,9 +224,13 @@ class FermionicModel(FockModel):
             for ladder_operator in term:
                 z_factors = tuple(
                     (int(index), "Z")
-                    for index in np.nonzero(np.array(Z_snake) < Z_snake[ladder_operator[0]])[0]
+                    for index in np.nonzero(
+                        np.array(Z_snake) < Z_snake[ladder_operator[0]]
+                    )[0]
                 )
-                pauli_x_component = of.QubitOperator(z_factors + ((ladder_operator[0], "X"),), 0.5)
+                pauli_x_component = of.QubitOperator(
+                    z_factors + ((ladder_operator[0], "X"),), 0.5
+                )
                 if ladder_operator[1]:
                     pauli_y_component = of.QubitOperator(
                         z_factors + ((ladder_operator[0], "Y"),), -0.5j
@@ -241,7 +255,9 @@ class FermionicModel(FockModel):
     def jw_fermion_number_expectation(self, state):
         _, _, n_total_op = self.hamiltonian_spin_and_number_operator()
         n_qubits = of.count_qubits(self.fock_hamiltonian)
-        Nf = np.real(of.expectation(of.get_sparse_operator(n_total_op, n_qubits), state))
+        Nf = np.real(
+            of.expectation(of.get_sparse_operator(n_total_op, n_qubits), state)
+        )
         return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
 
     @staticmethod
@@ -269,7 +285,9 @@ class FermionicModel(FockModel):
             parity = -1
         for operator in operators:
             operator = operator + parity * of.hermitian_conjugated(operator)
-            encoded_term = FermionicModel.encode_model(operator, self.qubits, self.encoding_options)
+            encoded_term = FermionicModel.encode_model(
+                operator, self.qubits, self.encoding_options
+            )
             if encoded_term not in encoded_terms:
                 encoded_terms.append(encoded_term)
         return encoded_terms
@@ -288,8 +306,12 @@ class FermionicModel(FockModel):
             rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators.
                                                                 Q diagonalizes Nf rows of the non-interacting hamiltonian
         """
-        Nf, initial_state = self._process_initial_state_input(Nf=Nf, initial_state=initial_state)
-        op_tree = self._get_initial_state_circuit(name=name, initial_state=initial_state, Nf=Nf)
+        Nf, initial_state = self._process_initial_state_input(
+            Nf=Nf, initial_state=initial_state
+        )
+        op_tree = self._get_initial_state_circuit(
+            name=name, initial_state=initial_state, Nf=Nf
+        )
         if op_tree is not None:
             self.circuit.append(op_tree)
 
@@ -308,7 +330,9 @@ class FermionicModel(FockModel):
             Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
         if initial_state is None:
             initial_state = list(
-                sorted([2 * k for k in range(Nf[0])] + [2 * k + 1 for k in range(Nf[1])])
+                sorted(
+                    [2 * k for k in range(Nf[0])] + [2 * k + 1 for k in range(Nf[1])]
+                )
             )
         # check everything to be consistent
         # number of fermions matches indices
@@ -329,7 +353,9 @@ class FermionicModel(FockModel):
         return Nf, initial_state
 
     def gaussian_state_circuit(self):
-        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
         op_tree = of.prepare_gaussian_state(
             qubits=self.qubits,
             quadratic_hamiltonian=quadratic_hamiltonian,
@@ -405,7 +431,9 @@ class FermionicModel(FockModel):
 
     def diagonalize_non_interacting_hamiltonian(self):
         # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
-        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
         # get diagonalizing_bogoliubov_transform $b_j = \sum_i Q_{ji} a_i$ s.t $H = bDb*$ with $D$ diag.
         # the bogoliubov transform conserves particle number, i.e. the bogops are single particle
         (

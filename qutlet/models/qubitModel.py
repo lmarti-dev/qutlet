@@ -21,7 +21,7 @@ import sympy
 import cirq
 import timeit
 
-from fauvqe.utilities import flatten, get_param_resolver
+from qutlet.utilities import flatten, get_param_resolver
 
 
 class QubitModel:
@@ -53,10 +53,6 @@ class QubitModel:
         return {val: ind for ind, val in enumerate(self._qubits)}
 
     @property
-    def param_resolver(self):
-        return get_param_resolver(model=self, param_values=self.circuit_param_values)
-
-    @property
     def qid_shape(self):
         return (2,) * self.n_qubits
 
@@ -72,6 +68,10 @@ class QubitModel:
                 state_vector, qubit_map=self.qmap
             )
         elif len(state_vector.shape) == 1:
-            return self.hamiltonian.expectation_from_state_vector(state_vector, qubit_map=self.qmap)
+            return self.hamiltonian.expectation_from_state_vector(
+                state_vector, qubit_map=self.qmap
+            )
         else:
-            raise ValueError("state_vector shape mismatch: {}".format(state_vector.shape))
+            raise ValueError(
+                "state_vector shape mismatch: {}".format(state_vector.shape)
+            )

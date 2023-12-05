@@ -3,40 +3,35 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from fauvqe.models.fermiHubbardModel import FermiHubbardModel
-from fauvqe.models.fermionicModel import FermionicModel
-from fauvqe.models.qubitModel import QubitModel
-from fauvqe.utilities.generic import flatten
+from qutlet.models.fermiHubbardModel import FermiHubbardModel
+from qutlet.models.fermionicModel import FermionicModel
+from qutlet.models.qubitModel import QubitModel
+from qutlet.utilities import flatten, default_value_handler, get_param_resolver
 import numpy as np
 import itertools
+from qutlet.circuits.ansatz import Ansatz
 
 """This file defines a standard way to smoothly implement new simple "circuit" ansaetze with our class system. 
-It hinges on the generic_ansatz function which requires an ansatz function itself.
-THe ansatz function should contain the description of the circuit for any number of layers
-the layers part could have been left in generic_ansatz,
+It hinges on the generic_circuit function which requires an circuit function itself.
+THe circuit function should contain the description of the circuit for any number of layers
+the layers part could have been left in generic_circuit,
 but I wanted to have the ability to implement non-identical layers
 and not simply repeat one single layer.
 
 """
 
 
-def generic_ansatz(model: QubitModel, layers, ansatz: callable):
-    circuit = cirq.Circuit()
-    symbols = []
-    circuit, symbols = ansatz(model=model, symbols=symbols, layers=layers)
-    model.circuit.append(circuit)
-    model.circuit_param.extend(list(flatten(symbols)))
-    if model.circuit_param_values is None:
-        model.circuit_param_values = np.array([])
-    model.circuit_param_values = np.concatenate(
-        (model.circuit_param_values, np.zeros(np.size(symbols)))
-    )
+def circuit_ansatz(model: QubitModel, layers, circuit: callable) -> Ansatz:
+    circuit, symbols = circuit(model=model, symbols=symbols, layers=layers)
+    symbols = list(flatten(symbols))
+    ansatz = Ansatz(circuit=circuit, param_resolver=symbols)
+    return ansatz
 
 
-def brickwall_ansatz(
+def brickwall_circuit(
     model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
 ):
-    def ansatz(model: FermionicModel, symbols, layers):
+    def circuit(model: FermionicModel, symbols, layers):
         qubits = model.flattened_qubits
         circuit = cirq.Circuit()
 
@@ -66,11 +61,11 @@ def brickwall_ansatz(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    generic_ansatz(model=model, layers=layers, ansatz=ansatz)
+    circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def pyramid_ansatz(model: FermionicModel, layers=1):
-    def ansatz(model: FermionicModel, symbols, layers):
+def pyramid_circuit(model: FermionicModel, layers=1):
+    def circuit(model: FermionicModel, symbols, layers):
         qubits = model.flattened_qubits
         circuit = cirq.Circuit()
         for layer in range(layers):
@@ -92,13 +87,13 @@ def pyramid_ansatz(model: FermionicModel, layers=1):
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    generic_ansatz(model=model, layers=layers, ansatz=ansatz)
+    circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def totally_connected_ansatz(
+def totally_connected_circuit(
     model: FermionicModel, layers=1, spin_conserving: bool = False
 ):
-    def ansatz(model: FermionicModel, symbols, layers):
+    def circuit(model: FermionicModel, symbols, layers):
         qubits = model.flattened_qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
@@ -133,11 +128,11 @@ def totally_connected_ansatz(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    generic_ansatz(model=model, layers=layers, ansatz=ansatz)
+    circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def stair_ansatz(model: FermionicModel, layers=1):
-    def ansatz(model: FermionicModel, symbols: list, layers: int):
+def stair_circuit(model: FermionicModel, layers=1):
+    def circuit(model: FermionicModel, symbols: list, layers: int):
         qubits = model.flattened_qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
@@ -162,4 +157,4 @@ def stair_ansatz(model: FermionicModel, layers=1):
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    generic_ansatz(model=model, layers=layers, ansatz=ansatz)
+    circuit_ansatz(model=model, layers=layers, circuit=circuit)

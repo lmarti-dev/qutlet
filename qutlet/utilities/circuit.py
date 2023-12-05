@@ -1,13 +1,13 @@
 from typing import Tuple
 import cirq
 import numpy as np
-import fauvqe.utilities.generic
+import qutlet.utilities.generic
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # avoids circular dependency issue from lifting utility packages
-    from fauvqe.models.qubitModel import AbstractModel  # pragma: no cover
+    from qutlet.models.qubitModel import AbstractModel  # pragma: no cover
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
@@ -36,10 +36,15 @@ def pauli_str_is_identity(pstr: cirq.PauliString) -> bool:
     """
     if not isinstance(pstr, cirq.PauliString):
         raise TypeError("expected PauliString, got: {}".format(type(pstr)))
-    return all(pstr.gate.pauli_mask == np.array([0] * len(pstr.gate.pauli_mask)).astype(np.uint8))
+    return all(
+        pstr.gate.pauli_mask
+        == np.array([0] * len(pstr.gate.pauli_mask)).astype(np.uint8)
+    )
 
 
-def match_param_values_to_symbols(model: "QubitModel", symbols: list, default_value: str = "zeros"):
+def match_param_values_to_symbols(
+    model: "QubitModel", symbols: list, default_value: str = "zeros"
+):
     """add values to param_values when some are missing wrt. the param array
     Args:
         model (AbstractModel): the model whose params are to be checked
@@ -50,7 +55,7 @@ def match_param_values_to_symbols(model: "QubitModel", symbols: list, default_va
         model.circuit_param_values = np.array([])
     missing_size = np.size(symbols) - np.size(model.circuit_param_values)
 
-    param_default_values = fauvqe.utilities.generic.default_value_handler(
+    param_default_values = qutlet.utilities.generic.default_value_handler(
         shape=(missing_size,), value=default_value
     )
     if missing_size > 0:
@@ -85,7 +90,7 @@ def qmap(model: "QubitModel") -> dict:
     Returns:
         dict: the resulting qmap
     """
-    flattened_qubits = list(fauvqe.utilities.generic.flatten(model.qubits))
+    flattened_qubits = list(qutlet.utilities.generic.flatten(model.qubits))
     return {k: v for k, v in zip(flattened_qubits, range(len(flattened_qubits)))}
 
 
@@ -103,7 +108,9 @@ def pauli_str_is_hermitian(pstr: cirq.PauliString, anti: bool = False) -> bool:
         return np.conj(pstr.coefficient) == pstr.coefficient
 
 
-def make_pauli_str_hermitian(pstr: cirq.PauliString, anti: bool = False) -> cirq.PauliString:
+def make_pauli_str_hermitian(
+    pstr: cirq.PauliString, anti: bool = False
+) -> cirq.PauliString:
     """Make a
     Args:
         pstr (cirq.PauliString): _description_
@@ -140,7 +147,9 @@ def pauli_sum_is_hermitian(psum: cirq.PauliSum, anti: bool = False):
     return all(pauli_str_is_hermitian(pstr=pstr, anti=anti) for pstr in psum)
 
 
-def get_param_resolver(model: "QubitModel", param_values: np.ndarray) -> cirq.ParamResolver:
+def get_param_resolver(
+    model: "QubitModel", param_values: np.ndarray
+) -> cirq.ParamResolver:
     """Get a param resolver for cirq, i.e. put some numerical values in some symbolic items
     Args:
         model (AbstractModel): the model for which we want a param
@@ -149,7 +158,10 @@ def get_param_resolver(model: "QubitModel", param_values: np.ndarray) -> cirq.Pa
         cirq.ParamResolver: the param resolver
     """
     joined_dict = {
-        **{str(model.circuit_param[i]): param_values[i] for i in range(len(model.circuit_param))}
+        **{
+            str(model.circuit_param[i]): param_values[i]
+            for i in range(len(model.circuit_param))
+        }
     }
     return cirq.ParamResolver(joined_dict)
 

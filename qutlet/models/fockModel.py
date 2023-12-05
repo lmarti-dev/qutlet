@@ -4,8 +4,8 @@ import abc
 from typing import Callable, Optional, Tuple, Union, Sequence
 
 
-from fauvqe.models.qubitModel import QubitModel
-from fauvqe.utilities.generic import flatten
+from qutlet.models.qubitModel import QubitModel
+from qutlet.utilities.generic import flatten
 import openfermion as of
 import cirq
 import scipy

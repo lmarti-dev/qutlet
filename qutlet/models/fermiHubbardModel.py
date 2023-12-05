@@ -4,9 +4,9 @@ import cirq
 import numpy as np
 import copy
 
-from fauvqe.models.fermionicModel import FermionicModel
+from qutlet.models.fermionicModel import FermionicModel
 
-from fauvqe.utilities.generic import index_bits
+from qutlet.utilities.generic import index_bits
 
 
 class FermiHubbardModel(FermionicModel):
@@ -114,7 +114,10 @@ class FermiHubbardModel(FermionicModel):
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
         last_qubit = max(self.qubits)
         mat = np.array(
-            [["0" for y in range(last_qubit.col + 1)] for x in range(last_qubit.row + 1)]
+            [
+                ["0" for y in range(last_qubit.col + 1)]
+                for x in range(last_qubit.row + 1)
+            ]
         )
 
         for k, v in pauli_string.items():

@@ -13,10 +13,10 @@ import pytest
 import numpy as np
 import sympy
 from timeit import default_timer
-from fauvqe.utilities.generic import flatten
+from qutlet.utilities.generic import flatten
 
 # internal import
-from fauvqe.models import QubitModel
+from qutlet.models import QubitModel
 
 
 class DummyQubitModel(QubitModel):

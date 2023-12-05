@@ -1,13 +1,13 @@
 import numpy as np
-from fauvqe.models.ising import Ising
+from qutlet.models.ising import Ising
 import sympy
 
 
 import cirq
 import pytest
 
-import fauvqe.utilities.fermion
-import fauvqe.utilities.circuit
+import qutlet.utilities.fermion
+import qutlet.utilities.circuit
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,7 @@ import fauvqe.utilities.circuit
     [(cirq.GridQubit.rect(4, 4), (4, 4)), (cirq.LineQubit.range(10), (10, 1))],
 )
 def test_qubits_shape(qubits, correct):
-    assert fauvqe.utilities.circuit.qubits_shape(qubits=qubits) == correct
+    assert qutlet.utilities.circuit.qubits_shape(qubits=qubits) == correct
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,7 @@ def test_qubits_shape(qubits, correct):
     ],
 )
 def test_depth(circuit, correct):
-    assert fauvqe.utilities.circuit.depth(circuit=circuit) == correct
+    assert qutlet.utilities.circuit.depth(circuit=circuit) == correct
 
 
 def test_get_param_resolver():
@@ -37,7 +37,7 @@ def test_get_param_resolver():
     model.circuit_param_values = []
     model.circuit_param_values.append(1)
 
-    assert fauvqe.utilities.circuit.get_param_resolver(
+    assert qutlet.utilities.circuit.get_param_resolver(
         model=model, param_values=model.circuit_param_values
     ) == cirq.ParamResolver({str(sym): 1})
 
@@ -68,26 +68,30 @@ def test_get_param_resolver():
     ],
 )
 def test_pauli_str_is_hermitian(pstr, anti, correct):
-    assert fauvqe.utilities.circuit.pauli_str_is_hermitian(pstr, anti) == correct
+    assert qutlet.utilities.circuit.pauli_str_is_hermitian(pstr, anti) == correct
 
 
 @pytest.mark.parametrize(
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0))
+            + cirq.Y(cirq.LineQubit(1))
+            + cirq.Z(cirq.LineQubit(2)),
             False,
             True,
         ),
         (
-            1j * cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)),
+            1j * cirq.Y(cirq.LineQubit(0))
+            + cirq.Z(cirq.LineQubit(1))
+            + cirq.X(cirq.LineQubit(2)),
             True,
             False,
         ),
     ],
 )
 def test_pauli_sum_is_hermitian(psum, anti, correct):
-    assert fauvqe.utilities.circuit.pauli_sum_is_hermitian(psum, anti) == correct
+    assert qutlet.utilities.circuit.pauli_sum_is_hermitian(psum, anti) == correct
 
 
 @pytest.mark.parametrize(
@@ -144,17 +148,23 @@ def test_pauli_sum_is_hermitian(psum, anti, correct):
     ],
 )
 def test_make_pauli_str_hermitian(pstr, anti, correct):
-    assert fauvqe.utilities.circuit.make_pauli_str_hermitian(pstr, anti) == correct
+    assert qutlet.utilities.circuit.make_pauli_str_hermitian(pstr, anti) == correct
 
 
 @pytest.mark.parametrize(
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0))
+            + cirq.Y(cirq.LineQubit(1))
+            + cirq.Z(cirq.LineQubit(2)),
             True,
             1j
-            * (cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2))),
+            * (
+                cirq.X(cirq.LineQubit(0))
+                + cirq.Y(cirq.LineQubit(1))
+                + cirq.Z(cirq.LineQubit(2))
+            ),
         ),
         (
             cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)),
@@ -169,27 +179,27 @@ def test_make_pauli_str_hermitian(pstr, anti, correct):
     ],
 )
 def test_make_pauli_sum_hermitian(psum, anti, correct):
-    h_psum = fauvqe.utilities.circuit.make_pauli_sum_hermitian(psum, anti)
+    h_psum = qutlet.utilities.circuit.make_pauli_sum_hermitian(psum, anti)
     assert h_psum == correct
 
 
 def test_qmap():
     model = Ising("GridQubit", (10, 1))
     qs = cirq.GridQubit.rect(10, 1)
-    assert fauvqe.utilities.circuit.qmap(model) == {qs[x]: x for x in range(10)}
+    assert qutlet.utilities.circuit.qmap(model) == {qs[x]: x for x in range(10)}
 
 
 def test_populate_empty_qubits():
     model = Ising("GridQubit", (10, 1))
     circ = cirq.Circuit([cirq.I(mq) for mq in model.qubits])
-    assert circ == fauvqe.utilities.circuit.populate_empty_qubits(model)
+    assert circ == qutlet.utilities.circuit.populate_empty_qubits(model)
 
 
 def test_match_param_values_to_symbols():
     model = Ising("GridQubit", (10, 1))
     model.circuit_param_values = None
     symbols = (sympy.Symbol("a"), sympy.Symbol("b"))
-    fauvqe.utilities.circuit.match_param_values_to_symbols(model=model, symbols=symbols)
+    qutlet.utilities.circuit.match_param_values_to_symbols(model=model, symbols=symbols)
     assert (model.circuit_param_values == np.zeros(len(symbols))).all()
 
 
@@ -199,19 +209,20 @@ def test_match_param_values_to_symbols():
         (cirq.PauliString(*(cirq.I(cirq.LineQubit(x)) for x in range(10))), True),
         (
             cirq.PauliString(
-                *(cirq.X(cirq.LineQubit(x)) for x in range(3)), cirq.X(cirq.LineQubit(29))
+                *(cirq.X(cirq.LineQubit(x)) for x in range(3)),
+                cirq.X(cirq.LineQubit(29))
             ),
             False,
         ),
     ],
 )
 def test_pauli_str_is_identity(pstr, correct):
-    assert fauvqe.utilities.circuit.pauli_str_is_identity(pstr) == correct
+    assert qutlet.utilities.circuit.pauli_str_is_identity(pstr) == correct
 
 
 def test_pauli_str_is_identity_err():
     with pytest.raises(ValueError):
-        fauvqe.utilities.circuit.pauli_str_is_identity(0)
+        qutlet.utilities.circuit.pauli_str_is_identity(0)
 
 
 @pytest.mark.parametrize(
@@ -224,10 +235,12 @@ def test_pauli_str_is_identity_err():
             False,
         ),
         (
-            cirq.X(cirq.LineQubit(0)) + cirq.X(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0))
+            + cirq.X(cirq.LineQubit(1))
+            + cirq.X(cirq.LineQubit(2)),
             True,
         ),
     ],
 )
 def test_all_pauli_str_commute(psum, correct):
-    assert fauvqe.utilities.circuit.all_pauli_str_commute(psum) == correct
+    assert qutlet.utilities.circuit.all_pauli_str_commute(psum) == correct

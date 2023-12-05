@@ -3,9 +3,9 @@ import numpy as np
 import cirq
 import openfermion as of
 
-from fauvqe.models.fermiHubbardModel import FermiHubbardModel
+from qutlet.models.fermiHubbardModel import FermiHubbardModel
 
-from fauvqe.utilities.circuit import populate_empty_qubits
+from qutlet.utilities.circuit import populate_empty_qubits
 
 
 @pytest.mark.parametrize(
