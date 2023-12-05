@@ -75,16 +75,12 @@ def test_pauli_str_is_hermitian(pstr, anti, correct):
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0))
-            + cirq.Y(cirq.LineQubit(1))
-            + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
             False,
             True,
         ),
         (
-            1j * cirq.Y(cirq.LineQubit(0))
-            + cirq.Z(cirq.LineQubit(1))
-            + cirq.X(cirq.LineQubit(2)),
+            1j * cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)),
             True,
             False,
         ),
@@ -155,16 +151,10 @@ def test_make_pauli_str_hermitian(pstr, anti, correct):
     "psum,anti,correct",
     [
         (
-            cirq.X(cirq.LineQubit(0))
-            + cirq.Y(cirq.LineQubit(1))
-            + cirq.Z(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2)),
             True,
             1j
-            * (
-                cirq.X(cirq.LineQubit(0))
-                + cirq.Y(cirq.LineQubit(1))
-                + cirq.Z(cirq.LineQubit(2))
-            ),
+            * (cirq.X(cirq.LineQubit(0)) + cirq.Y(cirq.LineQubit(1)) + cirq.Z(cirq.LineQubit(2))),
         ),
         (
             cirq.Y(cirq.LineQubit(0)) + cirq.Z(cirq.LineQubit(1)),
@@ -191,7 +181,7 @@ def test_qmap():
 
 def test_populate_empty_qubits():
     model = Ising("GridQubit", (10, 1))
-    circ = cirq.Circuit([cirq.I(mq) for mq in model.flattened_qubits])
+    circ = cirq.Circuit([cirq.I(mq) for mq in model.qubits])
     assert circ == fauvqe.utilities.circuit.populate_empty_qubits(model)
 
 
@@ -209,8 +199,7 @@ def test_match_param_values_to_symbols():
         (cirq.PauliString(*(cirq.I(cirq.LineQubit(x)) for x in range(10))), True),
         (
             cirq.PauliString(
-                *(cirq.X(cirq.LineQubit(x)) for x in range(3)),
-                cirq.X(cirq.LineQubit(29))
+                *(cirq.X(cirq.LineQubit(x)) for x in range(3)), cirq.X(cirq.LineQubit(29))
             ),
             False,
         ),
@@ -235,9 +224,7 @@ def test_pauli_str_is_identity_err():
             False,
         ),
         (
-            cirq.X(cirq.LineQubit(0))
-            + cirq.X(cirq.LineQubit(1))
-            + cirq.X(cirq.LineQubit(2)),
+            cirq.X(cirq.LineQubit(0)) + cirq.X(cirq.LineQubit(1)) + cirq.X(cirq.LineQubit(2)),
             True,
         ),
     ],
