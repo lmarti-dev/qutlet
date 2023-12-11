@@ -23,10 +23,10 @@ class DummyQubitModel(QubitModel):
     def __init__(self, qubits: int):
         super().__init__(qubits)
 
-    def to_json_dict(self) -> Dict:
+    def __to_json__(self) -> Dict:
         pass
 
-    def from_json_dict(self):
+    def from_dict(self):
         pass
 
 

@@ -136,7 +136,9 @@ def sectors_to_alternating_indices(M, even_first: bool = True, axis=None) -> np.
     if isinstance(axis, int):
         axis = (axis,)
     for ind, dim in enumerate(dims):
-        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(np.floor(dim / 2), dim)
+        half1, half2 = np.arange(0, np.floor(dim / 2)), np.arange(
+            np.floor(dim / 2), dim
+        )
         if not even_first:
             half1, half2 = half2, half1
         if axis is None:
@@ -196,7 +198,9 @@ def hamming_weight(n: Union[int, str]) -> int:
     if isinstance(n, int):
         n = bin(n)
     elif not isinstance(n, str):
-        raise TypeError("expected a binary number or an int but got a {}".format(type(n)))
+        raise TypeError(
+            "expected a binary number or an int but got a {}".format(type(n))
+        )
     return sum((1 for j in n if j == "1"))
 
 
@@ -205,7 +209,9 @@ def binleftpad(i: int, lp: int):
     return b
 
 
-def index_bits(a: Union[str, int], N: int = None, ones=True, right_to_left: bool = False) -> list:
+def index_bits(
+    a: Union[str, int], N: int = None, ones=True, right_to_left: bool = False
+) -> list:
     """Takes a binary number and returns a list of indices where the bit is one (or zero)
     Args:
         a (binary number): The binary number whose ones or zeroes will be indexed
@@ -258,12 +264,16 @@ def arg_alternating_indices_to_sectors(indices: tuple, N: int) -> tuple:
     """
     if isinstance(N, tuple) or isinstance(N, list):
         if len(N) != len(indices):
-            raise ValueError("The length of N is not equal to the length of the indices vector")
+            raise ValueError(
+                "The length of N is not equal to the length of the indices vector"
+            )
         return tuple(map(arg_alternating_index_to_sector, indices, N))
     elif isinstance(N, int):
         return tuple(map(arg_alternating_index_to_sector, indices, [N] * len(indices)))
     else:
-        raise TypeError("Expected N to be either a tuple or an int, got a {}".format(type(N)))
+        raise TypeError(
+            "Expected N to be either a tuple or an int, got a {}".format(type(N))
+        )
 
 
 def arg_flip_cross_row(x: int, y: int, dimy: int, flip_odd: bool = True):
@@ -292,7 +302,9 @@ def arg_flip_cross_row(x: int, y: int, dimy: int, flip_odd: bool = True):
         return x, y
 
 
-def grid_to_linear(x: int, y: int, dimx: int, dimy: int, horizontal: bool = True) -> int:
+def grid_to_linear(
+    x: int, y: int, dimx: int, dimy: int, horizontal: bool = True
+) -> int:
     """Returns the single ravelled index corresponding to a position on a dimx-by-dimy grid given by x and y
     Args:
         x (int): the row index
@@ -475,13 +487,19 @@ def dicke_state(n: int, k: int) -> np.ndarray:
     return normalize_vec(wf)
 
 
-def spin_dicke_state(n_qubits: int, Nf: list, right_to_left: bool = False):
-    if isinstance(Nf, int):
-        Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
+def spin_dicke_state(n_qubits: int, system_fermions: list, right_to_left: bool = False):
+    if isinstance(system_fermions, int):
+        system_fermions = [
+            int(np.ceil(system_fermions / 2)),
+            int(np.floor(system_fermions / 2)),
+        ]
     wf = np.zeros(2**n_qubits)
     for ind in range(2**n_qubits):
         indices = index_bits(a=ind, right_to_left=right_to_left, N=n_qubits)
-        if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
+        if (
+            sum_even(indices) == system_fermions[0]
+            and sum_odd(indices) == system_fermions[1]
+        ):
             wf[ind] = 1
     return normalize_vec(wf)
 

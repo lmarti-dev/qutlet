@@ -11,20 +11,14 @@
 # Then add own ideas and alternative optimisers, ising circuits etc.
 
 """
-from __future__ import annotations
-
 import abc
-from typing import Tuple, List, Optional, Iterable, Union
+from typing import Iterable, Union
 
 import numpy as np
-import sympy
-import cirq
-import timeit
-
-from qutlet.utilities import flatten, get_param_resolver
+from cirq import PauliSum, LineQubit
 
 
-class QubitModel:
+class QubitModel(abc.ABC):
     def __init__(self, qubit_shape: Union[Iterable, int]):
         super().__init__()
         if isinstance(qubit_shape, Iterable):
@@ -35,8 +29,8 @@ class QubitModel:
             self.n_qubits = qubit_shape
         else:
             raise TypeError(f"Expected iterable or int, got {type(qubit_shape)}")
-        self.hamiltonian: cirq.PauliSum() = None
-        self._qubits = cirq.LineQubit.range(self.n_qubits)
+        self.hamiltonian: PauliSum() = None
+        self._qubits = LineQubit.range(self.n_qubits)
 
     def __getitem__(self, idx):
         if isinstance(idx, tuple):
@@ -62,7 +56,7 @@ class QubitModel:
     def _set_hamiltonian(self):
         raise NotImplementedError()  # pragma: no cover
 
-    def expectation(self, state_vector: np.ndarray):
+    def statevector_expectation(self, state_vector: np.ndarray):
         if len(state_vector.shape) == 2:
             return self.hamiltonian.expectation_from_density_matrix(
                 state_vector, qubit_map=self.qmap

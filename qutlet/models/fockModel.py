@@ -36,30 +36,15 @@ class FockModel(QubitModel):
     def __init__(
         self,
         *,
-        qubits,
-        qubit_maps: Tuple[Callable] = None,
-        fock_maps: Tuple[Callable] = None,
+        qubit_shape,
         encoding_options: dict,
     ):
-        super().__init__(qubit_shape=qubits)
+        super().__init__(qubit_shape=qubit_shape)
         self.fock_hamiltonian: of.SymbolicOperator = None
-        self.qubit_maps = qubit_maps
-        self.fock_maps = fock_maps
         self.encoding_options = encoding_options
 
         # get the fock hamiltonian
         self._set_fock_hamiltonian()
-        # apply all function from the fock_maps to the hailtonian in order
-        # take a look at the maps from fermiHubbard.py for examples
-        # the underlying fock hamiltonian is flattened (even if defined on a grid)
-        # so any fockmap function needs to take one variable only
-        # you can also input an array, with the desired new order for indices
-        # e.g. [2,3,1] will put the second item in the first place and so on
-        # the simplest example is to move from udududud to uuuudddd (u=spin up d=spin down)
-        self._apply_maps_to_fock_hamiltonian()
-        # transform the fock hamiltonian (SymbolicOp) into a PauliSum
-        # also use the qubit maps to do so.
-        # qubit maps are *useless* don't use them
         self._set_hamiltonian()
 
     @abc.abstractmethod
@@ -69,19 +54,3 @@ class FockModel(QubitModel):
     @abc.abstractmethod
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         raise NotImplementedError()  # pragma: no cover
-
-    @abc.abstractmethod
-    def _get_initial_state_circuit(self):
-        raise NotImplementedError()  # pragma: no cover
-
-    @abc.abstractmethod
-    def _apply_maps_to_fock_hamiltonian(self, fock_maps):
-        raise NotImplementedError()  # pragma: no cover
-
-    def apply_qubit_maps(self):
-        if self.qubit_maps is not None:
-            qubits = self.qubits.copy()
-            for qubit_map in self.qubit_maps:
-                qubits = qubit_map(qubits)
-            return qubits
-        return self.qubits

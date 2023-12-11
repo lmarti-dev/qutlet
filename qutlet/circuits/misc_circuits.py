@@ -3,15 +3,14 @@ from cirq.circuits import InsertStrategy
 
 import openfermion as of
 import sympy
-from qutlet.models.fermiHubbardModel import FermiHubbardModel
 from qutlet.models.fermionicModel import FermionicModel
 from qutlet.models.qubitModel import QubitModel
-from qutlet.utilities import flatten, default_value_handler, get_param_resolver
+from qutlet.utilities import flatten, default_value_handler
 import numpy as np
 import itertools
 from qutlet.circuits.ansatz import Ansatz
 
-"""This file defines a standard way to smoothly implement new simple "circuit" ansaetze with our class system. 
+"""This file defines a standard way to smoothly implement new simple "circuit" ansaetze with the class system. 
 It hinges on the generic_circuit function which requires an circuit function itself.
 THe circuit function should contain the description of the circuit for any number of layers
 the layers part could have been left in generic_circuit,

@@ -1,5 +1,4 @@
 import numpy as np
-from qutlet.models.ising import Ising
 import sympy
 
 
@@ -27,19 +26,6 @@ def test_qubits_shape(qubits, correct):
 )
 def test_depth(circuit, correct):
     assert qutlet.utilities.circuit.depth(circuit=circuit) == correct
-
-
-def test_get_param_resolver():
-    model = Ising("GridQubit", (1, 1))
-    sym = sympy.Symbol("x")
-    model.circuit_param = []
-    model.circuit_param.append(sym)
-    model.circuit_param_values = []
-    model.circuit_param_values.append(1)
-
-    assert qutlet.utilities.circuit.get_param_resolver(
-        model=model, param_values=model.circuit_param_values
-    ) == cirq.ParamResolver({str(sym): 1})
 
 
 @pytest.mark.parametrize(
@@ -181,26 +167,6 @@ def test_make_pauli_str_hermitian(pstr, anti, correct):
 def test_make_pauli_sum_hermitian(psum, anti, correct):
     h_psum = qutlet.utilities.circuit.make_pauli_sum_hermitian(psum, anti)
     assert h_psum == correct
-
-
-def test_qmap():
-    model = Ising("GridQubit", (10, 1))
-    qs = cirq.GridQubit.rect(10, 1)
-    assert qutlet.utilities.circuit.qmap(model) == {qs[x]: x for x in range(10)}
-
-
-def test_populate_empty_qubits():
-    model = Ising("GridQubit", (10, 1))
-    circ = cirq.Circuit([cirq.I(mq) for mq in model.qubits])
-    assert circ == qutlet.utilities.circuit.populate_empty_qubits(model)
-
-
-def test_match_param_values_to_symbols():
-    model = Ising("GridQubit", (10, 1))
-    model.circuit_param_values = None
-    symbols = (sympy.Symbol("a"), sympy.Symbol("b"))
-    qutlet.utilities.circuit.match_param_values_to_symbols(model=model, symbols=symbols)
-    assert (model.circuit_param_values == np.zeros(len(symbols))).all()
 
 
 @pytest.mark.parametrize(

@@ -1,15 +1,15 @@
 from cirq import fidelity as cirq_fidelity
-from qutlet.models.qubitModel import QubitModel
+from qutlet.models import QubitModel
 from qutlet.utilities import ketbra
 import numpy as np
 
-
-# return a function that only needs state
+"""These objective are destined for statevector simulation and must be used with a statevector simulator
+"""
 
 
 def energy_objective(model: QubitModel) -> callable:
     def fun(state: np.ndarray):
-        return model.expectation(state)
+        return model.statevector_expectation(state)
 
     return fun
 

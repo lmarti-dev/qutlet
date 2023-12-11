@@ -45,10 +45,10 @@ class DummyModel(QubitModel):
         wf[0] = 1
         return wf
 
-    def from_json_dict(self):
+    def from_dict(self):
         pass
 
-    def to_json_dict(self):
+    def __to_json__(self):
         pass
 
 
@@ -64,9 +64,9 @@ def test_init():
         method_options=method_options,
         minimize_options=minimize_options,
     )
-    json = optimiser.to_json_dict()
+    json = optimiser.__to_json__()
 
-    optimiser2 = optimiser.from_json_dict(json)
+    optimiser2 = optimiser.from_dict(json)
     assert optimiser == optimiser2
 
 

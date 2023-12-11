@@ -4,7 +4,7 @@ import numpy as np
 import openfermion as of
 
 import scipy
-import qutlet.utilities.generic
+from qutlet.utilities.generic import sum_even, sum_odd
 
 
 def even_excitation(
@@ -86,37 +86,37 @@ def single_excitation(
 
 
 def jw_spin_correct_indices(
-    n_electrons: Union[list, int],
+    system_fermions: Union[list, int],
     n_qubits: int,
     right_to_left: bool = False,
 ) -> list:
-    """Get the indices corresponding to the spin sectors given by n_electrons
+    """Get the indices corresponding to the spin sectors given by system_fermions
     Args:
-        n_electrons (Union[list, int]): the n_electrons in the system, or the spin sectors
+        system_fermions (Union[list, int]): the system_fermions in the system, or the spin sectors
         n_qubits (int): the number of qubits in the system
     Raises:
-        TypeError: if the n_electrons is neither a list nor an int
+        TypeError: if the system_fermions is neither a list nor an int
     Returns:
         list: the indices associated with the correct number of spins/electrons
     """
     # since we usually fill even then odd indices, and in the default jw,
     # the up spins are even and odd are down, we check if we have the correct
     # up and down spin count before passing the indices back
-    # when Nf is odd, we assume there is one more even indices, since those are filled even-first.
+    # when system_fermions is odd, we assume there is one more even indices, since those are filled even-first.
     # I guess we could use abs() but then we would mix two unrelated parity states
     # in the case n_spin_up is defined, then we count the number of spin_up (even indices) in the comb
 
-    if isinstance(n_electrons, int):
+    if isinstance(system_fermions, int):
         # we get the correct combinations by checking there is the same amount of even and odd indices in the comb
-        n_spin_up = int(np.ceil(n_electrons / 2))
-        n_spin_down = int(np.floor(n_electrons / 2))
-    elif isinstance(n_electrons, list):
-        n_spin_up = n_electrons[0]
-        n_spin_down = n_electrons[1]
+        n_spin_up = int(np.ceil(system_fermions / 2))
+        n_spin_down = int(np.floor(system_fermions / 2))
+    elif isinstance(system_fermions, list):
+        n_spin_up = system_fermions[0]
+        n_spin_down = system_fermions[1]
     else:
         raise TypeError(
-            "Expected n_electrons to be either a list or an int, got {}".format(
-                type(n_electrons)
+            "Expected system_fermions to be either a list or an int, got {}".format(
+                type(system_fermions)
             )
         )
     combinations = itertools.combinations(
@@ -125,8 +125,7 @@ def jw_spin_correct_indices(
     correct_combinations = [
         list(c)
         for c in combinations
-        if qutlet.utilities.generic.sum_even(c) == n_spin_up
-        and qutlet.utilities.generic.sum_odd(c) == n_spin_down
+        if sum_even(c) == n_spin_up and sum_odd(c) == n_spin_down
     ]
 
     if right_to_left:
@@ -160,7 +159,7 @@ def jw_spin_restrict_operator(
         n_qubits = int(np.log2(sparse_operator.shape[0]))
 
     select_indices = jw_spin_correct_indices(
-        n_electrons=particle_number, n_qubits=n_qubits, right_to_left=right_to_left
+        system_fermions=particle_number, n_qubits=n_qubits, right_to_left=right_to_left
     )
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
@@ -221,7 +220,7 @@ def jw_eigenspectrum_at_particle_number(
         n_eigvecs = eigvecs.shape[-1]
         expanded_eigvecs = np.zeros((2**n_qubits, n_eigvecs), dtype=complex)
         expanded_indices = indices_func(
-            n_electrons=particle_number, n_qubits=n_qubits, **kwargs
+            system_fermions=particle_number, n_qubits=n_qubits, **kwargs
         )
         for iii in range(n_eigvecs):
             expanded_eigvecs[
@@ -285,7 +284,7 @@ def mean_coeff_n_terms(fop: of.FermionOperator, n: int) -> float:
 
 
 def jw_computational_wf(
-    indices: list, Nqubits: int, right_to_left: bool = False
+    indices: list, n_qubits: int, right_to_left: bool = False
 ) -> np.ndarray:
     """Creates a 2**Nqubits wavefunction corresponding to the computational state of Nqubits with the qubits in indices set to one
     Args:
@@ -294,9 +293,9 @@ def jw_computational_wf(
     Returns:
         np.ndarray: 2**Nqubits vector with a one in the entry correspknding to the desired computational state
     """
-    wf = np.zeros((2**Nqubits))
+    wf = np.zeros((2**n_qubits))
     if right_to_left:
-        jw_index = sum((2 ** (Nqubits - 1 - iii) for iii in indices))
+        jw_index = sum((2 ** (n_qubits - 1 - iii) for iii in indices))
     else:
         jw_index = sum((2 ** (iii) for iii in indices))
 

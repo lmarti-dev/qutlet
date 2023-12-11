@@ -87,7 +87,7 @@ def test_initial_state_wrong():
     )
     with pytest.raises(NameError):
         fermi_hubbard_hamiltonian._get_initial_state_circuit(
-            "wrong_inital_state", initial_state=None, Nf=None
+            "wrong_inital_state", initial_state=None, system_fermions=None
         )
 
 

@@ -11,7 +11,7 @@ class FermionOperatorModel(FermionicModel):
         self,
         fermion_operator: of.FermionOperator,
         encoding_options: dict = None,
-        qubits: Union[tuple, int] = None,
+        qubit_shape: Union[tuple, int] = None,
         **kwargs
     ):
         if not isinstance(fermion_operator, of.FermionOperator):
@@ -19,11 +19,11 @@ class FermionOperatorModel(FermionicModel):
                 "Expected a FermionOperator, got: {}".format(type(fermion_operator))
             )
         self.fermion_operator = fermion_operator
-        if n is None:
-            n = (1, of.count_qubits(operator=self.fermion_operator))
         if encoding_options is None:
             encoding_options = {"encoding_name": "jordan_wigner"}
-        super().__init__(qubits=qubits, encoding_options=encoding_options, **kwargs)
+        super().__init__(
+            qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
+        )
 
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         self.fock_hamiltonian = self.fermion_operator
@@ -32,26 +32,16 @@ class FermionOperatorModel(FermionicModel):
         self_copy = copy.deepcopy(self)
         return self_copy
 
-    def to_json_dict(self) -> Dict:
+    def __to_json__(self) -> Dict:
         return {
             "constructor_params": {
-                "n": self.n,
                 "fermion_operator": self.fermion_operator,
                 "encoding_options": self.encoding_options,
-            },
-            "params": {
-                "circuit": self.circuit,
-                "circuit_param": self.circuit_param,
-                "circuit_param_values": self.circuit_param_values,
             },
         }
 
     @classmethod
-    def from_json_dict(cls, dct: Dict):
+    def from_dict(cls, dct: Dict):
         inst = cls(**dct["constructor_params"])
-
-        inst.circuit = dct["params"]["circuit"]
-        inst.circuit_param = dct["params"]["circuit_param"]
-        inst.circuit_param_values = dct["params"]["circuit_param_values"]
 
         return inst

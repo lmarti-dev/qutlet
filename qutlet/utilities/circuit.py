@@ -1,13 +1,8 @@
 from typing import Tuple
 import cirq
 import numpy as np
-import qutlet.utilities.generic
 
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    # avoids circular dependency issue from lifting utility packages
-    from qutlet.models.qubitModel import AbstractModel  # pragma: no cover
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:
@@ -40,58 +35,6 @@ def pauli_str_is_identity(pstr: cirq.PauliString) -> bool:
         pstr.gate.pauli_mask
         == np.array([0] * len(pstr.gate.pauli_mask)).astype(np.uint8)
     )
-
-
-def match_param_values_to_symbols(
-    model: "QubitModel", symbols: list, default_value: str = "zeros"
-):
-    """add values to param_values when some are missing wrt. the param array
-    Args:
-        model (AbstractModel): the model whose params are to be checked
-        symbols (list): the symbols to match
-        default_value (str, optional): what to put in the additional params. Defaults to "zeros".
-    """
-    if model.circuit_param_values is None:
-        model.circuit_param_values = np.array([])
-    missing_size = np.size(symbols) - np.size(model.circuit_param_values)
-
-    param_default_values = qutlet.utilities.generic.default_value_handler(
-        shape=(missing_size,), value=default_value
-    )
-    if missing_size > 0:
-        model.circuit_param_values = np.concatenate(
-            (model.circuit_param_values, param_default_values)
-        )
-
-
-def populate_empty_qubits(model: "QubitModel") -> cirq.Circuit:
-    """Add I gates to qubits without operations. This is mainly to avoid some errors with measurement in cirq
-    Args:
-        model (AbstractModel): the model to check
-    Returns:
-        cirq.Circuit: the circuit with additional I gates
-    """
-    circuit_qubits = list(model.circuit.all_qubits())
-    model_qubits = model.qubits
-    missing_qubits = [x for x in model_qubits if x not in circuit_qubits]
-    circ = model.circuit.copy()
-    if circuit_qubits == []:
-        print("The circuit has no qubits")
-
-        circ = cirq.Circuit()
-    circ.append([cirq.I(mq) for mq in missing_qubits])
-    return circ
-
-
-def qmap(model: "QubitModel") -> dict:
-    """Get a qmap necessary for some openfermion functions
-    Args:
-        model (AbstractModel): the model we will use to generate the qmap
-    Returns:
-        dict: the resulting qmap
-    """
-    flattened_qubits = list(qutlet.utilities.generic.flatten(model.qubits))
-    return {k: v for k, v in zip(flattened_qubits, range(len(flattened_qubits)))}
 
 
 def pauli_str_is_hermitian(pstr: cirq.PauliString, anti: bool = False) -> bool:
@@ -145,25 +88,6 @@ def make_pauli_sum_hermitian(psum: cirq.PauliSum, anti: bool = False) -> cirq.Pa
 
 def pauli_sum_is_hermitian(psum: cirq.PauliSum, anti: bool = False):
     return all(pauli_str_is_hermitian(pstr=pstr, anti=anti) for pstr in psum)
-
-
-def get_param_resolver(
-    model: "QubitModel", param_values: np.ndarray
-) -> cirq.ParamResolver:
-    """Get a param resolver for cirq, i.e. put some numerical values in some symbolic items
-    Args:
-        model (AbstractModel): the model for which we want a param
-        param_values (np.ndarray, optional): the values to put in the place of the symbols.
-    Returns:
-        cirq.ParamResolver: the param resolver
-    """
-    joined_dict = {
-        **{
-            str(model.circuit_param[i]): param_values[i]
-            for i in range(len(model.circuit_param))
-        }
-    }
-    return cirq.ParamResolver(joined_dict)
 
 
 def depth(circuit: cirq.Circuit) -> int:

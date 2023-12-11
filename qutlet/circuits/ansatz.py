@@ -11,7 +11,7 @@ class Ansatz:
     ) -> None:
         self.circuit = circuit
 
-        # we allow three ways of setting the sequence:
+        # we allow three ways of setting the param res:
         # 1. ParamResolver directly
         # 2. list of symbols (params initialized at None)
         # 3. tuple of (symbols, params)
@@ -37,8 +37,16 @@ class Ansatz:
         return len(self.circuit.all_qubits())
 
     @property
+    def symbols(self):
+        return list(self.param_resolver.param_dict.keys())
+
+    @property
     def n_symbols(self):
-        return len(self.param_resolver.keys())
+        return len(self.symbols)
+
+    @property
+    def params(self):
+        return list(self.param_resolver.param_dict.values())
 
     def simulate(self, *args, **kwargs):
         if isinstance(self.simulator, Simulator):

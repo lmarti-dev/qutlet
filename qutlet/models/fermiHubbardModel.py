@@ -1,12 +1,60 @@
 import openfermion as of
-from typing import Callable, Dict, Tuple, Union, Sequence, Optional
 import cirq
 import numpy as np
 import copy
 
-from qutlet.models.fermionicModel import FermionicModel
+from qutlet.models import FermionicModel
+from openfermion import FermionOperator, hermitian_conjugated
+import itertools
 
-from qutlet.utilities.generic import index_bits
+
+def fermi_hubbard(
+    lattice_dimensions: tuple,
+    tunneling: float,
+    coulomb: float,
+    periodic: bool,
+    diagonal: bool,
+):
+    hamiltonian = FermionOperator()
+    dims = (*lattice_dimensions, 2)
+    ranges = (range(x) for x in lattice_dimensions)
+    for site_a in itertools.product(*ranges):
+        if diagonal:
+            neighbours = itertools.product((0, 1), repeat=len(lattice_dimensions))
+            # skip (0,0,0,0,0)
+            next(neighbours)
+        else:
+            neighbours = itertools.permutations(
+                (*(0,) * (len(lattice_dimensions) - 1), 1)
+            )
+        for site_b in neighbours:
+            for spin in (0, 1):
+                index_a = np.ravel_multi_index(multi_index=(*site_a, spin), dims=dims)
+                if periodic:
+                    site_neighbour = [
+                        (a + b) % dim
+                        for a, b, dim in zip(site_a, site_b, lattice_dimensions)
+                    ]
+                else:
+                    site_neighbour = [a + b for a, b in zip(site_a, site_b)]
+                if all(
+                    coor < dim for coor, dim in zip(site_neighbour, lattice_dimensions)
+                ):
+                    index_b = np.ravel_multi_index(
+                        multi_index=(*site_neighbour, spin), dims=dims
+                    )
+                    hamiltonian += FermionOperator(
+                        term=f"{index_a}^ {index_b}", coefficient=tunneling
+                    )
+
+        index_up = np.ravel_multi_index(multi_index=(*site_a, 0), dims=dims)
+        index_down = np.ravel_multi_index(multi_index=(*site_a, 1), dims=dims)
+        hamiltonian += FermionOperator(
+            term=f"{index_up}^ {index_up} {index_down}^ {index_down}",
+            coefficient=coulomb,
+        )
+    hamiltonian += hermitian_conjugated(hamiltonian)
+    return hamiltonian
 
 
 class FermiHubbardModel(FermionicModel):
@@ -14,22 +62,22 @@ class FermiHubbardModel(FermionicModel):
     def __init__(
         self,
         *,
-        x_dimension: int,
-        y_dimension: int,
+        lattice_dimensions: tuple,
         tunneling: float,
         coulomb: float,
-        hamiltonian_options: Dict = {"periodic": False},
-        encoding_options: Dict = None,
-        **kwargs
+        periodic: bool = False,
+        diagonal: bool = False,
+        encoding_options: dict = None,
+        **kwargs,
     ):
         # always lay those horizontally -> the shorter dimension goes in y and the longest gets the boundary
         # x_dimension (int): The width of the grid. y_dimension (int): The height of the grid
         # while n is the size of the qubit grid.
-        self.x_dimension = min((x_dimension, y_dimension))
-        self.y_dimension = max((x_dimension, y_dimension))
+        self.lattice_dimensions = tuple(sorted(lattice_dimensions))
         self.tunneling = tunneling
         self.coulomb = coulomb
-        self.hamiltonian_options = hamiltonian_options
+        self.periodic = periodic
+        self.diagonal = diagonal
         # always stack the spins horizontally
         # ie
         #
@@ -40,25 +88,21 @@ class FermiHubbardModel(FermionicModel):
         if encoding_options is None:
             # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
             encoding_options = {"encoding_name": "jordan_wigner"}
-            # encoding_options["Z_snake"]=self.common_Z_snakes(name="weaved_double_s",dimx=self.x_dimension,dimy=self.y_dimension)
-            # moves the spins into sectors ududud -> uuuddd (only along the horizontal axis)
-        # if "fock_maps" not in kwargs.keys():
-        #     kwargs["fock_maps"] = alternating_indices_to_sectors(np.reshape(np.arange(np.prod(n)),n),axis=1).tolist()
-        #     # this "default" jw setup moves the spins on one side of the qubit grid, and create a Z_snake that makes hopping computation easy
         if encoding_options["encoding_name"] in (
             "jordan_wigner",
             "bravyi_kitaev",
         ):
-            # derby-klassen uses 1.5N qubits in a checkerboard, but here we'll go with 2N and remove a quarter, that's easier
-            # considering how abstractmodel is setup,
-            qubits = (self.y_dimension, 2 * self.x_dimension)
+            # we need twice the amount of qubits, we add a "spin" dimension
+            qubit_shape = (*self.lattice_dimensions, 2)
         elif encoding_options["encoding_name"] in (
             "general_fermionic_encoding",
             "derby_klassen",
         ):
             raise NotImplementedError
 
-        super().__init__(qubits=qubits, encoding_options=encoding_options, **kwargs)
+        super().__init__(
+            qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
+        )
 
     def copy(self):
         self_copy = copy.deepcopy(self)
@@ -86,12 +130,12 @@ class FermiHubbardModel(FermionicModel):
 
         if reset:
             self.fock_hamiltonian = of.FermionOperator()
-        self.fock_hamiltonian = of.fermi_hubbard(
-            x_dimension=self.x_dimension,
-            y_dimension=self.y_dimension,
+        self.fock_hamiltonian = fermi_hubbard(
+            lattice_dimensions=self.lattice_dimensions,
             tunneling=self.tunneling,
             coulomb=self.coulomb,
-            **self.hamiltonian_options
+            periodic=self.periodic,
+            diagonal=self.diagonal,
         )
 
         # if for some reason the hamiltonian has no terms, turn it into an identity
@@ -101,14 +145,10 @@ class FermiHubbardModel(FermionicModel):
     @property
     def non_interacting_model(self):
         return FermiHubbardModel(
-            x_dimension=self.x_dimension,
-            y_dimension=self.y_dimension,
+            lattice_dimensions=self.lattice_dimensions,
             tunneling=self.tunneling,
             coulomb=0.0,
             encoding_options=self.encoding_options,
-            qubit_maps=self.qubit_maps,
-            fock_maps=self.fock_maps,
-            hamiltonian_options=self.hamiltonian_options,
         )
 
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
@@ -126,29 +166,19 @@ class FermiHubbardModel(FermionicModel):
         print(pauli_string)
         print("\n".join(["".join(row) for row in mat]))
 
-    def to_json_dict(self) -> Dict:
+    def __to_json__(self) -> dict:
         return {
             "constructor_params": {
-                "x_dimension": self.x_dimension,
-                "y_dimension": self.y_dimension,
+                "dimensions": self.lattice_dimensions,
+                "system_fermions": self.system_fermions,
                 "tunneling": self.tunneling,
                 "coulomb": self.coulomb,
-                "hamiltonian_options": self.hamiltonian_options,
+                "periodic": self.periodic,
                 "encoding_options": self.encoding_options,
-            },
-            "params": {
-                "circuit": self.circuit,
-                "circuit_param": self.circuit_param,
-                "circuit_param_values": self.circuit_param_values,
             },
         }
 
     @classmethod
-    def from_json_dict(cls, dct: Dict):
+    def from_dict(cls, dct: dict):
         inst = cls(**dct["constructor_params"])
-
-        inst.circuit = dct["params"]["circuit"]
-        inst.circuit_param = dct["params"]["circuit_param"]
-        inst.circuit_param_values = dct["params"]["circuit_param_values"]
-
         return inst
