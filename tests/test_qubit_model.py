@@ -5,15 +5,12 @@ Test parent class AbstractModel;
         based on some examples
     -try to check test coverage?
 """
+
 # external import
 from typing import Dict
 import cirq
 
 import pytest
-import numpy as np
-import sympy
-from timeit import default_timer
-from qutlet.utilities.generic import flatten
 
 # internal import
 from qutlet.models import QubitModel

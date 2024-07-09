@@ -4,7 +4,7 @@ import abc
 from typing import Callable, Optional, Tuple, Union, Sequence
 
 
-from qutlet.models.qubitModel import QubitModel
+from models.qubit_model import QubitModel
 from qutlet.utilities.generic import flatten
 import openfermion as of
 import cirq

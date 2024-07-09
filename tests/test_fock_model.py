@@ -1,6 +1,6 @@
 import pytest
 import openfermion as of
-import qutlet.models.fockModel as fm
+import models.fock_model as fm
 
 
 def test_add_missing_qubits():

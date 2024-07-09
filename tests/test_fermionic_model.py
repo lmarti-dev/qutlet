@@ -1,6 +1,6 @@
 import pytest
 import openfermion as of
-from qutlet.models.fermionicModel import FermionicModel
+from models.fermionic_model import FermionicModel
 from qutlet.utilities import jw_computational_wf, index_bits
 
 

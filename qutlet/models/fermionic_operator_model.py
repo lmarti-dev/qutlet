@@ -3,7 +3,7 @@ import openfermion as of
 import cirq
 import copy
 
-from qutlet.models.fermionicModel import FermionicModel
+from models.fermionic_model import FermionicModel
 
 
 class FermionOperatorModel(FermionicModel):

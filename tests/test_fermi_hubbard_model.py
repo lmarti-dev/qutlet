@@ -1,11 +1,6 @@
 import pytest
-import numpy as np
-import cirq
-import openfermion as of
 
-from qutlet.models.fermiHubbardModel import FermiHubbardModel
-
-from qutlet.utilities.circuit import populate_empty_qubits
+from models.fermi_hubbard_model import FermiHubbardModel
 
 
 @pytest.mark.parametrize(

@@ -6,8 +6,8 @@ import numpy as np
 from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
-from qutlet.models.fockModel import FockModel
-from qutlet.models.fermionicModel import FermionicModel
+from models.fock_model import FockModel
+from models.fermionic_model import FermionicModel
 from qutlet.utilities import (
     flatten,
     bravyi_kitaev_fast_wrapper,
@@ -91,27 +91,24 @@ def slater_state_circuit(self):
     return op_tree
 
 
-@staticmethod
 def computational_state_circuit(initial_state, qubits):
     op_tree = [cirq.X(qubits[ind]) for ind in initial_state]
     return op_tree
 
 
-@staticmethod
 def uniform_superposition_state_circuit(initial_state, qubits):
     op_tree = FermionicModel.computational_state_circuit(initial_state, qubits)
     op_tree += [cirq.H(qubits[ind]) for ind in initial_state]
     return op_tree
 
 
-@staticmethod
 def dicke_state_circuit(system_fermions, qubits):
     # TODO: implement the circuit
     op_tree = []
     return op_tree
 
 
-def _get_initial_state_circuit(
+def get_initial_state_circuit(
     self,
     name: str,
     initial_state: Union[int, Sequence[int]],

@@ -1,12 +1,10 @@
 import cirq
 from cirq.circuits import InsertStrategy
 
-import openfermion as of
 import sympy
-from qutlet.models.fermionicModel import FermionicModel
-from qutlet.models.qubitModel import QubitModel
-from qutlet.utilities import flatten, default_value_handler
-import numpy as np
+from models.fermionic_model import FermionicModel
+from models.qubit_model import QubitModel
+from qutlet.utilities import flatten
 import itertools
 from qutlet.circuits.ansatz import Ansatz
 
@@ -21,7 +19,7 @@ and not simply repeat one single layer.
 
 
 def circuit_ansatz(model: QubitModel, layers, circuit: callable) -> Ansatz:
-    circuit, symbols = circuit(model=model, symbols=symbols, layers=layers)
+    circuit, symbols = circuit(model=model, layers=layers)
     symbols = list(flatten(symbols))
     ansatz = Ansatz(circuit=circuit, param_resolver=symbols)
     return ansatz

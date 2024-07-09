@@ -5,7 +5,12 @@ import cirq
 import numpy as np
 from scipy.sparse import csc_matrix, kron
 from scipy.linalg import sqrtm
-from qutlet.utilities.generic import chained_matrix_multiplication
+from qutlet.utilities.generic import (
+    chained_matrix_multiplication,
+    flatten,
+    default_value_handler,
+)
+import sympy
 
 
 def sparse_pauli_string(pauli_str: Union[cirq.PauliString, str]):
@@ -263,3 +268,74 @@ def qubits_shape(qubits: Tuple[cirq.Qid]) -> tuple:
         return (last_qubit.x + 1, 1)
     elif isinstance(last_qubit, cirq.GridQubit):
         return (last_qubit.row + 1, last_qubit.col + 1)
+
+
+def cRy(control, targ, sym: sympy.Symbol, fac: float = 1):
+    return cirq.ControlledGate(
+        sub_gate=cirq.Ry(rads=fac * np.pi * sym), num_controls=1
+    ).on(control, targ)
+
+
+def qnp_px(qubits: list[cirq.Qid] = None, sym: sympy.Symbol = None):
+    # Anselmetti et al 2021 Nj. Phys 23 113010
+    if qubits is None:
+        qubits = cirq.LineQubit.range(4)
+    if sym is None:
+        sym = sympy.Symbol("theta")
+
+    q0, q1, q2, q3 = qubits
+    op_tree = []
+
+    op_tree.append(cirq.CNOT(q1, q0))
+    op_tree.append(cirq.CNOT(q3, q2))
+    op_tree.append(cirq.CNOT(q3, q1))
+    op_tree.append(cirq.X(q0))
+
+    op_tree.append(cRy(q0, q3, fac=1 / 4, sym=sym))
+    op_tree.append(cirq.CNOT(q0, q2))
+
+    op_tree.append(cRy(q2, q3, fac=1 / 4, sym=sym))
+    op_tree.append(cirq.CNOT(q0, q2))
+
+    op_tree.append(cRy(q2, q3, fac=-1 / 4, sym=sym))
+    op_tree.append(cirq.CZ(q1, q3))
+
+    op_tree.append(cRy(q0, q3, fac=-1 / 4, sym=sym))
+    op_tree.append(cirq.CNOT(q0, q2))
+
+    op_tree.append(cirq.Rz(rads=np.pi / 2).on(q1))
+    op_tree.append(cRy(q2, q3, fac=-1 / 4, sym=sym))
+
+    op_tree.append(cirq.CNOT(q0, q2))
+
+    op_tree.append(cirq.X(q0))
+    op_tree.append(cRy(q2, q3, fac=1 / 4, sym=sym))
+
+    op_tree.append(cirq.CNOT(q3, q1))
+    op_tree.append(cirq.Rz(rads=-np.pi / 2).on(q1))
+    op_tree.append(cirq.S(q3))
+
+    op_tree.append(cirq.CNOT(q3, q2))
+    op_tree.append(cirq.CNOT(q1, q0))
+
+    return cirq.Circuit(*op_tree)
+
+
+def identity_on_qubits(circuit: cirq.Circuit, qubits: list[cirq.Qid]) -> cirq.Circuit:
+    """Adds I operations on all qubits from qubits which aren't on the circuit's qubits
+
+    Args:
+        circuit (cirq.Circuit): the circuit on which to add identities
+        qubits (list[cirq.Qid]): the qubits to check against
+
+    Returns:
+        cirq.Circuit: the circuit with identities added
+    """
+    circuit_qubits = flatten(circuit.all_qubits())
+    missing_qubits = [x for x in qubits if x not in circuit_qubits]
+    circuit_out = circuit.copy()
+    if circuit_qubits == []:
+        print("The circuit has no qubits")
+        circuit_out = cirq.Circuit()
+    circuit_out.append([cirq.I(mq) for mq in missing_qubits])
+    return circuit_out

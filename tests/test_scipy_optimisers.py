@@ -3,7 +3,7 @@ import numpy as np
 from qutlet.optimisers.scipy_optimisers import ScipyOptimisers
 from qutlet.objectives.abstractexpectationvalue import AbstractExpectationValue
 
-from qutlet.models.qubitModel import AbstractModel
+from models.qubit_model import QubitModel
 from typing import Dict, Tuple
 
 import cirq
@@ -15,7 +15,7 @@ class DummyModel(QubitModel):
         super().__init__(n_qubits)
         self._set_hamiltonian()
 
-    def copy(self) -> AbstractModel:
+    def copy(self) -> QubitModel:
         pass  # pragma: no cover
 
     def energy(self) -> Tuple[np.ndarray, np.ndarray]:

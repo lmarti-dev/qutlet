@@ -1,5 +1,5 @@
 from datetime import datetime
-from itertools import chain
+from itertools import chain, combinations
 from typing import Iterable, Union
 
 import numpy as np
@@ -85,9 +85,11 @@ def alternating_indices_to_sectors(M, even_first: bool = True, axis=None) -> np.
         idxs = (np.array(list(chain(range(a, ii, 2), range(b, ii, 2)))) for ii in dims)
     else:
         idxs = (
-            np.array(list(chain(range(a, ii, 2), range(b, ii, 2))))
-            if axis == ind
-            else np.arange(ii)
+            (
+                np.array(list(chain(range(a, ii, 2), range(b, ii, 2))))
+                if axis == ind
+                else np.arange(ii)
+            )
             for ind, ii in enumerate(dims)
         )
     return M[np.ix_(*idxs)]
@@ -443,7 +445,7 @@ def default_value_handler(shape: tuple, value: Union[str, float, Iterable]):
         elif value == "ones":
             return np.ones(shape=shape)
         elif value == "random":
-            return np.random.rand(*shape)
+            return 2 * (np.random.rand(*shape) - 0.5)
     elif isinstance(value, Iterable):
         npvalue = np.array(value)
         if not np.all(npvalue.shape == shape):
@@ -510,3 +512,70 @@ def dagger(U: np.ndarray) -> np.ndarray:
 
 def ketbra(ket: np.ndarray) -> np.ndarray:
     return np.outer(ket, dagger(ket))
+
+
+def from_bitstring(b: str, n_qubits: int, right_to_left: bool = False):
+    if "b" in b:
+        b = b.split("b")[1]
+    # hmmmm would double rtl cancel out? too tired to think about it
+    idx = index_bits(a=b, N=n_qubits, right_to_left=True)
+    if right_to_left:
+        return sum([2 ** (n_qubits - 1 - iii) for iii in idx])
+    else:
+        return sum([2**iii for iii in idx])
+
+
+def get_degenerate_indices(
+    eigenenergies, ref_ind: int = 0, XOR: bool = False, omit_ref: bool = False
+) -> list:
+    idx = np.arange(0, len(eigenenergies))
+
+    if omit_ref:
+        idx_out = idx[
+            idx != ref_ind & np.isclose(eigenenergies, eigenenergies[ref_ind])
+        ]
+    else:
+        idx_out = idx[np.isclose(eigenenergies, eigenenergies[ref_ind])]
+    if XOR:
+        return idx[idx != idx_out]
+    return idx_out
+
+
+def spin_dicke_mixed_state(
+    n_qubits: int, Nf: list, right_to_left: bool = False, expanded: bool = False
+):
+
+    if isinstance(Nf, int):
+        Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
+
+    if expanded:
+        rho = np.zeros((2**n_qubits, 2**n_qubits))
+        for ind in range(2**n_qubits):
+            indices = index_bits(a=ind, right_to_left=right_to_left, N=n_qubits)
+            if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
+                rho[ind, ind] = 1
+    else:
+        n_up = len(list(combinations(range(n_qubits // 2), Nf[0])))
+        n_down = len(list(combinations(range(n_qubits // 2), Nf[1])))
+        rho = np.eye(N=n_up * n_down, M=n_up * n_down)
+    return rho / np.trace(rho)
+
+
+def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False):
+    if isinstance(ind, int):
+        if n_qubits is None:
+            b = bin(ind)
+        else:
+            b = binleftpad(integer=ind, left_pad=n_qubits)
+    else:
+        b = ind
+    if "b" in b:
+        b = b.split("b")[1]
+    if right_to_left:
+        b = list(reversed(b))
+    return b
+
+
+def trace_norm(u1: np.ndarray, u2: np.ndarray):
+    d = u1 - u2
+    return np.abs(np.trace(np.sqrt(np.matmul(np.transpose(np.conjugate(d)), d))))

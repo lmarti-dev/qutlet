@@ -4,7 +4,7 @@ import numpy as np
 import openfermion as of
 
 import scipy
-from qutlet.utilities.generic import sum_even, sum_odd
+from qutlet.utilities.generic import sum_even, sum_odd, index_bits, binleftpad
 
 
 def get_fermionic_states_number(system_fermions: list, n_qubits: int):
@@ -141,8 +141,7 @@ def jw_spin_correct_indices(
         ]
     else:
         jw_indices = [
-            sum([2**iii for iii in combination])
-            for combination in correct_combinations
+            sum([2**iii for iii in combination]) for combination in correct_combinations
         ]
     return jw_indices
 
@@ -308,3 +307,46 @@ def jw_computational_wf(
 
     wf[jw_index] = 1
     return wf
+
+
+def is_subspace_gs_global(model, Nf: list):
+    sys_eigenspectrum, _ = jw_eigenspectrum_at_particle_number(
+        sparse_operator=of.get_sparse_operator(
+            model.fock_hamiltonian,
+            n_qubits=len(model.flattened_qubits),
+        ),
+        particle_number=Nf,
+        expanded=True,
+    )
+    total_eigenspectrum, _ = np.linalg.eigh(
+        model.hamiltonian.matrix(qubits=model.flattened_qubits)
+    )
+    print("subspace ground energy:", min(sys_eigenspectrum))
+    print("global ground energy", min(total_eigenspectrum))
+    print(
+        "are they equal: ", np.isclose(min(sys_eigenspectrum), min(total_eigenspectrum))
+    )
+
+
+def ket_in_subspace(ket: np.ndarray, n_electrons: list, n_subspace_qubits: int):
+    # check whether the current ket has a subsection of the bitstring in the right fermionic subspace
+    # if your ket is tensored with an ancilla, you don't care about the state of some of the bitstring
+    n_qubits = int(np.log2(len(ket)))
+    n_non_subspace_qubits = n_qubits - n_subspace_qubits
+    indices = []
+    for ind in range(len(ket)):
+        # turn the indices into rtl bitstrings, cut the non-subspace part, and count the ones
+        subspace_qubits_indices = index_bits(
+            binleftpad(ind, n_qubits)[n_non_subspace_qubits:],
+            right_to_left=True,
+        )
+        if (
+            sum_even(subspace_qubits_indices) == n_electrons[0]
+            and sum_odd(subspace_qubits_indices) == n_electrons[1]
+        ):
+            # we got our subspace indices
+            indices.append(ind)
+        # look at the complementary other indices
+        non_subspace_indices = np.array(list(set(range(len(ket))) - set(indices)))
+    # if any of the compl. indices is not zero, then the ket is not in the subspace and return false
+    return not np.any(ket[non_subspace_indices] != 0)

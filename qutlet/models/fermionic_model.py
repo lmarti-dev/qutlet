@@ -6,7 +6,7 @@ import numpy as np
 from typing import Callable, Optional, Tuple, Union, Sequence
 import abc
 
-from qutlet.models.fockModel import FockModel
+from models.fock_model import FockModel
 from qutlet.utilities import (
     flatten,
     bravyi_kitaev_fast_wrapper,
