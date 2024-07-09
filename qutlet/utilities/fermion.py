@@ -7,6 +7,12 @@ import scipy
 from qutlet.utilities.generic import sum_even, sum_odd
 
 
+def get_fermionic_states_number(system_fermions: list, n_qubits: int):
+    return len(
+        list(itertools.combinations(range(n_qubits // 2), system_fermions[0]))
+    ) * len(list(itertools.combinations(range(n_qubits // 2), system_fermions[1])))
+
+
 def even_excitation(
     coeff: float, indices: List[int], anti_hermitian: bool
 ) -> of.FermionOperator:
@@ -236,6 +242,7 @@ def jw_get_true_ground_state_at_particle_number(
     particle_number: Union[list, int],
     spin: bool = True,
     sparse: bool = False,
+    expanded: bool = True,
 ) -> Tuple[float, np.ndarray]:
     """Get the ground energy and wavefunction of a jw encoded fock hamiltonian
     Args:
@@ -249,7 +256,7 @@ def jw_get_true_ground_state_at_particle_number(
     eigvals, eigvecs = jw_eigenspectrum_at_particle_number(
         sparse_operator,
         particle_number,
-        expanded=True,
+        expanded=expanded,
         spin=spin,
         sparse=sparse,
         k=1,

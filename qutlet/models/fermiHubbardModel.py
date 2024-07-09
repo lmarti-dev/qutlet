@@ -143,12 +143,13 @@ class FermiHubbardModel(FermionicModel):
             self.fock_hamiltonian = of.FermionOperator.identity()
 
     @property
-    def non_interacting_model(self):
+    def non_interacting(self):
         return FermiHubbardModel(
             lattice_dimensions=self.lattice_dimensions,
             tunneling=self.tunneling,
             coulomb=0.0,
             encoding_options=self.encoding_options,
+            system_fermions=self.system_fermions,
         )
 
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover

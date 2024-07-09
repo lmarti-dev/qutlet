@@ -1,8 +1,157 @@
-from typing import Tuple
+import itertools
+from typing import Tuple, Union
+
 import cirq
 import numpy as np
+from scipy.sparse import csc_matrix, kron
+from scipy.linalg import sqrtm
+from qutlet.utilities.generic import chained_matrix_multiplication
 
-from typing import TYPE_CHECKING
+
+def sparse_pauli_string(pauli_str: Union[cirq.PauliString, str]):
+    pauli_I = csc_matrix(np.array([[1, 0], [0, 1]]))
+    pauli_X = csc_matrix(np.array([[0, 1], [1, 0]]))
+    pauli_Y = csc_matrix(np.array([[0, -1j], [1j, 0]]))
+    pauli_Z = csc_matrix(np.array([[1, 0], [0, -1]]))
+    out = csc_matrix([1])
+    d = {"I": pauli_I, "X": pauli_X, "Y": pauli_Y, "Z": pauli_Z}
+    if isinstance(pauli_str, cirq.PauliString):
+        for qid, pauli in reversed(pauli_str.items()):
+            out = kron(d[str(pauli)], out)
+    # if we have something like "XYZXZXZYX"
+    elif isinstance(pauli_str, str):
+        for pauli in reversed(pauli_str):
+            out = kron(d[pauli], out)
+    return out
+
+
+def sparse_pauli_string_coeff(mat: csc_matrix, pauli_str: Union[cirq.PauliString, str]):
+    pauli_sparse_matrix = sparse_pauli_string(pauli_str=pauli_str)
+    product = mat @ pauli_sparse_matrix
+
+    return product.trace() / mat.shape[0]
+
+
+def pauli_string_coeff(
+    mat: np.ndarray, pauli_product: list[cirq.Pauli], qubits: list[cirq.Qid]
+):
+    pauli_string = cirq.PauliString(*[m(q) for m, q in zip(pauli_product, qubits)])
+    pauli_matrix = pauli_string.matrix(qubits=qubits)
+    coeff = np.trace(mat @ pauli_matrix) / mat.shape[0]
+    return coeff, pauli_string
+
+
+def matrix_to_paulisum(
+    mat: np.ndarray,
+    qubits: list[cirq.Qid] = None,
+    verbose: bool = False,
+) -> cirq.PauliSum:
+    if len(list(set(mat.shape))) != 1:
+        raise ValueError("the matrix is not square")
+    n_qubits = int(np.log2(mat.shape[0]))
+    if qubits is None:
+        qubits = cirq.LineQubit.range(n_qubits)
+    pauli_matrices = ("I", "X", "Y", "Z")
+    pauli_products = itertools.product(pauli_matrices, repeat=n_qubits)
+    pauli_sum = cirq.PauliSum()
+    for pauli_product in pauli_products:
+        pauli_string = "".join(pauli_product)
+        coeff = sparse_pauli_string_coeff(mat=csc_matrix(mat), pauli_str=pauli_string)
+        if verbose:
+            print(pauli_string, coeff, end="\r")
+        if not np.isclose(np.abs(coeff), 0):
+            pauli_sum += cirq.DensePauliString(
+                pauli_mask=pauli_string, coefficient=coeff
+            ).on(*qubits)
+    return pauli_sum
+
+
+def fidelity(a: np.ndarray, b: np.ndarray) -> float:
+    """Returns the quantum fidelity between two objects, each of with being either a wavefunction (a vector) or a density matrix
+    Args:
+        a (np.ndarray): the first object
+        b (np.ndarray): the second object
+    Raises:
+        ValueError: if there is a mismatch in the dimensions of the objects
+        ValueError: if a tensor has more than 2 dimensions
+    Returns:
+        float: the fidelity between the two objects
+    """
+    # remove empty dimensions
+    squa = np.squeeze(a)
+    squb = np.squeeze(b)
+    # check for dimensions mismatch
+    if len(set((*squa.shape, *squb.shape))) > 1:
+        raise ValueError("Dimension mismatch: {} and {}".format(squa.shape, squb.shape))
+    # case for two vectors
+    if len(squa.shape) == 1 and len(squb.shape) == 1:
+        return np.sqrt(
+            np.abs(np.dot(np.conj(squa), squb) * np.dot(np.conj(squb), squa))
+        )
+    else:
+        # case for one matrix and one vector, or two matrices
+        items = []
+        for item in (squa, squb):
+            if len(item.shape) == 1:
+                items.append(np.outer(item, item))
+            elif len(item.shape) == 2:
+                items.append(item)
+            else:
+                raise ValueError(
+                    "expected vector or matrix, got {}dimensions".format(item.shape)
+                )
+
+        items[0] = sqrtm(items[0])
+        rho_sigma_rho = chained_matrix_multiplication(
+            np.matmul, items[0], items[1], items[0]
+        )
+        final_mat = sqrtm(rho_sigma_rho)
+        return np.trace(final_mat) ** 2
+
+
+def state_fidelity_to_eigenstates(
+    state: np.ndarray, eigenstates: np.ndarray, expanded: bool = True
+):
+    # eigenstates have shape N * M where M is the number of eigenstates
+
+    fids = []
+
+    for jj in range(eigenstates.shape[1]):
+        if expanded:
+            fids.append(
+                cirq.fidelity(
+                    state, eigenstates[:, jj], qid_shape=(2,) * int(np.log2(len(state)))
+                )
+            )
+        else:
+            # in case we have fermionic vectors which aren't 2**n
+            # expanded refers to jw_ restricted spaces functions
+            fids.append(fidelity(state, eigenstates[:, jj]) ** 2)
+    return fids
+
+
+def get_closest_degenerate_ground_state(
+    ref_state: np.ndarray,
+    comp_energies: np.ndarray,
+    comp_states: np.ndarray,
+):
+    ix = np.argsort(comp_energies)
+    comp_states = comp_states[:, ix]
+    comp_energies = comp_energies[ix]
+    comp_ground_energy = comp_energies[0]
+    degeneracy = sum(
+        (np.isclose(comp_ground_energy, eigenenergy) for eigenenergy in comp_energies)
+    )
+    fidelities = []
+    if degeneracy > 1:
+        print("ground state is {}-fold degenerate".format(degeneracy))
+        for ind in range(degeneracy):
+            fidelities.append(cirq.fidelity(comp_states[:, ind], ref_state))
+        max_ind = np.argmax(fidelities)
+        print(f"degenerate fidelities: {fidelities}, max: {max_ind}")
+        return comp_ground_energy, comp_states[:, max_ind], max_ind
+    else:
+        return comp_ground_energy, comp_states[:, 0], 0
 
 
 def all_pauli_str_commute(psum: cirq.PauliSum) -> bool:

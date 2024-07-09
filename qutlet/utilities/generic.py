@@ -150,7 +150,7 @@ def sectors_to_alternating_indices(M, even_first: bool = True, axis=None) -> np.
 
 def flip_cross_cols(M, flip_odd=True):
     M_tmp = np.array(M)
-    if flip_odd == True:
+    if flip_odd:
         a = 1
     else:
         a = 0
@@ -169,7 +169,7 @@ def flip_cross_rows(M, flip_odd=True):
         M: New matrix with odd or even rows flipped
     """
     M_tmp = np.array(M)
-    if flip_odd == True:
+    if flip_odd:
         a = 1
     else:
         a = 0
@@ -348,7 +348,7 @@ def normalize_vec(v: np.ndarray) -> np.ndarray:
     return v / np.linalg.norm(v)
 
 
-def sum_divisible(l: list, i: int):
+def sum_divisible(li: list, i: int):
     """Returns the amount of numbers divisible by an integer i in a list
     Args:
         l (list): the list of integers
@@ -356,28 +356,28 @@ def sum_divisible(l: list, i: int):
     Returns:
         int: the sum of divisble integers in the list
     """
-    return np.sum(np.mod(l, i) == 0)
-    return sum([1 if x % i == 0 else 0 for x in l])
+    return np.sum(np.mod(li, i) == 0)
+    return sum([1 if x % i == 0 else 0 for x in li])
 
 
-def sum_even(l: Iterable) -> int:
+def sum_even(li: Iterable) -> int:
     """Returns the number of even numbers in a list
     Args:
         l (Iterable): the list
     Returns:
         int: the number of even numbers
     """
-    return sum_divisible(l, 2)
+    return sum_divisible(li, 2)
 
 
-def sum_odd(l: Iterable) -> int:
+def sum_odd(li: Iterable) -> int:
     """Returns the number of odd numbers in a list
     Args:
         l (Iterable): the list
     Returns:
         int: the number of odd numbers
     """
-    return len(l) - sum_even(l)
+    return len(li) - sum_even(li)
 
 
 # TODO: replace_non_alpha

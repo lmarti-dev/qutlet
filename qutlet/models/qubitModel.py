@@ -1,18 +1,5 @@
-"""
-#  TP2 internal VQE class
-#   purpose is to write common code in a compatible manner
-#
-#  try to use type definitions and numpy arrays as good as possible
-#
-# use this:
-# https://quantumai.google/cirq/tutorials/educators/qaoa_ising
-# as a starting point.
-# Write in class strucutre. Add automated testing. Put to package.
-# Then add own ideas and alternative optimisers, ising circuits etc.
-
-"""
 import abc
-from typing import Iterable, Union
+from typing import Iterable, Union, Any
 
 import numpy as np
 from cirq import PauliSum, LineQubit
@@ -29,7 +16,7 @@ class QubitModel(abc.ABC):
             self.n_qubits = qubit_shape
         else:
             raise TypeError(f"Expected iterable or int, got {type(qubit_shape)}")
-        self.hamiltonian: PauliSum() = None
+        self.hamiltonian: PauliSum = None
         self._qubits = LineQubit.range(self.n_qubits)
 
     def __getitem__(self, idx):
@@ -69,3 +56,7 @@ class QubitModel(abc.ABC):
             raise ValueError(
                 "state_vector shape mismatch: {}".format(state_vector.shape)
             )
+
+
+def to_json(obj: Any) -> dict:
+    return obj.__to_json__()
