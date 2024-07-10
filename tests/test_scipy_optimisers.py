@@ -1,10 +1,9 @@
-import pytest
 import numpy as np
 from qutlet.optimisers.scipy_optimisers import ScipyOptimisers
-from qutlet.objectives.abstractexpectationvalue import AbstractExpectationValue
 
-from models.qubit_model import QubitModel
-from typing import Dict, Tuple
+from qutlet.models.qubit_model import QubitModel
+from qutlet.objectives.statevector_objectives import energy_objective
+from typing import Tuple
 
 import cirq
 import sympy
@@ -75,7 +74,7 @@ def test_optimize():
     model = DummyModel(n_qubits=n_qubits)
     model.set_circuit()
 
-    objective = AbstractExpectationValue(model=model)
+    objective = energy_objective(model=model)
     minimize_options = {"method": "COBYLA"}
     for save_function_calls in (True, False):
         optimiser = ScipyOptimisers(

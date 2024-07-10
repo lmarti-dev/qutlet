@@ -489,19 +489,16 @@ def dicke_state(n: int, k: int) -> np.ndarray:
     return normalize_vec(wf)
 
 
-def spin_dicke_state(n_qubits: int, system_fermions: list, right_to_left: bool = False):
-    if isinstance(system_fermions, int):
-        system_fermions = [
-            int(np.ceil(system_fermions / 2)),
-            int(np.floor(system_fermions / 2)),
+def spin_dicke_state(n_qubits: int, n_electrons: list, right_to_left: bool = False):
+    if isinstance(n_electrons, int):
+        n_electrons = [
+            int(np.ceil(n_electrons / 2)),
+            int(np.floor(n_electrons / 2)),
         ]
     wf = np.zeros(2**n_qubits)
     for ind in range(2**n_qubits):
         indices = index_bits(a=ind, right_to_left=right_to_left, N=n_qubits)
-        if (
-            sum_even(indices) == system_fermions[0]
-            and sum_odd(indices) == system_fermions[1]
-        ):
+        if sum_even(indices) == n_electrons[0] and sum_odd(indices) == n_electrons[1]:
             wf[ind] = 1
     return normalize_vec(wf)
 
@@ -542,21 +539,27 @@ def get_degenerate_indices(
 
 
 def spin_dicke_mixed_state(
-    n_qubits: int, Nf: list, right_to_left: bool = False, expanded: bool = False
+    n_qubits: int,
+    n_electrons: list,
+    right_to_left: bool = False,
+    expanded: bool = False,
 ):
 
-    if isinstance(Nf, int):
-        Nf = [int(np.ceil(Nf / 2)), int(np.floor(Nf / 2))]
+    if isinstance(n_electrons, int):
+        n_electrons = [int(np.ceil(n_electrons / 2)), int(np.floor(n_electrons / 2))]
 
     if expanded:
         rho = np.zeros((2**n_qubits, 2**n_qubits))
         for ind in range(2**n_qubits):
             indices = index_bits(a=ind, right_to_left=right_to_left, N=n_qubits)
-            if sum_even(indices) == Nf[0] and sum_odd(indices) == Nf[1]:
+            if (
+                sum_even(indices) == n_electrons[0]
+                and sum_odd(indices) == n_electrons[1]
+            ):
                 rho[ind, ind] = 1
     else:
-        n_up = len(list(combinations(range(n_qubits // 2), Nf[0])))
-        n_down = len(list(combinations(range(n_qubits // 2), Nf[1])))
+        n_up = len(list(combinations(range(n_qubits // 2), n_electrons[0])))
+        n_down = len(list(combinations(range(n_qubits // 2), n_electrons[1])))
         rho = np.eye(N=n_up * n_down, M=n_up * n_down)
     return rho / np.trace(rho)
 

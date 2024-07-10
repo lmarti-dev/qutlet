@@ -1,22 +1,17 @@
 from __future__ import annotations
-from ctypes import Union
-import openfermion as of
+
 import cirq
 import numpy as np
-from typing import Callable, Optional, Tuple, Union, Sequence
-import abc
-
-from models.fock_model import FockModel
-from qutlet.utilities import (
-    flatten,
-    bravyi_kitaev_fast_wrapper,
-    index_bits,
-    sum_even,
-    jw_eigenspectrum_at_particle_number,
-    sum_odd,
-)
-
+import openfermion as of
 from openfermion import get_sparse_operator
+from scipy.sparse import csc_matrix
+
+from qutlet.models.fock_model import FockModel
+from qutlet.utilities import (
+    bravyi_kitaev_fast_wrapper,
+    flatten,
+    jw_eigenspectrum_at_particle_number,
+)
 
 
 class FermionicModel(FockModel):
@@ -29,10 +24,10 @@ class FermionicModel(FockModel):
 
     """
 
-    def __init__(self, system_fermions: list, **kwargs):
+    def __init__(self, n_electrons: list, **kwargs):
         # Number of fermions present in the system, initialized with the set_initial_state method
         # can be int or tuple of two ints with spin up and down fermions
-        self.system_fermions = system_fermions
+        self.n_electrons = n_electrons
         super().__init__(**kwargs)
         # this is a reminder of how up and down fermions are spread on the grid
         # the default value is the one given by the fermi_hubbard function, ie
@@ -54,7 +49,7 @@ class FermionicModel(FockModel):
         encoding_name = encoding_options["encoding_name"]
 
         if encoding_name in encodings_dict.keys():
-            # need to specify the flattened_qubits here otherwise some validation methods will fail when evaluating the expectation
+            # need to specify the qubits here otherwise some validation methods will fail when evaluating the expectation
             # of the hamiltonian
             # this function is where all the mapping of qubits will happen
             # the encoding only does a symbolic encoding, regardless of the qubit structure
@@ -69,7 +64,7 @@ class FermionicModel(FockModel):
                 )
             )
 
-    def _set_hamiltonian(self, reset: bool = True):
+    def _set_hamiltonian(self):
         self.hamiltonian = self._encode_fock_hamiltonian()
 
     def _encode_fock_hamiltonian(self) -> cirq.PauliSum:
@@ -86,11 +81,11 @@ class FermionicModel(FockModel):
     def jw_fermion_number_expectation(self, state):
         _, _, n_total_op = self.hamiltonian_spin_and_number_operator()
         n_qubits = of.count_qubits(self.fock_hamiltonian)
-        system_fermions = np.real(
+        n_electrons = np.real(
             of.expectation(of.get_sparse_operator(n_total_op, n_qubits), state)
         )
-        return np.round(np.abs(system_fermions)).astype(int), np.sign(
-            np.real(system_fermions)
+        return np.round(np.abs(n_electrons)).astype(int), np.sign(
+            np.real(n_electrons)
         ).astype(int)
 
     @staticmethod
@@ -143,3 +138,66 @@ class FermionicModel(FockModel):
             expanded=True,
         )
         return eig_energies, eig_states
+
+    def diagonalize_non_interacting_hamiltonian(self):
+        # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
+        quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
+            self.fock_hamiltonian
+        )
+        # get diagonalizing_bogoliubov_transform $b_j = \sum_i Q_{ji} a_i$ s.t $H = bDb*$ with $D$ diag.
+        # the bogoliubov transform conserves particle number, i.e. the bogops are single particle
+        (
+            orbital_energies,
+            unitary_rows,
+            _,
+        ) = quadratic_hamiltonian.diagonalizing_bogoliubov_transform()
+
+        # sort them so that you get them in order
+        idx = np.argsort(orbital_energies)
+
+        unitary_rows = unitary_rows[idx, :]
+        orbital_energies = orbital_energies[idx]
+
+        return orbital_energies, unitary_rows
+
+    def fermion_number_expectation(self, state):
+        _, _, n_total_op = self.hamiltonian_spin_and_number_operator()
+        n_qubits = of.count_qubits(self.fock_hamiltonian)
+        Nf = np.real(
+            of.expectation(of.get_sparse_operator(n_total_op, n_qubits), state)
+        )
+        return np.round(np.abs(Nf)).astype(int), np.sign(np.real(Nf)).astype(int)
+
+    def fermion_spins_expectations(self, state: np.ndarray):
+        n_up_op, n_down_op, _ = self.hamiltonian_spin_and_number_operator()
+        n_qubits = len(self.qubits)
+
+        if len(state.shape) != 1:
+            state = csc_matrix(state)
+
+        n_up = np.real(of.expectation(of.get_sparse_operator(n_up_op, n_qubits), state))
+        n_down = np.real(
+            of.expectation(of.get_sparse_operator(n_down_op, n_qubits), state)
+        )
+        return n_up, n_down
+
+    def get_non_quadratic_hamiltonian_wrapper(
+        self, fermion_hamiltonian: of.FermionOperator
+    ):
+        if fermion_hamiltonian == of.FermionOperator.identity():
+            return of.QuadraticHamiltonian(np.zeros((np.prod(self.n), np.prod(self.n))))
+        quadratic_terms = of.get_fermion_operator(
+            of.get_quadratic_hamiltonian(
+                fermion_hamiltonian,
+                ignore_incompatible_terms=True,
+            )
+        )
+        return fermion_hamiltonian - quadratic_terms
+
+    @property
+    def quadratic_terms(self):
+        return self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
+
+    @property
+    def non_quadratic_terms(self):
+        return self.get_non_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)

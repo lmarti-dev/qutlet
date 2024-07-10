@@ -2,8 +2,8 @@ import cirq
 from cirq.circuits import InsertStrategy
 
 import sympy
-from models.fermionic_model import FermionicModel
-from models.qubit_model import QubitModel
+from qutlet.models.fermionic_model import FermionicModel
+from qutlet.models.qubit_model import QubitModel
 from qutlet.utilities import flatten
 import itertools
 from qutlet.circuits.ansatz import Ansatz
@@ -29,7 +29,7 @@ def brickwall_circuit(
     model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
 ):
     def circuit(model: FermionicModel, symbols, layers):
-        qubits = model.flattened_qubits
+        qubits = model.qubits
         circuit = cirq.Circuit()
 
         for layer in range(layers):
@@ -63,7 +63,7 @@ def brickwall_circuit(
 
 def pyramid_circuit(model: FermionicModel, layers=1):
     def circuit(model: FermionicModel, symbols, layers):
-        qubits = model.flattened_qubits
+        qubits = model.qubits
         circuit = cirq.Circuit()
         for layer in range(layers):
             layer_symbols = []
@@ -91,7 +91,7 @@ def totally_connected_circuit(
     model: FermionicModel, layers=1, spin_conserving: bool = False
 ):
     def circuit(model: FermionicModel, symbols, layers):
-        qubits = model.flattened_qubits
+        qubits = model.qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
         perms = list(itertools.combinations(range(Nq), 2))
@@ -130,7 +130,7 @@ def totally_connected_circuit(
 
 def stair_circuit(model: FermionicModel, layers=1):
     def circuit(model: FermionicModel, symbols: list, layers: int):
-        qubits = model.flattened_qubits
+        qubits = model.qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
         for layer in range(layers):

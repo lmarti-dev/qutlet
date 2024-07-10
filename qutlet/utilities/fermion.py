@@ -7,10 +7,10 @@ import scipy
 from qutlet.utilities.generic import sum_even, sum_odd, index_bits, binleftpad
 
 
-def get_fermionic_states_number(system_fermions: list, n_qubits: int):
+def get_fermionic_states_number(n_electrons: list, n_qubits: int):
     return len(
-        list(itertools.combinations(range(n_qubits // 2), system_fermions[0]))
-    ) * len(list(itertools.combinations(range(n_qubits // 2), system_fermions[1])))
+        list(itertools.combinations(range(n_qubits // 2), n_electrons[0]))
+    ) * len(list(itertools.combinations(range(n_qubits // 2), n_electrons[1])))
 
 
 def even_excitation(
@@ -57,8 +57,12 @@ def even_excitation(
         return op + opdagg
 
 
+def fermion_op_sites_number(fop: of.FermionOperator) -> int:
+    return max([z[0] for y in fop.terms.keys() for z in y])
+
+
 def double_excitation(
-    coeff: float, i: int, j: int, k: int, l: int, anti_hermitian: bool
+    coeff: float, i: int, j: int, k: int, l: int, anti_hermitian: bool  # noqa
 ) -> of.FermionOperator:
     """Return a fock operator of the type a*i a*j ak al and makes it hermitian or anti-hermitian
     Args:
@@ -92,37 +96,37 @@ def single_excitation(
 
 
 def jw_spin_correct_indices(
-    system_fermions: Union[list, int],
+    n_electrons: Union[list, int],
     n_qubits: int,
     right_to_left: bool = False,
 ) -> list:
-    """Get the indices corresponding to the spin sectors given by system_fermions
+    """Get the indices corresponding to the spin sectors given by n_electrons
     Args:
-        system_fermions (Union[list, int]): the system_fermions in the system, or the spin sectors
+        n_electrons (Union[list, int]): the n_electrons in the system, or the spin sectors
         n_qubits (int): the number of qubits in the system
     Raises:
-        TypeError: if the system_fermions is neither a list nor an int
+        TypeError: if the n_electrons is neither a list nor an int
     Returns:
         list: the indices associated with the correct number of spins/electrons
     """
     # since we usually fill even then odd indices, and in the default jw,
     # the up spins are even and odd are down, we check if we have the correct
     # up and down spin count before passing the indices back
-    # when system_fermions is odd, we assume there is one more even indices, since those are filled even-first.
+    # when n_electrons is odd, we assume there is one more even indices, since those are filled even-first.
     # I guess we could use abs() but then we would mix two unrelated parity states
     # in the case n_spin_up is defined, then we count the number of spin_up (even indices) in the comb
 
-    if isinstance(system_fermions, int):
+    if isinstance(n_electrons, int):
         # we get the correct combinations by checking there is the same amount of even and odd indices in the comb
-        n_spin_up = int(np.ceil(system_fermions / 2))
-        n_spin_down = int(np.floor(system_fermions / 2))
-    elif isinstance(system_fermions, list):
-        n_spin_up = system_fermions[0]
-        n_spin_down = system_fermions[1]
+        n_spin_up = int(np.ceil(n_electrons / 2))
+        n_spin_down = int(np.floor(n_electrons / 2))
+    elif isinstance(n_electrons, list):
+        n_spin_up = n_electrons[0]
+        n_spin_down = n_electrons[1]
     else:
         raise TypeError(
-            "Expected system_fermions to be either a list or an int, got {}".format(
-                type(system_fermions)
+            "Expected n_electrons to be either a list or an int, got {}".format(
+                type(n_electrons)
             )
         )
     combinations = itertools.combinations(
@@ -164,7 +168,7 @@ def jw_spin_restrict_operator(
         n_qubits = int(np.log2(sparse_operator.shape[0]))
 
     select_indices = jw_spin_correct_indices(
-        system_fermions=particle_number, n_qubits=n_qubits, right_to_left=right_to_left
+        n_electrons=particle_number, n_qubits=n_qubits, right_to_left=right_to_left
     )
     return sparse_operator[np.ix_(select_indices, select_indices)]
 
@@ -225,7 +229,7 @@ def jw_eigenspectrum_at_particle_number(
         n_eigvecs = eigvecs.shape[-1]
         expanded_eigvecs = np.zeros((2**n_qubits, n_eigvecs), dtype=complex)
         expanded_indices = indices_func(
-            system_fermions=particle_number, n_qubits=n_qubits, **kwargs
+            n_electrons=particle_number, n_qubits=n_qubits, **kwargs
         )
         for iii in range(n_eigvecs):
             expanded_eigvecs[
@@ -309,17 +313,17 @@ def jw_computational_wf(
     return wf
 
 
-def is_subspace_gs_global(model, Nf: list):
+def is_subspace_gs_global(model, n_electrons: list):
     sys_eigenspectrum, _ = jw_eigenspectrum_at_particle_number(
         sparse_operator=of.get_sparse_operator(
             model.fock_hamiltonian,
-            n_qubits=len(model.flattened_qubits),
+            n_qubits=len(model.qubits),
         ),
-        particle_number=Nf,
+        particle_number=n_electrons,
         expanded=True,
     )
     total_eigenspectrum, _ = np.linalg.eigh(
-        model.hamiltonian.matrix(qubits=model.flattened_qubits)
+        model.hamiltonian.matrix(qubits=model.qubits)
     )
     print("subspace ground energy:", min(sys_eigenspectrum))
     print("global ground energy", min(total_eigenspectrum))

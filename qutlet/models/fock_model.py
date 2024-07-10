@@ -1,14 +1,10 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Optional, Tuple, Union, Sequence
 
 
-from models.qubit_model import QubitModel
-from qutlet.utilities.generic import flatten
+from qutlet.models.qubit_model import QubitModel
 import openfermion as of
-import cirq
-import scipy
 
 
 class FockModel(QubitModel):

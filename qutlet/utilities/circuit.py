@@ -8,7 +8,6 @@ from scipy.linalg import sqrtm
 from qutlet.utilities.generic import (
     chained_matrix_multiplication,
     flatten,
-    default_value_handler,
 )
 import sympy
 

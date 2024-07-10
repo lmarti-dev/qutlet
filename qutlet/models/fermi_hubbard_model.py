@@ -44,14 +44,14 @@ def fermi_hubbard(
                         multi_index=(*site_neighbour, spin), dims=dims
                     )
                     hamiltonian += FermionOperator(
-                        term=f"{index_a}^ {index_b}", coefficient=tunneling
+                        term=f"{index_a}^ {index_b}", coefficient=-tunneling
                     )
 
         index_up = np.ravel_multi_index(multi_index=(*site_a, 0), dims=dims)
         index_down = np.ravel_multi_index(multi_index=(*site_a, 1), dims=dims)
         hamiltonian += FermionOperator(
             term=f"{index_up}^ {index_up} {index_down}^ {index_down}",
-            coefficient=coulomb,
+            coefficient=0.5 * coulomb,
         )
     hamiltonian += hermitian_conjugated(hamiltonian)
     return hamiltonian
@@ -104,10 +104,6 @@ class FermiHubbardModel(FermionicModel):
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )
 
-    def copy(self):
-        self_copy = copy.deepcopy(self)
-        return self_copy
-
     def _set_fock_hamiltonian(self, reset: bool = True):
         """This function sets the fock hamiltonian from the fermihubbard function in open fermion
 
@@ -143,13 +139,13 @@ class FermiHubbardModel(FermionicModel):
             self.fock_hamiltonian = of.FermionOperator.identity()
 
     @property
-    def non_interacting(self):
+    def non_interacting_model(self):
         return FermiHubbardModel(
             lattice_dimensions=self.lattice_dimensions,
             tunneling=self.tunneling,
             coulomb=0.0,
             encoding_options=self.encoding_options,
-            system_fermions=self.system_fermions,
+            n_electrons=self.n_electrons,
         )
 
     def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
@@ -171,7 +167,7 @@ class FermiHubbardModel(FermionicModel):
         return {
             "constructor_params": {
                 "dimensions": self.lattice_dimensions,
-                "system_fermions": self.system_fermions,
+                "n_electrons": self.n_electrons,
                 "tunneling": self.tunneling,
                 "coulomb": self.coulomb,
                 "periodic": self.periodic,
@@ -183,3 +179,16 @@ class FermiHubbardModel(FermionicModel):
     def from_dict(cls, dct: dict):
         inst = cls(**dct["constructor_params"])
         return inst
+
+    @property
+    def coulomb_model(self):
+        if self.tunneling == 0:
+            return self
+        return FermiHubbardModel(
+            lattice_dimensions=self.lattice_dimensions,
+            tunneling=0.0,
+            coulomb=self.coulomb,
+            periodic=self.periodic,
+            diagonal=self.diagonal,
+            encoding_options=self.encoding_options,
+        )

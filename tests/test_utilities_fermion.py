@@ -162,7 +162,7 @@ def test_mean_coeff_n_terms(fop, n, correct):
 
 
 @pytest.mark.parametrize(
-    "system_fermions,n_indices, correct",
+    "n_electrons,n_indices, correct",
     [
         (2, 4, [3, 6, 9, 12]),
         ([1, 2], 6, [11, 35, 41, 14, 38, 44, 26, 50, 56]),
@@ -175,9 +175,9 @@ def test_mean_coeff_n_terms(fop, n, correct):
         ),
     ],
 )
-def test_jw_spin_correct_indices(system_fermions, n_indices, correct):
+def test_jw_spin_correct_indices(n_electrons, n_indices, correct):
     assert qutlet.utilities.testing.do_lists_have_same_elements(
-        qutlet.utilities.fermion.jw_spin_correct_indices(system_fermions, n_indices),
+        qutlet.utilities.fermion.jw_spin_correct_indices(n_electrons, n_indices),
         correct,
     )
 

@@ -1,9 +1,8 @@
-from typing import Callable, Dict, Tuple, Union, Sequence, Optional
+from typing import Dict, Union
 import openfermion as of
-import cirq
-import copy
+from qutlet.utilities import fermion_op_sites_number
 
-from models.fermionic_model import FermionicModel
+from qutlet.models.fermionic_model import FermionicModel
 
 
 class FermionOperatorModel(FermionicModel):
@@ -21,16 +20,14 @@ class FermionOperatorModel(FermionicModel):
         self.fermion_operator = fermion_operator
         if encoding_options is None:
             encoding_options = {"encoding_name": "jordan_wigner"}
+        if qubit_shape is None:
+            qubit_shape = fermion_op_sites_number(fermion_operator)
         super().__init__(
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )
 
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         self.fock_hamiltonian = self.fermion_operator
-
-    def copy(self):
-        self_copy = copy.deepcopy(self)
-        return self_copy
 
     def __to_json__(self) -> Dict:
         return {

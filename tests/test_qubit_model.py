@@ -1,5 +1,5 @@
 """
-Test parent class AbstractModel;
+Test parent class QubitModel;
     -test whether correct error messages occur
     -test whether initialisation set obj.qubits correctly 
         based on some examples
@@ -10,7 +10,7 @@ Test parent class AbstractModel;
 from typing import Dict
 import cirq
 
-import pytest
+import pytest  # noqa
 
 # internal import
 from qutlet.models import QubitModel

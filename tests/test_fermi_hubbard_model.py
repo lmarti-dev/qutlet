@@ -1,6 +1,7 @@
 import pytest
 
-from models.fermi_hubbard_model import FermiHubbardModel
+from qutlet.models.fermi_hubbard_model import FermiHubbardModel
+from openfermion import fermi_hubbard, normal_ordered
 
 
 @pytest.mark.parametrize(
@@ -11,18 +12,15 @@ from models.fermi_hubbard_model import FermiHubbardModel
         (5, 5, 1, 1, {}),
         (5, 5, -1, 1, {}),
         (5, 5, 1, -1, {}),
-        (5, 5, 1, 1, {"chemical_potential": 0.0}),
-        (1, 2, 1, 1, {"chemical_potential": -1.0, "spinless": False}),
+        (5, 5, 1, 1, {}),
+        (1, 2, 1, 1, {"periodic": True}),
         (
             1,
             2,
             1,
             1,
             {
-                "chemical_potential": 1.0,
-                "magnetic_field": 0.0,
                 "periodic": True,
-                "spinless": False,
             },
         ),
         (
@@ -30,22 +28,26 @@ from models.fermi_hubbard_model import FermiHubbardModel
             2,
             1,
             1,
-            {
-                "chemical_potential": 0.0,
-                "magnetic_field": 1.0,
-                "periodic": False,
-                "spinless": True,
-            },
+            {"periodic": False},
         ),
     ],
 )
 def test_create(x_dimension, y_dimension, tunneling, coulomb, hamiltonian_options):
-    fermi_hubbard_hamiltonian = FermiHubbardModel(
-        x_dimension=x_dimension,
-        y_dimension=y_dimension,
+    fermi_hubbard_hamiltonian = FermiHubbardModel(  # noqa F841
+        lattice_dimensions=(x_dimension, y_dimension),
+        n_electrons=[],
         tunneling=tunneling,
         coulomb=coulomb,
-        hamiltonian_options=hamiltonian_options,
+        **hamiltonian_options,
+    )
+    assert normal_ordered(fermi_hubbard_hamiltonian.fock_hamiltonian) == normal_ordered(
+        fermi_hubbard(
+            x_dimension=x_dimension,
+            y_dimension=y_dimension,
+            tunneling=tunneling,
+            coulomb=coulomb,
+            **hamiltonian_options,
+        )
     )
 
 
@@ -58,8 +60,8 @@ def test_create(x_dimension, y_dimension, tunneling, coulomb, hamiltonian_option
 )
 def test_encode(transform_name):
     fermi_hubbard_hamiltonian = FermiHubbardModel(
-        x_dimension=3,
-        y_dimension=3,
+        lattice_dimensions=(3, 3),
+        n_electrons=[],
         tunneling=1,
         coulomb=1,
         encoding_options={"encoding_name": transform_name},
@@ -69,21 +71,11 @@ def test_encode(transform_name):
 
 def test_encode_wrong():
     fermi_hubbard_hamiltonian = FermiHubbardModel(
-        x_dimension=3, y_dimension=3, tunneling=1, coulomb=1
+        lattice_dimensions=(3, 3), n_electrons=[2, 2], tunneling=1, coulomb=1
     )
     with pytest.raises(KeyError):
         fermi_hubbard_hamiltonian.encoding_options["encoding_name"] = "wrong_encoding"
         fermi_hubbard_hamiltonian._encode_fock_hamiltonian()
-
-
-def test_initial_state_wrong():
-    fermi_hubbard_hamiltonian = FermiHubbardModel(
-        x_dimension=3, y_dimension=3, tunneling=1, coulomb=1
-    )
-    with pytest.raises(NameError):
-        fermi_hubbard_hamiltonian._get_initial_state_circuit(
-            "wrong_inital_state", initial_state=None, system_fermions=None
-        )
 
 
 def test_diagonalize_non_interacting_hamiltonian():
