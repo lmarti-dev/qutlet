@@ -1,7 +1,6 @@
 import openfermion as of
 import cirq
 import numpy as np
-import copy
 
 from qutlet.models import FermionicModel
 from openfermion import FermionOperator, hermitian_conjugated
