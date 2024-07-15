@@ -528,9 +528,8 @@ def get_degenerate_indices(
     idx = np.arange(0, len(eigenenergies))
 
     if omit_ref:
-        idx_out = idx[
-            idx != ref_ind & np.isclose(eigenenergies, eigenenergies[ref_ind])
-        ]
+        idx_out = idx[np.isclose(eigenenergies, eigenenergies[ref_ind])]
+        idx_out = idx_out[idx_out != ref_ind]
     else:
         idx_out = idx[np.isclose(eigenenergies, eigenenergies[ref_ind])]
     if XOR:

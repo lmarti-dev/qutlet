@@ -42,6 +42,8 @@ def fermi_hubbard(
                     index_b = np.ravel_multi_index(
                         multi_index=(*site_neighbour, spin), dims=dims
                     )
+                    if tunneling == "random":
+                        tunneling = np.random.rand()
                     hamiltonian += FermionOperator(
                         term=f"{index_a}^ {index_b}", coefficient=-tunneling
                     )
