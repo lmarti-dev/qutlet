@@ -1,10 +1,14 @@
 import itertools
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import openfermion as of
 
+
 import scipy
 from qutlet.utilities.generic import sum_even, sum_odd, index_bits, binleftpad
+
+if TYPE_CHECKING:
+    from qutlet.models import FermionicModel
 
 
 def get_fermionic_states_number(n_electrons: list, n_qubits: int):
@@ -354,3 +358,81 @@ def ket_in_subspace(ket: np.ndarray, n_electrons: list, n_subspace_qubits: int):
         non_subspace_indices = np.array(list(set(range(len(ket))) - set(indices)))
     # if any of the compl. indices is not zero, then the ket is not in the subspace and return false
     return not np.any(ket[non_subspace_indices] != 0)
+
+
+def get_bogo_fop(matrix: np.ndarray, spin: int):
+    bogos = []
+    for m in range(matrix.shape[0]):
+        fop = of.FermionOperator()
+        for n in range(matrix.shape[1]):
+            fop += of.FermionOperator(f"{int(2*n + spin)}^", coefficient=matrix[m, n])
+        bogos.append(fop)
+    return bogos
+
+
+def bogoprod(bogos: tuple[of.FermionOperator]):
+    fop_out = of.FermionOperator.identity()
+    for bogo in bogos:
+        fop_out *= bogo
+    return fop_out
+
+
+def build_bogo_creators(bogos_up: list, bogos_down: list, n_electrons: list):
+    bogo_up_combs = list(itertools.combinations(bogos_up, n_electrons[0]))
+    bogo_down_combs = list(itertools.combinations(bogos_down, n_electrons[1]))
+    bogo_creators = []
+    for i1, bogo_up_comb in enumerate(bogo_up_combs):
+        for i2, bogo_down_comb in enumerate(bogo_down_combs):
+            bogo_list = [*bogo_up_comb, *bogo_down_comb]
+            bogo_creator = bogoprod(bogo_list)
+            if bogo_creator is not None:
+                bogo_creators.append(bogo_creator)
+
+    return bogo_creators
+
+
+def build_couplers_from_bogos(
+    bogo_creators: list, zero_index: int = 0, max_k: int = -1
+):
+    bogo_0 = bogo_creators[zero_index]
+    rest_bogos = [b for b in bogo_creators if b != bogo_0][:max_k]
+    for bogo_c in rest_bogos:
+        yield bogo_0 * of.hermitian_conjugated(bogo_c)
+
+
+def get_bogoliubov_matrix(fop: of.FermionOperator, n_qubits: int):
+
+    matrix = np.zeros((n_qubits, n_qubits))
+
+    for k, v in fop.terms.items():
+        coords = (k[0][0], k[1][0])
+        matrix[coords] = v
+    return matrix
+
+
+def jw_get_free_couplers(
+    model: "FermionicModel", zero_index: int, max_k: int = -1, hc: bool = False
+):
+
+    matrix = get_bogoliubov_matrix(model.fock_hamiltonian, model.n_qubits)
+
+    sector_matrix = matrix[::2, ::2]
+    eigvals, eigvecs = np.linalg.eigh(sector_matrix)
+
+    bogos_up = get_bogo_fop(eigvecs.T, 0)
+    bogos_down = get_bogo_fop(eigvecs.T, 1)
+
+    bogo_creators = build_bogo_creators(bogos_up, bogos_down, model.n_electrons)
+
+    couplers = build_couplers_from_bogos(bogo_creators, zero_index, max_k)
+    jw_couplers = []
+    for coupler in couplers:
+
+        jw_coupler = of.jordan_wigner(coupler)
+        if hc:
+            jw_coupler += of.hermitian_conjugated(jw_coupler)
+        jw_couplers.append(
+            of.qubit_operator_to_pauli_sum(jw_coupler, qubits=model.qubits)
+        )
+
+    return jw_couplers

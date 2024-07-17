@@ -14,16 +14,17 @@ from qutlet.circuits.adapt_gate_pools import (
     HamiltonianPauliSumSet,
     FermionicPauliSumSet,
     PauliSumListSet,
+    FreeCouplersSet,
     PauliSumSet,
     exp_from_pauli_sum,
 )
+from qutlet.circuits.ansatz import Ansatz, param_name_from_circuit
 from qutlet.models import QubitModel
 
 # necessary for the full loop
 from qutlet.optimisers.scipy_optimisers import ScipyOptimisers
 from qutlet.utilities import (
     depth,
-    get_param_resolver,
     match_param_values_to_symbols,
     normalize_vec,
     populate_empty_qubits,
@@ -31,7 +32,7 @@ from qutlet.utilities import (
 )
 
 
-class ADAPT:
+class ADAPT(Ansatz):
     def __init__(
         self,
         model: QubitModel,
@@ -41,6 +42,7 @@ class ADAPT:
         verbosity: int = 0,
         n_jobs: int = 1,
     ):
+        super().__init__()
         self.model = model
         self.measure = {"name": None, "target_state": None}
         self.measure.update(measure)
@@ -114,6 +116,9 @@ class ADAPT:
             set_options.update({"qubits": self.model.qubits})
             set_options.update(gate_pool_options)
             return SubCircuitSet(**set_options)
+        elif pool_name == "free_couplers":
+            set_options.update(gate_pool_options)
+            return FreeCouplersSet(model=self.model, set_options=gate_pool_options)
         else:
             raise ValueError("expected a valid pool name, got {}".format(pool_name))
 
@@ -174,15 +179,11 @@ class ADAPT:
         # if we want some specific psi to apply the gate to.
         # not very useful for now, might come in handy later.
         # initial_state is the state to input in the circuit
+
         if trial_state is None:
-            circ = populate_empty_qubits(model=self.model)
-            trial_state = self.model.simulator.simulate(
-                circ,
-                param_resolver=get_param_resolver(
-                    model=self.model, param_values=self.model.circuit_param_values
-                ),
-                initial_state=initial_state,
-            ).final_state_vector
+            trial_state = self.simulate(
+                initial_state=initial_state, state_qubits=self.model.qubits
+            )
 
         grad_values = []
         self.verbose_print(
@@ -274,7 +275,7 @@ class ADAPT:
             return max_index
 
     def gate_and_param_from_pool(self, ind):
-        param_name = param_name_from_circuit(circ=self.model.circuit)
+        param_name = param_name_from_circuit(circ=self.circuit)
         gate, theta = self.gate_pool_class.gate_from_op(ind=ind, param_name=param_name)
         self.verbose_print("Using gate: {gate}".format(gate=gate))
         return gate, theta
@@ -296,14 +297,14 @@ class ADAPT:
         else:
             gates, theta = self.gate_and_param_from_pool(ind=max_index)
             for gate in gates:
-                self.model.circuit += gate
+                self.circuit += gate
             if isinstance(theta, Iterable):
-                self.model.circuit_param.extend(theta)
+                self.symbols.extend(theta)
             else:
-                self.model.circuit_param.append(theta)
+                self.symbols.append(theta)
             match_param_values_to_symbols(
-                model=self.model,
-                symbols=self.model.circuit_param,
+                params=self.params,
+                symbols=self.symbols,
                 default_value="zeros",
             )
             self.verbose_print(
@@ -317,15 +318,15 @@ class ADAPT:
         default_value: str = "random",
     ):
         ind = np.random.choice(len(self.gate_pool))
-        param_name = param_name_from_circuit(circ=self.model.circuit)
+        param_name = param_name_from_circuit(circ=self.circuit)
         theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
         exp_gates = exp_from_pauli_sum(pauli_sum=self.gate_pool[ind], theta=theta)
         for gate in exp_gates:
-            self.model.circuit += gate
-        self.model.circuit_param.append(theta)
+            self.circuit += gate
+        self.symbols.append(theta)
         match_param_values_to_symbols(
-            model=self.model,
-            symbols=self.model.circuit_param,
+            params=self.params,
+            symbols=self.symbols,
             default_value=default_value,
         )
         self.verbose_print("adding random gate: {rgate}".format(rgate=exp_gates))
@@ -369,29 +370,30 @@ class ADAPT:
             if max_index is not None:
                 self.verbose_print("optimizing {}-th step".format(step + 1))
                 # optimize to get a result everytime
-                self.model.circuit = populate_empty_qubits(model=self.model)
+                self.circuit = populate_empty_qubits(
+                    circuit=self.circuit, qubits=self.model.qubits
+                )
 
                 if isinstance(optimiser, ScipyOptimisers):
                     # this will only work with the scipy optimiser, as setting the initial guess for the parameters
-                    result = optimiser.optimise(
-                        objective=objective,
+                    result, sim_data = optimiser.optimise(
                         initial_params="random",
                     )
                 else:
-                    result = optimiser.optimise(objective=objective)
-                self.model.circuit_param_values = result.get_latest_step().params
+                    raise ValueError("Only works with ScipyOptimisers")
+                self.params = result["x"]
                 print(
                     "circuit depth: {d}, number of params: {p}".format(
-                        d=depth(self.model.circuit),
-                        p=len(self.model.circuit_param),
+                        d=depth(self.circuit),
+                        p=len(self.params),
                     )
                 )
                 # callback every step so that we can process each optimisation round
                 if callback is not None:
-                    callback(result, step)
+                    callback(result, sim_data, step)
                 # if we want to forbid adapt from adding the same gate every time (this happens sometimes)
                 if tetris:
-                    circuit_last_moment = self.model.circuit[-1]
+                    circuit_last_moment = self.circuit[-1]
                     qubits = circuit_last_moment.qubits
                     overlapping_indices = [
                         ind
@@ -503,23 +505,6 @@ def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
     # A * |gs>
     preprocessed_fid_state = op.dot(target_state)
     return preprocessed_fid_state
-
-
-def param_name_from_circuit(circ: cirq.Circuit, proptype="ops") -> str:
-    if proptype == "ops":
-        num = sum(1 for _ in circ.all_operations())
-    elif proptype == "depth":
-        num = depth(circuit=circ)
-    return "p_" + str(num)
-
-
-def compute_low_rank_energy_gradient(
-    ham: np.ndarray,
-    op: np.ndarray,
-    wf: np.ndarray,
-):
-    # TODO: this should be the lowrank method
-    pass
 
 
 def compute_preprocessed_fidelity_gradient(

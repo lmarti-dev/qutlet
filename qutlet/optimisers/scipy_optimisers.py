@@ -24,11 +24,15 @@ from qutlet.circuits.ansatz import Ansatz
 class ScipyOptimisers:
     def __init__(
         self,
+        ansatz: Ansatz,
+        objective: callable,
         minimize_options={"method": "L-BFGS-B"},
         initial_state=None,
         method_options: dict = {},
         save_sim_data: bool = True,
     ):
+        self._objective = objective
+        self.ansatz = ansatz
         self._minimize_options = {}
         self._minimize_options.update(minimize_options)
         self._method_options = {}
@@ -37,15 +41,21 @@ class ScipyOptimisers:
         self._function_calls_count = 0
         self.save_sim_data = save_sim_data
         if save_sim_data:
-            self.sim_data = []
+            self.sim_data = {}
 
             def add_step(**kwargs):
-                self.sim_data.append(kwargs)
+                for k in kwargs.keys():
+                    if k not in self.sim_data:
+                        self.sim_data[k] = []
+                    else:
+                        self.sim_data[k].append(kwargs[k])
 
             self.add_step: callable = add_step
 
-            def fun(self, x):
-                sim_result = self.ansatz.simulate(x, initial_state=self.initial_state)
+            def fun(x):
+                sim_result = self.ansatz.simulate(
+                    opt_params=x, initial_state=self.initial_state
+                )
                 objective_value = self._objective(sim_result)
                 self.add_step(sim_result=sim_result, objective_value=objective_value)
                 self._function_calls_count += 1
@@ -53,9 +63,11 @@ class ScipyOptimisers:
 
         else:
 
-            def fun(self, x):
+            def fun(x):
                 self._function_calls_count += 1
-                sim_result = self.ansatz.simulate(x, initial_state=self.initial_state)
+                sim_result = self.ansatz.simulate(
+                    opt_params=x, initial_state=self.initial_state
+                )
                 objective_value = self._objective(sim_result)
 
                 return objective_value
@@ -64,14 +76,10 @@ class ScipyOptimisers:
 
     def optimise(
         self,
-        ansatz: Ansatz,
-        objective: callable,
         initial_params: Union[str, float, Iterable],
     ) -> OptimizeResult:
-        self._objective = objective
-        self.ansatz = ansatz
         x0 = default_value_handler(
-            shape=(ansatz.n_symbols,),
+            shape=(self.ansatz.n_symbols,),
             value=initial_params,
         )
         result: OptimizeResult = minimize(
@@ -86,11 +94,13 @@ class ScipyOptimisers:
     def __to_json__(self) -> Dict:
         return {
             "constructor_params": {
-                "save_each_function_call": self.save_each_function_call,
+                "ansatz": self.ansatz,
+                "objective": self._objective,
                 "minimize_options": self._minimize_options,
                 "method_options": self._method_options,
                 "initial_state": self.initial_state,
             },
+            "sim_data": self.sim_data,
         }
 
     @classmethod

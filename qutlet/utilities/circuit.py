@@ -1,15 +1,169 @@
 import itertools
-from typing import Tuple, Union
+from typing import TYPE_CHECKING, Tuple, Union
 
 import cirq
 import numpy as np
-from scipy.sparse import csc_matrix, kron
+import sympy
 from scipy.linalg import sqrtm
+from scipy.sparse import csc_matrix, kron
+
 from qutlet.utilities.generic import (
     chained_matrix_multiplication,
+    default_value_handler,
     flatten,
 )
-import sympy
+
+if TYPE_CHECKING:
+    from qutlet.models import QubitModel
+
+
+# courtesy of cirq
+def optimize_circuit(circuit, context=None, k=2):
+    # Merge 2-qubit connected components into circuit operations.
+    optimized_circuit = cirq.merge_k_qubit_unitaries(
+        circuit, k=k, rewriter=lambda op: op.with_tags("merged"), context=context
+    )
+
+    # Drop operations with negligible effect / close to identity.
+    optimized_circuit = cirq.drop_negligible_operations(
+        optimized_circuit, context=context
+    )
+
+    # Expand all remaining merged connected components.
+    optimized_circuit = cirq.expand_composite(
+        optimized_circuit, no_decomp=lambda op: "merged" not in op.tags, context=context
+    )
+
+    # Synchronize terminal measurements to be in the same moment.
+    optimized_circuit = cirq.synchronize_terminal_measurements(
+        optimized_circuit, context=context
+    )
+
+    # Assert the original and optimized circuit are equivalent.
+    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
+        circuit, optimized_circuit
+    )
+
+    return optimized_circuit
+
+
+def replace_symbols(circuit: cirq.Circuit, param_resover: cirq.ParamResolver):
+    if param_resover is None:
+        return circuit
+    resolved_circuit = cirq.resolve_parameters(
+        val=circuit, param_resolver=param_resover
+    )
+    return resolved_circuit
+
+
+def cirq_circuit_to_target_gateset(
+    circuit: cirq.Circuit,
+    symbols: list[sympy.Symbol],
+    params: np.ndarray,
+    basis_gates: list,
+):
+    # resolve params
+    if symbols is not None:
+        param_resover = cirq.ParamResolver({s: v for s, v in zip(symbols, params)})
+        resolved_circuit = replace_symbols(circuit, param_resover)
+    else:
+        resolved_circuit = circuit
+    # optimize for good measure
+    optimized_circuit = optimize_circuit(resolved_circuit)
+
+    # finally convert
+    transformed_circuit = cirq.optimize_for_target_gateset(
+        circuit=optimized_circuit, gateset=basis_gates
+    )
+    return transformed_circuit
+
+
+def count_n_qubit_gates(circuit: cirq.Circuit, max_locality: int = None):
+
+    if max_locality is None:
+        # max locality is at most the number of qubits
+        max_locality = len(circuit.all_qubits())
+    counts = np.zeros(max_locality)
+    for ind in range(len(counts)):
+        counts[ind] = count_n_qubit_gates(circuit, max_locality=ind + 1)
+    return counts
+
+
+def print_n_qubit_gates(circuit: cirq.Circuit):
+    counts = count_n_qubit_gates(circuit)
+    print(
+        list(
+            "{}-qubit gates: {}".format(ind + 1, val)
+            for ind, val in enumerate(counts)
+            if val != 0
+        )
+    )
+
+
+def populate_empty_qubits(
+    circuit: cirq.Circuit, qubits: list[cirq.Qid]
+) -> cirq.Circuit:
+    """Add I gates to qubits without operations. This is mainly to avoid some errors with measurement in cirq
+    Args:
+        circuit (cirq.Circuit): the circuit to check
+    Returns:
+        cirq.Circuit: the circuit with additional I gates
+    """
+    return identity_on_qubits(circuit=circuit, qubits=qubits)
+
+
+def qmap(model: "QubitModel", reversed: bool = False) -> dict:
+    """Get a qmap necessary for some openfermion functions
+    Args:
+        circuit (cirq.Circuit): the circuit we will use to generate the qmap
+    Returns:
+        dict: the resulting qmap
+    """
+    qubit_numbers = list(range(len(model.qubits)))
+    if reversed:
+        qubit_numbers = qubit_numbers[::-1]
+
+    return {k: v for k, v in zip(model.qubits, qubit_numbers)}
+
+
+def get_param_resolver(symbols: list, params: np.ndarray) -> cirq.ParamResolver:
+    """Get a param resolver for cirq, i.e. put some numerical values in some symbolic items
+    Args:
+        symbols (list): the list of symbols
+        params (np.ndarray, optional): the values to put in the place of the symbols.
+    Returns:
+        cirq.ParamResolver: the param resolver
+    """
+    joined_dict = {**{str(symbols[i]): params[i] for i in range(len(symbols))}}
+    return cirq.ParamResolver(joined_dict)
+
+
+def match_param_values_to_symbols(
+    params: list, symbols: list, default_value: str = "zeros"
+):
+    """add values to param_values when some are missing wrt. the param array
+    Args:
+        params (params): the params are to be checked
+        symbols (list): the symbols to match
+        default_value (str, optional): what to put in the additional params. Defaults to "zeros".
+    """
+    if params is None:
+        params = np.array([])
+    missing_size = np.size(symbols) - np.size(params)
+
+    if missing_size == 0:
+        return
+
+    elif missing_size < 0:
+        for _ in range(abs(missing_size)):
+            symbols.append(sympy.Symbol(name=f"msym_{len(symbols)}"))
+
+    if missing_size > 0:
+
+        param_default_values = default_value_handler(
+            shape=(missing_size,), value=default_value
+        )
+        params = np.concatenate((params, param_default_values))
 
 
 def sparse_pauli_string(pauli_str: Union[cirq.PauliString, str]):

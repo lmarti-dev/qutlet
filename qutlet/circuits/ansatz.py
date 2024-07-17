@@ -1,55 +1,88 @@
 from cirq import Circuit, ParamResolver, SimulatorBase, Simulator
 from typing import Union
+import numpy as np
+from qutlet.utilities import populate_empty_qubits, depth
+import sympy
+
+
+def param_name_from_circuit(circ: Circuit, proptype="ops") -> str:
+    if proptype == "ops":
+        num = sum(1 for _ in circ.all_operations())
+    elif proptype == "depth":
+        num = depth(circuit=circ)
+    return "p_" + str(num)
 
 
 class Ansatz:
     def __init__(
         self,
-        circuit: Circuit,
+        circuit: Circuit = None,
         simulator: SimulatorBase = None,
-        param_resolver: Union[ParamResolver, list, tuple[list, list]] = None,
+        symbols: list = None,
+        params: list = None,
     ) -> None:
+        if circuit is None:
+            circuit = Circuit()
         self.circuit = circuit
 
-        # we allow three ways of setting the param res:
-        # 1. ParamResolver directly
-        # 2. list of symbols (params initialized at None)
-        # 3. tuple of (symbols, params)
-        if isinstance(param_resolver, ParamResolver):
-            self.param_resolver = param_resolver
-        elif isinstance(param_resolver, tuple):
-            self.param_resolver = ParamResolver(
-                {k: v for k, v in zip(param_resolver[0], param_resolver[1])}
-            )
-        elif isinstance(param_resolver, list):
-            self.param_resolver = ParamResolver({k: None for k in param_resolver})
+        if symbols is None:
+            if params is not None:
+                self.params = params
+                self.symbols = [
+                    sympy.Symbol(name=param_name_from_circuit(self.circuit))
+                    for x in range(self.n_params)
+                ]
+            else:
+                self.params = []
+                self.symbols = []
         else:
-            raise TypeError(
-                f"Expected one of the allowed types, got: {type(param_resolver)}"
-            )
+            self.symbols = symbols
+            if params is None:
+                self.params = [0 for x in range(self.n_params)]
+            else:
+                self.params = params
+
         if simulator is None:
             self.simulator = Simulator()
         else:
             self.simulator = simulator
 
+    def __iadd__(self, sympar: tuple[sympy.Symbol, float]):
+        sym, par = sympar
+        if sym in self.symbols:
+            raise ValueError("Cannot overwrite symbols with iadd")
+        self.symbols.append(sym)
+        self.params.append(par)
+
     @property
     def n_qubits(self):
         return len(self.circuit.all_qubits())
 
-    @property
-    def symbols(self):
-        return list(self.param_resolver.param_dict.keys())
+    def param_resolver(self, opt_params=None):
+        if opt_params is not None:
+            return ParamResolver({str(k): v for k, v in zip(self.symbols, opt_params)})
+        return ParamResolver({str(k): v for k, v in zip(self.symbols, self.params)})
 
     @property
     def n_symbols(self):
         return len(self.symbols)
 
     @property
-    def params(self):
-        return list(self.param_resolver.param_dict.values())
+    def n_params(self):
+        return len(self.params)
 
-    def simulate(self, *args, **kwargs):
+    def simulate(self, *args, opt_params=None, **kwargs):
+        if "initial_state" in kwargs.keys() and "state_qubits" in kwargs.keys():
+            circuit = populate_empty_qubits(
+                circuit=self.circuit, qubits=kwargs["state_qubits"]
+            )
+            del kwargs["state_qubits"]
+        else:
+            circuit = self.circuit
         if isinstance(self.simulator, Simulator):
             return self.simulator.simulate(
-                *args, **kwargs, param_resolver=self.param_resolver
+                *args,
+                **kwargs,
+                param_resolver=self.param_resolver(opt_params=opt_params),
+                program=circuit,
             ).final_state_vector

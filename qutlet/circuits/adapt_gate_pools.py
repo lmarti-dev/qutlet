@@ -12,6 +12,7 @@ from qutlet.utilities import (
     grid_neighbour_list,
     qubits_shape,
     pauli_str_is_identity,
+    jw_get_free_couplers,
 )
 import abc
 from typing import Union
@@ -475,6 +476,15 @@ def fermionic_fock_set(
     return fock_set
 
 
+class FreeCouplersSet(ExponentiableGatePool):
+    def __init__(self, model: FermionicModel, set_options: dict):
+        if "zero_index" not in set_options:
+            set_options["zero_index"] = 0
+        free_couplers = jw_get_free_couplers(model, **set_options, hc=True)
+        free_couplers = [1j * coupler for coupler in free_couplers]
+        self._set_operator_pool(free_couplers)
+
+
 class FermionicPauliSumSet(ExponentiableGatePool):
     def __init__(self, model: FermionicModel, set_options: dict):
         """Get a set of PauliSum excitation operators converted using the encoding options of a certain FermionicModel and a FermionOperator set
@@ -490,7 +500,7 @@ class FermionicPauliSumSet(ExponentiableGatePool):
         paulisum_set = []
 
         for fop in fermionic_set:
-            psum = model.encode_model(
+            psum = model.encode_fermion_operator(
                 fermion_hamiltonian=fop,
                 qubits=model.qubits,
                 encoding_options=model.encoding_options,
