@@ -3,6 +3,7 @@ from itertools import chain, combinations
 from typing import Iterable, Union
 
 import numpy as np
+import re
 
 
 def now_str() -> str:  # pragma: no cover
@@ -446,6 +447,15 @@ def default_value_handler(shape: tuple, value: Union[str, float, Iterable]):
             return np.ones(shape=shape)
         elif value == "random":
             return 2 * (np.random.rand(*shape) - 0.5)
+        # a bit hacky but useful
+        else:
+            m = re.match(r"r\[([\-\.0-9]+?),([\-\.0-9]+?)\]", value)
+            if m:
+                minval = float(m.group(1))
+                maxval = float(m.group(2))
+                (minval, maxval) = sorted((minval, maxval))
+                return np.random.rand(*shape) * (maxval - minval) + minval
+            raise ValueError(f"Could not parse string: {value}")
     elif isinstance(value, Iterable):
         npvalue = np.array(value)
         if not np.all(npvalue.shape == shape):
@@ -533,7 +543,7 @@ def get_degenerate_indices(
     else:
         idx_out = idx[np.isclose(eigenenergies, eigenenergies[ref_ind])]
     if XOR:
-        return idx[idx != idx_out]
+        return [i for i in idx if i not in idx_out]
     return idx_out
 
 

@@ -1,4 +1,4 @@
-from __future__ import annotations
+from typing import Union
 
 import cirq
 import numpy as np
@@ -195,9 +195,11 @@ class FermionicModel(FockModel):
         return fermion_hamiltonian - quadratic_terms
 
     @property
-    def quadratic_terms(self):
+    def quadratic_terms(self) -> of.QuadraticHamiltonian:
         return self.get_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)
 
     @property
-    def non_quadratic_terms(self):
+    def non_quadratic_terms(
+        self,
+    ) -> Union[of.QuadraticHamiltonian, of.FermionOperator]:
         return self.get_non_quadratic_hamiltonian_wrapper(self.fock_hamiltonian)

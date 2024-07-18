@@ -3,6 +3,7 @@ import cirq
 import numpy as np
 
 from qutlet.models import FermionicModel
+from qutlet.utilities import default_value_handler
 from openfermion import FermionOperator, hermitian_conjugated
 import itertools
 
@@ -42,14 +43,20 @@ def fermi_hubbard(
                     index_b = np.ravel_multi_index(
                         multi_index=(*site_neighbour, spin), dims=dims
                     )
-                    if tunneling == "random":
-                        tunneling = np.random.rand()
+                    if not isinstance(tunneling, (float, int)):
+                        tunneling = float(
+                            default_value_handler(shape=(1,), value=tunneling)
+                        )
                     hamiltonian += FermionOperator(
                         term=f"{index_a}^ {index_b}", coefficient=-tunneling
                     )
 
         index_up = np.ravel_multi_index(multi_index=(*site_a, 0), dims=dims)
         index_down = np.ravel_multi_index(multi_index=(*site_a, 1), dims=dims)
+        if not isinstance(coulomb, (float, int)):
+            coulomb = float(default_value_handler(shape=(1,), value=coulomb))
+
+        # the 1/2 factor is to match openfermion's implementation
         hamiltonian += FermionOperator(
             term=f"{index_up}^ {index_up} {index_down}^ {index_down}",
             coefficient=0.5 * coulomb,
@@ -87,7 +94,6 @@ class FermiHubbardModel(FermionicModel):
         # flip for qubits so that indices are row-first
 
         if encoding_options is None:
-            # z-snake is only relevant for 1d encoding like jordan-wigner or bravyi kitaev
             encoding_options = {"encoding_name": "jordan_wigner"}
         if encoding_options["encoding_name"] in (
             "jordan_wigner",
@@ -149,21 +155,6 @@ class FermiHubbardModel(FermionicModel):
             n_electrons=self.n_electrons,
         )
 
-    def pretty_print_jw_order(self, pauli_string: cirq.PauliString):  # pragma: no cover
-        last_qubit = max(self.qubits)
-        mat = np.array(
-            [
-                ["0" for y in range(last_qubit.col + 1)]
-                for x in range(last_qubit.row + 1)
-            ]
-        )
-
-        for k, v in pauli_string.items():
-            mat[(k.row, k.col)] = v
-        mat = mat.tolist()
-        print(pauli_string)
-        print("\n".join(["".join(row) for row in mat]))
-
     def __to_json__(self) -> dict:
         return {
             "constructor_params": {
@@ -192,4 +183,5 @@ class FermiHubbardModel(FermionicModel):
             periodic=self.periodic,
             diagonal=self.diagonal,
             encoding_options=self.encoding_options,
+            n_electrons=self.n_electrons,
         )

@@ -1,7 +1,7 @@
-from __future__ import annotations
-import openfermion as of
+from typing import Sequence, Union
+
 import cirq
-from typing import Union, Sequence
+import openfermion as of
 
 from qutlet.models.fermionic_model import FermionicModel
 from qutlet.utilities import (
@@ -12,7 +12,7 @@ from qutlet.utilities import (
 
 
 def set_initial_state_circuit(
-    self,
+    circuit: cirq.Circuit,
     name: str,
     initial_state: Union[int, Sequence[int]] = None,
 ):
@@ -27,13 +27,16 @@ def set_initial_state_circuit(
         rows (int): the rows taken from the Q matrix (rows of Q), where Q is defined from b* = Qa*, with a* creation operators.
                                                             Q diagonalizes n_electrons rows of the non-interacting hamiltonian
     """
-    initial_state = self._process_initial_state_input(initial_state=initial_state)
-    op_tree = self._get_initial_state_circuit(name=name, initial_state=initial_state)
+    initial_state = process_initial_state_input(initial_state=initial_state)
+    op_tree = get_initial_state_circuit(name=name, initial_state=initial_state)
     if op_tree is not None:
-        self.circuit.append(op_tree)
+        circuit.append(op_tree)
 
 
-def _process_initial_state_input(self, initial_state):
+def process_initial_state_input(
+    model: FermionicModel,
+    initial_state: Union[int, Sequence[int]] = None,
+):
     # this method exists because the way to initiate the circuit is not so straight-forward
     # one could either put a int in initial state to get a binary computational state
     # or use nh to get some spin sectors. It's all very complex and deserves its own function
@@ -42,41 +45,41 @@ def _process_initial_state_input(self, initial_state):
     if initial_state is None:
         initial_state = list(
             sorted(
-                [2 * k for k in range(self.n_electrons[0])]
-                + [2 * k + 1 for k in range(self.n_electrons[1])]
+                [2 * k for k in range(model.n_electrons[0])]
+                + [2 * k + 1 for k in range(model.n_electrons[1])]
             )
         )
     if (
-        len(initial_state) != sum(self.n_electrons)
-        or sum_even(initial_state) != self.n_electrons[0]
-        or sum_odd(initial_state) != self.n_electrons[1]
+        len(initial_state) != sum(model.n_electrons)
+        or sum_even(initial_state) != model.n_electrons[0]
+        or sum_odd(initial_state) != model.n_electrons[1]
     ):
         raise ValueError(
             "Mismatch between initial state and desired number of fermions. Initial state: {}, n_electrons: {}".format(
-                initial_state, self.n_electrons
+                initial_state, model.n_electrons
             )
         )
     return initial_state
 
 
-def gaussian_state_circuit(self):
-    quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(
-        self.fock_hamiltonian
+def gaussian_state_circuit(model: FermionicModel):
+    quadratic_hamiltonian = model.get_quadratic_hamiltonian_wrapper(
+        model.fock_hamiltonian
     )
     op_tree = of.prepare_gaussian_state(
-        qubits=self.qubits,
+        qubits=model.qubits,
         quadratic_hamiltonian=quadratic_hamiltonian,
-        occupied_orbitals=list(range(sum(self.n_electrons))),
+        occupied_orbitals=list(range(sum(model.n_electrons))),
         initial_state=0,
     )
     return op_tree
 
 
-def slater_state_circuit(self):
-    _, unitary_rows = self.diagonalize_non_interacting_hamiltonian()
+def slater_state_circuit(model: FermionicModel):
+    _, unitary_rows = model.diagonalize_non_interacting_hamiltonian()
     op_tree = of.prepare_slater_determinant(
-        qubits=self.qubits,
-        slater_determinant_matrix=unitary_rows[: sum(self.n_electrons), :],
+        qubits=model.qubits,
+        slater_determinant_matrix=unitary_rows[: sum(model.n_electrons), :],
         initial_state=0,
     )
     return op_tree
@@ -88,7 +91,7 @@ def computational_state_circuit(initial_state, qubits):
 
 
 def uniform_superposition_state_circuit(initial_state, qubits):
-    op_tree = FermionicModel.computational_state_circuit(initial_state, qubits)
+    op_tree = computational_state_circuit(initial_state, qubits)
     op_tree += [cirq.H(qubits[ind]) for ind in initial_state]
     return op_tree
 
@@ -100,31 +103,26 @@ def dicke_state_circuit(n_electrons, qubits):
 
 
 def get_initial_state_circuit(
-    self,
-    name: str,
-    initial_state: Union[int, Sequence[int]],
+    name: str, initial_state: Union[int, Sequence[int]], model: FermionicModel
 ):
     if name is None:
         name == "none"
-    self.initial_state_name = name
 
     if name == "none":
         return None
     elif name == "computational":
-        return FermionicModel.computational_state_circuit(
-            initial_state=initial_state, qubits=self.qubits
+        return computational_state_circuit(
+            initial_state=initial_state, qubits=model.qubits
         )
     elif name == "uniform_superposition":
-        return FermionicModel.uniform_superposition_state_circuit(
-            initial_state=initial_state, qubits=self.qubits
+        return uniform_superposition_state_circuit(
+            initial_state=initial_state, qubits=model.qubits
         )
     elif name == "dicke":
-        return FermionicModel.dicke_state_circuit(
-            n_electrons=self.n_electrons, qubits=self.qubits
-        )
+        return dicke_state_circuit(n_electrons=model.n_electrons, qubits=model.qubits)
     elif name == "slater":
-        return self.slater_state_circuit()
+        return slater_state_circuit()
     elif name == "gaussian":
-        return self.gaussian_state_circuit()
+        return gaussian_state_circuit()
     else:
         raise NameError("No initial state named {}".format(name))

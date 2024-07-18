@@ -508,3 +508,17 @@ def identity_on_qubits(circuit: cirq.Circuit, qubits: list[cirq.Qid]) -> cirq.Ci
         circuit_out = cirq.Circuit()
     circuit_out.append([cirq.I(mq) for mq in missing_qubits])
     return circuit_out
+
+
+def pretty_print_jw_order(
+    pauli_string: cirq.PauliString, qubits: list[cirq.GridQubit]
+):  # pragma: no cover
+    last_qubit = max(qubits)
+    mat = np.array(
+        [["0" for y in range(last_qubit.col + 1)] for x in range(last_qubit.row + 1)]
+    )
+    for k, v in pauli_string.items():
+        mat[(k.row, k.col)] = v
+    mat = mat.tolist()
+    print(pauli_string)
+    print("\n".join(["".join(row) for row in mat]))
