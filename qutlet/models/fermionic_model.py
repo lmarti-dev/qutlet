@@ -183,9 +183,9 @@ class FermionicModel(FockModel):
 
     def get_non_quadratic_hamiltonian_wrapper(
         self, fermion_hamiltonian: of.FermionOperator
-    ):
+    ) -> of.FermionOperator:
         if fermion_hamiltonian == of.FermionOperator.identity():
-            return of.QuadraticHamiltonian(np.zeros((np.prod(self.n), np.prod(self.n))))
+            return of.FermionOperator.identity()
         quadratic_terms = of.get_fermion_operator(
             of.get_quadratic_hamiltonian(
                 fermion_hamiltonian,
