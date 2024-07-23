@@ -3,9 +3,13 @@ from typing import Union
 import numpy as np
 from qutlet.utilities import populate_empty_qubits, depth
 import sympy
+import uuid
 
 
 def param_name_from_circuit(circ: Circuit, proptype="ops") -> str:
+    if circ == Circuit():
+        # quick fix if the circuit is empty
+        num = uuid.uuid1()
     if proptype == "ops":
         num = sum(1 for _ in circ.all_operations())
     elif proptype == "depth":
@@ -38,7 +42,7 @@ class Ansatz:
         else:
             self.symbols = symbols
             if params is None:
-                self.params = [0 for x in range(self.n_params)]
+                self.params = [0 for x in range(self.n_symbols)]
             else:
                 self.params = params
 

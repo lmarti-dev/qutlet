@@ -30,6 +30,7 @@ class ScipyOptimisers:
         initial_state=None,
         method_options: dict = {},
         save_sim_data: bool = True,
+        callback: callable = None,
     ):
         self._objective = objective
         self.ansatz = ansatz
@@ -40,6 +41,9 @@ class ScipyOptimisers:
         self.initial_state = initial_state
         self._function_calls_count = 0
         self.save_sim_data = save_sim_data
+        # callback(xk) for COBYLA
+        # callback(intermediate_result: OptimizeResult) for others
+        self.callback = callback
         if save_sim_data:
             self.sim_data = {}
 
@@ -50,27 +54,21 @@ class ScipyOptimisers:
                     else:
                         self.sim_data[k].append(kwargs[k])
 
-            self.add_step: callable = add_step
-
-            def fun(x):
-                sim_result = self.ansatz.simulate(
-                    opt_params=x, initial_state=self.initial_state
-                )
-                objective_value = self._objective(sim_result)
-                self.add_step(sim_result=sim_result, objective_value=objective_value)
-                self._function_calls_count += 1
-                return objective_value
-
         else:
 
-            def fun(x):
-                self._function_calls_count += 1
-                sim_result = self.ansatz.simulate(
-                    opt_params=x, initial_state=self.initial_state
-                )
-                objective_value = self._objective(sim_result)
+            def add_step(**kwargs):
+                return None
 
-                return objective_value
+        self.add_step: callable = add_step
+
+        def fun(x):
+            sim_result = self.ansatz.simulate(
+                opt_params=x, initial_state=self.initial_state
+            )
+            objective_value = self._objective(sim_result)
+            self.add_step(sim_result=sim_result, objective_value=objective_value)
+            self._function_calls_count += 1
+            return objective_value
 
         self.fun = fun
 
@@ -83,7 +81,11 @@ class ScipyOptimisers:
             value=initial_params,
         )
         result: OptimizeResult = minimize(
-            self.fun, x0, **self._minimize_options, options=self._method_options
+            self.fun,
+            x0,
+            **self._minimize_options,
+            options=self._method_options,
+            callback=self.callback
         )
         print("function calls: ", self._function_calls_count)
         if self.save_sim_data:

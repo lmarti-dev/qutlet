@@ -26,7 +26,9 @@ def infidelity_objective(
     target_state: np.ndarray,
 ) -> callable:
     def fun(state: np.ndarray):
-        return np.real(1 - fidelity_objective(model, target_state, state))
+        return np.real(
+            1 - cirq_fidelity(target_state, state, qid_shape=model.qid_shape)
+        )
 
     return fun
 

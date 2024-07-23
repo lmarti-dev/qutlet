@@ -522,3 +522,24 @@ def pretty_print_jw_order(
     mat = mat.tolist()
     print(pauli_string)
     print("\n".join(["".join(row) for row in mat]))
+
+
+def print_state_fidelity_to_eigenstates(
+    state: np.ndarray,
+    eigenenergies: np.ndarray,
+    eigenstates: np.ndarray,
+    expanded: bool = True,
+    decimals: int = 8,
+):
+    eig_fids = state_fidelity_to_eigenstates(
+        state=state,
+        eigenstates=eigenstates,
+        expanded=expanded,
+    )
+    print("Populations")
+    for ind, (fid, eigenenergy) in enumerate(zip(eig_fids, eigenenergies)):
+        if not np.isclose(np.round(fid, decimals), 0):
+            print(
+                f"E_{ind:<{len(str(len(eigenenergies)))}}: fid: {np.abs(fid):.4f} gap: {np.abs(eigenenergy-eigenenergies[0]):.3f}"
+            )
+    print(f"sum fids {sum(eig_fids)}")
