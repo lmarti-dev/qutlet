@@ -443,5 +443,5 @@ def jw_hartree_fock_state(model: "FermionicModel"):
         2 * i + 1 for i in range(model.n_electrons[1])
     ]
     return jw_computational_wf(
-        indices=indices, Nqubits=model.n_qubits, right_to_left=True
+        indices=indices, n_qubits=model.n_qubits, right_to_left=True
     )
