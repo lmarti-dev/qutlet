@@ -3,8 +3,8 @@ from functools import partial
 from typing import Union, Iterable
 import cirq
 import numpy as np
-import scipy
 import sympy
+import dill
 
 from qutlet.circuits.adapt_gate_pools import (
     GatePool,
@@ -13,6 +13,7 @@ from qutlet.circuits.adapt_gate_pools import (
     PauliStringSet,
     HamiltonianPauliSumSet,
     FermionicPauliSumSet,
+    QubitExciationSet,
     PauliSumListSet,
     FreeCouplersSet,
     PauliSumSet,
@@ -29,6 +30,7 @@ from qutlet.utilities import (
     normalize_vec,
     populate_empty_qubits,
     identity_on_qubits,
+    qmap,
 )
 
 
@@ -37,18 +39,15 @@ class ADAPT(Ansatz):
         self,
         model: QubitModel,
         gate_pool_options: Union[dict, list],
-        measure: dict,
-        preprocess: bool,
+        objective: callable,
         verbosity: int = 0,
         n_jobs: int = 1,
     ):
         super().__init__()
         self.model = model
-        self.measure = {"name": None, "target_state": None}
-        self.measure.update(measure)
+        self.objective = objective
         # if verbosity is true or false cast to int
         self.verbosity = int(verbosity)
-        self.preprocess = preprocess
         self.n_jobs = n_jobs
         self.indices_to_ignore = []
         if isinstance(gate_pool_options, list):
@@ -60,9 +59,14 @@ class ADAPT(Ansatz):
                 pool_name=self.pool_name, gate_pool_options=gate_pool_options
             )
             self.gate_pool = self.gate_pool_class.operator_pool
-        self.preprocessed_ops = [None] * len(self.gate_pool)
-        if self.preprocess:
-            self.preprocessed_ops = self.preprocess_gate_gradients()
+
+        self.process_pool = None
+        if self.n_jobs > 1:
+
+            dill.Pickler.dumps, dill.Pickler.loads = dill.dumps, dill.loads
+            mp.reduction.ForkingPickler = dill.Pickler
+            mp.reduction.dump = dill.dump
+            self.process_pool = mp.Pool(self.n_jobs)
 
     def gate_pool_op_ind_to_dispatch(self, ind: int):
         if isinstance(self.gate_pool_class, ExponentiableGatePool):
@@ -74,23 +78,18 @@ class ADAPT(Ansatz):
 
     def measure_gradient(self, ind: int, trial_state: np.ndarray):
         self.verbose_print("computing {g} gradient".format(g=self.gate_pool[ind]))
-        ham = self.model.hamiltonian.matrix(qubits=self.model.qubits)
         grad = measure_gradient_dispatcher(
-            measure_name=self.measure["name"],
-            preprocess=self.preprocess,
             trial_state=trial_state,
-            preprocessed_op=self.preprocessed_ops[ind],
-            ham=ham,
-            operator=self.gate_pool_op_ind_to_dispatch(ind),
-            target_state=self.measure["target_state"],
+            operator=self.gate_pool_class.gate_from_op(ind, "dummy")[0],
+            objective=self.objective,
             qubits=self.model.qubits,
         )
         self.verbose_print("gradient: {:.10f}".format(grad))
         return grad
 
-    def verbose_print(self, s: str, message_level: int = 1):
+    def verbose_print(self, s: str, message_level: int = 1, end="\n"):
         if int(self.verbosity) >= message_level:
-            print(s)
+            print(s, end=end)
 
     def pick_gate_pool(self, pool_name, gate_pool_options):
         set_options = {}
@@ -112,6 +111,10 @@ class ADAPT(Ansatz):
             set_options.update({"qubits": self.model.qubits})
             set_options.update(gate_pool_options)
             return PauliSumListSet(**set_options)
+        elif pool_name == "qubit_excitation":
+            set_options.update({"qubits": self.model.qubits})
+            set_options.update(gate_pool_options)
+            return QubitExciationSet(**set_options)
         elif pool_name == "sub_circuit":
             set_options.update({"qubits": self.model.qubits})
             set_options.update(gate_pool_options)
@@ -121,53 +124,6 @@ class ADAPT(Ansatz):
             return FreeCouplersSet(model=self.model, set_options=gate_pool_options)
         else:
             raise ValueError("expected a valid pool name, got {}".format(pool_name))
-
-    def preprocess_gate_gradients(self):
-        self.verbose_print(
-            "Preprocessing {n} gates of {p} pool for {m}, preprocessing: {b}".format(
-                n=len(self.gate_pool),
-                p=self.pool_name,
-                m=self.measure["name"],
-                b=self.preprocess,
-            )
-        )
-
-        preprocess_ops = []
-
-        if self.measure["name"] == "energy":
-            preprocess_options = {
-                "ham": self.model.hamiltonian.matrix(qubits=self.model.qubits)
-            }
-            preprocess_fn = preprocess_for_energy
-        elif self.measure["name"] == "fidelity":
-            preprocess_options = {
-                "target_state": self.measure["target_state"],
-            }
-            preprocess_fn = preprocess_for_fidelity
-        if self.n_jobs > 1:
-            self.verbose_print(
-                "Starting {n} jobs for parallel preprocessing".format(n=self.n_jobs)
-            )
-            process_pool = mp.Pool(self.n_jobs)
-            results = process_pool.map(
-                partial(preprocess_fn, **preprocess_options),
-                [op.matrix(qubits=self.model.qubits) for op in self.gate_pool],
-            )
-            # should the process pool be in init and kept throughout the instance life?
-            process_pool.close()
-            process_pool.join()
-            for result in results:
-                # pool.map result are ordered the same way as the input
-                preprocess_ops.append(result)
-
-        else:
-            for op in self.gate_pool:
-                op_mat = op.matrix(qubits=self.model.qubits)
-                preprocess_ops.append(preprocess_fn(op=op_mat, **preprocess_options))
-        self.verbose_print(
-            "Preprocessing finished, {} preprocessed ops".format(len(preprocess_ops))
-        )
-        return preprocess_ops
 
     def get_max_gradient(
         self,
@@ -191,63 +147,42 @@ class ADAPT(Ansatz):
                 len(self.gate_pool) - len(self.indices_to_ignore)
             )
         )
-        self.verbose_print(
-            "measure chosen: {}, preprocessing: {}".format(
-                self.measure["name"], self.preprocess
-            )
-        )
+
         if self.n_jobs > 1:
-            ham = self.model.hamiltonian.matrix(qubits=self.model.qubits)
-            process_pool = mp.Pool(self.n_jobs, maxtasksperchild=1000)
+            # ham = self.model.hamiltonian.matrix(qubits=self.model.qubits)
+
             self.verbose_print(
                 "Pooling {} jobs to compute gradient".format(self.n_jobs)
             )
 
-            if self.preprocess:
-                results = process_pool.starmap(
-                    measure_gradient_dispatcher,
-                    [
-                        (
-                            self.gate_pool_op_ind_to_dispatch(ind),
-                            self.measure["name"],
-                            self.preprocess,
-                            trial_state,
-                            self.preprocessed_ops[ind],
-                            ham,
-                            self.measure["target_state"],
-                            self.model.qubits,
-                        )
-                        for ind in range(len(self.gate_pool))
-                    ],
-                    chunksize=32,
-                )
-            else:
-                partial_dispatcher = partial(
-                    measure_gradient_dispatcher,
-                    measure_name=self.measure["name"],
-                    preprocess=False,
-                    trial_state=trial_state,
-                    preprocessed_op=None,
-                    ham=ham,
-                    target_state=self.measure["target_state"],
-                    qubits=self.model.qubits,
-                )
-                results = process_pool.imap(
-                    partial_dispatcher,
-                    (
-                        self.gate_pool_op_ind_to_dispatch(ind)
-                        for ind in range(len(self.gate_pool))
-                    ),
-                    chunksize=32,
-                )
-            # should the process pool be in init and kept?
-            process_pool.close()
-            process_pool.join()
+            partial_dispatcher = partial(
+                measure_gradient_dispatcher,
+                trial_state=trial_state,
+                qubits=self.model.qubits,
+                objective=self.objective,
+            )
+            results = self.process_pool.map(
+                partial_dispatcher,
+                (
+                    (self.gate_pool_class.gate_from_op(ind, "dummy")[0])
+                    for ind in range(len(self.gate_pool))
+                ),
+                chunksize=32,
+            )
+
             grad_values = [grad for grad in results]
 
         else:
             for ind in range(len(self.gate_pool)):
-                grad = self.measure_gradient(ind=ind, trial_state=trial_state)
+                grad = measure_gradient_dispatcher(
+                    trial_state=trial_state,
+                    operator=self.gate_pool_class.gate_from_op(ind, "dummy")[0],
+                    objective=self.objective,
+                    qubits=self.model.qubits,
+                )
+                self.verbose_print(
+                    f"{ind}/{len(self.gate_pool)} gradient: {grad:.5f}", end="\r"
+                )
                 grad_values.append(grad)
 
         if not self.indices_to_ignore:
@@ -277,7 +212,6 @@ class ADAPT(Ansatz):
     def gate_and_param_from_pool(self, ind):
         param_name = param_name_from_circuit(circ=self.circuit)
         gate, theta = self.gate_pool_class.gate_from_op(ind=ind, param_name=param_name)
-        self.verbose_print("Using gate: {gate}".format(gate=gate))
         return gate, theta
 
     def append_best_gate_to_circuit(
@@ -335,8 +269,7 @@ class ADAPT(Ansatz):
     def loop(
         self,
         n_steps: int,
-        optimiser,
-        objective,
+        optimiser: ScipyOptimisers,
         tetris: bool = False,
         discard_previous_best: Union[bool, int] = False,
         trial_state: np.ndarray = None,
@@ -377,12 +310,12 @@ class ADAPT(Ansatz):
                 if isinstance(optimiser, ScipyOptimisers):
                     # this will only work with the scipy optimiser, as setting the initial guess for the parameters
                     result, sim_data = optimiser.optimise(
-                        initial_params="random",
+                        initial_params="random", initial_state=initial_state
                     )
                 else:
                     raise ValueError("Only works with ScipyOptimisers")
                 self.params = result["x"]
-                print(
+                self.verbose_print(
                     "circuit depth: {d}, number of params: {p}".format(
                         d=depth(self.circuit),
                         p=len(self.params),
@@ -400,7 +333,7 @@ class ADAPT(Ansatz):
                         for ind in range(len(self.gate_pool))
                         if set(qubits) & set((q for q in self.gate_pool[ind]))
                     ]
-                    print(
+                    self.verbose_print(
                         f"{len(overlapping_indices)}/{len(self.gate_pool)} qubit-overlapping gates"
                     )
                     if len(overlapping_indices) < len(self.gate_pool):
@@ -418,156 +351,64 @@ class ADAPT(Ansatz):
             else:
                 if tetris and len(self.indices_to_ignore) > 0:
                     # try again perhaps
-                    print(
+                    self.verbose_print(
                         "tetris game over: {}/{} gates are being ignored".format(
                             len(self.indices_to_ignore), len(self.gate_pool)
                         )
                     )
                     self.indices_to_ignore = []
                 else:
-                    print("treshold reached, exiting")
+                    self.verbose_print("treshold reached, exiting")
                     break
+
+        if self.process_pool is not None:
+            # should the process pool be in init and kept?
+            self.process_pool.close()
+            self.process_pool.terminate()
+            self.process_pool.join()
 
         return result
 
 
 # ugly method, but necessary for multiprocessing
 def measure_gradient_dispatcher(
-    operator: Union[np.ndarray, cirq.Circuit],
-    measure_name: str,
-    preprocess: bool,
+    operator: Union[cirq.PauliSumExponential, cirq.Circuit],
     trial_state: np.ndarray,
-    preprocessed_op: np.ndarray,
-    ham: np.ndarray,
-    target_state: np.ndarray,
+    objective: callable,
     qubits: list[cirq.Qid],
 ):
+    # parameter shift rule
     eps = 1e-5
     # for subcirc
-    if isinstance(operator, cirq.Circuit):
-        eps = 1
-        if measure_name == "energy":
-            return circuit_energy_gradient(
-                ham=ham,
-                circuit=operator,
-                qubits=qubits,
-                trial_state=trial_state,
-                eps=eps,
-            )
-        elif measure_name == "fidelity":
-            return circuit_fidelity_gradient(
-                trial_state=trial_state,
-                qubits=qubits,
-                circuit=operator,
-                target_state=target_state,
-                eps=eps,
-            )
-    # for the exponentiable ops
-    else:
-        if measure_name == "energy":
-            if preprocess:
-                grad = compute_preprocessed_energy_gradient(
-                    trial_state=trial_state,
-                    preprocessed_energy_op=preprocessed_op,
-                )
-            else:
-                grad = compute_energy_gradient(
-                    ham=ham,
-                    op=operator,
-                    trial_state=trial_state,
-                    full=True,
-                    eps=eps,
-                    sparse=False,
-                )
-        elif measure_name == "fidelity":
-            if preprocess:
-                grad = compute_preprocessed_fidelity_gradient(
-                    trial_state=trial_state,
-                    preprocessed_fid_state=preprocessed_op,
-                )
-            else:
-                grad = compute_fidelity_gradient(
-                    op=operator,
-                    trial_state=trial_state,
-                    target_state=target_state,
-                )
-        else:
-            raise ValueError("measure_name: {} unknown".format(measure_name))
-    return grad
-
-
-def preprocess_for_energy(op: np.ndarray, ham: np.ndarray):
-    comm = np.matmul(ham, op)
-    return comm
-
-
-def preprocess_for_fidelity(op: np.ndarray, target_state: np.ndarray):
-    # A * |gs>
-    preprocessed_fid_state = op.dot(target_state)
-    return preprocessed_fid_state
-
-
-def compute_preprocessed_fidelity_gradient(
-    trial_state: np.ndarray, preprocessed_fid_state: np.ndarray
-) -> float:
-    # preprocessed_fid_op is e^(-theta A) A |gs>
-    n_qubits = int(np.log2(trial_state.shape[0]))
-    qid_shape = (2,) * n_qubits
-    fidelity = cirq.fidelity(trial_state, preprocessed_fid_state, qid_shape=qid_shape)
-    return fidelity**2
-
-
-def compute_fidelity_gradient(
-    op: np.ndarray,
-    trial_state: np.ndarray,
-    target_state: np.ndarray,
-) -> float:
-    # fidelity is |<psi|e^(-theta A)|gs>|
-    # then df/dthetha = -<psi|Ae^(-theta A)|gs>
-    #                 = -<psi|e^(-theta A)A|gs>
-    # at theta=0, we have = -<psi|A|gs>
-    ket = op.dot(target_state)
-    if np.linalg.norm(ket) == 0:
-        return 0
-    elif np.linalg.norm(ket) != 1:
-        ket = normalize_vec(ket)
-    n_qubits = int(np.log2(trial_state.shape[0]))
-    qid_shape = (2,) * n_qubits
-
-    fidelity = cirq.fidelity(-trial_state.conj(), ket, qid_shape=qid_shape)
-    return fidelity**2
-
-
-def compute_preprocessed_energy_gradient(
-    trial_state: np.ndarray, preprocessed_energy_op: np.ndarray
-) -> float:
-    # dE/dt = 2Re<ps|HA|ps>
-    ket = preprocessed_energy_op.dot(trial_state)
-    bra = trial_state.conj()
-    grad = np.abs(2 * np.real(np.dot(bra, ket)))
-    return grad
+    if not isinstance(operator, cirq.Circuit):
+        circuit = cirq.Circuit(operator)
+    return circuit_gradient(
+        circuit=circuit,
+        qubits=qubits,
+        trial_state=trial_state,
+        eps=eps,
+        objective=objective,
+    )
 
 
 def evolve_trial_state(
     circuit: cirq.Circuit, qubits: list[cirq.Qid], trial_state: np.ndarray, eps: float
 ):
-    param_res_pos = cirq.ParamResolver(
-        {k: eps for k in cirq.parameter_symbols(circuit)}
-    )
+    param_res = cirq.ParamResolver({k: eps for k in cirq.parameter_symbols(circuit)})
     populated_circuit = identity_on_qubits(circuit=circuit, qubits=qubits)
     final_state = populated_circuit.final_state_vector(
         initial_state=trial_state,
-        param_resolver=param_res_pos,
+        param_resolver=param_res,
     )
     return final_state
 
 
-def circuit_energy_gradient(
-    ham: np.ndarray,
+def circuit_gradient(
     circuit: cirq.Circuit,
     qubits: list[cirq.Qid],
     trial_state: np.ndarray,
     eps: float,
+    objective: callable,
 ):
     final_state_pos = evolve_trial_state(
         circuit=circuit, qubits=qubits, trial_state=trial_state, eps=eps
@@ -576,83 +417,7 @@ def circuit_energy_gradient(
         circuit=circuit, qubits=qubits, trial_state=trial_state, eps=-eps
     )
 
-    exp_pos = np.real(np.vdot(final_state_pos, ham @ final_state_pos))
-    exp_neg = np.real(np.vdot(final_state_neg, ham @ final_state_neg))
-    return np.abs((exp_pos - exp_neg) / (2 * eps))
+    val_pos = objective(final_state_pos)
+    val_neg = objective(final_state_neg)
 
-
-def circuit_fidelity_gradient(
-    trial_state: np.ndarray,
-    circuit: cirq.Circuit,
-    qubits: list[cirq.Qid],
-    target_state: np.ndarray,
-    eps: float,
-):
-    qid_shape = (2,) * int(np.log2(len(trial_state)))
-
-    final_state_pos = evolve_trial_state(
-        circuit=circuit, qubits=qubits, trial_state=trial_state, eps=eps
-    )
-    final_state_neg = evolve_trial_state(
-        circuit=circuit, qubits=qubits, trial_state=trial_state, eps=-eps
-    )
-    fid_pos = cirq.fidelity(final_state_pos, target_state, qid_shape=qid_shape)
-    fid_neg = cirq.fidelity(final_state_neg, target_state, qid_shape=qid_shape)
-    return np.abs((fid_pos - fid_neg) / (2 * eps))
-
-
-def compute_energy_gradient(
-    ham: np.ndarray,
-    op: np.ndarray,
-    trial_state: np.ndarray,
-    full: bool = True,
-    eps: float = 1e-5,
-    sparse: bool = False,
-) -> float:
-    # fastest is full non sparse, so those are the default
-    if sparse:
-        if not full:
-            # in the noiseless case dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps> (eval at theta=0)
-            spham = scipy.sparse.csc_matrix(ham)
-            spop = scipy.sparse.csc_matrix(op)
-            spwf = scipy.sparse.csc_matrix(trial_state)
-            comm = spham @ spop
-            ket = comm.dot(spwf.transpose())
-            bra = spwf.conj()
-            grad = float(np.abs(2 * np.real((bra @ ket).toarray())))
-        else:
-            # <p|exp(-eps*operator)[H,A(k)]exp(eps*operator)|p>
-            # = <p|exp(-eps*operator)(HA(k) - A(k)H)exp(eps*operator)|p> = dE/dk
-            # finite diff (f(theta + eps) - f(theta - eps))/ 2eps but theta = 0
-            # if A is anti hermitian
-            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
-            # if A is hermitian the theta needs to be multiplied by 1j
-            wfexp = scipy.sparse.linalg.expm_multiply(
-                A=op, B=trial_state, start=-eps, stop=eps, num=2, endpoint=True
-            )
-            spham = scipy.sparse.csc_matrix(ham)
-            # exp(-theta A)|psi>
-            spwf0 = scipy.sparse.csc_matrix(wfexp[0, :]).transpose()
-            # # exp(theta A)|psi>
-            spwf1 = scipy.sparse.csc_matrix(wfexp[1, :]).transpose()
-            grad_minus = (spwf1.getH() @ spham @ spwf1).toarray()
-            grad_plus = (spwf0.getH() @ spham @ spwf0).toarray()
-            grad = float(np.abs((grad_minus - grad_plus) / (2 * eps)))
-    # dense methods (get it?)
-    else:
-        if not full:
-            # dE/dt = 2Re<ps|exp(-theta A) HA exp(theta A)|ps>
-            comm = np.matmul(ham, op)
-            grad = np.abs(2 * np.real(np.vdot(trial_state.T, comm.dot(trial_state))))
-        else:
-            # (<p|exp(-eps*operator) H exp(eps*operator)|p> - <p|exp(eps*operator) H exp(-eps*operator)|p>)/2eps
-            wfexp = scipy.sparse.linalg.expm_multiply(
-                A=op, B=trial_state, start=-eps, stop=eps, num=2, endpoint=True
-            )
-            wfexp_plus = wfexp[1, :]
-            wfexp_minus = wfexp[0, :]
-            grad_minus = np.vdot(wfexp_minus, ham @ wfexp_minus)
-            grad_plus = np.vdot(wfexp_plus, ham @ wfexp_plus)
-            grad = np.abs((grad_minus - grad_plus) / (2 * eps))
-
-    return grad
+    return np.abs((val_pos - val_neg) / (2 * eps))

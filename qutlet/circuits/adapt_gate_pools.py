@@ -13,6 +13,7 @@ from qutlet.utilities import (
     qubits_shape,
     pauli_str_is_identity,
     jw_get_free_couplers,
+    pauli_sum_is_hermitian,
 )
 import abc
 from typing import Union
@@ -190,7 +191,9 @@ class GatePool:
         self.verify_gate_pool()
 
     @abc.abstractmethod
-    def gate_from_op(self, ind) -> Union[cirq.CIRCUIT_LIKE, sympy.Symbol]:
+    def gate_from_op(
+        self, ind: int, param_name: str
+    ) -> Union[cirq.CIRCUIT_LIKE, sympy.Symbol]:
         raise NotImplementedError
 
     def qubits(self, ind):
@@ -212,15 +215,24 @@ class GatePool:
 class ExponentiableGatePool(GatePool):
     def gate_from_op(self, ind, param_name, opts={}):
         pauli_sum = self.operator_pool[ind]
-        theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
+        theta = sympy.Symbol(f"theta_{param_name}")
         return exp_from_pauli_sum(pauli_sum=pauli_sum, theta=theta, **opts), theta
 
     def verify_gate_pool(self):
-        print("Verifying gate pool, {} gates".format(len(self.operator_pool)))
+
         for ind in range(len(self.operator_pool)):
-            opmat = self.matrix(ind, qubits=self.qubits(ind))
-            if np.any(np.conj(np.transpose(opmat)) != -opmat):
-                raise ValueError("Expected op to be anti-hermitian")
+            print(
+                f"Verifying gate pool, {ind}/{len(self.operator_pool)} gates", end=" \r"
+            )
+            which = "psum"
+            if which == "matrix":
+                opmat = self.matrix(ind, qubits=self.qubits(ind))
+                if np.any(np.conj(np.transpose(opmat)) != -opmat):
+                    raise ValueError("Expected op to be anti-hermitian")
+            elif which == "psum":
+                check = pauli_sum_is_hermitian(self.operator_pool[ind], anti=True)
+                if not check:
+                    raise ValueError("Expected op to be anti-hermitian")
         print("All gates are anti-hermitian, proceeding.")
 
     def matrix(self, ind, qubits):
@@ -415,8 +427,6 @@ class HamiltonianPauliSumSet(ExponentiableGatePool):
 
         self._set_operator_pool(pauli_sum_set)
 
-        return pauli_sum_set
-
 
 def fermionic_fock_set(
     shape: tuple,
@@ -510,6 +520,31 @@ class FermionicPauliSumSet(ExponentiableGatePool):
         self._set_operator_pool(paulisum_set)
 
 
+class QubitExciationSet(PauliSumListSet):
+    def __init__(
+        self,
+        qubits: list[cirq.Qid],
+        neighbour_order: int,
+        k_locality: int,
+        periodic: bool = False,
+        diagonal: bool = True,
+        anti_hermitian: bool = True,
+        coeff: float = 1,
+    ):
+
+        psum_list = ["XY-YX", "XYXX + YXXX + YYYX + YYXY - XXYX - XXXY - YXYY - XYYY"]
+        super().__init__(
+            qubits,
+            neighbour_order,
+            k_locality,
+            periodic,
+            diagonal,
+            anti_hermitian,
+            coeff,
+            psum_list=psum_list,
+        )
+
+
 class SubCircuitSet(GatePool):
     """Get a set of sub circuits as legos for your vqe, you merely need to create a circuit with dummy qubits, and pass it to the init"""
 
@@ -543,8 +578,7 @@ class SubCircuitSet(GatePool):
         circ = self.operator_pool[ind]
         symbols = cirq.parameter_symbols(circ)
         param_dict = {
-            sym: sympy.Symbol(param_name + "_{}".format(ind))
-            for ind, sym in enumerate(symbols)
+            sym: sympy.Symbol(f"{param_name}_{ind}") for ind, sym in enumerate(symbols)
         }
         param_res = cirq.ParamResolver(param_dict)
         resolved_circ = cirq.resolve_parameters(circ, param_resolver=param_res)

@@ -83,6 +83,8 @@ class Ansatz:
             del kwargs["state_qubits"]
         else:
             circuit = self.circuit
+        if opt_params is None:
+            opt_params = self.params
         if isinstance(self.simulator, Simulator):
             return self.simulator.simulate(
                 *args,

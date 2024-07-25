@@ -3,6 +3,7 @@ from qutlet.utilities import default_value_handler
 from scipy.optimize import OptimizeResult, minimize
 from typing import Dict, Iterable, Union
 from qutlet.circuits.ansatz import Ansatz
+import numpy as np
 
 # available optimizers:
 # ‘Nelder-Mead’
@@ -27,7 +28,6 @@ class ScipyOptimisers:
         ansatz: Ansatz,
         objective: callable,
         minimize_options={"method": "L-BFGS-B"},
-        initial_state=None,
         method_options: dict = {},
         save_sim_data: bool = True,
         callback: callable = None,
@@ -38,7 +38,6 @@ class ScipyOptimisers:
         self._minimize_options.update(minimize_options)
         self._method_options = {}
         self._method_options.update(method_options)
-        self.initial_state = initial_state
         self._function_calls_count = 0
         self.save_sim_data = save_sim_data
         # callback(xk) for COBYLA
@@ -61,10 +60,8 @@ class ScipyOptimisers:
 
         self.add_step: callable = add_step
 
-        def fun(x):
-            sim_result = self.ansatz.simulate(
-                opt_params=x, initial_state=self.initial_state
-            )
+        def fun(x: np.ndarray, initial_state: np.ndarray):
+            sim_result = self.ansatz.simulate(opt_params=x, initial_state=initial_state)
             objective_value = self._objective(sim_result)
             self.add_step(sim_result=sim_result, objective_value=objective_value)
             self._function_calls_count += 1
@@ -75,6 +72,7 @@ class ScipyOptimisers:
     def optimise(
         self,
         initial_params: Union[str, float, Iterable],
+        initial_state: np.ndarray = None,
     ) -> OptimizeResult:
         x0 = default_value_handler(
             shape=(self.ansatz.n_symbols,),
@@ -83,9 +81,10 @@ class ScipyOptimisers:
         result: OptimizeResult = minimize(
             self.fun,
             x0,
+            initial_state,
             **self._minimize_options,
             options=self._method_options,
-            callback=self.callback
+            callback=self.callback,
         )
         print("function calls: ", self._function_calls_count)
         if self.save_sim_data:
@@ -100,7 +99,6 @@ class ScipyOptimisers:
                 "objective": self._objective,
                 "minimize_options": self._minimize_options,
                 "method_options": self._method_options,
-                "initial_state": self.initial_state,
             },
             "sim_data": self.sim_data,
         }
