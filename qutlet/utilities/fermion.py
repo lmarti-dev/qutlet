@@ -307,7 +307,7 @@ def jw_computational_wf(
     Returns:
         np.ndarray: 2**Nqubits vector with a one in the entry correspknding to the desired computational state
     """
-    wf = np.zeros((2**n_qubits))
+    wf = np.zeros((2**n_qubits), dtype=np.complex64)
     if right_to_left:
         jw_index = sum((2 ** (n_qubits - 1 - iii) for iii in indices))
     else:
