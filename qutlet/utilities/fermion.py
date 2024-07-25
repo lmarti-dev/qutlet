@@ -438,9 +438,12 @@ def jw_get_free_couplers(
     return jw_couplers
 
 
-def jw_hartree_fock_state(model: "FermionicModel"):
-    indices = [2 * i for i in range(model.n_electrons[0])] + [
-        2 * i + 1 for i in range(model.n_electrons[1])
+def jw_hartree_fock_state(model: "FermionicModel", offset: int = 0):
+    indices = [
+        (2 * (i + offset)) % (model.n_qubits - 1) for i in range(model.n_electrons[0])
+    ] + [
+        (2 * (i + offset) + 1) % (model.n_qubits - 1)
+        for i in range(model.n_electrons[1])
     ]
     return jw_computational_wf(
         indices=indices, n_qubits=model.n_qubits, right_to_left=True
