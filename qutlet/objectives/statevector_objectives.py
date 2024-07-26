@@ -8,15 +8,15 @@ import numpy as np
 
 
 def energy_objective(model: QubitModel) -> callable:
-    def fun(state: np.ndarray):
-        return np.real(model.statevector_expectation(state))
+    def fun(state: np.ndarray) -> float:
+        return model.statevector_expectation(state)
 
     return fun
 
 
 def fidelity_objective(model: QubitModel, target_state: np.ndarray) -> callable:
-    def fun(state: np.ndarray):
-        return np.real(cirq_fidelity(target_state, state, qid_shape=model.qid_shape))
+    def fun(state: np.ndarray) -> float:
+        return cirq_fidelity(target_state, state, qid_shape=model.qid_shape)
 
     return fun
 

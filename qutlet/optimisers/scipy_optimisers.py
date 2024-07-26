@@ -90,7 +90,7 @@ class ScipyOptimisers:
         if self.save_sim_data:
             return result, self.sim_data
         else:
-            return result
+            return result, None
 
     def __to_json__(self) -> Dict:
         return {

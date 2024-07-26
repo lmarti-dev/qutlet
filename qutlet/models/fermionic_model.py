@@ -120,11 +120,17 @@ class FermionicModel(FockModel):
                 encoded_terms.append(encoded_term)
         return encoded_terms
 
-    def get_quadratic_hamiltonian_wrapper(self, fermion_hamiltonian):
+    @classmethod
+    def get_constant_term_wrapper(cls, fermion_hamiltonian: of.FermionOperator):
+        return fermion_hamiltonian.constant
+
+    def get_quadratic_hamiltonian_wrapper(
+        self, fermion_hamiltonian: of.FermionOperator
+    ):
         # not sure this is correct
         # but in case the fermion operator is null (ie empty hamiltonian, get a zeros matrix)
         if fermion_hamiltonian == of.FermionOperator.identity():
-            return of.QuadraticHamiltonian(np.zeros((np.prod(self.n), np.prod(self.n))))
+            return of.QuadraticHamiltonian(np.ones((np.prod(self.n), np.prod(self.n))))
         quadratic_hamiltonian = of.get_quadratic_hamiltonian(
             fermion_hamiltonian, ignore_incompatible_terms=True
         )
@@ -193,6 +199,10 @@ class FermionicModel(FockModel):
             )
         )
         return fermion_hamiltonian - quadratic_terms
+
+    @property
+    def constant(self) -> float:
+        return self.fock_hamiltonian.constant
 
     @property
     def quadratic_terms(self) -> of.QuadraticHamiltonian:

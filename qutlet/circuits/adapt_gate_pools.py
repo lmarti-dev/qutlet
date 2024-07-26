@@ -186,6 +186,9 @@ class GatePool:
     def __init__(self) -> None:
         pass
 
+    def __len__(self):
+        return len(self.operator_pool)
+
     def _set_operator_pool(self, pool: list):
         self.operator_pool = pool
         self.verify_gate_pool()
@@ -219,7 +222,6 @@ class ExponentiableGatePool(GatePool):
         return exp_from_pauli_sum(pauli_sum=pauli_sum, theta=theta, **opts), theta
 
     def verify_gate_pool(self):
-
         for ind in range(len(self.operator_pool)):
             print(
                 f"Verifying gate pool, {ind}/{len(self.operator_pool)} gates", end=" \r"

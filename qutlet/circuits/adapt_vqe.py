@@ -1,4 +1,4 @@
-import multiprocessing as mp
+import multiprocess as mp
 from functools import partial
 from typing import Union, Iterable
 import cirq
@@ -8,15 +8,6 @@ import dill
 
 from qutlet.circuits.adapt_gate_pools import (
     GatePool,
-    ExponentiableGatePool,
-    SubCircuitSet,
-    PauliStringSet,
-    HamiltonianPauliSumSet,
-    FermionicPauliSumSet,
-    QubitExciationSet,
-    PauliSumListSet,
-    FreeCouplersSet,
-    PauliSumSet,
     exp_from_pauli_sum,
 )
 from qutlet.circuits.ansatz import Ansatz, param_name_from_circuit
@@ -33,12 +24,16 @@ from qutlet.utilities import (
     qmap,
 )
 
+# dill.Pickler.dumps, dill.Pickler.loads = dill.dumps, dill.loads
+# mp.reduction.ForkingPickler = dill.Pickler
+# mp.reduction.dump = dill.dump
+
 
 class ADAPT(Ansatz):
     def __init__(
         self,
         model: QubitModel,
-        gate_pool_options: Union[dict, list],
+        gate_pool: GatePool,
         objective: callable,
         verbosity: int = 0,
         n_jobs: int = 1,
@@ -50,107 +45,37 @@ class ADAPT(Ansatz):
         self.verbosity = int(verbosity)
         self.n_jobs = n_jobs
         self.indices_to_ignore = []
-        if isinstance(gate_pool_options, list):
-            self.pool_name = "custom"
-            self.gate_pool = gate_pool_options
-        elif isinstance(gate_pool_options, dict):
-            self.pool_name = gate_pool_options.pop("pool_name", None)
-            self.gate_pool_class: GatePool = self.pick_gate_pool(
-                pool_name=self.pool_name, gate_pool_options=gate_pool_options
-            )
-            self.gate_pool = self.gate_pool_class.operator_pool
+
+        self.gate_pool: GatePool = gate_pool
+        self.operator_pool = self.gate_pool.operator_pool
 
         self.process_pool = None
         if self.n_jobs > 1:
 
-            dill.Pickler.dumps, dill.Pickler.loads = dill.dumps, dill.loads
-            mp.reduction.ForkingPickler = dill.Pickler
-            mp.reduction.dump = dill.dump
             self.process_pool = mp.Pool(self.n_jobs)
-
-    def gate_pool_op_ind_to_dispatch(self, ind: int):
-        if isinstance(self.gate_pool_class, ExponentiableGatePool):
-            return self.gate_pool_class.matrix(ind=ind, qubits=self.model.qubits)
-        elif isinstance(self.gate_pool_class, SubCircuitSet):
-            return self.gate_pool_class.operator_pool[ind]
-        else:
-            raise ValueError("how did you get that far without an error?")
-
-    def measure_gradient(self, ind: int, trial_state: np.ndarray):
-        self.verbose_print("computing {g} gradient".format(g=self.gate_pool[ind]))
-        grad = measure_gradient_dispatcher(
-            trial_state=trial_state,
-            operator=self.gate_pool_class.gate_from_op(ind, "dummy")[0],
-            objective=self.objective,
-            qubits=self.model.qubits,
-        )
-        self.verbose_print("gradient: {:.10f}".format(grad))
-        return grad
 
     def verbose_print(self, s: str, message_level: int = 1, end="\n"):
         if int(self.verbosity) >= message_level:
             print(s, end=end)
 
-    def pick_gate_pool(self, pool_name, gate_pool_options):
-        set_options = {}
-        if pool_name == "pauli_string":
-            set_options.update({"qubits": self.model.qubits})
-            set_options.update(gate_pool_options)
-            return PauliStringSet(**set_options)
-        elif pool_name == "hamiltonian":
-            set_options.update({"threshold": None})
-            set_options.update(gate_pool_options)
-            return HamiltonianPauliSumSet(model=self.model, **set_options)
-        elif pool_name == "fermionic":
-            return FermionicPauliSumSet(model=self.model, set_options=gate_pool_options)
-        elif pool_name == "pauli_sums":
-            set_options.update({"qubits": self.model.qubits})
-            set_options.update(gate_pool_options)
-            return PauliSumSet(**set_options)
-        elif pool_name == "pauli_lists":
-            set_options.update({"qubits": self.model.qubits})
-            set_options.update(gate_pool_options)
-            return PauliSumListSet(**set_options)
-        elif pool_name == "qubit_excitation":
-            set_options.update({"qubits": self.model.qubits})
-            set_options.update(gate_pool_options)
-            return QubitExciationSet(**set_options)
-        elif pool_name == "sub_circuit":
-            set_options.update({"qubits": self.model.qubits})
-            set_options.update(gate_pool_options)
-            return SubCircuitSet(**set_options)
-        elif pool_name == "free_couplers":
-            set_options.update(gate_pool_options)
-            return FreeCouplersSet(model=self.model, set_options=gate_pool_options)
-        else:
-            raise ValueError("expected a valid pool name, got {}".format(pool_name))
-
     def get_max_gradient(
         self,
         tol: float,
-        trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
     ):
-        # we can set the trial wf (before computing the gradient of the energy)
-        # if we want some specific psi to apply the gate to.
-        # not very useful for now, might come in handy later.
-        # initial_state is the state to input in the circuit
 
-        if trial_state is None:
-            trial_state = self.simulate(
-                initial_state=initial_state, state_qubits=self.model.qubits
-            )
+        trial_state = self.simulate(
+            initial_state=initial_state, state_qubits=self.model.qubits
+        )
 
         grad_values = []
         self.verbose_print(
             "Gate pool size: {}".format(
-                len(self.gate_pool) - len(self.indices_to_ignore)
+                len(self.operator_pool) - len(self.indices_to_ignore)
             )
         )
 
         if self.n_jobs > 1:
-            # ham = self.model.hamiltonian.matrix(qubits=self.model.qubits)
-
             self.verbose_print(
                 "Pooling {} jobs to compute gradient".format(self.n_jobs)
             )
@@ -161,27 +86,28 @@ class ADAPT(Ansatz):
                 qubits=self.model.qubits,
                 objective=self.objective,
             )
+            gates = (
+                cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0])
+                for ind in range(len(self.operator_pool))
+            )
             results = self.process_pool.map(
                 partial_dispatcher,
-                (
-                    (self.gate_pool_class.gate_from_op(ind, "dummy")[0])
-                    for ind in range(len(self.gate_pool))
-                ),
+                gates,
                 chunksize=32,
             )
 
             grad_values = [grad for grad in results]
 
         else:
-            for ind in range(len(self.gate_pool)):
+            for ind in range(len(self.operator_pool)):
                 grad = measure_gradient_dispatcher(
                     trial_state=trial_state,
-                    operator=self.gate_pool_class.gate_from_op(ind, "dummy")[0],
+                    gate=cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0]),
                     objective=self.objective,
                     qubits=self.model.qubits,
                 )
                 self.verbose_print(
-                    f"{ind}/{len(self.gate_pool)} gradient: {grad:.5f}", end="\r"
+                    f"{ind}/{len(self.operator_pool)} gradient: {grad:.5f}", end="\r"
                 )
                 grad_values.append(grad)
 
@@ -211,18 +137,16 @@ class ADAPT(Ansatz):
 
     def gate_and_param_from_pool(self, ind):
         param_name = param_name_from_circuit(circ=self.circuit)
-        gate, theta = self.gate_pool_class.gate_from_op(ind=ind, param_name=param_name)
+        gate, theta = self.gate_pool.gate_from_op(ind=ind, param_name=param_name)
         return gate, theta
 
     def append_best_gate_to_circuit(
         self,
         tol: float = 1e-15,
-        trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
     ) -> int:
         max_index = self.get_max_gradient(
             tol=tol,
-            trial_state=trial_state,
             initial_state=initial_state,
         )
         if max_index is None:
@@ -251,10 +175,10 @@ class ADAPT(Ansatz):
         self,
         default_value: str = "random",
     ):
-        ind = np.random.choice(len(self.gate_pool))
+        ind = np.random.choice(len(self.operator_pool))
         param_name = param_name_from_circuit(circ=self.circuit)
         theta = sympy.Symbol("theta_{param_name}".format(param_name=param_name))
-        exp_gates = exp_from_pauli_sum(pauli_sum=self.gate_pool[ind], theta=theta)
+        exp_gates = exp_from_pauli_sum(pauli_sum=self.operator_pool[ind], theta=theta)
         for gate in exp_gates:
             self.circuit += gate
         self.symbols.append(theta)
@@ -272,10 +196,10 @@ class ADAPT(Ansatz):
         optimiser: ScipyOptimisers,
         tetris: bool = False,
         discard_previous_best: Union[bool, int] = False,
-        trial_state: np.ndarray = None,
         initial_state: np.ndarray = None,
         random: bool = False,
         callback: callable = None,
+        threshold: float = 1e-10,
     ):
         result = None
         if isinstance(discard_previous_best, int):
@@ -296,7 +220,7 @@ class ADAPT(Ansatz):
             else:
                 # this returns the best index to be added to the blacklist
                 max_index = self.append_best_gate_to_circuit(
-                    trial_state=trial_state, initial_state=initial_state
+                    initial_state=initial_state
                 )
 
             # if the gradient is above the threshold, go on
@@ -309,6 +233,9 @@ class ADAPT(Ansatz):
 
                 if isinstance(optimiser, ScipyOptimisers):
                     # this will only work with the scipy optimiser, as setting the initial guess for the parameters
+                    if optimiser.save_sim_data is False:
+                        raise ValueError("Must enable save_sim_data")
+
                     result, sim_data = optimiser.optimise(
                         initial_params="random", initial_state=initial_state
                     )
@@ -321,6 +248,8 @@ class ADAPT(Ansatz):
                         p=len(self.params),
                     )
                 )
+                if sim_data["objective_value"][-1] <= threshold:
+                    break
                 # callback every step so that we can process each optimisation round
                 if callback is not None:
                     callback(result, sim_data, step)
@@ -330,13 +259,13 @@ class ADAPT(Ansatz):
                     qubits = circuit_last_moment.qubits
                     overlapping_indices = [
                         ind
-                        for ind in range(len(self.gate_pool))
-                        if set(qubits) & set((q for q in self.gate_pool[ind]))
+                        for ind in range(len(self.operator_pool))
+                        if set(qubits) & set((q for q in self.operator_pool[ind]))
                     ]
                     self.verbose_print(
-                        f"{len(overlapping_indices)}/{len(self.gate_pool)} qubit-overlapping gates"
+                        f"{len(overlapping_indices)}/{len(self.operator_pool)} qubit-overlapping gates"
                     )
-                    if len(overlapping_indices) < len(self.gate_pool):
+                    if len(overlapping_indices) < len(self.operator_pool):
                         self.indices_to_ignore = overlapping_indices
                     else:
                         self.indices_to_ignore = []
@@ -353,7 +282,7 @@ class ADAPT(Ansatz):
                     # try again perhaps
                     self.verbose_print(
                         "tetris game over: {}/{} gates are being ignored".format(
-                            len(self.indices_to_ignore), len(self.gate_pool)
+                            len(self.indices_to_ignore), len(self.operator_pool)
                         )
                     )
                     self.indices_to_ignore = []
@@ -372,18 +301,17 @@ class ADAPT(Ansatz):
 
 # ugly method, but necessary for multiprocessing
 def measure_gradient_dispatcher(
-    operator: Union[cirq.PauliSumExponential, cirq.Circuit],
+    gate: cirq.Circuit,
     trial_state: np.ndarray,
     objective: callable,
     qubits: list[cirq.Qid],
 ):
     # parameter shift rule
     eps = 1e-5
-    # for subcirc
-    if not isinstance(operator, cirq.Circuit):
-        circuit = cirq.Circuit(operator)
+    # for subcirx
+    # gate is circuit because mp
     return circuit_gradient(
-        circuit=circuit,
+        circuit=gate,
         qubits=qubits,
         trial_state=trial_state,
         eps=eps,

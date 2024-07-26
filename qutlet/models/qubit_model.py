@@ -43,14 +43,18 @@ class QubitModel(abc.ABC):
     def _set_hamiltonian(self):
         raise NotImplementedError()  # pragma: no cover
 
-    def statevector_expectation(self, state_vector: np.ndarray):
+    def statevector_expectation(self, state_vector: np.ndarray) -> float:
         if len(state_vector.shape) == 2:
-            return self.hamiltonian.expectation_from_density_matrix(
-                state_vector, qubit_map=self.qmap
+            return np.real(
+                self.hamiltonian.expectation_from_density_matrix(
+                    state_vector, qubit_map=self.qmap
+                )
             )
         elif len(state_vector.shape) == 1:
-            return self.hamiltonian.expectation_from_state_vector(
-                state_vector, qubit_map=self.qmap
+            return np.real(
+                self.hamiltonian.expectation_from_state_vector(
+                    state_vector, qubit_map=self.qmap
+                )
             )
         else:
             raise ValueError(
