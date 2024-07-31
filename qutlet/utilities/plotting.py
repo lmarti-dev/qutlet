@@ -87,7 +87,10 @@ def plot_ham_spectrum_non_quadratic_sweep(
 
 
 def plot_ham_complexity_non_quadratic_sweep(
-    model: "FermionicModel", n_steps: int = 100, which_sweep: str = "lin"
+    model: "FermionicModel",
+    n_steps: int = 100,
+    which_sweep: str = "lin",
+    which: str = "add",
 ):
 
     n_sorts = 2
@@ -99,10 +102,15 @@ def plot_ham_complexity_non_quadratic_sweep(
         strengths = np.logspace(-10, 0, n_steps)
 
     for ind, strength in enumerate(strengths):
-        fop = (
-            get_fermion_operator(model.quadratic_terms)
-            + strength * model.non_quadratic_terms
-        )
+        if which == "add":
+            fop = (
+                get_fermion_operator(model.quadratic_terms)
+                + strength * model.non_quadratic_terms
+            )
+        elif which == "linterp":
+            fop = (1 - strength) * get_fermion_operator(
+                model.quadratic_terms
+            ) + strength * model.non_quadratic_terms
         ground_energy, ground_state = jw_get_true_ground_state_at_particle_number(
             get_sparse_operator(fop), particle_number=model.n_electrons
         )
@@ -129,10 +137,16 @@ def plot_ham_complexity_non_quadratic_sweep(
         entropies[:, 1],
         label="Stabilizer Rényi entropy",
     )
+    if which == "linterp":
+        prefac = "(1-t)"
+    else:
+        prefac = ""
     ax.set_xlabel(
-        "$t, \ \sum_{i,j} c_{ij} a^{\dagger}_i a_j  + t \sum_{i,j,k,\ell} h_{ijk\ell} a^{\dagger}_i a^{\dagger}_j a_k a_{\ell}$"
+        rf"$t: \ {prefac}\sum_{{i,j}} c_{{ij}} a^{{\dagger}}_i a_j  + t \sum_{{i,j,k,\ell}} h_{{ijk\ell}} a^{{\dagger}}_i a^{{\dagger}}_j a_k a_{{\ell}}$"
     )
     ax.set_ylabel("Global entanglement")
+    if which_sweep == "log":
+        ax.set_xscale("log")
     ax.legend()
 
     return fig
