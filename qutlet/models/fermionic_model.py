@@ -33,6 +33,9 @@ class FermionicModel(FockModel):
         # the default value is the one given by the fermi_hubbard function, ie
         # u d u d
 
+        self.eig_energies = None
+        self.eig_states = None
+
     @staticmethod
     def encode_fermion_operator(
         fermion_hamiltonian, qubits, encoding_options: dict
@@ -137,13 +140,22 @@ class FermionicModel(FockModel):
         return quadratic_hamiltonian
 
     @property
+    def gs(self):
+        if self.eig_energies is not None and self.eig_states is not None:
+            return self.eig_energies[0], self.eig_states[:, 0]
+        else:
+            eig_energies, eig_states = self.spectrum
+            return eig_energies[0], eig_states[:, 0]
+
+    @property
     def spectrum(self):
-        eig_energies, eig_states = jw_eigenspectrum_at_particle_number(
-            sparse_operator=get_sparse_operator(self.fock_hamiltonian),
-            particle_number=self.n_electrons,
-            expanded=True,
-        )
-        return eig_energies, eig_states
+        if self.eig_energies is None or self.eig_states is None:
+            self.eig_energies, self.eig_states = jw_eigenspectrum_at_particle_number(
+                sparse_operator=get_sparse_operator(self.fock_hamiltonian),
+                particle_number=self.n_electrons,
+                expanded=True,
+            )
+        return self.eig_energies, self.eig_states
 
     def diagonalize_non_interacting_hamiltonian(self):
         # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian

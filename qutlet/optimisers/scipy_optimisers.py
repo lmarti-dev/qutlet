@@ -1,9 +1,10 @@
 from qutlet.utilities import default_value_handler
 
 from scipy.optimize import OptimizeResult, minimize
-from typing import Dict, Iterable, Union
+from typing import Dict, Iterable, Union, Tuple, Any
 from qutlet.circuits.ansatz import Ansatz
 import numpy as np
+
 
 # available optimizers:
 # ‘Nelder-Mead’
@@ -73,7 +74,7 @@ class ScipyOptimisers:
         self,
         initial_params: Union[str, float, Iterable],
         initial_state: np.ndarray = None,
-    ) -> OptimizeResult:
+    ) -> Tuple[OptimizeResult, Any]:
         x0 = default_value_handler(
             shape=(self.ansatz.n_symbols,),
             value=initial_params,

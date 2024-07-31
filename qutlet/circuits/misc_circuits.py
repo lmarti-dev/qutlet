@@ -21,14 +21,15 @@ and not simply repeat one single layer.
 def circuit_ansatz(model: QubitModel, layers, circuit: callable) -> Ansatz:
     circuit, symbols = circuit(model=model, layers=layers)
     symbols = list(flatten(symbols))
-    ansatz = Ansatz(circuit=circuit, param_resolver=symbols)
+    ansatz = Ansatz(circuit=circuit, symbols=symbols)
     return ansatz
 
 
 def brickwall_circuit(
     model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
-):
-    def circuit(model: FermionicModel, symbols, layers):
+) -> Ansatz:
+    def circuit(model: FermionicModel, layers):
+        symbols = []
         qubits = model.qubits
         circuit = cirq.Circuit()
 
@@ -58,11 +59,12 @@ def brickwall_circuit(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def pyramid_circuit(model: FermionicModel, layers=1):
-    def circuit(model: FermionicModel, symbols, layers):
+def pyramid_circuit(model: FermionicModel, layers=1) -> Ansatz:
+    def circuit(model: FermionicModel, layers):
+        symbols = []
         qubits = model.qubits
         circuit = cirq.Circuit()
         for layer in range(layers):
@@ -84,13 +86,14 @@ def pyramid_circuit(model: FermionicModel, layers=1):
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
 def totally_connected_circuit(
     model: FermionicModel, layers=1, spin_conserving: bool = False
-):
-    def circuit(model: FermionicModel, symbols, layers):
+) -> Ansatz:
+    def circuit(model: FermionicModel, layers):
+        symbols = []
         qubits = model.qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
@@ -125,11 +128,12 @@ def totally_connected_circuit(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def stair_circuit(model: FermionicModel, layers=1):
-    def circuit(model: FermionicModel, symbols: list, layers: int):
+def stair_circuit(model: FermionicModel, layers=1) -> Ansatz:
+    def circuit(model: FermionicModel, layers: int):
+        symbols = []
         qubits = model.qubits
         Nq = len(qubits)
         circuit = cirq.Circuit()
@@ -154,4 +158,4 @@ def stair_circuit(model: FermionicModel, layers=1):
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
