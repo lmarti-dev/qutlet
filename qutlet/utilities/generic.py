@@ -207,8 +207,8 @@ def hamming_weight(n: Union[int, str]) -> int:
     return sum((1 for j in n if j == "1"))
 
 
-def binleftpad(i: int, lp: int):
-    b = format(i, "0{lp}b".format(lp=lp))
+def binleftpad(integer: int, left_pad: int):
+    b = format(integer, "0{lp}b".format(lp=left_pad))
     return b
 
 
@@ -226,7 +226,7 @@ def index_bits(
         if N is None:
             b = bin(a)
         else:
-            b = binleftpad(i=a, lp=N)
+            b = binleftpad(integer=a, left_pad=N)
     else:
         b = a
     if "b" in b:

@@ -2,9 +2,12 @@ import numpy as np
 
 from openfermion import expectation, get_sparse_operator, FermionOperator
 from cirq import partial_trace, fidelity, DensePauliString, PauliString, LineQubit
-from qutlet.utilities import (
+from qutlet.utilities.fermion import (
     jw_eigenspectrum_at_particle_number,
     index_bits,
+)
+
+from qutlet.utilities.generic import (
     from_bitstring,
     to_bitstring,
 )

@@ -3,13 +3,21 @@ import matplotlib.pyplot as plt
 from math import factorial
 import numpy as np
 from openfermion import get_fermion_operator, get_sparse_operator
-from qutlet.utilities import jw_eigenspectrum_at_particle_number
+from qutlet.utilities.fermion import (
+    jw_eigenspectrum_at_particle_number,
+    jw_get_true_ground_state_at_particle_number,
+)
+from qutlet.utilities.complexity import (
+    global_entanglement_wallach,
+    stabilizer_renyi_entropy,
+)
+
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
 
 
-def plot_spectrum_interaction_sweep(
+def plot_ham_spectrum_non_quadratic_sweep(
     model: "FermionicModel", n_steps: int = 100, which: str = "nonquad"
 ):
 
@@ -74,5 +82,57 @@ def plot_spectrum_interaction_sweep(
         ax.set_xlabel(
             r"$s: \ \sum_{i,j} t_{ij} a^{\dagger}_i a_j + s\sum_{ijk\ell} a^{\dagger}_i a^{\dagger}_j a_k a_\ell$"
         )
+
+    return fig
+
+
+def plot_ham_complexity_non_quadratic_sweep(
+    model: "FermionicModel", n_steps: int = 100, which_sweep: str = "lin"
+):
+
+    n_sorts = 2
+    entropies = np.zeros((n_steps, n_sorts))
+
+    if which_sweep == "lin":
+        strengths = np.linspace(0, 1, n_steps)
+    elif which_sweep == "log":
+        strengths = np.logspace(-10, 0, n_steps)
+
+    for ind, strength in enumerate(strengths):
+        fop = (
+            get_fermion_operator(model.quadratic_terms)
+            + strength * model.non_quadratic_terms
+        )
+        ground_energy, ground_state = jw_get_true_ground_state_at_particle_number(
+            get_sparse_operator(fop), particle_number=model.n_electrons
+        )
+
+        entropies[ind, 0] = global_entanglement_wallach(
+            state=ground_state, n_qubits=model.n_qubits
+        )
+        entropies[ind, 1] = stabilizer_renyi_entropy(
+            state=ground_state, n_qubits=model.n_qubits
+        )
+        print(
+            f"{strength:.3f} {ind} ge:{entropies[ind,0]:.3f} sre:{entropies[ind,1]:.3f} {ground_energy:.3f}"
+        )
+
+    fig, ax = plt.subplots()
+    ax: plt.Axes
+    ax.plot(
+        strengths,
+        entropies[:, 0],
+        label="Global entanglement",
+    )
+    ax.plot(
+        strengths,
+        entropies[:, 1],
+        label="Stabilizer Rényi entropy",
+    )
+    ax.set_xlabel(
+        "$t, \ \sum_{i,j} c_{ij} a^{\dagger}_i a_j  + t \sum_{i,j,k,\ell} h_{ijk\ell} a^{\dagger}_i a^{\dagger}_j a_k a_{\ell}$"
+    )
+    ax.set_ylabel("Global entanglement")
+    ax.legend()
 
     return fig

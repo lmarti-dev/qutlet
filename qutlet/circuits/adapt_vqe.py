@@ -4,7 +4,6 @@ from typing import Union, Iterable
 import cirq
 import numpy as np
 import sympy
-import dill
 
 from qutlet.circuits.adapt_gate_pools import (
     GatePool,
@@ -18,10 +17,8 @@ from qutlet.optimisers.scipy_optimisers import ScipyOptimisers
 from qutlet.utilities import (
     depth,
     match_param_values_to_symbols,
-    normalize_vec,
     populate_empty_qubits,
     identity_on_qubits,
-    qmap,
 )
 
 # dill.Pickler.dumps, dill.Pickler.loads = dill.dumps, dill.loads
@@ -163,7 +160,7 @@ class ADAPT(Ansatz):
             match_param_values_to_symbols(
                 params=self.params,
                 symbols=self.symbols,
-                default_value="zeros",
+                default_value="random",
             )
             self.verbose_print(
                 "best gate found and added: {best_gate}".format(best_gate=gates)
@@ -215,7 +212,7 @@ class ADAPT(Ansatz):
         for step in range(n_steps):
             if random:
                 # in case you want to benchmark adapt by comparing it with a random circuit
-                self.append_random_gate_to_circuit("zeros")
+                self.append_random_gate_to_circuit("random")
                 max_index = -1
             else:
                 # this returns the best index to be added to the blacklist
