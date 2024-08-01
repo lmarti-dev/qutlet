@@ -7,9 +7,9 @@ import numpy as np
 """
 
 
-def energy_objective(model: QubitModel, ground_energy: float = 0) -> callable:
+def energy_objective(model: QubitModel, target_energy: float = 0) -> callable:
     def fun(state: np.ndarray) -> float:
-        return model.statevector_expectation(state) - ground_energy
+        return model.statevector_expectation(state) - target_energy
 
     return fun
 
