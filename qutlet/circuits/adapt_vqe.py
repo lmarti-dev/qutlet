@@ -234,7 +234,7 @@ class ADAPT(Ansatz):
                         raise ValueError("Must enable save_sim_data")
 
                     result, sim_data = optimiser.optimise(
-                        initial_params="random", initial_state=initial_state
+                        initial_params=self.params, initial_state=initial_state
                     )
                 else:
                     raise ValueError("Only works with ScipyOptimisers")
@@ -257,7 +257,8 @@ class ADAPT(Ansatz):
                     overlapping_indices = [
                         ind
                         for ind in range(len(self.operator_pool))
-                        if set(qubits) & set((q for q in self.operator_pool[ind]))
+                        if set(qubits)
+                        & set((q for q in self.operator_pool[ind].qubits))
                     ]
                     self.verbose_print(
                         f"{len(overlapping_indices)}/{len(self.operator_pool)} qubit-overlapping gates"
