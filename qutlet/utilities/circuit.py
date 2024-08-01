@@ -78,19 +78,28 @@ def cirq_circuit_to_target_gateset(
     return transformed_circuit
 
 
-def count_n_qubit_gates(circuit: cirq.Circuit, max_locality: int = None):
+def count_n_qubit_gates(circ: cirq.Circuit, n: int):
+    n_qubit_gates = 0
+    for moment in circ:
+        for item in moment:
+            if len(item.qubits) == n:
+                n_qubit_gates += 1
+    return n_qubit_gates
+
+
+def count_qubit_gates_to_locality(circuit: cirq.Circuit, max_locality: int = None):
 
     if max_locality is None:
         # max locality is at most the number of qubits
         max_locality = len(circuit.all_qubits())
     counts = np.zeros(max_locality)
     for ind in range(len(counts)):
-        counts[ind] = count_n_qubit_gates(circuit, max_locality=ind + 1)
+        counts[ind] = count_n_qubit_gates(circuit, n=ind + 1)
     return counts
 
 
 def print_n_qubit_gates(circuit: cirq.Circuit):
-    counts = count_n_qubit_gates(circuit)
+    counts = count_qubit_gates_to_locality(circuit)
     print(
         list(
             "{}-qubit gates: {}".format(ind + 1, val)
@@ -303,6 +312,26 @@ def state_fidelity_to_eigenstates(
             # expanded refers to jw_ restricted spaces functions
             fids.append(fidelity(state, eigenstates[:, jj]) ** 2)
     return fids
+
+
+def get_closest_state(
+    ref_state: np.ndarray, comp_states: np.ndarray, subspace_simulation: bool = False
+) -> Tuple[np.ndarray, float]:
+    fidelities = []
+    for ind in range(comp_states.shape[1]):
+        fid = fidelity_wrapper(
+            comp_states[:, ind],
+            ref_state,
+            qid_shape=(2,) * int(np.log2(len(ref_state))),
+            subspace_simulation=subspace_simulation,
+        )
+        if fid > 0.5:
+            # if one state has more than .5 fid with ref, then it's necessarily the closest
+            return comp_states[:, ind], int(ind)
+        fidelities.append(fid)
+    max_ind = np.argmax(fidelities)
+    print(f"degenerate fidelities: {fidelities}, max: {max_ind}")
+    return comp_states[:, max_ind], int(max_ind)
 
 
 def get_closest_degenerate_ground_state(
