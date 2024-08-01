@@ -79,7 +79,6 @@ def cirq_circuit_to_target_gateset(
 
 
 def count_n_qubit_gates(circuit: cirq.Circuit, max_locality: int = None):
-
     if max_locality is None:
         # max locality is at most the number of qubits
         max_locality = len(circuit.all_qubits())
@@ -91,13 +90,9 @@ def count_n_qubit_gates(circuit: cirq.Circuit, max_locality: int = None):
 
 def print_n_qubit_gates(circuit: cirq.Circuit):
     counts = count_n_qubit_gates(circuit)
-    print(
-        list(
-            "{}-qubit gates: {}".format(ind + 1, val)
-            for ind, val in enumerate(counts)
-            if val != 0
-        )
-    )
+    for ind, val in enumerate(counts):
+        if val != 0:
+            print(f"{ind+1}-qubit gates: {val}")
 
 
 def populate_empty_qubits(

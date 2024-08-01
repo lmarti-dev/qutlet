@@ -300,12 +300,12 @@ def mean_coeff_n_terms(fop: of.FermionOperator, n: int) -> float:
 def jw_computational_wf(
     indices: list, n_qubits: int, right_to_left: bool = False
 ) -> np.ndarray:
-    """Creates a 2**Nqubits wavefunction corresponding to the computational state of Nqubits with the qubits in indices set to one
+    """Creates a 2^n_qubits wavefunction corresponding to the computational state of n_qubits with the qubits in indices set to one
     Args:
         indices (list): the indices of the qubits which are non-zero
-        Nqubits (int): the number of qubits in the wavefunction
+        n_qubits (int): the number of qubits in the wavefunction
     Returns:
-        np.ndarray: 2**Nqubits vector with a one in the entry correspknding to the desired computational state
+        np.ndarray: 2^n_qubits vector with a one in the entry correspknding to the desired computational state
     """
     wf = np.zeros((2**n_qubits), dtype=np.complex64)
     if right_to_left:

@@ -88,6 +88,7 @@ class ScipyOptimisers:
             callback=self.callback,
         )
         print("function calls: ", self._function_calls_count)
+        self.ansatz.params = result["x"]
         if self.save_sim_data:
             return result, self.sim_data
         else:
