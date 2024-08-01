@@ -461,7 +461,7 @@ def default_value_handler(shape: tuple, value: Union[str, float, Iterable]):
         if not np.all(npvalue.shape == shape):
             raise ValueError(
                 "Given shape {s1} doesn't match given value shape {s2}".format(
-                    s1=shape, s2=value.shape
+                    s1=shape, s2=npvalue.shape
                 )
             )
         return value

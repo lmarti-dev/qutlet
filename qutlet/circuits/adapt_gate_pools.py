@@ -522,7 +522,7 @@ class FermionicPauliSumSet(ExponentiableGatePool):
         self._set_operator_pool(paulisum_set)
 
 
-class QubitExciationSet(PauliSumListSet):
+class QubitExcitationSet(PauliSumListSet):
     def __init__(
         self,
         qubits: list[cirq.Qid],

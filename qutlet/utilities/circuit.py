@@ -164,6 +164,7 @@ def match_param_values_to_symbols(
             shape=(missing_size,), value=default_value
         )
         params = np.concatenate((params, param_default_values))
+    return params, symbols
 
 
 def sparse_pauli_string(pauli_str: Union[cirq.PauliString, str]):
