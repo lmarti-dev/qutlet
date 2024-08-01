@@ -72,6 +72,10 @@ class ADAPT(Ansatz):
             )
         )
 
+        indices = [
+            x for x in range(len(self.operator_pool)) if x not in self.indices_to_ignore
+        ]
+
         if self.n_jobs > 1:
             self.verbose_print(
                 "Pooling {} jobs to compute gradient".format(self.n_jobs)
@@ -85,8 +89,9 @@ class ADAPT(Ansatz):
             )
             gates = (
                 cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0])
-                for ind in range(len(self.operator_pool))
+                for ind in indices
             )
+
             results = self.process_pool.map(
                 partial_dispatcher,
                 gates,
@@ -96,7 +101,8 @@ class ADAPT(Ansatz):
             grad_values = [grad for grad in results]
 
         else:
-            for ind in range(len(self.operator_pool)):
+
+            for ind in indices:
                 grad = measure_gradient_dispatcher(
                     trial_state=trial_state,
                     gate=cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0]),
@@ -108,18 +114,13 @@ class ADAPT(Ansatz):
                 )
                 grad_values.append(grad)
 
-        if not self.indices_to_ignore:
-            max_index = np.argmax(np.abs(grad_values))
-        else:
-            # in case we want to ignore some operators, we take the largest indice that we don't ignore
-            sorted_indices = (-np.array(np.abs(grad_values))).argsort()
-            max_index = [
-                ind for ind in sorted_indices if ind not in self.indices_to_ignore
-            ][0]
-        if tol is not None and grad_values[max_index] < tol:
+        # in case we want to ignore some operators, we take the largest indice that we don't ignore
+        max_index = indices[np.argmax(np.abs(grad_values))]
+        max_grad = np.max(np.abs(grad_values))
+        if tol is not None and max_grad < tol:
             self.verbose_print(
                 "gradient ({grad:.2f}) is smaller than tol ({tol}), exiting".format(
-                    grad=grad_values[max_index], tol=tol
+                    grad=max_grad, tol=tol
                 )
             )
             # iteration process is done, gradient < tol, or if stopping is set with max depth, continue
@@ -127,7 +128,7 @@ class ADAPT(Ansatz):
         else:
             self.verbose_print(
                 "gradient ({grad}) is larger than tolerance: ({tol}), continuing".format(
-                    grad=grad_values[max_index], tol=tol
+                    grad=max_grad, tol=tol
                 ),
             )
             return max_index
@@ -157,7 +158,7 @@ class ADAPT(Ansatz):
                 self.symbols.extend(theta)
             else:
                 self.symbols.append(theta)
-            match_param_values_to_symbols(
+            self.params, self.symbols = match_param_values_to_symbols(
                 params=self.params,
                 symbols=self.symbols,
                 default_value="random",
@@ -179,7 +180,7 @@ class ADAPT(Ansatz):
         for gate in exp_gates:
             self.circuit += gate
         self.symbols.append(theta)
-        match_param_values_to_symbols(
+        self.params, self.symbols = match_param_values_to_symbols(
             params=self.params,
             symbols=self.symbols,
             default_value=default_value,
