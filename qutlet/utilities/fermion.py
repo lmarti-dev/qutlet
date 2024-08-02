@@ -298,7 +298,7 @@ def mean_coeff_n_terms(fop: of.FermionOperator, n: int) -> float:
 
 
 def jw_computational_wf(
-    indices: list, n_qubits: int, right_to_left: bool = False
+    indices: list, n_qubits: int, right_to_left: bool = False, expanded: bool = True
 ) -> np.ndarray:
     """Creates a 2^n_qubits wavefunction corresponding to the computational state of n_qubits with the qubits in indices set to one
     Args:
@@ -307,6 +307,7 @@ def jw_computational_wf(
     Returns:
         np.ndarray: 2^n_qubits vector with a one in the entry correspknding to the desired computational state
     """
+
     wf = np.zeros((2**n_qubits), dtype=np.complex64)
     if right_to_left:
         jw_index = sum((2 ** (n_qubits - 1 - iii) for iii in indices))
@@ -314,6 +315,15 @@ def jw_computational_wf(
         jw_index = sum((2 ** (iii) for iii in indices))
 
     wf[jw_index] = 1
+    if not expanded:
+        wf = wf[
+            jw_spin_correct_indices(
+                n_qubits=n_qubits,
+                n_electrons=[sum_even(indices), sum_odd(indices)],
+                right_to_left=right_to_left,
+            )
+        ]
+
     return wf
 
 
@@ -439,7 +449,10 @@ def jw_get_free_couplers(
 
 
 def jw_hartree_fock_state(
-    model: "FermionicModel", offset: int = 0, right_to_left: bool = True
+    model: "FermionicModel",
+    offset: int = 0,
+    right_to_left: bool = True,
+    expanded: bool = True,
 ):
     indices = [
         (2 * (i + offset)) % (model.n_qubits - 1) for i in range(model.n_electrons[0])
@@ -448,5 +461,14 @@ def jw_hartree_fock_state(
         for i in range(model.n_electrons[1])
     ]
     return jw_computational_wf(
-        indices=indices, n_qubits=model.n_qubits, right_to_left=right_to_left
+        indices=indices,
+        n_qubits=model.n_qubits,
+        right_to_left=right_to_left,
+        expanded=expanded,
     )
+
+
+def subspace_size(n_qubits: int, n_electrons: list) -> int:
+    return len(
+        list(itertools.combinations(range(n_qubits // 2), n_electrons[0]))
+    ) * len(list(itertools.combinations(range(n_qubits // 2), n_electrons[1])))
