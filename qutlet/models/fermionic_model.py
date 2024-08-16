@@ -11,6 +11,7 @@ from qutlet.utilities import (
     bravyi_kitaev_fast_wrapper,
     flatten,
     jw_eigenspectrum_at_particle_number,
+    jw_spin_correct_indices,
 )
 
 
@@ -29,12 +30,11 @@ class FermionicModel(FockModel):
         # can be int or tuple of two ints with spin up and down fermions
         self.n_electrons = n_electrons
         super().__init__(**kwargs)
-        # this is a reminder of how up and down fermions are spread on the grid
-        # the default value is the one given by the fermi_hubbard function, ie
-        # u d u d
-
+        # not set at the start so that we don't slow down things.
         self.eig_energies = None
         self.eig_states = None
+        self.ss_eig_energies = None
+        self.ss_eig_states = None
 
     @staticmethod
     def encode_fermion_operator(
@@ -156,6 +156,30 @@ class FermionicModel(FockModel):
                 expanded=True,
             )
         return self.eig_energies, self.eig_states
+
+    @property
+    def subspace_spectrum(self):
+        if self.ss_eig_energies is None or self.ss_eig_states is None:
+            self.ss_eig_energies, self.ss_eig_states = (
+                jw_eigenspectrum_at_particle_number(
+                    sparse_operator=get_sparse_operator(self.fock_hamiltonian),
+                    particle_number=self.n_electrons,
+                    expanded=False,
+                )
+            )
+        return self.ss_eig_energies, self.ss_eig_states
+
+    @property
+    def hamiltonian_matrix(self):
+        return self.hamiltonian.matrix(self.qubits)
+
+    @property
+    def subspace_hamiltonian_matrix(self):
+        ham_mat = self.hamiltonian_matrix
+        idx = jw_spin_correct_indices(
+            n_electrons=self.n_electrons, n_qubits=self.n_qubits
+        )
+        return ham_mat[np.ix_(idx, idx)]
 
     def diagonalize_non_interacting_hamiltonian(self):
         # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
