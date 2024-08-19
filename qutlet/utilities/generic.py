@@ -521,10 +521,13 @@ def ketbra(ket: np.ndarray) -> np.ndarray:
     return np.outer(ket, dagger(ket))
 
 
-def from_bitstring(b: str, n_qubits: int, right_to_left: bool = False):
+def from_bitstring(b: str, n_qubits: int, right_to_left: bool = False) -> int:
     if "b" in b:
         b = b.split("b")[1]
     # hmmmm would double rtl cancel out? too tired to think about it
+    # actually, you need index_bits to be rtl (because that's the order)
+    # but you then need from_bitstring to be ltr because that's the indices
+    # it does cancel out
     idx = index_bits(a=b, N=n_qubits, right_to_left=True)
     if right_to_left:
         return sum([2 ** (n_qubits - 1 - iii) for iii in idx])
@@ -573,18 +576,21 @@ def spin_dicke_mixed_state(
     return rho / np.trace(rho)
 
 
-def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False):
+def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False) -> str:
     if isinstance(ind, int):
         if n_qubits is None:
             b = bin(ind)
         else:
             b = binleftpad(integer=ind, left_pad=n_qubits)
-    else:
+    elif isinstance(ind, str):
         b = ind
+    else:
+        raise ValueError(f"Expected ind to be int or str, got: {type(ind)}")
     if "b" in b:
         b = b.split("b")[1]
     if right_to_left:
-        b = list(reversed(b))
+        b = "".join(list(reversed(b)))
+
     return b
 
 
