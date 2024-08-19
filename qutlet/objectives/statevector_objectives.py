@@ -7,9 +7,16 @@ import numpy as np
 """
 
 
-def energy_objective(model: QubitModel, target_energy: float = 0) -> callable:
-    def fun(state: np.ndarray) -> float:
-        return model.statevector_expectation(state) - target_energy
+def energy_objective(model: QubitModel, target_energy: float = None) -> callable:
+    if target_energy is None:
+
+        def fun(state: np.ndarray) -> float:
+            return model.statevector_expectation(state)
+
+    else:
+
+        def fun(state: np.ndarray) -> float:
+            return abs(model.statevector_expectation(state) - target_energy)
 
     return fun
 

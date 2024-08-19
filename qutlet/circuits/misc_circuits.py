@@ -25,7 +25,7 @@ def circuit_ansatz(model: QubitModel, layers, circuit: callable) -> Ansatz:
     return ansatz
 
 
-def brickwall_circuit(
+def brickwall_ansatz(
     model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
 ) -> Ansatz:
     def circuit(model: FermionicModel, layers):
@@ -36,8 +36,8 @@ def brickwall_circuit(
         for layer in range(layers):
             layer_symbols = []
             if shared_layer_parameter:
-                layer_symbols.append(sympy.Symbol("theta_{}".format(layer)))
-                layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
+                layer_symbols.append(sympy.Symbol(f"theta_{layer}"))
+                layer_symbols.append(sympy.Symbol(f"phi_{layer}"))
             for a in range(2):
                 sub_op_tree = []
                 for iii in range(a, len(qubits) - 1, 2):
@@ -62,15 +62,15 @@ def brickwall_circuit(
     return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def pyramid_circuit(model: FermionicModel, layers=1) -> Ansatz:
+def pyramid_ansatz(model: FermionicModel, layers=1) -> Ansatz:
     def circuit(model: FermionicModel, layers):
         symbols = []
         qubits = model.qubits
         circuit = cirq.Circuit()
         for layer in range(layers):
             layer_symbols = []
-            layer_symbols.append(sympy.Symbol("theta_{}".format(layer)))
-            layer_symbols.append(sympy.Symbol("phi_{}".format(layer)))
+            layer_symbols.append(sympy.Symbol(f"theta_{layer}"))
+            layer_symbols.append(sympy.Symbol(f"phi_{layer}"))
             sub_op_tree = []
             Nq = len(qubits) - 1
             for iii in range(0, Nq):
@@ -89,7 +89,7 @@ def pyramid_circuit(model: FermionicModel, layers=1) -> Ansatz:
     return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def totally_connected_circuit(
+def totally_connected_ansatz(
     model: FermionicModel, layers=1, spin_conserving: bool = False
 ) -> Ansatz:
     def circuit(model: FermionicModel, layers):
@@ -131,7 +131,38 @@ def totally_connected_circuit(
     return circuit_ansatz(model=model, layers=layers, circuit=circuit)
 
 
-def stair_circuit(model: FermionicModel, layers=1) -> Ansatz:
+def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
+    def circuit(model: FermionicModel, layers: int):
+        symbols = []
+        circuit = cirq.Circuit()
+        for layer in range(layers):
+            sub_op_tree = []
+            layer_symbols = []
+            for q1 in range(model.n_qubits):
+                for q2 in range(q1 + 2, model.n_qubits, 2):
+                    sym_giv = sympy.Symbol(f"givs_{layer}_{q1}_{q2}")
+                    layer_symbols.append(sym_giv)
+                    sub_op_tree.append(
+                        cirq.givens(
+                            angle_rads=sym_giv,
+                        ).on(model.qubits[q1], model.qubits[q2])
+                    )
+            for q in range(0, model.n_qubits - 1, 2):
+                sym_cz = sympy.Symbol(f"cz_{layer}_{q}")
+                layer_symbols.append(sym_cz)
+                sub_op_tree.append(
+                    cirq.CZPowGate(
+                        exponent=sym_cz,
+                    ).on(model.qubits[q], model.qubits[q + 1])
+                )
+            circuit.append(sub_op_tree, strategy=InsertStrategy.EARLIEST)
+            symbols.append(layer_symbols)
+        return circuit, symbols
+
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+
+
+def stair_ansatz(model: FermionicModel, layers=1) -> Ansatz:
     def circuit(model: FermionicModel, layers: int):
         symbols = []
         qubits = model.qubits
