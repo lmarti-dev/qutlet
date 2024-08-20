@@ -161,7 +161,7 @@ class ADAPT(Ansatz):
             self.params, self.symbols = match_param_values_to_symbols(
                 params=self.params,
                 symbols=self.symbols,
-                default_value="random",
+                default_value="zeros",
             )
             self.verbose_print(
                 "best gate found and added: {best_gate}".format(best_gate=gates)
@@ -250,7 +250,7 @@ class ADAPT(Ansatz):
                     break
                 # callback every step so that we can process each optimisation round
                 if callback is not None:
-                    callback(result, sim_data, step)
+                    callback(self, result, sim_data, step)
                 # if we want to forbid adapt from adding the same gate every time (this happens sometimes)
                 if tetris:
                     circuit_last_moment = self.circuit[-1]

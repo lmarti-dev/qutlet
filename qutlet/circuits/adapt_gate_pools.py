@@ -527,7 +527,6 @@ class QubitExcitationSet(PauliSumListSet):
         self,
         qubits: list[cirq.Qid],
         neighbour_order: int,
-        k_locality: int,
         periodic: bool = False,
         diagonal: bool = True,
         anti_hermitian: bool = True,
@@ -536,13 +535,13 @@ class QubitExcitationSet(PauliSumListSet):
 
         psum_list = ["XY-YX", "XYXX + YXXX + YYYX + YYXY - XXYX - XXXY - YXYY - XYYY"]
         super().__init__(
-            qubits,
-            neighbour_order,
-            k_locality,
-            periodic,
-            diagonal,
-            anti_hermitian,
-            coeff,
+            qubits=qubits,
+            neighbour_order=neighbour_order,
+            k_locality="auto",
+            periodic=periodic,
+            diagonal=diagonal,
+            anti_hermitian=anti_hermitian,
+            coeff=coeff,
             psum_list=psum_list,
         )
 
