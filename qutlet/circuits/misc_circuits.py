@@ -144,17 +144,11 @@ def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
                     layer_symbols.append(sym_giv)
                     sub_op_tree.append(
                         cirq.givens(
-                            angle_rads=sym_giv,
+                            angle_rads=-sym_giv / 2,
                         ).on(model.qubits[q1], model.qubits[q2])
                     )
             for q in range(0, model.n_qubits - 1, 2):
-                sym_cz = sympy.Symbol(f"cz_{layer}_{q}")
-                layer_symbols.append(sym_cz)
-                sub_op_tree.append(
-                    cirq.CZPowGate(
-                        exponent=sym_cz,
-                    ).on(model.qubits[q], model.qubits[q + 1])
-                )
+                sub_op_tree.append(cirq.CZ(model.qubits[q], model.qubits[q + 1]))
             circuit.append(sub_op_tree, strategy=InsertStrategy.EARLIEST)
             symbols.append(layer_symbols)
         return circuit, symbols
