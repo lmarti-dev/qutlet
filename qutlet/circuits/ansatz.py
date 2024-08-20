@@ -1,6 +1,4 @@
 from cirq import Circuit, ParamResolver, SimulatorBase, Simulator
-from typing import Union
-import numpy as np
 from qutlet.utilities import populate_empty_qubits, depth
 import sympy
 import uuid

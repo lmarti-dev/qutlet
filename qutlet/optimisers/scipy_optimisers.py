@@ -5,7 +5,6 @@ from typing import Dict, Iterable, Union, Tuple, Any
 from qutlet.circuits.ansatz import Ansatz
 import numpy as np
 
-
 # available optimizers:
 # ‘Nelder-Mead’
 # ‘Powell’
@@ -74,7 +73,7 @@ class ScipyOptimisers:
         self,
         initial_params: Union[str, float, Iterable],
         initial_state: np.ndarray = None,
-    ) -> Tuple[OptimizeResult, Any]:
+    ) -> Tuple[OptimizeResult, Union[None, dict]]:
         x0 = default_value_handler(
             shape=(self.ansatz.n_symbols,),
             value=initial_params,
@@ -86,6 +85,7 @@ class ScipyOptimisers:
             **self._minimize_options,
             options=self._method_options,
             callback=self.callback,
+            # bounds=[(-np.pi, np.pi) for _ in range(len(self.ansatz.symbols))],
         )
         print("function calls: ", self._function_calls_count)
         self.ansatz.params = result["x"]

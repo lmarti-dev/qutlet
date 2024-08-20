@@ -12,6 +12,9 @@ from qutlet.utilities.complexity import (
     stabilizer_renyi_entropy,
 )
 
+import io
+from cirq.contrib.svg import circuit_to_svg
+from cirq import Circuit
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -150,3 +153,10 @@ def plot_ham_complexity_non_quadratic_sweep(
     ax.legend()
 
     return fig
+
+
+def save_circuit_svg(circuit: Circuit, filepath: str):
+    svg = circuit_to_svg(circuit)
+    fstream = io.open(filepath, "w+", encoding="utf8")
+    fstream.write(svg)
+    fstream.close()
