@@ -31,13 +31,13 @@ class ADAPT(Ansatz):
         self,
         model: QubitModel,
         gate_pool: GatePool,
-        objective: callable,
+        gradient_function: callable,
         verbosity: int = 0,
         n_jobs: int = 1,
     ):
         super().__init__()
         self.model = model
-        self.objective = objective
+        self.gradient_function = gradient_function
         # if verbosity is true or false cast to int
         self.verbosity = int(verbosity)
         self.n_jobs = n_jobs
@@ -85,7 +85,7 @@ class ADAPT(Ansatz):
                 measure_gradient_dispatcher,
                 trial_state=trial_state,
                 qubits=self.model.qubits,
-                objective=self.objective,
+                objective=self.gradient_function,
             )
             gates = (
                 cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0])
@@ -106,7 +106,7 @@ class ADAPT(Ansatz):
                 grad = measure_gradient_dispatcher(
                     trial_state=trial_state,
                     gate=cirq.Circuit(self.gate_pool.gate_from_op(ind, "dummy")[0]),
-                    objective=self.objective,
+                    objective=self.gradient_function,
                     qubits=self.model.qubits,
                 )
                 self.verbose_print(
