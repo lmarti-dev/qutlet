@@ -247,6 +247,7 @@ class ADAPT(Ansatz):
                     )
                 )
                 if sim_data["objective_value"][-1] <= threshold:
+                    print("Accuracy threshold reached, exiting")
                     break
                 # callback every step so that we can process each optimisation round
                 if callback is not None:
