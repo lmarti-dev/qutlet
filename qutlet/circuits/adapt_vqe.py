@@ -200,6 +200,8 @@ class ADAPT(Ansatz):
         threshold: float = 1e-10,
     ):
         result = None
+        if callback is not None:
+            callback_called = 0
         if isinstance(discard_previous_best, int):
             # how many steps to wait until we can reuse a gate
             reuse_countdown = discard_previous_best
@@ -246,12 +248,11 @@ class ADAPT(Ansatz):
                         p=len(self.params),
                     )
                 )
-                if sim_data["objective_value"][-1] <= threshold:
-                    print("Accuracy threshold reached, exiting")
-                    break
+
                 # callback every step so that we can process each optimisation round
                 if callback is not None:
-                    callback(self, result, sim_data, step)
+                    callback(self, result, sim_data, callback_called)
+                    callback_called += 1
                 # if we want to forbid adapt from adding the same gate every time (this happens sometimes)
                 if tetris:
                     circuit_last_moment = self.circuit[-1]
@@ -289,6 +290,11 @@ class ADAPT(Ansatz):
                 else:
                     self.verbose_print("treshold reached, exiting")
                     break
+            if sim_data["objective_value"][-1] <= threshold:
+                print(
+                    f"Accuracy threshold reached, exiting: {sim_data['objective_value'][-1]} <  {threshold}"
+                )
+                break
 
         if self.process_pool is not None:
             # should the process pool be in init and kept?
