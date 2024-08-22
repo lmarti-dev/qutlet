@@ -1,12 +1,13 @@
 import numpy as np
 from scipy.sparse import csc_matrix
 
-
+from cirq import allclose_up_to_global_phase
 import openfermion as of
 import pytest
 
 import qutlet.utilities.testing
 import qutlet.utilities.fermion
+from qutlet.models import FermiHubbardModel
 
 
 @pytest.mark.parametrize(
@@ -217,7 +218,7 @@ def test_jw_spin_restrict_operator(sparse_operator, particle_number, n_qubits, c
             [[0], [-0.70710678], [0.70710678], [0]],
         ),
         (
-            csc_matrix(np.eye(16, k=3) + np.eye(16, k=-3)),
+            csc_matrix(np.eye(16, k=2) + np.eye(16, k=-2)),
             [1, 0],
             False,
             True,
@@ -297,3 +298,66 @@ def test_jw_computational_wf(indices, Nqubits, correct):
     assert (
         qutlet.utilities.fermion.jw_computational_wf(indices, Nqubits) == correct
     ).all()
+
+
+# can't properly test since the order of the bogos is not the same as
+# the full eigvecs and I don't want to do a double for loop with elimination
+# def test_jw_free_couplers():
+#     model = FermiHubbardModel(
+#         lattice_dimensions=(2, 2), tunneling=1, coulomb=2, n_electrons=[2, 2]
+#     )
+
+#     free_couplers = qutlet.utilities.fermion.jw_get_free_couplers(model)
+
+#     _, eigvecs = model.non_interacting_model.spectrum
+#     matrix_couplers = [
+#         np.multiply.outer(eigvecs[:, 0].conjugate(), eigvecs[:, k])
+#         for k in range(1,len(eigvecs[0, :]))
+#     ]
+
+#     for fc, mc in zip(free_couplers, matrix_couplers):
+#         fcm = fc.matrix(qubits=model.qubits)
+#         assert allclose_up_to_global_phase(fcm, mc)
+
+
+def test_bogo_creators():
+    model = FermiHubbardModel(
+        lattice_dimensions=(2, 2), tunneling=1, coulomb=2, n_electrons=[2, 2]
+    )
+
+    matrix = qutlet.utilities.fermion.get_bogoliubov_matrix(
+        of.get_fermion_operator(model.quadratic_terms), model.n_qubits
+    )
+
+    sector_matrix_up = matrix[::2, ::2]
+    _, eigvecs_up = np.linalg.eigh(sector_matrix_up)
+    sector_matrix_down = matrix[1::2, 1::2]
+    _, eigvecs_down = np.linalg.eigh(sector_matrix_down)
+
+    bogos_up = qutlet.utilities.fermion.get_bogo_fop(eigvecs_up.T, 0)
+    bogos_down = qutlet.utilities.fermion.get_bogo_fop(eigvecs_down.T, 1)
+
+    bogo_creators = qutlet.utilities.fermion.build_bogo_creators(
+        bogos_up, bogos_down, model.n_electrons
+    )
+
+    assert len(bogo_creators) == qutlet.utilities.fermion.get_fermionic_states_number(
+        model.n_electrons, model.n_qubits
+    )
+
+    free_energies, _ = model.non_interacting_model.spectrum
+
+    vacuum = np.zeros((2**model.n_qubits,))
+    vacuum[0] = 1
+
+    bogo_energies = np.zeros_like(free_energies)
+    for ind, bogo_creator in enumerate(bogo_creators):
+        slater_state = (
+            of.get_sparse_operator(bogo_creator, n_qubits=model.n_qubits).toarray()
+            @ vacuum
+        )
+        bogo_energies[ind] = model.non_interacting_model.statevector_expectation(
+            slater_state
+        )
+
+    assert np.isclose(np.sort(bogo_energies), free_energies).all()

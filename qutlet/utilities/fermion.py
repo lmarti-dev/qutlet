@@ -2,7 +2,7 @@ import itertools
 from typing import List, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import openfermion as of
-
+from cirq import PauliSum
 
 import scipy
 from qutlet.utilities.generic import sum_even, sum_odd, index_bits, binleftpad
@@ -387,7 +387,9 @@ def bogoprod(bogos: tuple[of.FermionOperator]):
     return fop_out
 
 
-def build_bogo_creators(bogos_up: list, bogos_down: list, n_electrons: list):
+def build_bogo_creators(
+    bogos_up: list, bogos_down: list, n_electrons: list
+) -> list[of.FermionOperator]:
     bogo_up_combs = list(itertools.combinations(bogos_up, n_electrons[0]))
     bogo_down_combs = list(itertools.combinations(bogos_down, n_electrons[1]))
     bogo_creators = []
@@ -421,26 +423,44 @@ def get_bogoliubov_matrix(fop: of.FermionOperator, n_qubits: int):
 
 
 def jw_get_free_couplers(
-    model: "FermionicModel", zero_index: int, max_k: int = -1, hc: bool = False
-):
+    model: "FermionicModel",
+    zero_index: int = 0,
+    max_k: int = -1,
+    add_hc: bool = False,
+    sort: bool = False,
+) -> list[PauliSum]:
+    """This creates the PauliSum corresponding to the Slater/free projectors/couplers: |psi_0><psi_k|
 
-    matrix = get_bogoliubov_matrix(model.fock_hamiltonian, model.n_qubits)
+    Args:
+        model (FermionicModel): the model from which to get the eigenstates
+        zero_index (int, optional): which eigenstate is the ground state. Defaults to 0.
+        max_k (int, optional): how many projector we should get. Defaults to -1.
+        add_hc (bool, optional): add the hermitian conjugate of the coupler (+ |psi_k><psi_0|) . Defaults to False.
 
-    sector_matrix = matrix[::2, ::2]
-    eigvals, eigvecs = np.linalg.eigh(sector_matrix)
+    Returns:
+        list[PauliSum]: the Slater couplers
+    """
+    fop = of.get_fermion_operator(model.quadratic_terms)
+    matrix = get_bogoliubov_matrix(fop, model.n_qubits)
 
-    bogos_up = get_bogo_fop(eigvecs.T, 0)
-    bogos_down = get_bogo_fop(eigvecs.T, 1)
+    sector_matrix_up = matrix[::2, ::2]
+    _, eigvecs_up = np.linalg.eigh(sector_matrix_up)
+    sector_matrix_down = matrix[1::2, 1::2]
+    _, eigvecs_down = np.linalg.eigh(sector_matrix_down)
+
+    bogos_up = get_bogo_fop(eigvecs_up.T, 0)
+    bogos_down = get_bogo_fop(eigvecs_down.T, 1)
 
     bogo_creators = build_bogo_creators(bogos_up, bogos_down, model.n_electrons)
 
     couplers = build_couplers_from_bogos(bogo_creators, zero_index, max_k)
     jw_couplers = []
     for coupler in couplers:
-
+        jw_coupler = of.normal_ordered(coupler)
         jw_coupler = of.jordan_wigner(coupler)
-        if hc:
+        if add_hc:
             jw_coupler += of.hermitian_conjugated(jw_coupler)
+
         jw_couplers.append(
             of.qubit_operator_to_pauli_sum(jw_coupler, qubits=model.qubits)
         )

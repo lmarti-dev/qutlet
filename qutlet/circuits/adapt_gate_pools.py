@@ -13,6 +13,7 @@ from qutlet.utilities import (
     qubits_shape,
     pauli_str_is_identity,
     jw_get_free_couplers,
+    make_pauli_sum_hermitian,
     pauli_sum_is_hermitian,
 )
 import abc
@@ -136,11 +137,6 @@ def exp_from_pauli_sum(pauli_sum: cirq.PauliSum, theta, use_circuit=False):
         # return [cirq.PauliSumExponential(pauli_sum_like=pstr,exponent=theta) for pstr in pauli_sum if not pauli_str_is_identity(pstr)]
 
 
-def get_psum_str_pstr(psum_str: str):
-    # get all pstr elements from the psum_str without plusses and minuses
-    return re.split("[+-]", re.sub("\s", "", psum_str))
-
-
 def split_psum_str(psum_str: str) -> list:
     """Splits a Pauli sum into a list of Pauli Strings
 
@@ -150,17 +146,12 @@ def split_psum_str(psum_str: str) -> list:
     Returns:
         list: the list of Pauli Strings
     """
-    return re.split("([+-])", re.sub("\s", "", psum_str))
+    return re.split(r"([+-])", re.sub("\s", "", psum_str))
 
 
-def len_psum_str(psum_str: str):
+def psum_str_locality(psum_str: str):
     pstrs = split_psum_str(psum_str=psum_str)
-    return max([len(s) for s in pstrs])
-
-
-def psum_str_qubit_req(psum_str: str):
-    pstrs = split_psum_str(psum_str=psum_str)
-    return sum([len(item) for item in pstrs if "+" not in item and "-" not in item])
+    return max([len(s.replace("I", "")) for s in pstrs])
 
 
 def process_psum_str(psum_str: str, qubits: list[cirq.Qid], coeff: float = 1):
@@ -168,7 +159,6 @@ def process_psum_str(psum_str: str, qubits: list[cirq.Qid], coeff: float = 1):
     pstrs = split_psum_str(psum_str=psum_str)
     psum = cirq.PauliSum()
     parity = 1
-    qubit_count = 0
     for item in pstrs:
         if "-" in item:
             parity = -1
@@ -176,9 +166,8 @@ def process_psum_str(psum_str: str, qubits: list[cirq.Qid], coeff: float = 1):
             parity = 1
         else:
             dps = cirq.DensePauliString(item, coefficient=coeff)
-            pstr = dps.on(*qubits[qubit_count : qubit_count + len(dps)])
+            pstr = dps.on(*qubits[: len(dps)])
             psum += parity * pstr
-            qubit_count += len(dps)
     return psum
 
 
@@ -249,62 +238,61 @@ class PauliSumListSet(ExponentiableGatePool):
         qubits: list[cirq.Qid],
         neighbour_order: int,
         psum_list: list[str],
-        k_locality: int,
         periodic: bool = False,
         diagonal: bool = True,
         anti_hermitian: bool = True,
-        coeff: float = 1,
+        coeff: Union[float, list] = 1,
     ):
+        if isinstance(coeff, float):
+            coeff = [coeff]
         pauli_list_set = []
         if anti_hermitian:
             coeff = 1j * np.abs(coeff)
         shape = qubits_shape(qubits)
         numrows, numcols = shape
-        for psum_str in psum_list:
-            for i in range(numcols * numrows):
-                # get the neighbours up to the order on the grid of the given shape
-                # do all the possible pauli strings combinations on this list of neighbours up to the given order
-                neighbours = grid_neighbour_list(
-                    i,
-                    shape,
-                    neighbour_order,
-                    periodic=periodic,
-                    diagonal=diagonal,
-                    origin="topleft",
+        all_neighbours = []
+        for i in range(numcols * numrows):
+            neighbours = grid_neighbour_list(
+                i,
+                shape,
+                neighbour_order,
+                periodic=periodic,
+                diagonal=diagonal,
+                origin="topleft",
+            )
+            if neighbours not in all_neighbours:
+                all_neighbours.append(neighbours)
+
+        for ind, psum_str in enumerate(psum_list):
+            # check each psum one by one
+            allowed_combs = []
+            for neighbours in all_neighbours:
+                combs = itertools.combinations(
+                    neighbours, r=psum_str_locality(psum_str)
                 )
-                # get the correct qubit combinations, without having the same qubit on the same pstr,
-                # such that you don't get spurrious multiplications, i.e X0X0 = I and
-                # adapt breaks.
-                # so you get all combs w/o reps for each pstr in the psum
-                # and then you product them quintuple for loop style
-                combs = itertools.product(
-                    *(
-                        itertools.combinations(range(len(neighbours)), len(pstr))
-                        for pstr in get_psum_str_pstr(psum_str)
-                    )
+                for comb in combs:
+                    if comb not in allowed_combs:
+                        allowed_combs.append(comb)
+
+            # get the correct qubit combinations, without having the same qubit on the same pstr,
+            # such that you don't get spurrious multiplications, i.e X0X0 = I and
+            # adapt breaks.
+            # so you get all combs w/o reps for each pstr in the psum
+            # and then you product them quintuple for loop style
+
+            for comb in set(allowed_combs):
+                pauli_sum_qubits = [qubits[c] for c in flatten(comb)]
+                processed_pauli_sum = process_psum_str(
+                    psum_str=psum_str,
+                    qubits=pauli_sum_qubits,
+                    coeff=coeff[ind % len(coeff)],
                 )
-                for comb in set(combs):
-                    if k_locality == "auto":
-                        n_qubits_req = len_psum_str(psum_str=psum_str)
-                    elif isinstance(k_locality, int):
-                        n_qubits_req = k_locality
-                    else:
-                        raise ValueError(
-                            'expected k-locality to be int or "auto", got {}'.format(
-                                k_locality
-                            )
-                        )
-                    if len(list(set(flatten(comb)))) <= n_qubits_req:
-                        pauli_sum_qubits = [qubits[c] for c in flatten(comb)]
-                        processed_pauli_sum = process_psum_str(
-                            psum_str=psum_str, qubits=pauli_sum_qubits, coeff=coeff
-                        )
-                        # if you pauli sum has cross terms XY-YX you might get a null term..
-                        # also remove the identity operators
-                        if not all(
-                            pauli_str_is_identity(pstr) for pstr in processed_pauli_sum
-                        ) and processed_pauli_sum != cirq.PauliSum(cirq.LinearDict({})):
-                            pauli_list_set.append(processed_pauli_sum)
+                # if you pauli sum has cross terms XY-YX you might get a null term..
+                # also remove the identity operators
+                if not all(
+                    pauli_str_is_identity(pstr) for pstr in processed_pauli_sum
+                ) and processed_pauli_sum != cirq.PauliSum(cirq.LinearDict({})):
+                    pauli_list_set.append(processed_pauli_sum)
         self._set_operator_pool(pauli_list_set)
 
 
@@ -489,10 +477,10 @@ def fermionic_fock_set(
 
 
 class FreeCouplersSet(ExponentiableGatePool):
-    def __init__(self, model: FermionicModel, set_options: dict):
+    def __init__(self, model: FermionicModel, set_options: dict = {}):
         if "zero_index" not in set_options:
             set_options["zero_index"] = 0
-        free_couplers = jw_get_free_couplers(model, **set_options, hc=True)
+        free_couplers = jw_get_free_couplers(model, **set_options, add_hc=True)
         free_couplers = [1j * coupler for coupler in free_couplers]
         self._set_operator_pool(free_couplers)
 
@@ -530,18 +518,16 @@ class QubitExcitationSet(PauliSumListSet):
         periodic: bool = False,
         diagonal: bool = True,
         anti_hermitian: bool = True,
-        coeff: float = 1,
     ):
 
         psum_list = ["XY-YX", "XYXX + YXXX + YYYX + YYXY - XXYX - XXXY - YXYY - XYYY"]
         super().__init__(
             qubits=qubits,
             neighbour_order=neighbour_order,
-            k_locality="auto",
             periodic=periodic,
             diagonal=diagonal,
             anti_hermitian=anti_hermitian,
-            coeff=coeff,
+            coeff=[1 / 2, 1 / 8],
             psum_list=psum_list,
         )
 

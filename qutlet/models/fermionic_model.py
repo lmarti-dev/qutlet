@@ -7,6 +7,7 @@ from openfermion import get_sparse_operator
 from scipy.sparse import csc_matrix
 
 from qutlet.models.fock_model import FockModel
+
 from qutlet.utilities import (
     bravyi_kitaev_fast_wrapper,
     flatten,

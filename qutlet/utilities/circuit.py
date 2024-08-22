@@ -17,6 +17,16 @@ if TYPE_CHECKING:
     from qutlet.models import QubitModel
 
 
+def conjugate(val: Union[cirq.PauliSum, cirq.PauliString]):
+    if isinstance(val, cirq.PauliString):
+        coeff = val.coefficient
+        return val.with_coefficient(np.real(coeff) - 1j * np.imag(coeff))
+    elif isinstance(val, cirq.PauliSum):
+        return cirq.PauliSum.from_pauli_strings([conjugate(pstr) for pstr in val])
+    else:
+        raise ValueError(f"Expected PauliString or PauliSum, got: {type(val)}")
+
+
 # courtesy of cirq
 def optimize_circuit(circuit, context=None, k=2):
     # Merge 2-qubit connected components into circuit operations.

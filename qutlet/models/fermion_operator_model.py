@@ -42,3 +42,11 @@ class FermionOperatorModel(FermionicModel):
         inst = cls(**dct["constructor_params"])
 
         return inst
+
+
+def quadratic_model(model: FermionicModel):
+    return FermionOperatorModel(model.quadratic_terms)
+
+
+def non_quadratic_model(model: FermionicModel):
+    return FermionOperatorModel(model.non_quadratic_terms)
