@@ -438,7 +438,7 @@ def default_value_handler(shape: tuple, value: Union[str, float, Iterable]):
     Returns:
         np.ndarray: array of specifeid default value
     """
-    if isinstance(value, float):
+    if isinstance(value, (float, int)):
         return np.full(shape=shape, fill_value=value)
     elif isinstance(value, (str, bytes)):
         if value == "zeros":

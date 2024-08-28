@@ -231,7 +231,10 @@ class ExponentiableGatePool(GatePool):
 
 
 class PauliSumListSet(ExponentiableGatePool):
-    """Provide a list of pauli sums in a string format, and get all possible exponentiable gates"""
+    """Provide a list of pauli sums in a string format, and get all possible exponentiable gates
+    In order to avoid an exploding number of gates, the indices are combinations, NOT products: they are not shuffled.
+    If you write XYZ you will not get X3Y2Z1 nor X2Y3Z1, only X1Y2Z3
+    """
 
     def __init__(
         self,

@@ -492,3 +492,48 @@ def subspace_size(n_qubits: int, n_electrons: list) -> int:
     return len(
         list(itertools.combinations(range(n_qubits // 2), n_electrons[0]))
     ) * len(list(itertools.combinations(range(n_qubits // 2), n_electrons[1])))
+
+
+def quadratic_hamiltonian_random_coefficients(
+    n_qubits: int, neighbour_order: int = None, spin: bool = True
+):
+    if neighbour_order is None:
+        neighbour_order = n_qubits
+    fop = of.FermionOperator()
+    for q in range(n_qubits):
+        if spin:
+            rr = range(q, np.min((q + neighbour_order, n_qubits)), 2)
+        else:
+            rr = range(q, np.min((q + neighbour_order, n_qubits)))
+        for qp in rr:
+            fop += of.FermionOperator(f"{q}^ {qp}", coefficient=np.random.rand())
+    fop += of.hermitian_conjugated(fop)
+    return fop
+
+
+def quartic_hamiltonian_random_coefficients(
+    n_qubits: int, neighbour_order: int = None, spin: bool = True
+):
+    if neighbour_order is None:
+        neighbour_order = n_qubits
+    fop = of.FermionOperator()
+    for q in range(n_qubits):
+        for qp in range(n_qubits):
+            for q2 in range(n_qubits):
+                for qp2 in range(n_qubits):
+                    # very ugly and inefficient but im lazy
+                    indices = np.array((q, qp, q2, qp2))
+                    largest_dist = np.max(np.abs(np.subtract.outer(indices, indices)))
+                    if largest_dist < neighbour_order:
+                        if not spin:
+                            fop += of.FermionOperator(
+                                f"{q}^ {qp}^ {q2}  {qp2}", coefficient=np.random.rand()
+                            )
+                        else:
+                            if (q == q2 and qp == qp2) or len(set(indices % 2)) == 1:
+                                fop += of.FermionOperator(
+                                    f"{q}^ {qp}^ {q2}  {qp2}",
+                                    coefficient=np.random.rand(),
+                                )
+    fop += of.hermitian_conjugated(fop)
+    return fop

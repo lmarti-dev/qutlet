@@ -107,6 +107,9 @@ class FermiHubbardModel(FermionicModel):
         ):
             raise NotImplementedError
 
+        if kwargs["n_electrons"] == "half-filling":
+            kwargs["n_electrons"] = list(lattice_dimensions)
+
         super().__init__(
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )

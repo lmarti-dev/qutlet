@@ -21,8 +21,10 @@ import itertools
 
 
 def stabilizer_renyi_entropy(
-    state: np.ndarray, n_qubits: int, alpha: float = 2
+    state: np.ndarray, n_qubits: int, alpha: float = 2, normalize: bool = True
 ) -> float:
+    # 1. Leone, L., Oliviero, S. F. E. & Hamma, A. Stabilizer R\’enyi Entropy. Phys. Rev. Lett. 128, 050402 (2022).
+    # if normalize is true, the stabilizer Rényi entropy is upper bounded by 1. (otherwise log(2**n))
 
     pauli_strings: list[PauliString] = []
     paulis = ["I", "X", "Y", "Z"]
@@ -41,10 +43,13 @@ def stabilizer_renyi_entropy(
 
         expectation_value /= dimension
         expectation_values.append(expectation_value)
-    return np.real(
+    entropy = np.real(
         (alpha / (1 - alpha)) * np.log(np.linalg.norm(expectation_values, ord=alpha))
         - np.log(dimension)
     )
+    if normalize:
+        entropy /= np.log(dimension)
+    return entropy
 
 
 def correlation_entropy(state: np.ndarray, n_electrons: list, n_qubits: int):
@@ -178,4 +183,9 @@ def max_slater_fidelity(model: "FermionicModel"):
 def molecular_complexity(geom):
     # https://www.nature.com/articles/s41598-018-37253-8
     geom = None  # noqa: F841
-    raise NotImplementedError
+    raise NotImplementedError("Haven't done this one yet (you can do it now)")
+
+
+def quantum_wasserstein_distance(rho: np.ndarray, sigma: np.ndarray):
+    # 1. Li, L., Bu, K., Koh, D. E., Jaffe, A. & Lloyd, S. Wasserstein Complexity of Quantum Circuits. Preprint at https://doi.org/10.48550/arXiv.2208.06306 (2022).
+    raise NotImplementedError("Haven't done this one yet either (you can do it now)")
