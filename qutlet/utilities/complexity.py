@@ -33,10 +33,15 @@ import itertools
 
 
 def stabilizer_renyi_entropy(
-    state: np.ndarray, n_qubits: int = None, alpha: float = 2, normalize: bool = True
+    state: np.ndarray,
+    n_qubits: int = None,
+    alpha: float = 2,
+    normalize: bool = True,
+    ignore_nonpositive_rho: bool = False,
 ) -> float:
     # 1. Leone, L., Oliviero, S. F. E. & Hamma, A. Stabilizer R\’enyi Entropy. Phys. Rev. Lett. 128, 050402 (2022).
     # if normalize is true, the stabilizer Rényi entropy is upper bounded by 1. (otherwise log(2**n))
+    # but this bound is loose...
 
     if n_qubits is None:
         n_qubits = int(np.log2(len(state)))
@@ -48,12 +53,19 @@ def stabilizer_renyi_entropy(
     qubits = LineQubit.range(n_qubits)
     for pauli_string in pauli_strings:
         pstr = DensePauliString(pauli_string).on(*qubits)
-        expectation_value = (
-            pstr.expectation_from_state_vector(
-                state, qubit_map={v: k for k, v in enumerate(qubits)}
+        # state vector
+        is_state_vector = len(state.shape) == 1
+        if is_state_vector:
+            e_fn = pstr.expectation_from_state_vector
+        else:
+            e_fn = pstr.expectation_from_density_matrix
+
+        if ignore_nonpositive_rho and not is_state_vector:
+            expectation_value = np.trace(pstr.matrix(qubits) @ state) ** 2
+        else:
+            expectation_value = (
+                e_fn(state, qubit_map={v: k for k, v in enumerate(qubits)}) ** 2
             )
-            ** 2
-        )
 
         expectation_value /= dimension
         expectation_values.append(expectation_value)
@@ -62,7 +74,10 @@ def stabilizer_renyi_entropy(
         - np.log(dimension)
     )
     if normalize:
-        entropy /= np.log(dimension)
+        if alpha == 2:
+            entropy /= np.log(dimension + 1) - np.log(2)
+        else:
+            entropy /= np.log(dimension)
     return entropy
 
 
@@ -211,10 +226,11 @@ def check_commute(b1: str, b2: str) -> int:
     d = {"00": "I", "01": "X", "10": "Z", "11": "Y"}
     pstr1 = []
     pstr2 = []
+    n_subsys_qubits = len(b1) // 2
     assert_bitstrings_same_len(b1, b2)
-    for ind in range(1, len(b1) // 2):
-        pstr1 += d[b1[2 * ind - 1] + b1[2 * ind]]
-        pstr2 += d[b2[2 * ind - 1] + b2[2 * ind]]
+    for ind in range(0, n_subsys_qubits):
+        pstr1 += d[b1[ind] + b1[ind + n_subsys_qubits]]
+        pstr2 += d[b2[ind] + b2[ind + n_subsys_qubits]]
     return 2 * (1 - int(commutes(DensePauliString(pstr1), DensePauliString(pstr2))))
 
 
