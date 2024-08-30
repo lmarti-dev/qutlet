@@ -1,9 +1,21 @@
 import numpy as np
 
 from openfermion import expectation, get_sparse_operator, FermionOperator
-from cirq import partial_trace, fidelity, DensePauliString, PauliString, LineQubit
+from cirq import (
+    partial_trace,
+    fidelity,
+    DensePauliString,
+    PauliString,
+    LineQubit,
+    Circuit,
+    commutes,
+    sample_state_vector,
+    CNOT,
+    H,
+)
 from qutlet.utilities.fermion import (
     jw_eigenspectrum_at_particle_number,
+    binleftpad,
     index_bits,
 )
 
@@ -21,11 +33,13 @@ import itertools
 
 
 def stabilizer_renyi_entropy(
-    state: np.ndarray, n_qubits: int, alpha: float = 2, normalize: bool = True
+    state: np.ndarray, n_qubits: int = None, alpha: float = 2, normalize: bool = True
 ) -> float:
     # 1. Leone, L., Oliviero, S. F. E. & Hamma, A. Stabilizer R\’enyi Entropy. Phys. Rev. Lett. 128, 050402 (2022).
     # if normalize is true, the stabilizer Rényi entropy is upper bounded by 1. (otherwise log(2**n))
 
+    if n_qubits is None:
+        n_qubits = int(np.log2(len(state)))
     pauli_strings: list[PauliString] = []
     paulis = ["I", "X", "Y", "Z"]
     pauli_strings = itertools.product(paulis, repeat=n_qubits)
@@ -136,8 +150,10 @@ def wedge_squared(u: np.ndarray, v: np.ndarray):
     return out
 
 
-def global_entanglement_wallach(state: np.ndarray, n_qubits: int):
+def global_entanglement_wallach(state: np.ndarray, n_qubits: int = None):
     # Global entanglement in multiparticle systems. Journal of Mathematical Physics 43, 4273–4278 (2002).
+    if n_qubits is None:
+        n_qubits = int(np.log2(len(state)))
     out = 0
     for n in range(n_qubits):
         out += wedge_squared(
@@ -189,3 +205,63 @@ def molecular_complexity(geom):
 def quantum_wasserstein_distance(rho: np.ndarray, sigma: np.ndarray):
     # 1. Li, L., Bu, K., Koh, D. E., Jaffe, A. & Lloyd, S. Wasserstein Complexity of Quantum Circuits. Preprint at https://doi.org/10.48550/arXiv.2208.06306 (2022).
     raise NotImplementedError("Haven't done this one yet either (you can do it now)")
+
+
+def check_commute(b1: str, b2: str) -> int:
+    d = {"00": "I", "01": "X", "10": "Z", "11": "Y"}
+    pstr1 = []
+    pstr2 = []
+    assert_bitstrings_same_len(b1, b2)
+    for ind in range(1, len(b1) // 2):
+        pstr1 += d[b1[2 * ind - 1] + b1[2 * ind]]
+        pstr2 += d[b2[2 * ind - 1] + b2[2 * ind]]
+    return 2 * (1 - int(commutes(DensePauliString(pstr1), DensePauliString(pstr2))))
+
+
+def bell_sample_state(state: np.ndarray, sampling_steps: int) -> np.ndarray:
+    # bipartite bell sample at half the qubits
+    n_qubits = int(np.log2(len(state)))
+    if n_qubits % 2 == 1:
+        raise ValueError("Can only Bell sample states with even number of qubits")
+    qubits = LineQubit.range(n_qubits)
+    circ = Circuit()
+    for q in range(n_qubits // 2):
+        circ += CNOT(qubits[q], qubits[q + n_qubits // 2])
+        circ += H(qubits[q])
+    return sample_state_vector(
+        circ.final_state_vector(initial_state=state),
+        repetitions=sampling_steps,
+        qid_shape=(2,) * n_qubits,
+        indices=list(range(n_qubits)),
+    )
+
+
+def assert_bitstrings_same_len(b1: str, b2: str) -> None:
+    if len(b1) != len(b2):
+        raise ValueError(
+            f"Expected bitstrings to have same length, got {len(b1)} and {len(b1)}"
+        )
+
+
+def bitwise_xor(b1: str, b2: str) -> None:
+    assert_bitstrings_same_len(b1, b2)
+    return binleftpad(int(b1, 2) ^ int(b2, 2), len(b1))
+
+
+def bell_magic(
+    state: np.ndarray, sampling_steps: int, resampling_steps: int = None
+) -> float:
+    # TOBIAS HAUG and M.S. KIM PRX QUANTUM 4, 010301 (2023)
+    if resampling_steps is None:
+        # most accurate possible
+        resampling_steps = 10 * sampling_steps
+        # resampling_steps = sampling_steps // 4
+    copy_state = np.kron(state, state)
+    b = 0
+    samples = bell_sample_state(copy_state, sampling_steps)
+    bitstrings = ["".join(item.astype(str)) for item in samples]
+    for nr in range(resampling_steps):
+        b1, b2, b3, b4 = np.random.choice(bitstrings, 4, replace=False)
+        b += check_commute(bitwise_xor(b1, b2), bitwise_xor(b3, b4))
+    b_norm = b / resampling_steps
+    return -np.log(1 - b_norm)

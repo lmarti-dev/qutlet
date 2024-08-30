@@ -1,11 +1,12 @@
 import itertools
-from typing import List, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, List, Tuple, Union
+
 import numpy as np
 import openfermion as of
+import scipy
 from cirq import PauliSum
 
-import scipy
-from qutlet.utilities.generic import sum_even, sum_odd, index_bits, binleftpad
+from qutlet.utilities.generic import binleftpad, index_bits, sum_even, sum_odd
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -502,13 +503,14 @@ def quadratic_hamiltonian_random_coefficients(
     fop = of.FermionOperator()
     for q in range(n_qubits):
         if spin:
-            rr = range(q, np.min((q + neighbour_order, n_qubits)), 2)
+            # skip opposite spin neightbour
+            rr = range(q, np.min((q + neighbour_order + 2, n_qubits)), 2)
         else:
-            rr = range(q, np.min((q + neighbour_order, n_qubits)))
+            rr = range(q, np.min((q + neighbour_order + 1, n_qubits)))
         for qp in rr:
             fop += of.FermionOperator(f"{q}^ {qp}", coefficient=np.random.rand())
     fop += of.hermitian_conjugated(fop)
-    return fop
+    return of.normal_ordered(fop)
 
 
 def quartic_hamiltonian_random_coefficients(
@@ -524,7 +526,12 @@ def quartic_hamiltonian_random_coefficients(
                     # very ugly and inefficient but im lazy
                     indices = np.array((q, qp, q2, qp2))
                     largest_dist = np.max(np.abs(np.subtract.outer(indices, indices)))
-                    if largest_dist < neighbour_order:
+                    if spin:
+                        # take into account the fact that the neighbours are one qubit further
+                        max_dist = neighbour_order + 2
+                    else:
+                        max_dist = neighbour_order + 1
+                    if largest_dist < max_dist:
                         if not spin:
                             fop += of.FermionOperator(
                                 f"{q}^ {qp}^ {q2}  {qp2}", coefficient=np.random.rand()
@@ -536,4 +543,25 @@ def quartic_hamiltonian_random_coefficients(
                                     coefficient=np.random.rand(),
                                 )
     fop += of.hermitian_conjugated(fop)
-    return fop
+    return of.normal_ordered(fop)
+
+
+def haar_random_state(n_qubits: int):
+    # thanks qiskit
+    # I assume this is indeed the haar measure
+    x = np.random.rand(2**n_qubits)
+    x += x == 0
+    x = -np.log(x)
+    sumx = sum(x)
+    phases = np.random.rand(2**n_qubits) * 2.0 * np.pi
+    return np.sqrt(x / sumx) * np.exp(1j * phases)
+
+
+def sample_on_random_states(
+    fn: Callable[[np.ndarray], float], n_qubits: int, n_samples: int = 100
+) -> float:
+    vals = np.zeros((n_samples,))
+    for ind in range(n_samples):
+        state = haar_random_state(n_qubits)
+        vals[ind] = fn(state)
+    return np.mean(vals), np.var(vals)
