@@ -579,3 +579,27 @@ def print_state_fidelity_to_eigenstates(
                 f"E_{ind:<{len(str(len(eigenenergies)))}}: fid: {np.abs(fid):.4f} gap: {np.abs(eigenenergy-eigenenergies[0]):.3f}"
             )
     print(f"sum fids {sum(eig_fids)}")
+
+
+def build_max_magic_state(n_qubits: int) -> np.ndarray:
+    """Build a density matrix which is as little a stabilizer state as possible
+
+    Args:
+        n_qubits (int): number of qubit
+
+    Returns:
+        np.ndarray: the density matrix
+    """
+    paulis = ["I", "X", "Y", "Z"]
+    pauli_strings = itertools.product(paulis, repeat=n_qubits)
+    qubits = cirq.LineQubit.range(n_qubits)
+    psum = cirq.PauliSum()
+    dim = 2**n_qubits
+    for pauli_string in pauli_strings:
+        if pauli_string != "I" * n_qubits:
+            psum += cirq.DensePauliString(pauli_string).on(*qubits) / (dim * (dim + 1))
+        else:
+            psum += cirq.DensePauliString(pauli_string).on(*qubits) / (dim)
+    rho = psum.matrix(qubits=qubits)
+    rho /= np.trace(rho)
+    return rho

@@ -10,25 +10,6 @@ from qutlet.utilities import (
     stabilizer_renyi_entropy,
 )
 
-import itertools
-from cirq import LineQubit, PauliSum, DensePauliString
-
-
-def build_max_magic_state(n_qubits):
-    paulis = ["I", "X", "Y", "Z"]
-    pauli_strings = itertools.product(paulis, repeat=n_qubits)
-    qubits = LineQubit.range(n_qubits)
-    psum = PauliSum()
-    dim = 2**n_qubits
-    for pauli_string in pauli_strings:
-        if pauli_string != "I" * n_qubits:
-            psum += DensePauliString(pauli_string).on(*qubits) / (dim * (dim + 1))
-        else:
-            psum += DensePauliString(pauli_string).on(*qubits) / (dim)
-    rho = psum.matrix(qubits=qubits)
-    rho /= np.trace(rho)
-    return rho
-
 
 @pytest.mark.parametrize(("which"), ["prod", "max"])
 def test_wallach_complexity(which):
@@ -68,11 +49,6 @@ def test_stabilizer_renyi_entropy(which):
         assert np.isclose(prod_renyi_entropy, 0)
 
     elif which == "max":
-        # this doesn't work because rho is nonpositive.
-        # but this is the only state for which I have an analytical value
-        # of the rényi entropy.
-        # what else can I test against..
-        # rho = build_max_magic_state(n_qubits)
         theta = np.arccos(1 / np.sqrt(3))
         rho = chained_matrix_multiplication(
             np.kron,
@@ -84,7 +60,7 @@ def test_stabilizer_renyi_entropy(which):
             ],
         )
         prod_renyi_entropy = stabilizer_renyi_entropy(
-            rho, n_qubits, alpha=2, normalize=False, ignore_nonpositive_rho=True
+            rho, n_qubits, alpha=2, normalize=False, ignore_nonpositive_rho=False
         )
         upper_bound = np.log(dim + 1) - np.log(2)
 

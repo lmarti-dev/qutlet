@@ -60,6 +60,8 @@ def stabilizer_renyi_entropy(
         else:
             e_fn = pstr.expectation_from_density_matrix
 
+        # in case you want to compute this on unphysical states for some reason
+        # due to the nonositive example in the paper above
         if ignore_nonpositive_rho and not is_state_vector:
             expectation_value = np.trace(pstr.matrix(qubits) @ state) ** 2
         else:
@@ -75,6 +77,7 @@ def stabilizer_renyi_entropy(
     )
     if normalize:
         if alpha == 2:
+            # tighter bound
             entropy /= np.log(dimension + 1) - np.log(2)
         else:
             entropy /= np.log(dimension)
@@ -120,12 +123,14 @@ def concurrence(rho: np.ndarray, n_qubits: int, idx: int):
     return np.sqrt(2 * (1 - np.trace(rho_m**2)))
 
 
-def global_entanglement(state: np.ndarray, n_qubits: int):
+def mwb_global_entanglement(state: np.ndarray, n_qubits: int):
+    # Love, P. J. et al. A characterization of global entanglement.
+    # mwb: Meyer-Wallach-Brennen
     rho = np.outer(state.T.conjugate(), state)
     concurrences = np.zeros(n_qubits)
     for idx in range(n_qubits):
         concurrences[idx] = concurrence(rho=rho, n_qubits=n_qubits, idx=idx)
-    return np.sum(concurrences)
+    return np.sum(concurrences) / n_qubits
 
 
 def int_to_int_via_bitstring_trunc(i: int, j: int, n_qubits: int, right_to_left: bool):
@@ -152,7 +157,6 @@ def inodotj(j: int, b: bool, state: np.ndarray, right_to_left: bool = False):
             i=ind, j=j, n_qubits=n_qubits, right_to_left=right_to_left
         )
         out_state[ind_out] += np.real(c * coeff)
-    # print(j, b, out_state)
     return out_state
 
 
