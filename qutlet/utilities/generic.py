@@ -600,4 +600,7 @@ def trace_norm(u1: np.ndarray, u2: np.ndarray):
 
 
 def to_json(obj: Any) -> dict:
-    return obj.__to_json__
+    if "__to_json__" in obj.__dict__:
+        return obj.__to_json__
+    else:
+        raise ValueError(f"{obj} does not have a __to_json__ method")
