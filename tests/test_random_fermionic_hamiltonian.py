@@ -6,4 +6,6 @@ import pytest
 def test_init_rfm(nq, no, to):
     for n_qubits in (3, 6, 8):
         for spin in (True, False):
-            _ = RandomFermionicModel(nq, no, to, spin=spin, n_electrons="half-filling")
+            _ = RandomFermionicModel(
+                nq, no, to, is_spin_conserved=spin, n_electrons="half-filling"
+            )
