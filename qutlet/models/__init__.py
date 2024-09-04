@@ -7,7 +7,7 @@ from qutlet.models.fermion_operator_model import (
     quadratic_model,
     non_quadratic_model,
 )
-from qutlet.models.qubit_model import QubitModel, to_json
+from qutlet.models.qubit_model import QubitModel
 
 __all__ = [
     "FockModel",
@@ -16,7 +16,6 @@ __all__ = [
     "FermiHubbardModel",
     "FermionOperatorModel",
     "QubitModel",
-    "to_json",
     "quadratic_model",
     "non_quadratic_model",
 ]
