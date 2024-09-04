@@ -107,9 +107,6 @@ class FermiHubbardModel(FermionicModel):
         ):
             raise NotImplementedError
 
-        if kwargs["n_electrons"] == "half-filling":
-            kwargs["n_electrons"] = list(lattice_dimensions)
-
         super().__init__(
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )
@@ -158,22 +155,16 @@ class FermiHubbardModel(FermionicModel):
             n_electrons=self.n_electrons,
         )
 
+    @property
     def __to_json__(self) -> dict:
         return {
-            "constructor_params": {
-                "dimensions": self.lattice_dimensions,
-                "n_electrons": self.n_electrons,
-                "tunneling": self.tunneling,
-                "coulomb": self.coulomb,
-                "periodic": self.periodic,
-                "encoding_options": self.encoding_options,
-            },
+            "dimensions": self.lattice_dimensions,
+            "n_electrons": self.n_electrons,
+            "tunneling": self.tunneling,
+            "coulomb": self.coulomb,
+            "periodic": self.periodic,
+            "encoding_options": self.encoding_options,
         }
-
-    @classmethod
-    def from_dict(cls, dct: dict):
-        inst = cls(**dct["constructor_params"])
-        return inst
 
     @property
     def coulomb_model(self):

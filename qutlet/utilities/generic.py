@@ -1,6 +1,6 @@
 from datetime import datetime
 from itertools import chain, combinations
-from typing import Iterable, Union
+from typing import Iterable, Union, Any
 
 import numpy as np
 import re
@@ -597,3 +597,7 @@ def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False) -> str:
 def trace_norm(u1: np.ndarray, u2: np.ndarray):
     d = u1 - u2
     return np.abs(np.trace(np.sqrt(np.matmul(np.transpose(np.conjugate(d)), d))))
+
+
+def to_json(obj: Any) -> dict:
+    return obj.__to_json__

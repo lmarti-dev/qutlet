@@ -1,7 +1,7 @@
 from qutlet.utilities import default_value_handler
 
 from scipy.optimize import OptimizeResult, minimize
-from typing import Dict, Iterable, Union, Tuple, Any
+from typing import Iterable, Union, Tuple
 from qutlet.circuits.ansatz import Ansatz
 import numpy as np
 
@@ -94,17 +94,11 @@ class ScipyOptimisers:
         else:
             return result, None
 
-    def __to_json__(self) -> Dict:
+    @property
+    def __to_json__(self) -> dict:
         return {
-            "constructor_params": {
-                "ansatz": self.ansatz,
-                "objective": self._objective,
-                "minimize_options": self._minimize_options,
-                "method_options": self._method_options,
-            },
-            "sim_data": self.sim_data,
+            "ansatz": self.ansatz,
+            "objective": self._objective,
+            "minimize_options": self._minimize_options,
+            "method_options": self._method_options,
         }
-
-    @classmethod
-    def from_dict(cls, dct) -> Dict:
-        return cls(**dct["constructor_params"])

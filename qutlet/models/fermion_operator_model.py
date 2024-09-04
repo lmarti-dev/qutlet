@@ -18,8 +18,7 @@ class FermionOperatorModel(FermionicModel):
                 "Expected a FermionOperator, got: {}".format(type(fermion_operator))
             )
         self.fermion_operator = fermion_operator
-        if encoding_options is None:
-            encoding_options = {"encoding_name": "jordan_wigner"}
+
         if qubit_shape is None:
             qubit_shape = fermion_op_sites_number(fermion_operator)
         super().__init__(
@@ -29,19 +28,12 @@ class FermionOperatorModel(FermionicModel):
     def _set_fock_hamiltonian(self) -> of.SymbolicOperator:
         self.fock_hamiltonian = self.fermion_operator
 
-    def __to_json__(self) -> Dict:
+    @property
+    def __to_json__(self) -> dict:
         return {
-            "constructor_params": {
-                "fermion_operator": self.fermion_operator,
-                "encoding_options": self.encoding_options,
-            },
+            "fermion_operator": self.fermion_operator,
+            "encoding_options": self.encoding_options,
         }
-
-    @classmethod
-    def from_dict(cls, dct: Dict):
-        inst = cls(**dct["constructor_params"])
-
-        return inst
 
 
 def quadratic_model(model: FermionicModel):

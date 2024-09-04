@@ -37,10 +37,12 @@ class QubitModel(abc.ABC):
     def qid_shape(self):
         return (2,) * self.n_qubits
 
-    def set_target_state(self, state: np.ndarray):
-        self.target_state = state
-
+    @abc.abstractmethod
     def _set_hamiltonian(self):
+        raise NotImplementedError()  # pragma: no cover
+
+    @abc.abstractmethod
+    def __to_json__(self):
         raise NotImplementedError()  # pragma: no cover
 
     def statevector_expectation(self, state_vector: np.ndarray) -> float:
@@ -60,7 +62,3 @@ class QubitModel(abc.ABC):
             raise ValueError(
                 "state_vector shape mismatch: {}".format(state_vector.shape)
             )
-
-
-def to_json(obj: Any) -> dict:
-    return obj.__to_json__()

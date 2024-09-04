@@ -23,9 +23,6 @@ class DummyQubitModel(QubitModel):
     def __to_json__(self) -> Dict:
         pass
 
-    def from_dict(self):
-        pass
-
 
 def test_init():
     qm = DummyQubitModel(qubits=(2, 5))

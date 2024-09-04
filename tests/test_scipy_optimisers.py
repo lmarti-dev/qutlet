@@ -44,12 +44,6 @@ class DummyModel(QubitModel):
         wf[0] = 1
         return wf
 
-    def from_dict(self):
-        pass
-
-    def __to_json__(self):
-        pass
-
 
 def test_init():
     minimize_options = {"method": "Powell"}
@@ -63,9 +57,9 @@ def test_init():
         method_options=method_options,
         minimize_options=minimize_options,
     )
-    json = optimiser.__to_json__()
+    json = optimiser.__to_json__
 
-    optimiser2 = optimiser.from_dict(json)
+    optimiser2 = optimiser(**json)
     assert optimiser == optimiser2
 
 

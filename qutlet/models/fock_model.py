@@ -5,7 +5,7 @@ import openfermion as of
 from qutlet.models.qubit_model import QubitModel
 
 
-class FockModel(QubitModel):
+class FockModel(QubitModel, abc.ABC):
     r"""
     Implements a class that can run VQEs on occupation basis hamiltonians
 
@@ -35,6 +35,8 @@ class FockModel(QubitModel):
     ):
         super().__init__(qubit_shape=qubit_shape)
         self.fock_hamiltonian: of.SymbolicOperator = None
+        if encoding_options is None:
+            encoding_options = {"encoding_name": "jordan_wigner"}
         self.encoding_options = encoding_options
 
         # get the fock hamiltonian

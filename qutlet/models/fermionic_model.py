@@ -13,10 +13,12 @@ from qutlet.utilities import (
     flatten,
     jw_eigenspectrum_at_particle_number,
     jw_spin_correct_indices,
+    hamming_weight,
 )
+import abc
 
 
-class FermionicModel(FockModel):
+class FermionicModel(FockModel, abc.ABC):
     """
     Fock model subclass that implements fermionic operators,
     i.e creators and annihilators which follow anticommutation rules.
@@ -29,6 +31,13 @@ class FermionicModel(FockModel):
     def __init__(self, n_electrons: list, **kwargs):
         # Number of fermions present in the system, initialized with the set_initial_state method
         # can be int or tuple of two ints with spin up and down fermions
+        if n_electrons in ("half-filling", "hf"):
+            n_electrons = [
+                int(np.ceil(np.prod(kwargs["qubit_shape"]) / 4)),
+                int(np.floor(np.prod(kwargs["qubit_shape"]) / 4)),
+            ]
+        elif n_electrons in ("hf-no-spin", "half-filling-no-spin"):
+            n_electrons = int(np.prod(kwargs["qubit_shape"])) / 2
         self.n_electrons = n_electrons
         super().__init__(**kwargs)
         # not set at the start so that we don't slow down things.
