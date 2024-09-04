@@ -13,7 +13,6 @@ from qutlet.utilities import (
     flatten,
     jw_eigenspectrum_at_particle_number,
     jw_spin_correct_indices,
-    hamming_weight,
 )
 import abc
 

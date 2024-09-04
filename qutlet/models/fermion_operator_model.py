@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from typing import Union
 import openfermion as of
 from qutlet.utilities import fermion_op_sites_number
 
