@@ -15,8 +15,11 @@ class RandomFermionicModel(FermionicModel):
         term_order: int = 2,
         is_spin_conserved: bool = True,
         encoding_options: dict = None,
+        init_coefficients: list = None,
         **kwargs,
     ):
+        if init_coefficients is None:
+            init_coefficients = ("random",) * term_order
         if term_order not in [1, 2]:
             raise ValueError(
                 f"Expected neighbour_order to be 1 or 2, got: {neighbour_order}"
@@ -24,22 +27,24 @@ class RandomFermionicModel(FermionicModel):
         self.neighbour_order = neighbour_order
         self.term_order = term_order
         self.is_spin_conserved = is_spin_conserved
-        qubit_shape = (1, n_qubits)
+        self.init_coefficients = init_coefficients
         super().__init__(
-            qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
+            qubit_shape=(1, n_qubits), encoding_options=encoding_options, **kwargs
         )
 
     def _set_fock_hamiltonian(self) -> SymbolicOperator:
         self.fock_hamiltonian = quadratic_hamiltonian_random_coefficients(
             n_qubits=self.n_qubits,
             neighbour_order=self.neighbour_order,
-            spin=self.is_spin_conserved,
+            is_spin_conserved=self.is_spin_conserved,
+            coefficient=self.init_coefficients[0],
         )
         if self.term_order > 1:
             self.fock_hamiltonian += quartic_hamiltonian_random_coefficients(
                 n_qubits=self.n_qubits,
                 neighbour_order=self.neighbour_order,
-                spin=self.is_spin_conserved,
+                is_spin_conserved=self.is_spin_conserved,
+                coefficient=self.init_coefficients[1],
             )
 
     @property

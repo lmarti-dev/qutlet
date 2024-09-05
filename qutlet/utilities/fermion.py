@@ -6,7 +6,13 @@ import openfermion as of
 import scipy
 from cirq import PauliSum
 
-from qutlet.utilities.generic import binleftpad, index_bits, sum_even, sum_odd
+from qutlet.utilities.generic import (
+    binleftpad,
+    index_bits,
+    sum_even,
+    sum_odd,
+    default_value_handler,
+)
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -496,26 +502,39 @@ def subspace_size(n_qubits: int, n_electrons: list) -> int:
 
 
 def quadratic_hamiltonian_random_coefficients(
-    n_qubits: int, neighbour_order: int = None, spin: bool = True
+    n_qubits: int,
+    neighbour_order: int = None,
+    is_spin_conserved: bool = True,
+    coefficient=None,
 ):
+    if coefficient is None:
+        coefficient = "random"
+
     if neighbour_order is None:
         neighbour_order = n_qubits
     fop = of.FermionOperator()
     for q in range(n_qubits):
-        if spin:
+        if is_spin_conserved:
             # skip opposite spin neightbour
             rr = range(q, np.min((q + neighbour_order + 2, n_qubits)), 2)
         else:
             rr = range(q, np.min((q + neighbour_order + 1, n_qubits)))
         for qp in rr:
-            fop += of.FermionOperator(f"{q}^ {qp}", coefficient=np.random.rand())
+            fop += of.FermionOperator(
+                f"{q}^ {qp}", coefficient=default_value_handler(1, coefficient)[0]
+            )
     fop += of.hermitian_conjugated(fop)
     return of.normal_ordered(fop)
 
 
 def quartic_hamiltonian_random_coefficients(
-    n_qubits: int, neighbour_order: int = None, spin: bool = True
+    n_qubits: int,
+    neighbour_order: int = None,
+    is_spin_conserved: bool = True,
+    coefficient=None,
 ):
+    if coefficient is None:
+        coefficient = "random"
     if neighbour_order is None:
         neighbour_order = n_qubits
     fop = of.FermionOperator()
@@ -526,21 +545,24 @@ def quartic_hamiltonian_random_coefficients(
                     # very ugly and inefficient but im lazy
                     indices = np.array((q, qp, q2, qp2))
                     largest_dist = np.max(np.abs(np.subtract.outer(indices, indices)))
-                    if spin:
+                    if is_spin_conserved:
                         # take into account the fact that the neighbours are one qubit further
                         max_dist = neighbour_order + 2
                     else:
                         max_dist = neighbour_order + 1
                     if largest_dist < max_dist:
-                        if not spin:
+                        if not is_spin_conserved:
                             fop += of.FermionOperator(
-                                f"{q}^ {qp}^ {q2}  {qp2}", coefficient=np.random.rand()
+                                f"{q}^ {qp}^ {q2}  {qp2}",
+                                coefficient=default_value_handler(1, coefficient)[0],
                             )
                         else:
                             if (q == q2 and qp == qp2) or len(set(indices % 2)) == 1:
                                 fop += of.FermionOperator(
                                     f"{q}^ {qp}^ {q2}  {qp2}",
-                                    coefficient=np.random.rand(),
+                                    coefficient=default_value_handler(1, coefficient)[
+                                        0
+                                    ],
                                 )
     fop += of.hermitian_conjugated(fop)
     return of.normal_ordered(fop)

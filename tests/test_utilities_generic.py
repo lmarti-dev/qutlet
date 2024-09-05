@@ -476,22 +476,27 @@ def test_hamming_weight_error():
         ((2, 2), "zeros", np.zeros(shape=(2, 2))),
         ((1, 1), "ones", np.ones(shape=(1, 1))),
         ((3, 3), "random", np.random.rand(3, 3)),
-        ((10, 10), "zoink", None),
+        ((10, 10), "r[0,1]", None),
+        (3, "zeros", [0, 0, 0]),
+        (1, 3.0, 3),
     ],
 )
 def test_default_value_handler(shape, value, correct):
-    if value == "random":
-        assert (
-            qutlet.utilities.generic.default_value_handler(shape, value).shape
-            == np.array(shape)
-        ).all()
-    elif value in ["zeros", "ones"] or isinstance(value, float):
-        assert (
-            qutlet.utilities.generic.default_value_handler(shape, value) == correct
-        ).all()
-    else:
-        with pytest.raises(ValueError):
-            qutlet.utilities.generic.default_value_handler(shape, value)
+    val = qutlet.utilities.generic.default_value_handler(shape, value)
+    assert (val.shape == np.array(shape)).all()
+    if value in ["zeros", "ones"] or isinstance(value, (float, int)):
+        assert (val == correct).all()
+
+
+@pytest.mark.parametrize(
+    "shape,value",
+    [
+        ((10, 10), "zoink"),
+    ],
+)
+def test_default_value_handler_error(shape, value):
+    with pytest.raises(ValueError):
+        _ = qutlet.utilities.generic.default_value_handler(shape, value)
 
 
 @pytest.mark.parametrize(
