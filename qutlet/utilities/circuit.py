@@ -603,3 +603,12 @@ def build_max_magic_state(n_qubits: int) -> np.ndarray:
     rho = psum.matrix(qubits=qubits)
     rho /= np.trace(rho)
     return rho
+
+
+def pauli_neighbour_order(pstr: cirq.PauliString):
+    qs = pstr.qubits
+    if not all(isinstance(q, cirq.LineQubit) for q in qs):
+        raise ValueError(f"Expected LineQubit, got: {type(qs)}")
+    if len(qs):
+        return np.abs(max(qs).x - min(qs).x)
+    return 0

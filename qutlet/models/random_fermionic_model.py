@@ -55,4 +55,5 @@ class RandomFermionicModel(FermionicModel):
             "term_order": self.term_order,
             "spin": self.is_spin_conserved,
             "encoding_options": self.encoding_options,
+            "init_coefficients": self.init_coefficients,
         }

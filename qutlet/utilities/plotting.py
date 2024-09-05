@@ -12,6 +12,8 @@ from qutlet.utilities.complexity import (
     stabilizer_renyi_entropy,
 )
 
+from qutlet.utilities.circuit import pauli_neighbour_order
+
 import io
 from cirq.contrib.svg import circuit_to_svg
 from cirq import Circuit
@@ -160,3 +162,46 @@ def save_circuit_svg(circuit: Circuit, filepath: str):
     fstream = io.open(filepath, "w+", encoding="utf8")
     fstream.write(svg)
     fstream.close()
+
+
+def get_integer_bins(data: np.ndarray) -> np.ndarray:
+
+    d = np.min(np.diff(np.unique(data)))
+    left_of_first_bin = np.min(data) - float(d) / 2
+    right_of_last_bin = np.max(data) + float(d) / 2
+
+    bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
+    return bins
+
+
+def plot_model_weighted_locality_histogram(model: "FermionicModel"):
+    p_locs = []
+    k_locs = []
+    w_p_locs = []
+    w_k_locs = []
+    for pstr in model.hamiltonian:
+        p_loc = pauli_neighbour_order(pstr)
+        if p_loc != 0:
+            p_locs.append(p_loc)
+            w_p_locs.append(np.abs(pstr.coefficient))
+        if len(pstr.qubits):
+            k_locs.append(len(pstr.qubits))
+            w_k_locs.append(np.abs(pstr.coefficient))
+
+    no_counts, no_bins = np.histogram(
+        p_locs, bins=get_integer_bins(p_locs), density=True, weights=w_p_locs
+    )
+
+    k_counts, k_bins = np.histogram(
+        k_locs, bins=get_integer_bins(k_locs), density=True, weights=w_k_locs
+    )
+
+    fig, axes = plt.subplots(ncols=2)
+
+    axes[0].stairs(no_counts, no_bins, fill=True)
+    axes[0].set_xlabel("Neighbour order")
+    axes[0].set_ylabel("Weighted normalized amount")
+
+    axes[1].stairs(k_counts, k_bins, fill=True)
+    axes[1].set_xlabel("K-locality")
+    return fig
