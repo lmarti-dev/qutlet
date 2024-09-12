@@ -1,3 +1,4 @@
+import abc
 from typing import Union
 
 import cirq
@@ -7,14 +8,12 @@ from openfermion import get_sparse_operator
 from scipy.sparse import csc_matrix
 
 from qutlet.models.fock_model import FockModel
-
 from qutlet.utilities import (
     bravyi_kitaev_fast_wrapper,
     flatten,
     jw_eigenspectrum_at_particle_number,
     jw_spin_correct_indices,
 )
-import abc
 
 
 class FermionicModel(FockModel, abc.ABC):
@@ -36,8 +35,12 @@ class FermionicModel(FockModel, abc.ABC):
                 int(np.floor(np.prod(kwargs["qubit_shape"]) / 4)),
             ]
         elif n_electrons in ("hf-no-spin", "half-filling-no-spin"):
-            n_electrons = int(np.prod(kwargs["qubit_shape"])) / 2
+            n_electrons = int(np.prod(kwargs["qubit_shape"]) // 2)
         self.n_electrons = n_electrons
+        if isinstance(self.n_electrons, int):
+            self.spin = False
+        else:
+            self.spin = True
         super().__init__(**kwargs)
         # not set at the start so that we don't slow down things.
         self.eig_energies = None
@@ -115,7 +118,11 @@ class FermionicModel(FockModel, abc.ABC):
 
     def hamiltonian_spin_and_number_operator(self):
         n_qubits = of.count_qubits(self.fock_hamiltonian)
-        return self.spin_and_number_operator(n_qubits=n_qubits)
+        if self.spin:
+            return self.spin_and_number_operator(n_qubits=n_qubits)
+        else:
+            _, _, n_total_op = self.spin_and_number_operator(n_qubits=n_qubits)
+            return n_total_op
 
     def get_encoded_terms(self, anti_hermitian: bool) -> "list[cirq.PauliSum]":
         operators = self.fock_hamiltonian.get_operators()
@@ -163,6 +170,7 @@ class FermionicModel(FockModel, abc.ABC):
                 sparse_operator=get_sparse_operator(self.fock_hamiltonian),
                 particle_number=self.n_electrons,
                 expanded=True,
+                spin=self.spin,
             )
         return self.eig_energies, self.eig_states
 
@@ -174,6 +182,7 @@ class FermionicModel(FockModel, abc.ABC):
                     sparse_operator=get_sparse_operator(self.fock_hamiltonian),
                     particle_number=self.n_electrons,
                     expanded=False,
+                    spin=self.spin,
                 )
             )
         return self.ss_eig_energies, self.ss_eig_states
@@ -185,9 +194,11 @@ class FermionicModel(FockModel, abc.ABC):
     @property
     def subspace_hamiltonian_matrix(self):
         ham_mat = self.hamiltonian_matrix
-        idx = jw_spin_correct_indices(
-            n_electrons=self.n_electrons, n_qubits=self.n_qubits
-        )
+        if self.spin:
+            idx_fn = jw_spin_correct_indices
+        else:
+            idx_fn = of.jw_number_indices
+        idx = idx_fn(n_electrons=self.n_electrons, n_qubits=self.n_qubits)
         return ham_mat[np.ix_(idx, idx)]
 
     def diagonalize_non_interacting_hamiltonian(self):

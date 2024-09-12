@@ -434,7 +434,6 @@ def jw_get_free_couplers(
     zero_index: int = 0,
     max_k: int = -1,
     add_hc: bool = False,
-    sort: bool = False,
 ) -> list[PauliSum]:
     """This creates the PauliSum corresponding to the Slater/free projectors/couplers: |psi_0><psi_k|
 

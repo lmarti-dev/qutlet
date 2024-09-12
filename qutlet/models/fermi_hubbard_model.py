@@ -111,7 +111,7 @@ class FermiHubbardModel(FermionicModel):
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )
 
-    def _set_fock_hamiltonian(self, reset: bool = True):
+    def _set_fock_hamiltonian(self):
         """This function sets the fock hamiltonian from the fermihubbard function in open fermion
 
         the fermi_hubbard function from openfermion represents the hamiltonian in a 1D array,
@@ -127,12 +127,7 @@ class FermiHubbardModel(FermionicModel):
         0   1   2   3   4   5     6   7   8   9   10  11    12  13  14  15  16  17
         u11 d11 u12 d12 u13 d13 / u21 d21 u22 d22 u23 d23 / u31 d31 u32 d32 u33 d33
 
-        Args:
-            reset (bool, optional): Whether to reset the Hamiltonian to an empty FermionOperator. Defaults to True.
         """
-
-        if reset:
-            self.fock_hamiltonian = of.FermionOperator()
         self.fock_hamiltonian = fermi_hubbard(
             lattice_dimensions=self.lattice_dimensions,
             tunneling=self.tunneling,
