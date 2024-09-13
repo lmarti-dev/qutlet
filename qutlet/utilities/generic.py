@@ -6,6 +6,10 @@ import numpy as np
 import re
 
 
+def gaussian_envelope(mu: float, sigma: float, n_steps: int):
+    return np.exp(-((np.linspace(-1, 1, n_steps) - mu) ** 2) / (2 * sigma**2))
+
+
 def now_str() -> str:  # pragma: no cover
     """Returns the current date up to the second as a string under the format YYYY-MM-DD-hh-mm-ss
     Returns:
