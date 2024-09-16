@@ -35,6 +35,10 @@ class FermionOperatorModel(FermionicModel):
             "encoding_options": self.encoding_options,
         }
 
+    @property
+    def non_interacting_model(self):
+        return quadratic_model(self)
+
 
 def quadratic_model(model: FermionicModel):
     return FermionOperatorModel(model.quadratic_terms)
