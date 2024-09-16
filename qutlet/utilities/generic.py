@@ -6,8 +6,13 @@ import numpy as np
 import re
 
 
-def gaussian_envelope(mu: float, sigma: float, n_steps: int):
-    return np.exp(-((np.linspace(-1, 1, n_steps) - mu) ** 2) / (2 * sigma**2))
+def gaussian_envelope(mu: float, sigma: float, n_steps: int, normalize: bool = True):
+    g = (1 / np.sqrt(2 * np.pi * (sigma**2))) * np.exp(
+        -((np.linspace(-1, 1, n_steps) - mu) ** 2) / (2 * sigma**2)
+    )
+    if normalize:
+        g /= np.max(g)
+    return g
 
 
 def now_str() -> str:  # pragma: no cover
