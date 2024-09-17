@@ -8,11 +8,12 @@ from cirq import PauliSum, LineQubit
 class QubitModel(abc.ABC):
     def __init__(self, qubit_shape: Union[Iterable, int]):
         super().__init__()
+        self.qubit_shape = None
         if isinstance(qubit_shape, Iterable):
-            self.shape = qubit_shape
+            self.qubit_shape = qubit_shape
             self.n_qubits = int(np.prod(qubit_shape))
         elif isinstance(qubit_shape, int):
-            self.shape = (1, qubit_shape)
+            self.qubit_shape = (1, qubit_shape)
             self.n_qubits = qubit_shape
         else:
             raise TypeError(f"Expected iterable or int, got {type(qubit_shape)}")
@@ -21,7 +22,9 @@ class QubitModel(abc.ABC):
 
     def __getitem__(self, idx):
         if isinstance(idx, tuple):
-            return self.qubits[np.ravel_multi_index(multi_index=idx, dims=self.shape)]
+            return self.qubits[
+                np.ravel_multi_index(multi_index=idx, dims=self.qubit_shape)
+            ]
         else:
             return self.qubits[idx]
 

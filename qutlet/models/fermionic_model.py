@@ -164,6 +164,14 @@ class FermionicModel(FockModel, abc.ABC):
             return eig_energies[0], eig_states[:, 0]
 
     @property
+    def subspace_gs(self):
+        if self.ss_eig_energies is not None and self.ss_eig_states is not None:
+            return self.ss_eig_energies[0], self.ss_eig_states[:, 0]
+        else:
+            ss_eig_energies, ss_eig_states = self.subspace_spectrum
+            return ss_eig_energies[0], ss_eig_states[:, 0]
+
+    @property
     def spectrum(self):
         if self.eig_energies is None or self.eig_states is None:
             self.eig_energies, self.eig_states = jw_eigenspectrum_at_particle_number(

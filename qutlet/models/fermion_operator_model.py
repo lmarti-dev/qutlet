@@ -36,13 +36,21 @@ class FermionOperatorModel(FermionicModel):
         }
 
     @property
-    def non_interacting_model(self):
+    def non_interacting_model(self) -> "FermionOperatorModel":
         return quadratic_model(self)
 
 
-def quadratic_model(model: FermionicModel):
-    return FermionOperatorModel(model.quadratic_terms)
+def quadratic_model(model: FermionicModel) -> FermionOperatorModel:
+    return FermionOperatorModel(
+        of.get_fermion_operator(model.quadratic_terms),
+        n_electrons=model.n_electrons,
+        qubit_shape=model.qubit_shape,
+    )
 
 
-def non_quadratic_model(model: FermionicModel):
-    return FermionOperatorModel(model.non_quadratic_terms)
+def non_quadratic_model(model: FermionicModel) -> FermionOperatorModel:
+    return FermionOperatorModel(
+        of.get_fermion_operator(model.non_quadratic_terms),
+        n_electrons=model.n_electrons,
+        qubit_shape=model.qubit_shape,
+    )
