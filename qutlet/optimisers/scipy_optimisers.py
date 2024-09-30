@@ -73,6 +73,7 @@ class ScipyOptimisers:
         self,
         initial_params: Union[str, float, Iterable],
         initial_state: np.ndarray = None,
+        **kwargs
     ) -> Tuple[OptimizeResult, Union[None, dict]]:
         x0 = default_value_handler(
             shape=(self.ansatz.n_symbols,),
@@ -85,10 +86,10 @@ class ScipyOptimisers:
             **self._minimize_options,
             options=self._method_options,
             callback=self.callback,
-            # bounds=[(-np.pi, np.pi) for _ in range(len(self.ansatz.symbols))],
+            **kwargs
         )
         print("function calls: ", self._function_calls_count)
-        self.ansatz.params = result["x"]
+        self.ansatz.params = list(result["x"])
         if self.save_sim_data:
             return result, self.sim_data
         else:

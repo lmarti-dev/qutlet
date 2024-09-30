@@ -15,6 +15,18 @@ def gaussian_envelope(mu: float, sigma: float, n_steps: int, normalize: bool = T
     return g
 
 
+def gaussian_weighted_sum(
+    items: list, sigma: float = 0.15, left: float = 0.1, right: float = 0.9, n_out=None
+) -> list:
+    if n_out is None:
+        n_out = len(items)
+    items = [
+        sum([x * w for x, w in zip(items, gaussian_envelope(mu, 0.15, len(items)))])
+        for mu in np.linspace(left, right, n_out)
+    ]
+    return items
+
+
 def now_str() -> str:  # pragma: no cover
     """Returns the current date up to the second as a string under the format YYYY-MM-DD-hh-mm-ss
     Returns:
