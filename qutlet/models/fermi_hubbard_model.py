@@ -141,16 +141,6 @@ class FermiHubbardModel(FermionicModel):
             self.fock_hamiltonian = of.FermionOperator.identity()
 
     @property
-    def non_interacting_model(self):
-        return FermiHubbardModel(
-            lattice_dimensions=self.lattice_dimensions,
-            tunneling=self.tunneling,
-            coulomb=0.0,
-            encoding_options=self.encoding_options,
-            n_electrons=self.n_electrons,
-        )
-
-    @property
     def __to_json__(self) -> dict:
         return {
             "dimensions": self.lattice_dimensions,
@@ -160,6 +150,16 @@ class FermiHubbardModel(FermionicModel):
             "periodic": self.periodic,
             "encoding_options": self.encoding_options,
         }
+
+    @property
+    def non_interacting_model(self):
+        return FermiHubbardModel(
+            lattice_dimensions=self.lattice_dimensions,
+            tunneling=self.tunneling,
+            coulomb=0.0,
+            encoding_options=self.encoding_options,
+            n_electrons=self.n_electrons,
+        )
 
     @property
     def coulomb_model(self):

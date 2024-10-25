@@ -307,22 +307,20 @@ def state_fidelity_to_eigenstates(
     fids = []
 
     for jj in range(eigenstates.shape[1]):
-        if expanded:
-            fids.append(
-                cirq.fidelity(
-                    state, eigenstates[:, jj], qid_shape=(2,) * int(np.log2(len(state)))
-                )
+        fids.append(
+            fidelity_wrapper(
+                state,
+                eigenstates[:, jj],
+                qid_shape=(2,) * int(np.log2(len(state))),
+                subspace_simulation=not expanded,
             )
-        else:
-            # in case we have fermionic vectors which aren't 2**n
-            # expanded refers to jw_ restricted spaces functions
-            fids.append(fidelity(state, eigenstates[:, jj]) ** 2)
+        )
     return fids
 
 
 def get_closest_state(
     ref_state: np.ndarray, comp_states: np.ndarray, subspace_simulation: bool = False
-) -> Tuple[np.ndarray, float]:
+) -> Tuple[np.ndarray, int]:
     fidelities = []
     for ind in range(comp_states.shape[1]):
         fid = fidelity_wrapper(
@@ -336,7 +334,7 @@ def get_closest_state(
             return comp_states[:, ind], int(ind)
         fidelities.append(fid)
     max_ind = np.argmax(fidelities)
-    print(f"degenerate fidelities: {fidelities}, max: {max_ind}")
+    print(f"{len(fidelities)} degenerate fidelities. max: {max_ind}")
     return comp_states[:, max_ind], int(max_ind)
 
 
