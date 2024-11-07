@@ -19,7 +19,6 @@ class Ansatz:
     def __init__(
         self,
         circuit: Circuit = None,
-        simulator: SimulatorBase = None,
         symbols: list = None,
         params: list = None,
     ) -> None:
@@ -44,11 +43,6 @@ class Ansatz:
             else:
                 self.params = params
 
-        if simulator is None:
-            self.simulator = Simulator()
-        else:
-            self.simulator = simulator
-
     def __iadd__(self, sympar: tuple[sympy.Symbol, float]):
         sym, par = sympar
         if sym in self.symbols:
@@ -60,9 +54,11 @@ class Ansatz:
     def n_qubits(self):
         return len(self.circuit.all_qubits())
 
-    def param_resolver(self, opt_params=None):
-        if opt_params is not None:
-            return ParamResolver({str(k): v for k, v in zip(self.symbols, opt_params)})
+    def param_resolver(self, override_params: list = None):
+        if override_params is not None:
+            return ParamResolver(
+                {str(k): v for k, v in zip(self.symbols, override_params)}
+            )
         return ParamResolver({str(k): v for k, v in zip(self.symbols, self.params)})
 
     @property
@@ -73,7 +69,23 @@ class Ansatz:
     def n_params(self):
         return len(self.params)
 
-    def simulate(self, *args, opt_params=None, **kwargs):
+    @property
+    def __to_json__(self):
+        return {
+            "circuit": self.circuit,
+            "symbols": self.symbols,
+            "params": self.params,
+        }
+
+    def simulate(
+        self,
+        *args,
+        simulator: SimulatorBase = None,
+        override_params: list = None,
+        **kwargs
+    ):
+        if simulator is None:
+            simulator = Simulator()
         if "initial_state" in kwargs.keys() and "state_qubits" in kwargs.keys():
             circuit = populate_empty_qubits(
                 circuit=self.circuit, qubits=kwargs["state_qubits"]
@@ -81,12 +93,10 @@ class Ansatz:
             del kwargs["state_qubits"]
         else:
             circuit = self.circuit
-        if opt_params is None:
-            opt_params = self.params
-        if isinstance(self.simulator, Simulator):
-            return self.simulator.simulate(
+        if isinstance(simulator, Simulator):
+            return simulator.simulate(
                 *args,
                 **kwargs,
-                param_resolver=self.param_resolver(opt_params=opt_params),
+                param_resolver=self.param_resolver(override_params=override_params),
                 program=circuit,
             ).final_state_vector

@@ -2,6 +2,7 @@ import itertools
 from typing import TYPE_CHECKING, Tuple, Union
 
 import cirq
+import cirq.circuits
 import numpy as np
 import sympy
 from scipy.linalg import sqrtm
@@ -545,17 +546,14 @@ def identity_on_qubits(circuit: cirq.Circuit, qubits: list[cirq.Qid]) -> cirq.Ci
 
 
 def pretty_print_jw_order(
-    pauli_string: cirq.PauliString, qubits: list[cirq.GridQubit]
+    pauli_string: cirq.PauliString, qubit_shape: tuple, row_sep: str = "\n"
 ):  # pragma: no cover
-    last_qubit = max(qubits)
-    mat = np.array(
-        [["0" for y in range(last_qubit.col + 1)] for x in range(last_qubit.row + 1)]
-    )
+    mat = np.full(qubit_shape, "I")
     for k, v in pauli_string.items():
-        mat[(k.row, k.col)] = v
+        ii, jj = np.unravel_index(k.x, shape=qubit_shape)
+        mat[(ii, jj)] = v
     mat = mat.tolist()
-    print(pauli_string)
-    print("\n".join(["".join(row) for row in mat]))
+    print(row_sep.join(["".join(row) for row in mat]))
 
 
 def print_state_fidelity_to_eigenstates(
@@ -601,6 +599,30 @@ def build_max_magic_state(n_qubits: int) -> np.ndarray:
     rho = psum.matrix(qubits=qubits)
     rho /= np.trace(rho)
     return rho
+
+
+def hartree_fock_circuit(qubits: cirq.Qid, n_electrons: list) -> cirq.Circuit:
+    circ = cirq.Circuit()
+    for x in range(n_electrons[0]):
+        circ.append(cirq.X(qubits[2 * x]))
+    for x in range(n_electrons[1]):
+        circ.append(cirq.X(qubits[2 * x + 1]))
+    return circ
+
+
+def pretty_print_pstr(pstr: cirq.PauliString, n_qubits: int):
+    pm = "IXYZ"
+    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    paulis = [pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)]
+    c = pstr.coefficient
+    if np.conj(c) == -c:
+        c_str = f"{np.imag(c):.4f}i "
+    elif np.conj(c) == c:
+        c_str = f"{np.real(c):.4f} "
+    else:
+        c_str = f"({np.real(c):.4f}+{np.imag(c):.4f}i) "
+    s = c_str + "".join(paulis)
+    return s
 
 
 def pauli_neighbour_order(pstr: cirq.PauliString):

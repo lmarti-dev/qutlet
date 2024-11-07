@@ -27,7 +27,7 @@ class ScipyOptimisers:
         self,
         ansatz: Ansatz,
         objective: callable,
-        minimize_options={"method": "L-BFGS-B"},
+        minimize_options={"method": "COBYLA"},
         method_options: dict = {},
         save_sim_data: bool = True,
         callback: callable = None,
@@ -61,7 +61,9 @@ class ScipyOptimisers:
         self.add_step: callable = add_step
 
         def fun(x: np.ndarray, initial_state: np.ndarray):
-            sim_result = self.ansatz.simulate(opt_params=x, initial_state=initial_state)
+            sim_result = self.ansatz.simulate(
+                override_params=x, initial_state=initial_state
+            )
             objective_value = self._objective(sim_result)
             self.add_step(sim_result=sim_result, objective_value=objective_value)
             self._function_calls_count += 1
