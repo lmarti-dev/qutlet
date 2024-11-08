@@ -601,12 +601,21 @@ def build_max_magic_state(n_qubits: int) -> np.ndarray:
     return rho
 
 
-def hartree_fock_circuit(qubits: cirq.Qid, n_electrons: list) -> cirq.Circuit:
+def hartree_fock_circuit(
+    qubits: cirq.Qid, n_electrons: list, reversed: bool = False
+) -> cirq.Circuit:
     circ = cirq.Circuit()
+    n_qubits = len(qubits)
     for x in range(n_electrons[0]):
-        circ.append(cirq.X(qubits[2 * x]))
+        if reversed:
+            circ.append(cirq.X(qubits[n_qubits - 1 - 2 * x]))
+        else:
+            circ.append(cirq.X(qubits[2 * x]))
     for x in range(n_electrons[1]):
-        circ.append(cirq.X(qubits[2 * x + 1]))
+        if reversed:
+            circ.append(cirq.X(qubits[n_qubits - 1 - (2 * x + 1)]))
+        else:
+            circ.append(cirq.X(qubits[2 * x + 1]))
     return circ
 
 
