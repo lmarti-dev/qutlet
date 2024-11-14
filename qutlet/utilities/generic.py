@@ -18,14 +18,23 @@ def gaussian_envelope(mu: float, sigma: float, n_steps: int, normalize: bool = T
 def gaussian_weighted_sum(
     items: list,
     sigma: float = 0.15,
-    mu_spread: float = 0.1,
+    mus: float = 0.1,
     n_out=None,
 ) -> list:
     if n_out is None:
         n_out = len(items)
+    if n_out == 1:
+        return [
+            sum(
+                [
+                    x * w
+                    for x, w in zip(items, gaussian_envelope(mus, sigma, len(items)))
+                ]
+            )
+        ]
     items = [
         sum([x * w for x, w in zip(items, gaussian_envelope(mu, sigma, len(items)))])
-        for mu in np.linspace(-mu_spread, mu_spread, n_out)
+        for mu in np.linspace(-mus, mus, n_out)
     ]
     return items
 
