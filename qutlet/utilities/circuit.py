@@ -641,3 +641,21 @@ def pauli_neighbour_order(pstr: cirq.PauliString):
     if len(qs):
         return np.abs(max(qs).x - min(qs).x)
     return 0
+
+
+def pauli_basis_change(pstr: cirq.PauliString) -> cirq.Circuit:
+    circ = cirq.Circuit()
+    pm = "IXYZ"
+    pd = {q: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    for j in pd.keys():
+        pauli = pm[pd[j]]
+        if pauli == "I":
+            ...
+        elif pauli == "X":
+            circ += cirq.H(j)
+        elif pauli == "Y":
+            circ += cirq.S(j)
+            circ += cirq.H(j)
+        elif pauli == "Z":
+            ...
+    return circ

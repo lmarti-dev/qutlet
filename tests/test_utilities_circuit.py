@@ -210,3 +210,26 @@ def test_pauli_str_is_identity_err():
 )
 def test_all_pauli_str_commute(psum, correct):
     assert qutlet.utilities.circuit.all_pauli_str_commute(psum) == correct
+
+
+@pytest.mark.parametrize(
+    "pauli,correct",
+    [
+        (
+            cirq.X(cirq.LineQubit(0))
+            * cirq.X(cirq.LineQubit(1))
+            * cirq.Y(cirq.LineQubit(3))
+            * cirq.Z(cirq.LineQubit(4)),
+            cirq.Circuit(
+                [
+                    cirq.H(cirq.LineQubit(0)),
+                    cirq.H(cirq.LineQubit(1)),
+                    cirq.S(cirq.LineQubit(3)),
+                    cirq.H(cirq.LineQubit(3)),
+                ]
+            ),
+        ),
+    ],
+)
+def test_pauli_basis_change(pauli, correct):
+    assert qutlet.utilities.circuit.pauli_basis_change(pauli) == correct
