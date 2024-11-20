@@ -21,10 +21,12 @@ class Ansatz:
         circuit: Circuit = None,
         symbols: list = None,
         params: list = None,
+        name: str = None,
     ) -> None:
         if circuit is None:
             circuit = Circuit()
         self.circuit = circuit
+        self.name = name
 
         if symbols is None:
             if params is not None:
@@ -75,6 +77,7 @@ class Ansatz:
             "circuit": self.circuit,
             "symbols": self.symbols,
             "params": self.params,
+            "name": self.name,
         }
 
     def simulate(

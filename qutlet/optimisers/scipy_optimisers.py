@@ -31,6 +31,7 @@ class ScipyOptimisers:
         method_options: dict = {},
         save_sim_data: bool = True,
         callback: callable = None,
+        callback_has_return: bool = False,
     ):
         self._objective = objective
         self.ansatz = ansatz
@@ -42,7 +43,7 @@ class ScipyOptimisers:
         self.save_sim_data = save_sim_data
         # callback(xk) for COBYLA
         # callback(intermediate_result: OptimizeResult) for others
-        self.callback = callback
+
         if save_sim_data:
             self.sim_data = {}
 
@@ -60,6 +61,16 @@ class ScipyOptimisers:
 
         self.add_step: callable = add_step
 
+        if callback_has_return:
+
+            def _callback(res):
+                content = callback(res)
+                add_step(**{f"__x_{ind}": val for ind, val in enumerate(content)})
+
+            self.callback = _callback
+        else:
+            self.callback = callback
+
         def fun(x: np.ndarray, initial_state: np.ndarray):
             sim_result = self.ansatz.simulate(
                 override_params=x, initial_state=initial_state
@@ -75,7 +86,7 @@ class ScipyOptimisers:
         self,
         initial_params: Union[str, float, Iterable],
         initial_state: np.ndarray = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[OptimizeResult, Union[None, dict]]:
         x0 = default_value_handler(
             shape=(self.ansatz.n_symbols,),
@@ -88,7 +99,7 @@ class ScipyOptimisers:
             **self._minimize_options,
             options=self._method_options,
             callback=self.callback,
-            **kwargs
+            **kwargs,
         )
         print("function calls: ", self._function_calls_count)
         self.ansatz.params = list(result["x"])

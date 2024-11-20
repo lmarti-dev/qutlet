@@ -18,10 +18,12 @@ and not simply repeat one single layer.
 """
 
 
-def circuit_ansatz(model: QubitModel, layers, circuit: callable) -> Ansatz:
+def circuit_ansatz(
+    model: QubitModel, layers: int, circuit: callable, name: str
+) -> Ansatz:
     circuit, symbols = circuit(model=model, layers=layers)
     symbols = list(flatten(symbols))
-    ansatz = Ansatz(circuit=circuit, symbols=symbols)
+    ansatz = Ansatz(circuit=circuit, symbols=symbols, name=name)
     return ansatz
 
 
@@ -59,7 +61,7 @@ def brickwall_ansatz(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="brickwall")
 
 
 def pyramid_ansatz(model: FermionicModel, layers=1) -> Ansatz:
@@ -86,7 +88,7 @@ def pyramid_ansatz(model: FermionicModel, layers=1) -> Ansatz:
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="pyramid")
 
 
 def totally_connected_ansatz(
@@ -128,7 +130,9 @@ def totally_connected_ansatz(
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(
+        model=model, layers=layers, circuit=circuit, name="totally_connected"
+    )
 
 
 def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
@@ -153,7 +157,7 @@ def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="ludwig")
 
 
 def stair_ansatz(model: FermionicModel, layers=1) -> Ansatz:
@@ -183,4 +187,4 @@ def stair_ansatz(model: FermionicModel, layers=1) -> Ansatz:
             symbols.append(layer_symbols)
         return circuit, symbols
 
-    return circuit_ansatz(model=model, layers=layers, circuit=circuit)
+    return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="stair")

@@ -143,7 +143,7 @@ class FermiHubbardModel(FermionicModel):
     @property
     def __to_json__(self) -> dict:
         return {
-            "dimensions": self.lattice_dimensions,
+            "lattice_dimensions": self.lattice_dimensions,
             "n_electrons": self.n_electrons,
             "tunneling": self.tunneling,
             "coulomb": self.coulomb,
