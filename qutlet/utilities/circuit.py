@@ -619,7 +619,7 @@ def hartree_fock_circuit(
     return circ
 
 
-def pretty_print_pstr(pstr: cirq.PauliString, n_qubits: int):
+def prettify_pstr(pstr: cirq.PauliString, n_qubits: int):
     pm = "IXYZ"
     pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
     paulis = [pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)]
@@ -654,8 +654,12 @@ def pauli_basis_change(pstr: cirq.PauliString) -> cirq.Circuit:
         elif pauli == "X":
             circ += cirq.H(j)
         elif pauli == "Y":
-            circ += cirq.S(j)
+            circ += cirq.inverse(cirq.S(j))
             circ += cirq.H(j)
         elif pauli == "Z":
             ...
-    return circ
+    pni = [q for q, v in zip(pstr.qubits, pstr.gate.pauli_mask) if v != 0]
+    for j in range(len(pni) - 1):
+        circ += cirq.CNOT(pni[j], pni[j + 1])
+
+    return circ, pni[-1].x
