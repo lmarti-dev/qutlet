@@ -156,7 +156,7 @@ class FermionicModel(FockModel, abc.ABC):
         return quadratic_hamiltonian
 
     @property
-    def gs(self):
+    def gs(self) -> tuple[float, np.ndarray]:
         if self.eig_energies is not None and self.eig_states is not None:
             return self.eig_energies[0], self.eig_states[:, 0]
         else:
@@ -164,7 +164,7 @@ class FermionicModel(FockModel, abc.ABC):
             return eig_energies[0], eig_states[:, 0]
 
     @property
-    def subspace_gs(self):
+    def subspace_gs(self) -> tuple[float, np.ndarray]:
         if self.ss_eig_energies is not None and self.ss_eig_states is not None:
             return self.ss_eig_energies[0], self.ss_eig_states[:, 0]
         else:
@@ -172,7 +172,7 @@ class FermionicModel(FockModel, abc.ABC):
             return ss_eig_energies[0], ss_eig_states[:, 0]
 
     @property
-    def spectrum(self):
+    def spectrum(self) -> tuple[np.ndarray, np.ndarray]:
         if self.eig_energies is None or self.eig_states is None:
             self.eig_energies, self.eig_states = jw_eigenspectrum_at_particle_number(
                 sparse_operator=get_sparse_operator(self.fock_hamiltonian),
@@ -183,7 +183,7 @@ class FermionicModel(FockModel, abc.ABC):
         return self.eig_energies, self.eig_states
 
     @property
-    def subspace_spectrum(self):
+    def subspace_spectrum(self) -> tuple[np.ndarray, np.ndarray]:
         if self.ss_eig_energies is None or self.ss_eig_states is None:
             self.ss_eig_energies, self.ss_eig_states = (
                 jw_eigenspectrum_at_particle_number(

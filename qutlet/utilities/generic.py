@@ -612,7 +612,7 @@ def spin_dicke_mixed_state(
 
 
 def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False) -> str:
-    if isinstance(ind, int):
+    if isinstance(ind, (int, np.integer)):
         if n_qubits is None:
             b = bin(ind)
         else:
