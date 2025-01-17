@@ -209,6 +209,15 @@ class FermionicModel(FockModel, abc.ABC):
         idx = idx_fn(n_electrons=self.n_electrons, n_qubits=self.n_qubits)
         return ham_mat[np.ix_(idx, idx)]
 
+    @property
+    def spectral_gap(self):
+        energies, _ = self.subspace_spectrum
+        energies = np.sort(energies)
+        e0 = energies[0]
+        for e in energies[1:]:
+            if e != e0:
+                return np.abs(e0 - e)
+
     def diagonalize_non_interacting_hamiltonian(self):
         # with H = a*Ta + a*a*Vaa, get the T (one body) and V (two body) matrices from the hamiltonian
         quadratic_hamiltonian = self.get_quadratic_hamiltonian_wrapper(

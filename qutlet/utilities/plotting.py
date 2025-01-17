@@ -16,7 +16,7 @@ from qutlet.utilities.circuit import pauli_neighbour_order
 
 import io
 from cirq.contrib.svg import circuit_to_svg
-from cirq import Circuit, PauliSum
+from cirq import Circuit, PauliSum, PauliString
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -263,12 +263,16 @@ def plot_model_weighted_locality_histogram(model: "FermionicModel"):
     return fig
 
 
+def pstr_to_str(pstr: PauliString, n_qubits: int) -> str:
+    pm = "IXYZ"
+    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    return "".join([pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)])
+
+
 def pretty_str_pauli_sum(psum: PauliSum, n_qubits: int):
     psum_str = ""
-    pm = "IXYZ"
     for pstr in psum:
-        pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
-        paulis = [pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)]
+        paulis = pstr_to_str(pstr, n_qubits)
         c = pstr.coefficient
         if np.conj(c) == -c:
             c_str = f"{np.imag(c):.4f}i "
