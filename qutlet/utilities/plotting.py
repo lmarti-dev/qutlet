@@ -12,11 +12,11 @@ from qutlet.utilities.complexity import (
     stabilizer_renyi_entropy,
 )
 
-from qutlet.utilities.circuit import pauli_neighbour_order
+from qutlet.utilities.circuit import pauli_neighbour_order, pstr_to_str
 
 import io
 from cirq.contrib.svg import circuit_to_svg
-from cirq import Circuit, PauliSum, PauliString
+from cirq import Circuit, PauliSum
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -261,12 +261,6 @@ def plot_model_weighted_locality_histogram(model: "FermionicModel"):
     axes[1].stairs(k_counts, k_bins, fill=True)
     axes[1].set_xlabel("K-locality")
     return fig
-
-
-def pstr_to_str(pstr: PauliString, n_qubits: int) -> str:
-    pm = "IXYZ"
-    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
-    return "".join([pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)])
 
 
 def pretty_str_pauli_sum(psum: PauliSum, n_qubits: int):

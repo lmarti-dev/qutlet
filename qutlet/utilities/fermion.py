@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Callable, List, Tuple, Union
 import numpy as np
 import openfermion as of
 import scipy
+from scipy.linalg import expm
 from cirq import PauliSum
 
 from qutlet.utilities.generic import (
@@ -586,3 +587,8 @@ def sample_on_random_states(
         state = haar_random_state(n_qubits)
         vals[ind] = fn(state)
     return np.mean(vals), np.var(vals)
+
+
+def time_evolve_state(time: float, state: np.ndarray, model: "FermionicModel"):
+    unitary = expm(-1j * (time) * model.hamiltonian_matrix)
+    return unitary @ state

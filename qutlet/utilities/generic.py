@@ -639,3 +639,7 @@ def to_json(obj: Any) -> dict:
         return obj.__to_json__
     else:
         raise ValueError(f"{obj} does not have a __to_json__ method")
+
+
+def qubits_in(state: np.ndarray) -> int:
+    return int(np.log2(len(state)))

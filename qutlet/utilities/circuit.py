@@ -1,4 +1,5 @@
 import itertools
+import re
 from typing import TYPE_CHECKING, Tuple, Union
 
 import cirq
@@ -13,6 +14,7 @@ from qutlet.utilities.generic import (
     default_value_handler,
     flatten,
 )
+
 
 if TYPE_CHECKING:
     from qutlet.models import QubitModel
@@ -663,3 +665,31 @@ def pauli_basis_change(pstr: cirq.PauliString) -> cirq.Circuit:
         circ += cirq.CNOT(pni[j], pni[j + 1])
 
     return circ, pni[-1].x
+
+
+def bitstring_to_ham(
+    bitstring: str, qubits: cirq.Qid, right_to_left: bool = False
+) -> cirq.PauliSum:
+    ham: cirq.PauliSum = cirq.PauliSum()
+    if right_to_left:
+        bitstring = bitstring[::-1]
+    for ind, s in enumerate(bitstring):
+        if int(s) == 1:
+            ham += cirq.Z(qubits[ind])
+        else:
+            ham -= cirq.Z(qubits[ind])
+    return ham
+
+
+def get_diagonal_ham_terms(ham: cirq.PauliSum) -> cirq.PauliSum:
+    out_ham = cirq.PauliSum()
+    for pstr in ham:
+        if re.fullmatch(r"[IZ]+", pstr_to_str(pstr, len(ham.qubits))):
+            out_ham += pstr
+    return out_ham
+
+
+def pstr_to_str(pstr: cirq.PauliString, n_qubits: int) -> str:
+    pm = "IXYZ"
+    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    return "".join([pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)])
