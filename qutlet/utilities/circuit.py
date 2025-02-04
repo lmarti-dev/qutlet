@@ -13,7 +13,10 @@ from qutlet.utilities.generic import (
     chained_matrix_multiplication,
     default_value_handler,
     flatten,
+    from_bitstring,
 )
+
+from qutlet.utilities.fermion import jw_spin_correct_indices
 
 
 if TYPE_CHECKING:
@@ -665,6 +668,29 @@ def pauli_basis_change(pstr: cirq.PauliString) -> cirq.Circuit:
         circ += cirq.CNOT(pni[j], pni[j + 1])
 
     return circ, pni[-1].x
+
+
+def amplitude_amplification_projector(
+    bitstring: str,
+    n_qubits: int,
+    n_electrons: list,
+    right_to_left: bool = False,
+) -> np.ndarray:
+
+    idx = jw_spin_correct_indices(
+        n_electrons=n_electrons, n_qubits=n_qubits, right_to_left=right_to_left
+    )
+    exclude_idx = from_bitstring(
+        b=bitstring, n_qubits=n_qubits, right_to_left=right_to_left
+    )
+
+    #  Fixed-Point Adiabatic Quantum Search eq 4
+    # nielsen chuang pg 70
+    proj = np.zeros((2**n_qubits, 2**n_qubits))
+    proj[idx, idx] = 1
+    proj[exclude_idx, exclude_idx] = 0
+
+    return np.eye(2**n_qubits) - proj
 
 
 def bitstring_to_ham(

@@ -629,6 +629,12 @@ def to_bitstring(ind: int, n_qubits: int, right_to_left: bool = False) -> str:
     return b
 
 
+def flip_bitstring(b: str) -> str:
+    if "b" in b:
+        b = b.split("b")[1]
+    return "".join(str(abs(int(x) - 1)) for x in b)
+
+
 def trace_norm(u1: np.ndarray, u2: np.ndarray):
     d = u1 - u2
     return np.abs(np.trace(np.sqrt(np.matmul(np.transpose(np.conjugate(d)), d))))
