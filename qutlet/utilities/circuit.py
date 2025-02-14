@@ -15,7 +15,7 @@ from qutlet.utilities.generic import (
     flatten,
     from_bitstring,
 )
-
+from math import prod
 from qutlet.utilities.fermion import jw_spin_correct_indices
 
 
@@ -671,26 +671,36 @@ def pauli_basis_change(pstr: cirq.PauliString) -> cirq.Circuit:
 
 
 def amplitude_amplification_projector(
-    bitstring: str,
+    exclude_idx: np.ndarray,
     n_qubits: int,
     n_electrons: list,
     right_to_left: bool = False,
+    perp: bool = True,
+    subspace_simulation: bool = False,
 ) -> np.ndarray:
-
-    idx = jw_spin_correct_indices(
-        n_electrons=n_electrons, n_qubits=n_qubits, right_to_left=right_to_left
-    )
-    exclude_idx = from_bitstring(
-        b=bitstring, n_qubits=n_qubits, right_to_left=right_to_left
-    )
 
     #  Fixed-Point Adiabatic Quantum Search eq 4
     # nielsen chuang pg 70
     proj = np.zeros((2**n_qubits, 2**n_qubits))
-    proj[idx, idx] = 1
-    proj[exclude_idx, exclude_idx] = 0
+    proj[exclude_idx, exclude_idx] = 1
 
-    return np.eye(2**n_qubits) - proj
+    if perp:
+        idx = jw_spin_correct_indices(
+            n_electrons=n_electrons, n_qubits=n_qubits, right_to_left=right_to_left
+        )
+        id_mat = np.zeros((2**n_qubits, 2**n_qubits))
+        id_mat[idx, idx] = 1
+        out = id_mat - proj
+    else:
+        out = proj
+
+    if subspace_simulation:
+        if not perp:
+            idx = jw_spin_correct_indices(
+                n_electrons=n_electrons, n_qubits=n_qubits, right_to_left=right_to_left
+            )
+        return out[np.ix_(idx, idx)]
+    return out
 
 
 def bitstring_to_ham(
@@ -719,3 +729,20 @@ def pstr_to_str(pstr: cirq.PauliString, n_qubits: int) -> str:
     pm = "IXYZ"
     pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
     return "".join([pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)])
+
+
+def get_projector_psum(qubits: cirq.Qid, bitstring: str, right_to_left: bool = True):
+    if right_to_left:
+        bitstring = bitstring[::-1]
+
+    b: cirq.PauliString = prod(
+        [cirq.X(qubits[ind]) for ind in range(len(qubits)) if bitstring[ind] == "1"]
+    )
+    zero_zero = prod(
+        [
+            0.5 * (cirq.I(qubits[ind]) + cirq.Z(qubits[ind]))
+            for ind in range(len(qubits))
+        ]
+    )
+
+    return b * zero_zero * b
