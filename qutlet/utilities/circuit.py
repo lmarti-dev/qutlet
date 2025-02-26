@@ -746,3 +746,12 @@ def get_projector_psum(qubits: cirq.Qid, bitstring: str, right_to_left: bool = T
     )
 
     return b * zero_zero * b
+
+
+def psum_to_subspace_matrix(
+    psum: cirq.PauliSum, n_electrons: list, qubits: list[cirq.Qid]
+) -> np.ndarray:
+    idx = jw_spin_correct_indices(
+        n_electrons=n_electrons, n_qubits=len(qubits), right_to_left=True
+    )
+    return psum.matrix(qubits)[np.ix_(idx, idx)]
