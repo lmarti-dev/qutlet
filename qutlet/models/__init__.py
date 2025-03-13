@@ -9,6 +9,7 @@ from qutlet.models.fermion_operator_model import (
     non_quadratic_model,
 )
 from qutlet.models.qubit_model import QubitModel
+from qutlet.models.ising_model import IsingModel
 
 __all__ = [
     "FockModel",
@@ -20,4 +21,5 @@ __all__ = [
     "quadratic_model",
     "non_quadratic_model",
     "tVModel",
+    "IsingModel",
 ]

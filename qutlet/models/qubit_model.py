@@ -2,7 +2,7 @@ import abc
 from typing import Iterable, Union
 
 import numpy as np
-from cirq import PauliSum, LineQubit
+from cirq import PauliSum, LineQubit, Qid
 
 
 class QubitModel(abc.ABC):
@@ -20,7 +20,7 @@ class QubitModel(abc.ABC):
         self.hamiltonian: PauliSum = None
         self._qubits = LineQubit.range(self.n_qubits)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> LineQubit:
         if isinstance(idx, tuple):
             return self.qubits[
                 np.ravel_multi_index(multi_index=idx, dims=self.qubit_shape)
@@ -29,16 +29,20 @@ class QubitModel(abc.ABC):
             return self.qubits[idx]
 
     @property
-    def qubits(self):
+    def qubits(self) -> list[Qid]:
         return self._qubits
 
     @property
-    def qmap(self):
+    def qmap(self) -> dict[int, int]:
         return {val: ind for ind, val in enumerate(self._qubits)}
 
     @property
-    def qid_shape(self):
+    def qid_shape(self) -> tuple:
         return (2,) * self.n_qubits
+
+    @property
+    def hamiltonian_matrix(self) -> np.ndarray:
+        return self.hamiltonian.matrix(self.qubits)
 
     @abc.abstractmethod
     def _set_hamiltonian(self):

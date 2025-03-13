@@ -196,10 +196,6 @@ class FermionicModel(FockModel, abc.ABC):
         return self.ss_eig_energies, self.ss_eig_states
 
     @property
-    def hamiltonian_matrix(self):
-        return self.hamiltonian.matrix(self.qubits)
-
-    @property
     def subspace_hamiltonian_matrix(self):
         ham_mat = self.hamiltonian_matrix
         if self.spin:

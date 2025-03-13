@@ -1,5 +1,4 @@
 import openfermion as of
-import cirq
 import numpy as np
 
 from qutlet.models import FermionicModel
