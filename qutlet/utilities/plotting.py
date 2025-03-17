@@ -263,17 +263,18 @@ def plot_model_weighted_locality_histogram(model: "FermionicModel"):
     return fig
 
 
-def pretty_str_pauli_sum(psum: PauliSum, n_qubits: int):
+def pretty_str_pauli_sum(psum: PauliSum, n_qubits: int, threshold: float = 0.0):
     psum_str = ""
     for pstr in psum:
         paulis = pstr_to_str(pstr, n_qubits)
         c = pstr.coefficient
-        if np.conj(c) == -c:
-            c_str = f"{np.imag(c):.4f}i "
-        elif np.conj(c) == c:
-            c_str = f"{np.real(c):.4f} "
-        else:
-            c_str = f"({np.real(c):.4f}+{np.imag(c):.4f}i) "
-        s = c_str + "".join(paulis) + "\n"
-        psum_str += s
+        if np.abs(c) > threshold:
+            if np.conj(c) == -c:
+                c_str = f"{np.imag(c):.4f}i "
+            elif np.conj(c) == c:
+                c_str = f"{np.real(c):.4f} "
+            else:
+                c_str = f"({np.real(c):.4f}+{np.imag(c):.4f}i) "
+            s = c_str + "".join(paulis) + "\n"
+            psum_str += s
     return psum_str
