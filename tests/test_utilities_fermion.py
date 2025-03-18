@@ -341,7 +341,7 @@ def test_bogo_creators():
         bogos_up, bogos_down, model.n_electrons
     )
 
-    assert len(bogo_creators) == qutlet.utilities.fermion.get_fermionic_states_number(
+    assert len(bogo_creators) == qutlet.utilities.fermion.get_fermionic_subspace_size(
         model.n_electrons, model.n_qubits
     )
 

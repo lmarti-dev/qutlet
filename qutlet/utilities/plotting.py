@@ -16,7 +16,7 @@ from qutlet.utilities.circuit import pauli_neighbour_order, pstr_to_str
 
 import io
 from cirq.contrib.svg import circuit_to_svg
-from cirq import Circuit, PauliSum
+from cirq import Circuit, PauliSum, PauliString
 
 if TYPE_CHECKING:
     from qutlet.models import FermionicModel
@@ -278,3 +278,14 @@ def pretty_str_pauli_sum(psum: PauliSum, n_qubits: int, threshold: float = 0.0):
             s = c_str + "".join(paulis) + "\n"
             psum_str += s
     return psum_str
+
+
+def pretty_print_jw_order(
+    pauli_string: PauliString, qubit_shape: tuple, row_sep: str = "\n"
+):  # pragma: no cover
+    mat = np.full(qubit_shape, "I")
+    for k, v in pauli_string.items():
+        ii, jj = np.unravel_index(k.x, shape=qubit_shape)
+        mat[(ii, jj)] = v
+    mat = mat.tolist()
+    print(row_sep.join(["".join(row) for row in mat]))

@@ -13,6 +13,8 @@ from qutlet.utilities import (
     flatten,
     jw_eigenspectrum_at_particle_number,
     jw_spin_correct_indices,
+    fock_expectation_wrapper,
+    fock_variance_wrapper,
 )
 
 
@@ -47,6 +49,31 @@ class FermionicModel(FockModel, abc.ABC):
         self.eig_states = None
         self.ss_eig_energies = None
         self.ss_eig_states = None
+
+        if self.spin:
+            self.up_op, self.down_op, self.total_op = (
+                self.hamiltonian_spin_and_number_operator()
+            )
+        else:
+            self.total_op = self.hamiltonian_spin_and_number_operator()
+
+    def n_electrons_expectation(self, state: np.ndarray) -> tuple[float, float] | float:
+        if self.spin:
+            up = fock_expectation_wrapper(self.up_op, state)
+            down = fock_expectation_wrapper(self.down_op, state)
+            return up, down
+        else:
+            total = fock_expectation_wrapper(self.total_op, state)
+            return total
+
+    def n_electrons_variance(self, state: np.ndarray) -> tuple[float, float] | float:
+        if self.spin:
+            up = fock_variance_wrapper(self.up_op, state)
+            down = fock_variance_wrapper(self.down_op, state)
+            return up, down
+        else:
+            total = fock_variance_wrapper(self.total_op, state)
+            return total
 
     @staticmethod
     def encode_fermion_operator(

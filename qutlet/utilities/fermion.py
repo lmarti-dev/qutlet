@@ -5,6 +5,7 @@ import numpy as np
 import openfermion as of
 import scipy
 from scipy.linalg import expm
+from scipy.sparse import csc_matrix
 from cirq import PauliSum
 
 from qutlet.utilities.generic import (
@@ -19,7 +20,31 @@ if TYPE_CHECKING:
     from qutlet.models import FermionicModel
 
 
-def get_fermionic_states_number(n_electrons: list, n_qubits: int):
+def fock_expectation_wrapper(
+    observable: of.FermionOperator,
+    state: np.ndarray,
+):
+    return np.real(
+        of.expectation(
+            of.get_sparse_operator(observable, int(np.log2(len(state)))),
+            csc_matrix(state),
+        )
+    )
+
+
+def fock_variance_wrapper(
+    observable: of.FermionOperator,
+    state: np.ndarray,
+):
+    return np.real(
+        of.variance(
+            of.get_sparse_operator(observable, int(np.log2(len(state)))),
+            csc_matrix(state),
+        )
+    )
+
+
+def get_fermionic_subspace_size(n_electrons: list, n_qubits: int):
     return len(
         list(itertools.combinations(range(n_qubits // 2), n_electrons[0]))
     ) * len(list(itertools.combinations(range(n_qubits // 2), n_electrons[1])))

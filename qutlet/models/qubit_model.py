@@ -2,7 +2,8 @@ import abc
 from typing import Iterable, Union
 
 import numpy as np
-from cirq import PauliSum, LineQubit, Qid
+from cirq import PauliSum, NamedQubit, Qid
+from uuid import uuid4
 
 
 class QubitModel(abc.ABC):
@@ -18,9 +19,12 @@ class QubitModel(abc.ABC):
         else:
             raise TypeError(f"Expected iterable or int, got {type(qubit_shape)}")
         self.hamiltonian: PauliSum = None
-        self._qubits = LineQubit.range(self.n_qubits)
+        self._sys_name = uuid4()
+        self._qubits = [
+            NamedQubit(f"{self._sys_name}-qubit-{x}") for x in range(self.n_qubits)
+        ]
 
-    def __getitem__(self, idx) -> LineQubit:
+    def __getitem__(self, idx) -> NamedQubit:
         if isinstance(idx, tuple):
             return self.qubits[
                 np.ravel_multi_index(multi_index=idx, dims=self.qubit_shape)

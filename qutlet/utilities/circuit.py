@@ -9,11 +9,11 @@ import sympy
 from scipy.linalg import sqrtm
 from scipy.sparse import csc_matrix, kron
 
+
 from qutlet.utilities.generic import (
     chained_matrix_multiplication,
     default_value_handler,
     flatten,
-    from_bitstring,
 )
 from math import prod
 from qutlet.utilities.fermion import jw_spin_correct_indices
@@ -21,6 +21,36 @@ from qutlet.utilities.fermion import jw_spin_correct_indices
 
 if TYPE_CHECKING:
     from qutlet.models import QubitModel
+
+
+def expectation_wrapper(
+    observable: Union[cirq.PauliSum, np.ndarray],
+    state: np.ndarray,
+    qubits: list[cirq.Qid],
+):
+    if len(state.shape) == 2:
+        if isinstance(observable, cirq.PauliSum):
+            return np.real(
+                observable.expectation_from_density_matrix(
+                    state.astype("complex_"),
+                    qubit_map={k: v for k, v in zip(qubits, range(len(qubits)))},
+                )
+            )
+        elif isinstance(observable, np.ndarray):
+            return np.real(np.trace(observable @ state))
+    else:
+        if isinstance(observable, cirq.PauliSum):
+            return np.real(
+                observable.expectation_from_state_vector(
+                    state.astype("complex_"),
+                    qubit_map={k: v for k, v in zip(qubits, range(len(qubits)))},
+                )
+            )
+        elif isinstance(observable, np.ndarray):
+            return np.real(np.vdot(state, observable @ state))
+    raise ValueError(
+        f"Got an incompatible observable and state: observable {type(observable)}, state: {type(state)}"
+    )
 
 
 def conjugate(val: Union[cirq.PauliSum, cirq.PauliString]):
@@ -477,6 +507,8 @@ def qubits_shape(qubits: Tuple[cirq.Qid]) -> tuple:
         return (last_qubit.x + 1, 1)
     elif isinstance(last_qubit, cirq.GridQubit):
         return (last_qubit.row + 1, last_qubit.col + 1)
+    else:
+        return (len(qubits), 1)
 
 
 def cRy(control, targ, sym: sympy.Symbol, fac: float = 1):
@@ -550,17 +582,6 @@ def identity_on_qubits(circuit: cirq.Circuit, qubits: list[cirq.Qid]) -> cirq.Ci
     return circuit_out
 
 
-def pretty_print_jw_order(
-    pauli_string: cirq.PauliString, qubit_shape: tuple, row_sep: str = "\n"
-):  # pragma: no cover
-    mat = np.full(qubit_shape, "I")
-    for k, v in pauli_string.items():
-        ii, jj = np.unravel_index(k.x, shape=qubit_shape)
-        mat[(ii, jj)] = v
-    mat = mat.tolist()
-    print(row_sep.join(["".join(row) for row in mat]))
-
-
 def print_state_fidelity_to_eigenstates(
     state: np.ndarray,
     eigenenergies: np.ndarray,
@@ -626,7 +647,7 @@ def hartree_fock_circuit(
 
 def prettify_pstr(pstr: cirq.PauliString, n_qubits: int):
     pm = "IXYZ"
-    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    pd = pauli_dict(pstr)
     paulis = [pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)]
     c = pstr.coefficient
     if np.conj(c) == -c:
@@ -725,9 +746,13 @@ def get_diagonal_ham_terms(ham: cirq.PauliSum) -> cirq.PauliSum:
     return out_ham
 
 
+def pauli_dict(pstr: cirq.PauliString) -> dict:
+    return {ind: v for ind, v in enumerate(pstr.gate.pauli_mask)}
+
+
 def pstr_to_str(pstr: cirq.PauliString, n_qubits: int) -> str:
     pm = "IXYZ"
-    pd = {q.x: v for q, v in zip(pstr.qubits, pstr.gate.pauli_mask)}
+    pd = pauli_dict(pstr)
     return "".join([pm[pd[j]] if j in pd.keys() else "I" for j in range(n_qubits)])
 
 
@@ -755,3 +780,25 @@ def psum_to_subspace_matrix(
         n_electrons=n_electrons, n_qubits=len(qubits), right_to_left=True
     )
     return psum.matrix(qubits)[np.ix_(idx, idx)]
+
+
+def mat_to_psum(
+    mat: np.ndarray,
+    qubits: list[cirq.Qid] = None,
+    verbose: bool = False,
+) -> cirq.PauliSum:
+    if len(list(set(mat.shape))) != 1:
+        raise ValueError("the matrix is not square")
+    n_qubits = int(np.log2(mat.shape[0]))
+    if qubits is None:
+        qubits = cirq.LineQubit.range(n_qubits)
+    pauli_matrices = (cirq.I, cirq.X, cirq.Y, cirq.Z)
+    pauli_products = itertools.product(pauli_matrices, repeat=n_qubits)
+    pauli_sum = cirq.PauliSum()
+    for pauli_product in pauli_products:
+        coeff, pauli_string = pauli_string_coeff(mat, pauli_product, qubits)
+        if verbose:
+            print(pauli_product, coeff)
+        if not np.isclose(np.abs(coeff), 0):
+            pauli_sum += cirq.PauliString(pauli_string, coeff)
+    return pauli_sum
