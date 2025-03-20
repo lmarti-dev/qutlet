@@ -6,6 +6,12 @@ import numpy as np
 import re
 
 
+def as_many_as_mod(x: np.ndarray, many: int) -> np.ndarray:
+    reps = int(np.ceil(many / len(x)))
+    y = np.tile(x, reps)
+    return y[:many]
+
+
 def gaussian_envelope(mu: float, sigma: float, n_steps: int, normalize: bool = True):
     g = (1 / np.sqrt(2 * np.pi * (sigma**2))) * np.exp(
         -((np.linspace(-1, 1, n_steps) - mu) ** 2) / (2 * sigma**2)
