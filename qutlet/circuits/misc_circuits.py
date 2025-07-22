@@ -2,11 +2,15 @@ import cirq
 from cirq.circuits import InsertStrategy
 
 import sympy
-from qutlet.models.fermionic_model import FermionicModel
-from qutlet.models.qubit_model import QubitModel
+
+from typing import TYPE_CHECKING
 from qutlet.utilities import flatten
 import itertools
 from qutlet.circuits.ansatz import Ansatz
+
+if TYPE_CHECKING:
+    from qutlet.models.fermionic_model import FermionicModel
+    from qutlet.models.qubit_model import QubitModel
 
 """This file defines a standard way to smoothly implement new simple "circuit" ansaetze with the class system. 
 It hinges on the generic_circuit function which requires an circuit function itself.
@@ -19,7 +23,7 @@ and not simply repeat one single layer.
 
 
 def circuit_ansatz(
-    model: QubitModel, layers: int, circuit: callable, name: str
+    model: "QubitModel", layers: int, circuit: callable, name: str
 ) -> Ansatz:
     circuit, symbols = circuit(model=model, layers=layers)
     symbols = list(flatten(symbols))
@@ -28,9 +32,9 @@ def circuit_ansatz(
 
 
 def brickwall_ansatz(
-    model: FermionicModel, layers: int = 1, shared_layer_parameter: bool = True
+    model: "FermionicModel", layers: int = 1, shared_layer_parameter: bool = True
 ) -> Ansatz:
-    def circuit(model: FermionicModel, layers):
+    def circuit(model: "FermionicModel", layers):
         symbols = []
         qubits = model.qubits
         circuit = cirq.Circuit()
@@ -64,8 +68,8 @@ def brickwall_ansatz(
     return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="brickwall")
 
 
-def pyramid_ansatz(model: FermionicModel, layers=1) -> Ansatz:
-    def circuit(model: FermionicModel, layers):
+def pyramid_ansatz(model: "FermionicModel", layers=1) -> Ansatz:
+    def circuit(model: "FermionicModel", layers):
         symbols = []
         qubits = model.qubits
         circuit = cirq.Circuit()
@@ -92,9 +96,9 @@ def pyramid_ansatz(model: FermionicModel, layers=1) -> Ansatz:
 
 
 def totally_connected_ansatz(
-    model: FermionicModel, layers=1, spin_conserving: bool = False
+    model: "FermionicModel", layers=1, spin_conserving: bool = False
 ) -> Ansatz:
-    def circuit(model: FermionicModel, layers):
+    def circuit(model: "FermionicModel", layers):
         symbols = []
         qubits = model.qubits
         Nq = len(qubits)
@@ -135,8 +139,8 @@ def totally_connected_ansatz(
     )
 
 
-def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
-    def circuit(model: FermionicModel, layers: int):
+def ludwig_ansatz(model: "FermionicModel", layers=1) -> Ansatz:
+    def circuit(model: "FermionicModel", layers: int):
         symbols = []
         circuit = cirq.Circuit()
         for layer in range(layers):
@@ -160,8 +164,8 @@ def ludwig_ansatz(model: FermionicModel, layers=1) -> Ansatz:
     return circuit_ansatz(model=model, layers=layers, circuit=circuit, name="ludwig")
 
 
-def stair_ansatz(model: FermionicModel, layers=1) -> Ansatz:
-    def circuit(model: FermionicModel, layers: int):
+def stair_ansatz(model: "FermionicModel", layers=1) -> Ansatz:
+    def circuit(model: "FermionicModel", layers: int):
         symbols = []
         qubits = model.qubits
         Nq = len(qubits)

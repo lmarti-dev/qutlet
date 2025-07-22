@@ -14,6 +14,7 @@ from qutlet.utilities.generic import (
     sum_even,
     sum_odd,
     default_value_handler,
+    flatten,
 )
 
 if TYPE_CHECKING:
@@ -30,6 +31,10 @@ def fock_expectation_wrapper(
             csc_matrix(state),
         )
     )
+
+
+def normalize_fop(fop: of.FermionOperator):
+    return of.normal_ordered(fop + of.hermitian_conjugated(fop))
 
 
 def fock_variance_wrapper(
@@ -95,7 +100,8 @@ def even_excitation(
 
 
 def fermion_op_sites_number(fop: of.FermionOperator) -> int:
-    return max([z[0] for y in fop.terms.keys() for z in y])
+    sites = list(set(flatten(fop.terms.keys())))
+    return max(len(sites), max(sites) + 1)
 
 
 def double_excitation(
@@ -436,6 +442,12 @@ def build_bogo_creators(
     return bogo_creators
 
 
+def build_coupler_from_bogos(bogo_creators: list, index_left: int, index_right: int):
+    return bogo_creators[index_left] * of.hermitian_conjugated(
+        bogo_creators[index_right]
+    )
+
+
 def build_couplers_from_bogos(
     bogo_creators: list, zero_index: int = 0, max_k: int = -1
 ):
@@ -453,6 +465,36 @@ def get_bogoliubov_matrix(fop: of.FermionOperator, n_qubits: int):
         coords = (k[0][0], k[1][0])
         matrix[coords] = v
     return matrix
+
+
+def jw_get_free_coupler(
+    model: "FermionicModel",
+    index_left: int = 0,
+    index_right: int = 1,
+    add_hc: bool = False,
+) -> PauliSum:
+    fop = of.get_fermion_operator(model.quadratic_terms)
+    matrix = get_bogoliubov_matrix(fop, model.n_qubits)
+
+    sector_matrix_up = matrix[::2, ::2]
+    _, eigvecs_up = np.linalg.eigh(sector_matrix_up)
+    sector_matrix_down = matrix[1::2, 1::2]
+    _, eigvecs_down = np.linalg.eigh(sector_matrix_down)
+
+    bogos_up = get_bogo_fop(eigvecs_up.T, 0)
+    bogos_down = get_bogo_fop(eigvecs_down.T, 1)
+
+    bogo_creators = build_bogo_creators(bogos_up, bogos_down, model.n_electrons)
+
+    coupler = build_coupler_from_bogos(bogo_creators, index_left, index_right)
+    jw_coupler = of.normal_ordered(coupler)
+    jw_coupler = of.jordan_wigner(coupler)
+    if add_hc:
+        jw_coupler += of.hermitian_conjugated(jw_coupler)
+
+    jw_coupler = of.qubit_operator_to_pauli_sum(jw_coupler, qubits=model.qubits)
+
+    return jw_coupler
 
 
 def jw_get_free_couplers(

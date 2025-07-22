@@ -7,6 +7,7 @@ from qutlet.models.fermion_operator_model import (
     FermionOperatorModel,
     quadratic_model,
     non_quadratic_model,
+    interp_hamiltonian_func,
 )
 from qutlet.models.qubit_model import QubitModel
 from qutlet.models.ising_model import IsingModel
@@ -22,4 +23,5 @@ __all__ = [
     "non_quadratic_model",
     "tVModel",
     "IsingModel",
+    "interp_hamiltonian_func",
 ]

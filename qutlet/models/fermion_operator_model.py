@@ -1,6 +1,7 @@
 from typing import Union
 import openfermion as of
 from qutlet.utilities import fermion_op_sites_number
+from cirq import Qid
 
 from qutlet.models.fermionic_model import FermionicModel
 
@@ -11,7 +12,8 @@ class FermionOperatorModel(FermionicModel):
         fermion_operator: of.FermionOperator,
         encoding_options: dict = None,
         qubit_shape: Union[tuple, int] = None,
-        **kwargs
+        qubits: list[Qid] = None,
+        **kwargs,
     ):
         if not isinstance(fermion_operator, of.FermionOperator):
             raise TypeError(
@@ -20,7 +22,10 @@ class FermionOperatorModel(FermionicModel):
         self.fermion_operator = fermion_operator
 
         if qubit_shape is None:
-            qubit_shape = fermion_op_sites_number(fermion_operator)
+            if qubits is not None:
+                qubit_shape = (1, len(qubits))
+            else:
+                qubit_shape = fermion_op_sites_number(fermion_operator)
         super().__init__(
             qubit_shape=qubit_shape, encoding_options=encoding_options, **kwargs
         )
@@ -33,6 +38,7 @@ class FermionOperatorModel(FermionicModel):
         return {
             "fermion_operator": self.fermion_operator,
             "encoding_options": self.encoding_options,
+            "n_electrons": self.n_electrons,
         }
 
     @property
@@ -54,3 +60,18 @@ def non_quadratic_model(model: FermionicModel) -> FermionOperatorModel:
         n_electrons=model.n_electrons,
         qubit_shape=model.qubit_shape,
     )
+
+
+def interp_hamiltonian_func(
+    model1: FermionicModel, model2: FermionicModel, sweep_function: callable
+) -> callable:
+
+    def ham(t: float) -> FermionOperatorModel:
+        fop = (1 - sweep_function(t)) * model1.fock_hamiltonian + sweep_function(
+            t
+        ) * model2.fock_hamiltonian
+        return FermionOperatorModel(
+            fermion_operator=fop, n_electrons=model1.n_electrons, qubits=model1.qubits
+        )
+
+    return ham

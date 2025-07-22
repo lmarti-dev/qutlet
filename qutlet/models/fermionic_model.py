@@ -15,6 +15,7 @@ from qutlet.utilities import (
     jw_spin_correct_indices,
     fock_expectation_wrapper,
     fock_variance_wrapper,
+    subspace_size,
 )
 
 
@@ -231,6 +232,10 @@ class FermionicModel(FockModel, abc.ABC):
             idx_fn = of.jw_number_indices
         idx = idx_fn(n_electrons=self.n_electrons, n_qubits=self.n_qubits)
         return ham_mat[np.ix_(idx, idx)]
+
+    @property
+    def subspace_size(self):
+        return subspace_size(self.n_qubits, self.n_electrons)
 
     @property
     def spectral_gap(self):

@@ -7,22 +7,25 @@ from uuid import uuid4
 
 
 class QubitModel(abc.ABC):
-    def __init__(self, qubit_shape: Union[Iterable, int]):
+    def __init__(self, qubit_shape: Union[Iterable, int], qubits: list[Qid] = None):
         super().__init__()
         self.qubit_shape = None
         if isinstance(qubit_shape, Iterable):
             self.qubit_shape = qubit_shape
-            self.n_qubits = int(np.prod(qubit_shape))
+            n_qubits = int(np.prod(qubit_shape))
         elif isinstance(qubit_shape, int):
             self.qubit_shape = (1, qubit_shape)
-            self.n_qubits = qubit_shape
+            n_qubits = qubit_shape
         else:
             raise TypeError(f"Expected iterable or int, got {type(qubit_shape)}")
         self.hamiltonian: PauliSum = None
         self._sys_name = uuid4()
-        self._qubits = [
-            NamedQubit(f"{self._sys_name}-qubit-{x}") for x in range(self.n_qubits)
-        ]
+        if qubits is None:
+            self._qubits = [
+                NamedQubit(f"{self._sys_name}-qubit-{x}") for x in range(n_qubits)
+            ]
+        else:
+            self._qubits = qubits
 
     def __getitem__(self, idx) -> NamedQubit:
         if isinstance(idx, tuple):
@@ -35,6 +38,10 @@ class QubitModel(abc.ABC):
     @property
     def qubits(self) -> list[Qid]:
         return self._qubits
+
+    @property
+    def n_qubits(self) -> list[Qid]:
+        return len(self._qubits)
 
     @property
     def qmap(self) -> dict[int, int]:

@@ -27,13 +27,8 @@ class FockModel(QubitModel, abc.ABC):
 
     """
 
-    def __init__(
-        self,
-        *,
-        qubit_shape,
-        encoding_options: dict,
-    ):
-        super().__init__(qubit_shape=qubit_shape)
+    def __init__(self, *, qubit_shape, encoding_options: dict, **kwargs):
+        super().__init__(qubit_shape=qubit_shape, **kwargs)
         self.fock_hamiltonian: of.SymbolicOperator = None
         if encoding_options is None:
             encoding_options = {"encoding_name": "jordan_wigner"}
